@@ -1,0 +1,53 @@
+{
+  "name": "@hilatech/database",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prisma schema, migrations, seed and the shared Prisma client",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "prisma"
+  ],
+  "scripts": {
+    "generate": "prisma generate",
+    "build": "pnpm run generate && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "echo \"no unit tests in database package\"",
+    "migrate:dev": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:reset": "prisma migrate reset --force",
+    "migrate:status": "prisma migrate status",
+    "seed": "tsx src/seed.ts",
+    "studio": "prisma studio",
+    "clean": "rm -rf dist .turbo"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma",
+    "seed": "tsx src/seed.ts"
+  },
+  "dependencies": {
+    "@hilatech/contracts": "workspace:*",
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "dotenv": "^17.4.2",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@hilatech/config": "workspace:*",
+    "@types/node": "22.20.5",
+    "@types/pg": "^8.23.1",
+    "argon2": "0.45.2",
+    "eslint": "9.39.5",
+    "prisma": "7.10.1",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}

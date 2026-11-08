@@ -1,0 +1,20 @@
+{
+  "name": "@hilatech/types",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure TypeScript types shared across apps (no runtime code)",
+  "types": "./src/index.ts",
+  "main": "./src/index.ts",
+  "exports": { ".": { "types": "./src/index.ts", "default": "./src/index.ts" } },
+  "scripts": {
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"types only\"",
+    "clean": "rm -rf .turbo"
+  },
+  "devDependencies": {
+    "@hilatech/config": "workspace:*",
+    "eslint": "9.39.5",
+    "typescript": "5.9.3"
+  }
+}

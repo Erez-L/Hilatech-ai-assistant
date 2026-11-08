@@ -1,0 +1,69 @@
+# Deployment workflow skeleton. It builds and pushes images to GHCR on tags, then (optionally) triggers a
+# deployment step. It does NOT assume production credentials — the deploy job is gated on the presence of
+# repository secrets and must be enabled deliberately. See docs/development/setup.md → "Deployment".
+name: Deploy
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    name: Build & push images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Image metadata
+        id: meta
+        run: echo "tag=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/api.Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}/api:${{ steps.meta.outputs.tag }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/workers.Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}/workers:${{ steps.meta.outputs.tag }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/web.Dockerfile
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.PUBLIC_API_URL || 'http://localhost:4000' }}
+            NEXT_PUBLIC_APP_URL=${{ vars.PUBLIC_APP_URL || 'http://localhost:3000' }}
+          tags: ghcr.io/${{ github.repository }}/web:${{ steps.meta.outputs.tag }}
+
+  deploy:
+    name: Deploy (requires DEPLOY_SSH_KEY secret)
+    runs-on: ubuntu-latest
+    needs: [images]
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy via SSH (compose pull & up)
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          test -n "$DEPLOY_SSH_KEY" || { echo "DEPLOY_SSH_KEY not configured"; exit 1; }
+          echo "$DEPLOY_SSH_KEY" > key && chmod 600 key
+          ssh -i key -o StrictHostKeyChecking=accept-new "$DEPLOY_USER@$DEPLOY_HOST" \
+            "cd /opt/hilatech && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d --remove-orphans"

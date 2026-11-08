@@ -1,0 +1,44 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "globalEnv": ["NODE_ENV", "CI"],
+  "globalPassThroughEnv": ["DATABASE_URL", "REDIS_URL"],
+  "tasks": {
+    "generate": {
+      "cache": false,
+      "outputs": ["generated/**"]
+    },
+    "build": {
+      "dependsOn": ["^build", "^generate"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "env": ["NEXT_PUBLIC_API_URL", "NEXT_PUBLIC_APP_URL"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["^generate"]
+    },
+    "lint": {
+      "dependsOn": ["^generate"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build", "^generate"]
+    },
+    "test": {
+      "dependsOn": ["^build", "^generate"],
+      "outputs": ["coverage/**"]
+    },
+    "test:integration": {
+      "dependsOn": ["^build", "^generate"],
+      "cache": false,
+      "env": ["DATABASE_URL", "REDIS_URL", "JWT_ACCESS_SECRET", "JWT_REFRESH_SECRET"]
+    },
+    "test:e2e": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}

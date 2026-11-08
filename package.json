@@ -1,0 +1,32 @@
+{
+  "name": "hilatech-ai-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HilaTech AI Assistant — modular, multi-tenant AI-powered business platform",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:integration": "turbo run test:integration",
+    "test:e2e": "turbo run test:e2e",
+    "db:generate": "pnpm --filter @hilatech/database generate",
+    "db:migrate": "pnpm --filter @hilatech/database migrate:deploy",
+    "db:migrate:dev": "pnpm --filter @hilatech/database migrate:dev",
+    "db:seed": "pnpm --filter @hilatech/database seed",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,yml,yaml}\"",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "prettier": "3.9.10",
+    "turbo": "2.11.10",
+    "typescript": "5.9.3"
+  }
+}

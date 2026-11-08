@@ -1,0 +1,37 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+.turbo/
+
+# generated
+
+# env
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# test artifacts
+playwright-report/
+test-results/
+
+# local data
+infrastructure/docker/data/
+uploads/
