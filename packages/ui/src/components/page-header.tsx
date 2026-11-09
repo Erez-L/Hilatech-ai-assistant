@@ -12,7 +12,15 @@ export interface PageHeaderProps extends Omit<React.HTMLAttributes<HTMLDivElemen
   children?: React.ReactNode;
 }
 
-export function PageHeader({ title, description, actions, breadcrumb, children, className, ...props }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  description,
+  actions,
+  breadcrumb,
+  children,
+  className,
+  ...props
+}: PageHeaderProps) {
   return (
     <header className={cn('flex flex-col gap-4', className)} {...props}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -21,16 +29,30 @@ export function PageHeader({ title, description, actions, breadcrumb, children, 
           <h1 className="text-2xl leading-tight font-semibold tracking-tight text-fg">{title}</h1>
           {description ? <p className="max-w-2xl text-sm text-fg-muted">{description}</p> : null}
         </div>
-        {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
+        {actions ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+        ) : null}
       </div>
       {children}
     </header>
   );
 }
 
-export function SectionHeader({ title, description, actions, className, ...props }: PageHeaderProps) {
+export function SectionHeader({
+  title,
+  description,
+  actions,
+  className,
+  ...props
+}: PageHeaderProps) {
   return (
-    <div className={cn('flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between', className)} {...props}>
+    <div
+      className={cn(
+        'flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between',
+        className,
+      )}
+      {...props}
+    >
       <div className="flex min-w-0 flex-col gap-0.5">
         <h2 className="text-base leading-tight font-semibold text-fg">{title}</h2>
         {description ? <p className="text-sm text-fg-muted">{description}</p> : null}

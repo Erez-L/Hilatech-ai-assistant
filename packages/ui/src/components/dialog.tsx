@@ -24,7 +24,9 @@ export const DialogOverlay = React.forwardRef<
   );
 });
 
-export interface DialogContentProps extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
+export interface DialogContentProps extends React.ComponentPropsWithoutRef<
+  typeof DialogPrimitive.Content
+> {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   /** Hide the top-right close button. */
   hideClose?: boolean;
@@ -75,7 +77,10 @@ export function DialogBody({ className, ...props }: React.HTMLAttributes<HTMLDiv
 export function DialogFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('flex flex-col-reverse gap-2 px-6 pt-4 pb-6 sm:flex-row sm:justify-end', className)}
+      className={cn(
+        'flex flex-col-reverse gap-2 px-6 pt-4 pb-6 sm:flex-row sm:justify-end',
+        className,
+      )}
       {...props}
     />
   );
@@ -98,7 +103,13 @@ export const DialogDescription = React.forwardRef<
   React.ComponentRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
 >(function DialogDescription({ className, ...props }, ref) {
-  return <DialogPrimitive.Description ref={ref} className={cn('text-sm text-fg-muted', className)} {...props} />;
+  return (
+    <DialogPrimitive.Description
+      ref={ref}
+      className={cn('text-sm text-fg-muted', className)}
+      {...props}
+    />
+  );
 });
 
 export interface ConfirmDialogProps {

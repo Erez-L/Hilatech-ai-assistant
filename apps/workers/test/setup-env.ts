@@ -14,7 +14,11 @@ function readRootEnv(): Record<string, string> {
     const match = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/.exec(line);
     if (!match) continue;
     let value = match[2]!.replace(/\s+#.*$/, '');
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    )
+      value = value.slice(1, -1);
     out[match[1]!] = value;
   }
   return out;
@@ -24,7 +28,10 @@ const rootEnv = readRootEnv();
 
 function testDatabaseUrl(): string {
   if (process.env.TEST_DATABASE_URL) return process.env.TEST_DATABASE_URL;
-  const base = process.env.DATABASE_URL ?? rootEnv.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/hilatech?schema=public';
+  const base =
+    process.env.DATABASE_URL ??
+    rootEnv.DATABASE_URL ??
+    'postgresql://postgres:postgres@localhost:5432/hilatech?schema=public';
   const url = new URL(base);
   if (!url.pathname.endsWith('_test')) url.pathname = `${url.pathname}_test`;
   return url.toString();

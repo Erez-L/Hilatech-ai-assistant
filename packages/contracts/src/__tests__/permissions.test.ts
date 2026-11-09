@@ -12,7 +12,8 @@ describe('permissions', () => {
     expect(SYSTEM_ROLE_PERMISSIONS.admin).toContain(Permission.MEMBERS_INVITE);
   });
   it('member is a strict subset of admin', () => {
-    for (const p of SYSTEM_ROLE_PERMISSIONS.member) expect(SYSTEM_ROLE_PERMISSIONS.admin).toContain(p);
+    for (const p of SYSTEM_ROLE_PERMISSIONS.member)
+      expect(SYSTEM_ROLE_PERMISSIONS.admin).toContain(p);
     expect(SYSTEM_ROLE_PERMISSIONS.member).not.toContain(Permission.ROLES_MANAGE);
   });
   it('isPermission guards unknown keys', () => {

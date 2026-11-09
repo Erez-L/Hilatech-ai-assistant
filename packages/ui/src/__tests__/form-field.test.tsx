@@ -6,7 +6,12 @@ import { Input } from '../components/input';
 describe('FormField', () => {
   it('links label, description and error to the control', () => {
     render(
-      <FormField id="email" label="Email" description="Work email preferred" error="Enter a valid email">
+      <FormField
+        id="email"
+        label="Email"
+        description="Work email preferred"
+        error="Enter a valid email"
+      >
         <Input />
       </FormField>,
     );

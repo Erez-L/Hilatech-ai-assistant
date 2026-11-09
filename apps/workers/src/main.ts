@@ -21,7 +21,10 @@ async function bootstrap(): Promise<void> {
 
   const env = app.get<WorkersEnv>(WORKERS_ENV);
   const health = app.get(HealthServer);
-  logger.log(`Workers ready — ${ALL_QUEUES.length} queues, health on http://0.0.0.0:${health.port}/health`, CONTEXT);
+  logger.log(
+    `Workers ready — ${ALL_QUEUES.length} queues, health on http://0.0.0.0:${health.port}/health`,
+    CONTEXT,
+  );
 
   let shuttingDown = false;
   const shutdown = async (reason: string, exitCode = 0): Promise<void> => {
@@ -30,7 +33,10 @@ async function bootstrap(): Promise<void> {
       process.exit(1);
     }
     shuttingDown = true;
-    logger.log(`Received ${reason}; shutting down gracefully (timeout ${env.SHUTDOWN_TIMEOUT_SECONDS}s)`, CONTEXT);
+    logger.log(
+      `Received ${reason}; shutting down gracefully (timeout ${env.SHUTDOWN_TIMEOUT_SECONDS}s)`,
+      CONTEXT,
+    );
     const timer = setTimeout(() => {
       logger.error('Graceful shutdown timed out; exiting', undefined, CONTEXT);
       process.exit(1);

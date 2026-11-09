@@ -1,5 +1,11 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": { "noEmit": false, "declaration": true, "declarationMap": false, "sourceMap": false, "incremental": false },
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false,
+    "incremental": false
+  },
   "exclude": ["src/seed.ts", "node_modules", "dist"]
 }

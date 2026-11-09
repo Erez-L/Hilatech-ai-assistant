@@ -78,7 +78,10 @@ export default function LandingPage() {
     <div className="flex min-h-dvh flex-col bg-bg text-fg">
       <header className="sticky top-0 z-30 border-b border-border/70 bg-bg/85 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
-          <Link href="/" className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+          <Link
+            href="/"
+            className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
             <Wordmark />
           </Link>
           <nav aria-label="Account" className="flex items-center gap-1.5">
@@ -101,8 +104,8 @@ export default function LandingPage() {
               One assistant that knows your business and does the work.
             </h1>
             <p className="max-w-[52ch] text-lg leading-relaxed text-fg-muted">
-              HilaTech AI Assistant answers customers, qualifies leads, runs your routines and reports
-              back — inside one secure workspace your whole team shares.
+              HilaTech AI Assistant answers customers, qualifies leads, runs your routines and
+              reports back — inside one secure workspace your whole team shares.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" trailingIcon={<ArrowRight aria-hidden />}>
@@ -180,8 +183,12 @@ export default function LandingPage() {
         <section className="border-t border-border bg-surface">
           <div className="mx-auto flex w-full max-w-6xl flex-col items-start gap-6 px-6 py-16 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-1">
-              <h2 className="text-2xl font-semibold tracking-tight">Set up your workspace in a minute</h2>
-              <p className="text-fg-muted">Create an organization, invite your team, connect your assistant.</p>
+              <h2 className="text-2xl font-semibold tracking-tight">
+                Set up your workspace in a minute
+              </h2>
+              <p className="text-fg-muted">
+                Create an organization, invite your team, connect your assistant.
+              </p>
             </div>
             <Button asChild size="lg" trailingIcon={<ArrowRight aria-hidden />}>
               <Link href="/register">Create your workspace</Link>
@@ -194,7 +201,9 @@ export default function LandingPage() {
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-10 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <LogoMark size={24} />
-            <span className="text-sm text-fg-muted">© {new Date().getFullYear()} HilaTech Dev. All rights reserved.</span>
+            <span className="text-sm text-fg-muted">
+              © {new Date().getFullYear()} HilaTech Dev. All rights reserved.
+            </span>
           </div>
           <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-fg-muted">
             <Link href="/login" className="hover:text-fg">

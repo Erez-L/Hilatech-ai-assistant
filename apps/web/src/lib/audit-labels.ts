@@ -45,9 +45,12 @@ export function describeAuditAction(action: string): string {
 }
 
 export function auditTone(action: string): 'neutral' | 'success' | 'warning' | 'danger' | 'info' {
-  if (action.startsWith('security.') || action.endsWith('_failed') || action.includes('reuse')) return 'danger';
-  if (action.endsWith('.deleted') || action.endsWith('.removed') || action.endsWith('.revoked')) return 'warning';
-  if (action.endsWith('.created') || action.endsWith('.joined') || action === 'auth.register') return 'success';
+  if (action.startsWith('security.') || action.endsWith('_failed') || action.includes('reuse'))
+    return 'danger';
+  if (action.endsWith('.deleted') || action.endsWith('.removed') || action.endsWith('.revoked'))
+    return 'warning';
+  if (action.endsWith('.created') || action.endsWith('.joined') || action === 'auth.register')
+    return 'success';
   if (action.startsWith('auth.')) return 'info';
   return 'neutral';
 }

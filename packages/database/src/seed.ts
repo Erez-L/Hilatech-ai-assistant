@@ -6,7 +6,12 @@
  *    Demo credentials are printed to stdout and must never be used in production.
  */
 import * as argon2 from 'argon2';
-import { ALL_PERMISSIONS, PLAN_LIMITS, SYSTEM_ROLE_PERMISSIONS, SystemRole } from '@hilatech/contracts';
+import {
+  ALL_PERMISSIONS,
+  PLAN_LIMITS,
+  SYSTEM_ROLE_PERMISSIONS,
+  SystemRole,
+} from '@hilatech/contracts';
 
 import { createPrismaClient } from './index';
 
@@ -44,7 +49,12 @@ async function seedDemo() {
       data: { email, passwordHash, firstName: 'Demo', lastName: 'Owner', emailVerifiedAt: now },
     });
     const org = await tx.organization.create({
-      data: { name: 'Demo Company', slug: 'demo-company', industry: 'Services', timezone: 'Asia/Jerusalem' },
+      data: {
+        name: 'Demo Company',
+        slug: 'demo-company',
+        industry: 'Services',
+        timezone: 'Asia/Jerusalem',
+      },
     });
     const roles = await Promise.all(
       (Object.values(SystemRole) as SystemRole[]).map((key) =>
@@ -60,7 +70,9 @@ async function seedDemo() {
       ),
     );
     const ownerRole = roles.find((r) => r.key === SystemRole.OWNER)!;
-    await tx.organizationMember.create({ data: { organizationId: org.id, userId: user.id, roleId: ownerRole.id } });
+    await tx.organizationMember.create({
+      data: { organizationId: org.id, userId: user.id, roleId: ownerRole.id },
+    });
     await tx.subscription.create({
       data: {
         organizationId: org.id,
@@ -111,7 +123,11 @@ async function seedDemo() {
       },
     });
     await tx.message.create({
-      data: { conversationId: conversation.id, role: 'customer', content: 'Hi, we would like a quote for a new website.' },
+      data: {
+        conversationId: conversation.id,
+        role: 'customer',
+        content: 'Hi, we would like a quote for a new website.',
+      },
     });
   });
 

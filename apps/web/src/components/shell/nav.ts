@@ -40,8 +40,20 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     label: 'Customers',
     items: [
-      { href: '/leads', label: 'Leads', icon: Target, permission: Permission.LEADS_READ, upcoming: true },
-      { href: '/contacts', label: 'Contacts', icon: Contact, permission: Permission.CONTACTS_READ, upcoming: true },
+      {
+        href: '/leads',
+        label: 'Leads',
+        icon: Target,
+        permission: Permission.LEADS_READ,
+        upcoming: true,
+      },
+      {
+        href: '/contacts',
+        label: 'Contacts',
+        icon: Contact,
+        permission: Permission.CONTACTS_READ,
+        upcoming: true,
+      },
       {
         href: '/conversations',
         label: 'Conversations',
@@ -54,17 +66,53 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     label: 'AI',
     items: [
-      { href: '/assistant', label: 'Assistant', icon: Sparkles, permission: Permission.AI_ASSISTANT_USE, upcoming: true },
-      { href: '/agents', label: 'Agents', icon: Bot, permission: Permission.AGENTS_READ, upcoming: true },
-      { href: '/knowledge', label: 'Knowledge', icon: BookOpen, permission: Permission.KNOWLEDGE_READ, upcoming: true },
+      {
+        href: '/assistant',
+        label: 'Assistant',
+        icon: Sparkles,
+        permission: Permission.AI_ASSISTANT_USE,
+        upcoming: true,
+      },
+      {
+        href: '/agents',
+        label: 'Agents',
+        icon: Bot,
+        permission: Permission.AGENTS_READ,
+        upcoming: true,
+      },
+      {
+        href: '/knowledge',
+        label: 'Knowledge',
+        icon: BookOpen,
+        permission: Permission.KNOWLEDGE_READ,
+        upcoming: true,
+      },
     ],
   },
   {
     label: 'Operations',
     items: [
-      { href: '/automations', label: 'Automations', icon: Workflow, permission: Permission.AUTOMATIONS_READ, upcoming: true },
-      { href: '/integrations', label: 'Integrations', icon: Plug, permission: Permission.INTEGRATIONS_READ, upcoming: true },
-      { href: '/analytics', label: 'Analytics', icon: BarChart3, permission: Permission.ANALYTICS_READ, upcoming: true },
+      {
+        href: '/automations',
+        label: 'Automations',
+        icon: Workflow,
+        permission: Permission.AUTOMATIONS_READ,
+        upcoming: true,
+      },
+      {
+        href: '/integrations',
+        label: 'Integrations',
+        icon: Plug,
+        permission: Permission.INTEGRATIONS_READ,
+        upcoming: true,
+      },
+      {
+        href: '/analytics',
+        label: 'Analytics',
+        icon: BarChart3,
+        permission: Permission.ANALYTICS_READ,
+        upcoming: true,
+      },
     ],
   },
   {
@@ -73,8 +121,18 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: '/team', label: 'Team', icon: Users, permission: Permission.MEMBERS_READ },
       { href: '/roles', label: 'Roles', icon: Shield, permission: Permission.ROLES_READ },
       { href: '/audit', label: 'Audit log', icon: ScrollText, permission: Permission.AUDIT_READ },
-      { href: '/settings/organization', label: 'Settings', icon: Building2, permission: Permission.ORG_READ },
-      { href: '/settings/billing', label: 'Billing', icon: CreditCard, permission: Permission.ORG_BILLING_MANAGE },
+      {
+        href: '/settings/organization',
+        label: 'Settings',
+        icon: Building2,
+        permission: Permission.ORG_READ,
+      },
+      {
+        href: '/settings/billing',
+        label: 'Billing',
+        icon: CreditCard,
+        permission: Permission.ORG_BILLING_MANAGE,
+      },
     ],
   },
 ];

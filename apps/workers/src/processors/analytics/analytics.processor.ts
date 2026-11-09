@@ -39,11 +39,17 @@ export class AnalyticsProcessor implements JobProcessor<typeof QueueName.ANALYTI
     @InjectPinoLogger(AnalyticsProcessor.name) private readonly logger: PinoLogger,
   ) {}
 
-  async process(job: Job<JobPayload<typeof QueueName.ANALYTICS>>, context: JobContext): Promise<JobOutcome> {
+  async process(
+    job: Job<JobPayload<typeof QueueName.ANALYTICS>>,
+    context: JobContext,
+  ): Promise<JobOutcome> {
     const { kind, date, organizationId } = job.data;
 
     if (kind !== 'daily_rollup') {
-      this.logger.warn({ ...context, kind }, 'Analytics kind not implemented yet; job skipped (no work performed)');
+      this.logger.warn(
+        { ...context, kind },
+        'Analytics kind not implemented yet; job skipped (no work performed)',
+      );
       return { ...NOT_IMPLEMENTED_OUTCOME, kind };
     }
 
@@ -63,7 +69,10 @@ export class AnalyticsProcessor implements JobProcessor<typeof QueueName.ANALYTI
     }
 
     for (const [orgId, counts] of perOrganization) {
-      this.logger.debug({ ...context, organizationId: orgId, date, ...counts }, 'Daily rollup (per organization)');
+      this.logger.debug(
+        { ...context, organizationId: orgId, date, ...counts },
+        'Daily rollup (per organization)',
+      );
     }
     this.logger.info(
       { ...context, date, organizations: perOrganization.size, ...totals, persisted: false },
@@ -81,15 +90,30 @@ export class AnalyticsProcessor implements JobProcessor<typeof QueueName.ANALYTI
     };
   }
 
-  private async collectDailyCounts(range: { start: Date; end: Date }, organizationId: string | null): Promise<Map<string, OrganizationDailyCounts>> {
+  private async collectDailyCounts(
+    range: { start: Date; end: Date },
+    organizationId: string | null,
+  ): Promise<Map<string, OrganizationDailyCounts>> {
     const createdAt = { gte: range.start, lt: range.end };
     const orgFilter = organizationId ? { organizationId } : {};
     const db = this.prisma.client;
 
     const [leads, contacts, conversations] = await Promise.all([
-      db.lead.groupBy({ by: ['organizationId'], where: { ...orgFilter, deletedAt: null, createdAt }, _count: { _all: true } }),
-      db.contact.groupBy({ by: ['organizationId'], where: { ...orgFilter, deletedAt: null, createdAt }, _count: { _all: true } }),
-      db.conversation.groupBy({ by: ['organizationId'], where: { ...orgFilter, createdAt }, _count: { _all: true } }),
+      db.lead.groupBy({
+        by: ['organizationId'],
+        where: { ...orgFilter, deletedAt: null, createdAt },
+        _count: { _all: true },
+      }),
+      db.contact.groupBy({
+        by: ['organizationId'],
+        where: { ...orgFilter, deletedAt: null, createdAt },
+        _count: { _all: true },
+      }),
+      db.conversation.groupBy({
+        by: ['organizationId'],
+        where: { ...orgFilter, createdAt },
+        _count: { _all: true },
+      }),
     ]);
 
     const result = new Map<string, OrganizationDailyCounts>();

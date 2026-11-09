@@ -47,11 +47,23 @@ export function LineChart<T extends Record<string, unknown>>({
 }: LineChartProps<T>) {
   const legend =
     series.length > 1 ? (
-      <ChartLegend items={series.map((s, i) => ({ label: s.label, color: seriesColor(i, s.color), shape: 'line' }))} />
+      <ChartLegend
+        items={series.map((s, i) => ({
+          label: s.label,
+          color: seriesColor(i, s.color),
+          shape: 'line',
+        }))}
+      />
     ) : null;
 
   return (
-    <ChartFrame title={title} description={description} legend={legend} height={height} className={className}>
+    <ChartFrame
+      title={title}
+      description={description}
+      legend={legend}
+      height={height}
+      className={className}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <RLineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -12 }}>
           <CartesianGrid vertical={false} stroke={CHART_GRID} strokeWidth={1} />

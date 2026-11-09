@@ -50,13 +50,26 @@ export function BarChart<T extends Record<string, unknown>>({
 }: BarChartProps<T>) {
   const legend =
     series.length > 1 ? (
-      <ChartLegend items={series.map((s, i) => ({ label: s.label, color: seriesColor(i, s.color) }))} />
+      <ChartLegend
+        items={series.map((s, i) => ({ label: s.label, color: seriesColor(i, s.color) }))}
+      />
     ) : null;
 
   return (
-    <ChartFrame title={title} description={description} legend={legend} height={height} className={className}>
+    <ChartFrame
+      title={title}
+      description={description}
+      legend={legend}
+      height={height}
+      className={className}
+    >
       <ResponsiveContainer width="100%" height="100%">
-        <RBarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -12 }} barCategoryGap="30%" barGap={2}>
+        <RBarChart
+          data={data}
+          margin={{ top: 8, right: 8, bottom: 0, left: -12 }}
+          barCategoryGap="30%"
+          barGap={2}
+        >
           <CartesianGrid vertical={false} stroke={CHART_GRID} strokeWidth={1} />
           <XAxis
             dataKey={xKey}

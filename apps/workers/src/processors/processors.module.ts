@@ -4,7 +4,12 @@ import type { WorkersEnv } from '../config/env.schema';
 import { PrismaModule } from '../prisma/prisma.module';
 import { JOB_PROCESSORS, type AnyJobProcessor } from '../queue/job-processor';
 import { AnalyticsProcessor } from './analytics/analytics.processor';
-import { EMAIL_DRIVER, LogEmailDriver, SmtpEmailDriver, type EmailDriver } from './email/email-driver';
+import {
+  EMAIL_DRIVER,
+  LogEmailDriver,
+  SmtpEmailDriver,
+  type EmailDriver,
+} from './email/email-driver';
 import { EmailProcessor } from './email/email.processor';
 import { NotificationsProcessor } from './notifications/notifications.processor';
 import {
@@ -33,7 +38,8 @@ const PROCESSOR_CLASSES = [
     SmtpEmailDriver,
     {
       provide: EMAIL_DRIVER,
-      useFactory: (env: WorkersEnv, log: LogEmailDriver, smtp: SmtpEmailDriver): EmailDriver => (env.EMAIL_DRIVER === 'smtp' ? smtp : log),
+      useFactory: (env: WorkersEnv, log: LogEmailDriver, smtp: SmtpEmailDriver): EmailDriver =>
+        env.EMAIL_DRIVER === 'smtp' ? smtp : log,
       inject: [WORKERS_ENV, LogEmailDriver, SmtpEmailDriver],
     },
     ...PROCESSOR_CLASSES,

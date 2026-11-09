@@ -48,7 +48,10 @@ export function InviteAccept() {
 
   if (!token) {
     return (
-      <AuthCard title="This invitation link isn’t complete" description="Open the link from your email again.">
+      <AuthCard
+        title="This invitation link isn’t complete"
+        description="Open the link from your email again."
+      >
         <Button asChild variant="secondary">
           <Link href="/login">Go to sign in</Link>
         </Button>
@@ -84,7 +87,10 @@ export function InviteAccept() {
   const emailMismatch = user && user.email.toLowerCase() !== inv.email.toLowerCase();
 
   return (
-    <AuthCard title={`Join ${inv.organizationName}`} description={`You’ve been invited as ${inv.roleName}.`}>
+    <AuthCard
+      title={`Join ${inv.organizationName}`}
+      description={`You’ve been invited as ${inv.roleName}.`}
+    >
       <div className="flex flex-col gap-5">
         <div className="flex items-start gap-3 rounded-md border border-border bg-surface-muted/60 p-4">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-fg text-fg-inverted">
@@ -113,8 +119,8 @@ export function InviteAccept() {
         ) : status === 'authenticated' && user ? (
           emailMismatch ? (
             <Alert tone="warning" title="Signed in with a different email">
-              You’re signed in as {user.email}, but this invitation was sent to {inv.email}. Sign out and
-              continue with the invited address.
+              You’re signed in as {user.email}, but this invitation was sent to {inv.email}. Sign
+              out and continue with the invited address.
             </Alert>
           ) : (
             <Button size="lg" onClick={() => void onAccept()} loading={accept.isPending}>
@@ -129,7 +135,9 @@ export function InviteAccept() {
               <Link href={`/register?invite=${encodeURIComponent(token)}`}>Create an account</Link>
             </Button>
             <Button asChild size="lg" variant="secondary" className="flex-1">
-              <Link href={`/login?next=${encodeURIComponent(`/invite?token=${token}`)}`}>Sign in to accept</Link>
+              <Link href={`/login?next=${encodeURIComponent(`/invite?token=${token}`)}`}>
+                Sign in to accept
+              </Link>
             </Button>
           </div>
         )}

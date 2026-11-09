@@ -25,9 +25,11 @@ interface RawSession {
 export const authApi = {
   register: (body: RegisterRequest) =>
     api.post<AuthResponse>('/auth/register', body, { auth: false, organization: false }),
-  login: (body: LoginRequest) => api.post<AuthResponse>('/auth/login', body, { auth: false, organization: false }),
+  login: (body: LoginRequest) =>
+    api.post<AuthResponse>('/auth/login', body, { auth: false, organization: false }),
   refresh: () => api.refresh(),
-  logout: () => api.post<void>('/auth/logout', undefined, { retryOnUnauthorized: false, organization: false }),
+  logout: () =>
+    api.post<void>('/auth/logout', undefined, { retryOnUnauthorized: false, organization: false }),
   me: () => api.get<Session>('/auth/me'),
   forgotPassword: (body: ForgotPasswordRequest) =>
     api.post<void>('/auth/forgot-password', body, { auth: false, organization: false }),

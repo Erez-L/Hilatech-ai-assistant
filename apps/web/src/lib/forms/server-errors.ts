@@ -19,7 +19,11 @@ export function extractIssues(details: unknown): { path: string; message: string
   return list
     .map((raw) => {
       const issue = raw as IssueLike;
-      const path = Array.isArray(issue.path) ? issue.path.join('.') : typeof issue.path === 'string' ? issue.path : '';
+      const path = Array.isArray(issue.path)
+        ? issue.path.join('.')
+        : typeof issue.path === 'string'
+          ? issue.path
+          : '';
       return { path, message: issue.message ?? 'Invalid value' };
     })
     .filter((i) => i.message);

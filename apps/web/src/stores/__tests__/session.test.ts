@@ -12,8 +12,22 @@ const user = {
   emailVerifiedAt: null,
   createdAt: '2026-01-01T00:00:00.000Z',
 };
-const orgA = { id: 'org-a', name: 'A', slug: 'a', logoUrl: null, roleKey: 'owner', roleName: 'Owner' };
-const orgB = { id: 'org-b', name: 'B', slug: 'b', logoUrl: null, roleKey: 'member', roleName: 'Member' };
+const orgA = {
+  id: 'org-a',
+  name: 'A',
+  slug: 'a',
+  logoUrl: null,
+  roleKey: 'owner',
+  roleName: 'Owner',
+};
+const orgB = {
+  id: 'org-b',
+  name: 'B',
+  slug: 'b',
+  logoUrl: null,
+  roleKey: 'member',
+  roleName: 'Member',
+};
 
 const auth = (organizations = [orgA, orgB]): AuthResponse => ({
   accessToken: 'tok',
@@ -80,27 +94,33 @@ describe('useSession', () => {
   it('applySession without a resolved organization selects one and waits for the follow-up fetch', () => {
     useSession.getState().setAccessToken('tok');
     useSession.getState().setStatus('authenticated');
-    useSession.getState().applySession(
-      { user, organizations: [orgA, orgB], activeOrganization: null, permissions: [] },
-      null,
-    );
+    useSession
+      .getState()
+      .applySession(
+        { user, organizations: [orgA, orgB], activeOrganization: null, permissions: [] },
+        null,
+      );
     const s = useSession.getState();
     expect(s.activeOrganizationId).toBe('org-a');
     expect(s.sessionLoaded).toBe(false);
   });
 
   it('applySession with no organizations is immediately loaded (onboarding case)', () => {
-    useSession.getState().applySession({ user, organizations: [], activeOrganization: null, permissions: [] }, null);
+    useSession
+      .getState()
+      .applySession({ user, organizations: [], activeOrganization: null, permissions: [] }, null);
     expect(useSession.getState().sessionLoaded).toBe(true);
     expect(useSession.getState().activeOrganizationId).toBeNull();
   });
 
   it('setActiveOrganization switches, persists and clears permissions until re-resolved', () => {
     useSession.getState().applyAuthResponse(auth());
-    useSession.getState().applySession(
-      { user, organizations: [orgA, orgB], activeOrganization: orgA, permissions: ['x'] },
-      'org-a',
-    );
+    useSession
+      .getState()
+      .applySession(
+        { user, organizations: [orgA, orgB], activeOrganization: orgA, permissions: ['x'] },
+        'org-a',
+      );
     useSession.getState().setActiveOrganization('org-b');
     const s = useSession.getState();
     expect(s.activeOrganizationId).toBe('org-b');

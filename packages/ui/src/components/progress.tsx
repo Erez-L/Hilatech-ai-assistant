@@ -13,7 +13,16 @@ export interface MeterProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 /** Usage meter: fill colour carries severity; the unfilled track is a lighter step of the same ramp. */
-export function Meter({ value, max, label, warnAt = 0.75, dangerAt = 0.9, size = 'md', className, ...props }: MeterProps) {
+export function Meter({
+  value,
+  max,
+  label,
+  warnAt = 0.75,
+  dangerAt = 0.9,
+  size = 'md',
+  className,
+  ...props
+}: MeterProps) {
   const ratio = max == null || max <= 0 ? 0 : Math.min(1, Math.max(0, value / max));
   const tone = ratio >= dangerAt ? 'danger' : ratio >= warnAt ? 'warning' : 'accent';
   return (

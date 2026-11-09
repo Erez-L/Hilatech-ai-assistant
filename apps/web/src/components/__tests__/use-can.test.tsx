@@ -12,8 +12,14 @@ describe('useCan', () => {
   it('reflects the session permissions', () => {
     expect(renderHook(() => useCan(Permission.MEMBERS_READ)).result.current).toBe(true);
     expect(renderHook(() => useCan(Permission.MEMBERS_INVITE)).result.current).toBe(false);
-    expect(renderHook(() => useCanAll(Permission.MEMBERS_READ, Permission.ROLES_READ)).result.current).toBe(true);
-    expect(renderHook(() => useCanAll(Permission.MEMBERS_READ, Permission.ORG_DELETE)).result.current).toBe(false);
-    expect(renderHook(() => useCanAny(Permission.ORG_DELETE, Permission.ROLES_READ)).result.current).toBe(true);
+    expect(
+      renderHook(() => useCanAll(Permission.MEMBERS_READ, Permission.ROLES_READ)).result.current,
+    ).toBe(true);
+    expect(
+      renderHook(() => useCanAll(Permission.MEMBERS_READ, Permission.ORG_DELETE)).result.current,
+    ).toBe(false);
+    expect(
+      renderHook(() => useCanAny(Permission.ORG_DELETE, Permission.ROLES_READ)).result.current,
+    ).toBe(true);
   });
 });

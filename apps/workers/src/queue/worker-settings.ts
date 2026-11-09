@@ -20,7 +20,12 @@ const MINUTE = 60_000;
  */
 export function resolveWorkerSettings(queue: QueueName, baseConcurrency: number): WorkerSettings {
   const heavy = Math.max(1, Math.ceil(baseConcurrency / 2));
-  const defaults: WorkerSettings = { concurrency: baseConcurrency, lockDuration: 30_000, stalledInterval: 30_000, maxStalledCount: 1 };
+  const defaults: WorkerSettings = {
+    concurrency: baseConcurrency,
+    lockDuration: 30_000,
+    stalledInterval: 30_000,
+    maxStalledCount: 1,
+  };
 
   switch (queue) {
     case QueueName.AI_TASKS:

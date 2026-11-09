@@ -2,7 +2,9 @@
 export function formatCompact(value: number, locale = 'en'): string {
   if (!Number.isFinite(value)) return '—';
   if (Math.abs(value) < 10_000) return new Intl.NumberFormat(locale).format(value);
-  return new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+  return new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(
+    value,
+  );
 }
 
 export function formatNumber(value: number, locale = 'en'): string {
@@ -12,7 +14,9 @@ export function formatNumber(value: number, locale = 'en'): string {
 
 export function formatPercent(ratio: number, locale = 'en'): string {
   if (!Number.isFinite(ratio)) return '—';
-  return new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 }).format(ratio);
+  return new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 }).format(
+    ratio,
+  );
 }
 
 export function formatBytesFromMb(mb: number): string {

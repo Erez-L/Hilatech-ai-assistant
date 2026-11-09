@@ -17,7 +17,11 @@ const TOKEN = 'Zx9kQ2mNp8RtVw4YbC7dFgH1jK3lM5nO6pQ8rS0tU2vW4xY6zA8b';
 
 describe('email templates', () => {
   it('renders verify_email with a verification link built from APP_URL', () => {
-    const out = renderEmail('verify_email', { token: TOKEN, firstName: 'Dana' }, { appUrl: APP_URL });
+    const out = renderEmail(
+      'verify_email',
+      { token: TOKEN, firstName: 'Dana' },
+      { appUrl: APP_URL },
+    );
     expect(out.subject).toContain('Verify your email');
     expect(out.text).toContain('Hi Dana,');
     expect(out.text).toContain(`${APP_URL}/verify-email?token=${TOKEN}`);
@@ -26,7 +30,11 @@ describe('email templates', () => {
   });
 
   it('renders password_reset with a reset link and expiry', () => {
-    const out = renderEmail('password_reset', { token: TOKEN, expiresIn: '1 hour' }, { appUrl: APP_URL });
+    const out = renderEmail(
+      'password_reset',
+      { token: TOKEN, expiresIn: '1 hour' },
+      { appUrl: APP_URL },
+    );
     expect(out.subject).toContain('Reset your');
     expect(out.text).toContain('Hello,');
     expect(out.text).toContain('expires in 1 hour');
@@ -72,7 +80,12 @@ describe('email templates', () => {
   it('renders generic with paragraphs and an optional CTA', () => {
     const out = renderEmail(
       'generic',
-      { subject: 'Weekly summary', body: 'First paragraph.\n\nSecond paragraph.', ctaLabel: 'Open dashboard', ctaUrl: '/dashboard' },
+      {
+        subject: 'Weekly summary',
+        body: 'First paragraph.\n\nSecond paragraph.',
+        ctaLabel: 'Open dashboard',
+        ctaUrl: '/dashboard',
+      },
       { appUrl: APP_URL },
     );
     expect(out.subject).toBe('Weekly summary');
@@ -82,20 +95,34 @@ describe('email templates', () => {
   });
 
   it('rejects invalid variables with EmailTemplateRenderError (producer bug, not retryable)', () => {
-    expect(() => renderEmail('verify_email', {}, { appUrl: APP_URL })).toThrow(EmailTemplateRenderError);
-    expect(() => renderEmail('invitation', { token: TOKEN }, { appUrl: APP_URL })).toThrow(/organizationName/);
-    expect(() => renderEmail('notification_digest', { notifications: [] }, { appUrl: APP_URL })).toThrow(EmailTemplateRenderError);
+    expect(() => renderEmail('verify_email', {}, { appUrl: APP_URL })).toThrow(
+      EmailTemplateRenderError,
+    );
+    expect(() => renderEmail('invitation', { token: TOKEN }, { appUrl: APP_URL })).toThrow(
+      /organizationName/,
+    );
+    expect(() =>
+      renderEmail('notification_digest', { notifications: [] }, { appUrl: APP_URL }),
+    ).toThrow(EmailTemplateRenderError);
   });
 
   it('has a variable schema for every template in the contract', () => {
-    const templates: EmailTemplate[] = ['verify_email', 'password_reset', 'invitation', 'notification_digest', 'generic'];
+    const templates: EmailTemplate[] = [
+      'verify_email',
+      'password_reset',
+      'invitation',
+      'notification_digest',
+      'generic',
+    ];
     for (const t of templates) expect(TEMPLATE_VARIABLES[t]).toBeDefined();
   });
 });
 
 describe('helpers', () => {
   it('escapeHtml escapes the five significant characters', () => {
-    expect(escapeHtml(`<a href="x">Tom & Jerry's</a>`)).toBe('&lt;a href=&quot;x&quot;&gt;Tom &amp; Jerry&#39;s&lt;/a&gt;');
+    expect(escapeHtml(`<a href="x">Tom & Jerry's</a>`)).toBe(
+      '&lt;a href=&quot;x&quot;&gt;Tom &amp; Jerry&#39;s&lt;/a&gt;',
+    );
   });
 
   it('tokenLink URL-encodes the token', () => {
@@ -115,7 +142,9 @@ describe('helpers', () => {
   });
 
   it('collectSecretValues picks string values with secret-looking keys', () => {
-    expect(collectSecretValues({ token: TOKEN, firstName: 'Dana', otpCode: '123456', n: 5 })).toEqual([TOKEN, '123456']);
+    expect(
+      collectSecretValues({ token: TOKEN, firstName: 'Dana', otpCode: '123456', n: 5 }),
+    ).toEqual([TOKEN, '123456']);
   });
 
   it('maskSecretsInText masks known secrets and token= query params', () => {
@@ -128,7 +157,10 @@ describe('helpers', () => {
 });
 
 describe('log driver preview', () => {
-  const outgoing = (template: EmailTemplate, variables: Record<string, unknown>): OutgoingEmail => ({
+  const outgoing = (
+    template: EmailTemplate,
+    variables: Record<string, unknown>,
+  ): OutgoingEmail => ({
     ...renderEmail(template, variables, { appUrl: APP_URL }),
     to: 'user@example.com',
     from: 'HilaTech <no-reply@localhost>',

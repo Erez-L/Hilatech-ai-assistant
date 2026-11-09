@@ -75,7 +75,11 @@ export function useUpdatePreferences() {
 
 export function useOrganization() {
   const orgId = useActiveOrganizationId();
-  return useQuery({ queryKey: keys.organization(orgId), queryFn: organizationsApi.current, enabled: !!orgId });
+  return useQuery({
+    queryKey: keys.organization(orgId),
+    queryFn: organizationsApi.current,
+    enabled: !!orgId,
+  });
 }
 
 export function useOrganizationSettings() {
@@ -133,11 +137,14 @@ export function useUpdateMember() {
   const qc = useQueryClient();
   const orgId = useActiveOrganizationId();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdateMemberRequest }) => membersApi.update(id, body),
+    mutationFn: ({ id, body }: { id: string; body: UpdateMemberRequest }) =>
+      membersApi.update(id, body),
     onSuccess: (member) => {
       // Optimistically patch any cached member pages.
-      qc.setQueriesData<{ data: Member[]; meta: unknown }>({ queryKey: ['org', orgId, 'members'] }, (prev) =>
-        prev ? { ...prev, data: prev.data.map((m) => (m.id === member.id ? member : m)) } : prev,
+      qc.setQueriesData<{ data: Member[]; meta: unknown }>(
+        { queryKey: ['org', orgId, 'members'] },
+        (prev) =>
+          prev ? { ...prev, data: prev.data.map((m) => (m.id === member.id ? member : m)) } : prev,
       );
       void qc.invalidateQueries({ queryKey: ['org', orgId, 'members'] });
       void qc.invalidateQueries({ queryKey: keys.dashboard(orgId) });
@@ -155,7 +162,11 @@ export function useRemoveMember() {
         { queryKey: ['org', orgId, 'members'] },
         (prev) =>
           prev
-            ? { ...prev, data: prev.data.filter((m) => m.id !== id), meta: { ...prev.meta, total: prev.meta.total - 1 } }
+            ? {
+                ...prev,
+                data: prev.data.filter((m) => m.id !== id),
+                meta: { ...prev.meta, total: prev.meta.total - 1 },
+              }
             : prev,
       );
       void qc.invalidateQueries({ queryKey: ['org', orgId, 'members'] });
@@ -203,9 +214,12 @@ export function useUpdateRole() {
   const qc = useQueryClient();
   const orgId = useActiveOrganizationId();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdateRoleRequest }) => rolesApi.update(id, body),
+    mutationFn: ({ id, body }: { id: string; body: UpdateRoleRequest }) =>
+      rolesApi.update(id, body),
     onSuccess: (role) => {
-      qc.setQueryData<Role[]>(keys.roles(orgId), (prev) => prev?.map((r) => (r.id === role.id ? role : r)));
+      qc.setQueryData<Role[]>(keys.roles(orgId), (prev) =>
+        prev?.map((r) => (r.id === role.id ? role : r)),
+      );
       void qc.invalidateQueries({ queryKey: keys.roles(orgId) });
       void qc.invalidateQueries({ queryKey: keys.session(orgId) });
     },
@@ -226,7 +240,11 @@ export function useDeleteRole() {
 
 export function useInvitations() {
   const orgId = useActiveOrganizationId();
-  return useQuery({ queryKey: keys.invitations(orgId), queryFn: invitationsApi.list, enabled: !!orgId });
+  return useQuery({
+    queryKey: keys.invitations(orgId),
+    queryFn: invitationsApi.list,
+    enabled: !!orgId,
+  });
 }
 
 export function useCreateInvitation() {
@@ -235,7 +253,9 @@ export function useCreateInvitation() {
   return useMutation({
     mutationFn: (body: CreateInvitationRequest) => invitationsApi.create(body),
     onSuccess: (invitation) => {
-      qc.setQueryData<Invitation[]>(keys.invitations(orgId), (prev) => (prev ? [invitation, ...prev] : [invitation]));
+      qc.setQueryData<Invitation[]>(keys.invitations(orgId), (prev) =>
+        prev ? [invitation, ...prev] : [invitation],
+      );
       void qc.invalidateQueries({ queryKey: keys.invitations(orgId) });
       void qc.invalidateQueries({ queryKey: keys.dashboard(orgId) });
     },
@@ -250,7 +270,9 @@ export function useRevokeInvitation() {
     onMutate: async (id) => {
       await qc.cancelQueries({ queryKey: keys.invitations(orgId) });
       const previous = qc.getQueryData<Invitation[]>(keys.invitations(orgId));
-      qc.setQueryData<Invitation[]>(keys.invitations(orgId), (prev) => prev?.filter((i) => i.id !== id));
+      qc.setQueryData<Invitation[]>(keys.invitations(orgId), (prev) =>
+        prev?.filter((i) => i.id !== id),
+      );
       return { previous };
     },
     onError: (_err, _id, ctx) => {
@@ -268,7 +290,8 @@ export function useInvitationPreview(token: string | null) {
     queryKey: keys.invitationPreview(token ?? ''),
     queryFn: () => invitationsApi.preview(token as string),
     enabled: !!token,
-    retry: (count, error) => !(isApiError(error) && (error.isNotFound || error.status === 410)) && count < 2,
+    retry: (count, error) =>
+      !(isApiError(error) && (error.isNotFound || error.status === 410)) && count < 2,
   });
 }
 
@@ -292,7 +315,11 @@ export function useAuditLogs(query: Partial<ListAuditLogsQuery>) {
 
 export function useSubscription() {
   const orgId = useActiveOrganizationId();
-  return useQuery({ queryKey: keys.subscription(orgId), queryFn: billingApi.subscription, enabled: !!orgId });
+  return useQuery({
+    queryKey: keys.subscription(orgId),
+    queryFn: billingApi.subscription,
+    enabled: !!orgId,
+  });
 }
 
 export function useUsage() {
@@ -306,7 +333,11 @@ export function usePlans() {
 
 export function useDashboard() {
   const orgId = useActiveOrganizationId();
-  return useQuery({ queryKey: keys.dashboard(orgId), queryFn: analyticsApi.dashboard, enabled: !!orgId });
+  return useQuery({
+    queryKey: keys.dashboard(orgId),
+    queryFn: analyticsApi.dashboard,
+    enabled: !!orgId,
+  });
 }
 
 export function useNotifications(unread = true) {

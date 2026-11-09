@@ -52,7 +52,15 @@ export function RegisterForm() {
       useSession.getState().applyAuthResponse(auth);
       router.replace(auth.organizations.length === 0 ? '/onboarding' : next);
     } catch (error) {
-      if (!applyServerErrors(error, form.setError, ['email', 'password', 'firstName', 'lastName', 'invitationToken'])) {
+      if (
+        !applyServerErrors(error, form.setError, [
+          'email',
+          'password',
+          'firstName',
+          'lastName',
+          'invitationToken',
+        ])
+      ) {
         setFormError(
           isApiError(error) && error.code === 'CONFLICT'
             ? 'An account with this email already exists. Sign in instead.'
@@ -76,7 +84,11 @@ export function RegisterForm() {
         <>
           Already have an account?{' '}
           <Link
-            href={inviteToken ? `/login?next=${encodeURIComponent(`/invite?token=${inviteToken}`)}` : '/login'}
+            href={
+              inviteToken
+                ? `/login?next=${encodeURIComponent(`/invite?token=${inviteToken}`)}`
+                : '/login'
+            }
             className="font-medium text-accent hover:underline"
           >
             Sign in
@@ -92,7 +104,8 @@ export function RegisterForm() {
       ) : null}
       {inviteToken && preview.isError ? (
         <Alert tone="warning" className="mb-5" title="This invitation link isn’t valid">
-          It may have expired or been revoked. You can still create an account and ask for a new invitation.
+          It may have expired or been revoked. You can still create an account and ask for a new
+          invitation.
         </Alert>
       ) : null}
       {inviteToken && preview.data && !invitationUsable ? (
@@ -103,10 +116,20 @@ export function RegisterForm() {
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
         <div className="grid gap-5 sm:grid-cols-2">
-          <FormField id="firstName" label="First name" error={form.formState.errors.firstName?.message} required>
+          <FormField
+            id="firstName"
+            label="First name"
+            error={form.formState.errors.firstName?.message}
+            required
+          >
             <Input autoComplete="given-name" autoFocus {...form.register('firstName')} />
           </FormField>
-          <FormField id="lastName" label="Last name" error={form.formState.errors.lastName?.message} required>
+          <FormField
+            id="lastName"
+            label="Last name"
+            error={form.formState.errors.lastName?.message}
+            required
+          >
             <Input autoComplete="family-name" {...form.register('lastName')} />
           </FormField>
         </div>

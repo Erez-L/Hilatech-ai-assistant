@@ -14,7 +14,11 @@ import {
   cn,
 } from '@hilatech/ui';
 import { isApiError } from '@/lib/api';
-import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/hooks/queries';
+import {
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+  useNotifications,
+} from '@/hooks/queries';
 
 export function NotificationsMenu() {
   const query = useNotifications(true);
@@ -27,7 +31,10 @@ export function NotificationsMenu() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <IconButton label={count > 0 ? `Notifications, ${count} unread` : 'Notifications'} className="relative">
+        <IconButton
+          label={count > 0 ? `Notifications, ${count} unread` : 'Notifications'}
+          className="relative"
+        >
           <Bell aria-hidden />
           {count > 0 ? (
             <span
@@ -73,7 +80,9 @@ export function NotificationsMenu() {
               </Button>
             </div>
           ) : count === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-fg-muted">You&apos;re all caught up.</p>
+            <p className="px-4 py-8 text-center text-sm text-fg-muted">
+              You&apos;re all caught up.
+            </p>
           ) : (
             <ul className="divide-y divide-border">
               {items.map((n) => {
@@ -85,7 +94,9 @@ export function NotificationsMenu() {
                         {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
                       </span>
                     </span>
-                    {n.body ? <span className="line-clamp-2 text-xs text-fg-muted">{n.body}</span> : null}
+                    {n.body ? (
+                      <span className="line-clamp-2 text-xs text-fg-muted">{n.body}</span>
+                    ) : null}
                   </>
                 );
                 const className = cn(
@@ -95,11 +106,19 @@ export function NotificationsMenu() {
                 return (
                   <li key={n.id}>
                     {n.link ? (
-                      <Link href={n.link} className={className} onClick={() => markRead.mutate(n.id)}>
+                      <Link
+                        href={n.link}
+                        className={className}
+                        onClick={() => markRead.mutate(n.id)}
+                      >
                         {body}
                       </Link>
                     ) : (
-                      <button type="button" className={className} onClick={() => markRead.mutate(n.id)}>
+                      <button
+                        type="button"
+                        className={className}
+                        onClick={() => markRead.mutate(n.id)}
+                      >
                         {body}
                       </button>
                     )}

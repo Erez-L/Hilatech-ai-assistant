@@ -33,7 +33,9 @@ import { PermissionGate } from '@/components/common/permission-gate';
 
 const PAGE_SIZE = 25;
 
-const ACTION_GROUPS = Array.from(new Set(Object.values(AuditAction).map((a) => a.split('.')[0] as string)));
+const ACTION_GROUPS = Array.from(
+  new Set(Object.values(AuditAction).map((a) => a.split('.')[0] as string)),
+);
 
 export function AuditView() {
   const [page, setPage] = React.useState(1);
@@ -63,7 +65,8 @@ export function AuditView() {
 
   const actorName = React.useMemo(() => {
     const map = new Map<string, string>();
-    for (const m of members.data?.data ?? []) map.set(m.userId, `${m.user.firstName} ${m.user.lastName}`.trim());
+    for (const m of members.data?.data ?? [])
+      map.set(m.userId, `${m.user.firstName} ${m.user.lastName}`.trim());
     return (id: string | null) => (id ? (map.get(id) ?? 'Former member') : 'System');
   }, [members.data]);
 
@@ -146,7 +149,12 @@ export function AuditView() {
                   }}
                 />
               </div>
-              <Button variant="ghost" onClick={reset} disabled={!hasFilters} leadingIcon={<FilterX aria-hidden />}>
+              <Button
+                variant="ghost"
+                onClick={reset}
+                disabled={!hasFilters}
+                leadingIcon={<FilterX aria-hidden />}
+              >
                 Clear
               </Button>
             </div>
@@ -155,7 +163,12 @@ export function AuditView() {
 
         <Card>
           <CardContent className="p-0">
-            <AuditTable query={query} actorName={actorName} hasFilters={hasFilters} onClear={reset} />
+            <AuditTable
+              query={query}
+              actorName={actorName}
+              hasFilters={hasFilters}
+              onClear={reset}
+            />
             {query.data && query.data.meta.total > PAGE_SIZE ? (
               <div className="border-t border-border px-5 py-3">
                 <Pagination
@@ -232,7 +245,9 @@ function AuditTable({
             />
           </TableEmptyRow>
         ) : (
-          query.data.data.map((log) => <AuditRow key={log.id} log={log} actorName={actorName(log.actorUserId)} />)
+          query.data.data.map((log) => (
+            <AuditRow key={log.id} log={log} actorName={actorName(log.actorUserId)} />
+          ))
         )}
       </TableBody>
     </Table>

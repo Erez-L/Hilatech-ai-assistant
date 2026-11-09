@@ -24,8 +24,24 @@ function renderSidebar() {
 describe('AppSidebar', () => {
   beforeEach(() => {
     useSession.setState({
-      organizations: [{ id: 'org-a', name: 'Acme', slug: 'acme', logoUrl: null, roleKey: 'member', roleName: 'Member' }],
-      activeOrganization: { id: 'org-a', name: 'Acme', slug: 'acme', logoUrl: null, roleKey: 'member', roleName: 'Member' },
+      organizations: [
+        {
+          id: 'org-a',
+          name: 'Acme',
+          slug: 'acme',
+          logoUrl: null,
+          roleKey: 'member',
+          roleName: 'Member',
+        },
+      ],
+      activeOrganization: {
+        id: 'org-a',
+        name: 'Acme',
+        slug: 'acme',
+        logoUrl: null,
+        roleKey: 'member',
+        roleName: 'Member',
+      },
       activeOrganizationId: 'org-a',
     });
   });
@@ -42,7 +58,12 @@ describe('AppSidebar', () => {
 
   it('shows organization administration for owners', () => {
     useSession.setState({
-      permissions: [Permission.MEMBERS_READ, Permission.ROLES_READ, Permission.AUDIT_READ, Permission.ORG_BILLING_MANAGE],
+      permissions: [
+        Permission.MEMBERS_READ,
+        Permission.ROLES_READ,
+        Permission.AUDIT_READ,
+        Permission.ORG_BILLING_MANAGE,
+      ],
     });
     renderSidebar();
     expect(screen.getByRole('link', { name: /Roles/ })).toBeInTheDocument();

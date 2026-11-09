@@ -29,7 +29,12 @@ import {
   cn,
   toast,
 } from '@hilatech/ui';
-import { getErrorMessage, updateProfileSchema, type AuthSessionInfo, type UpdateProfileRequest } from '@/lib/api';
+import {
+  getErrorMessage,
+  updateProfileSchema,
+  type AuthSessionInfo,
+  type UpdateProfileRequest,
+} from '@/lib/api';
 import {
   useAuthSessions,
   useChangePassword,
@@ -70,7 +75,10 @@ function ProfileForm({ user }: { user: AuthUser }) {
     () => ({ firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl ?? '' }),
     [user],
   );
-  const form = useForm<UpdateProfileRequest>({ resolver: zodResolver(updateProfileSchema), defaultValues: defaults });
+  const form = useForm<UpdateProfileRequest>({
+    resolver: zodResolver(updateProfileSchema),
+    defaultValues: defaults,
+  });
   React.useEffect(() => form.reset(defaults), [defaults, form]);
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -97,7 +105,12 @@ function ProfileForm({ user }: { user: AuthUser }) {
         <CardContent className="flex flex-col gap-5">
           {formError ? <Alert tone="danger">{formError}</Alert> : null}
           <div className="flex items-center gap-4">
-            <Avatar size="xl" src={avatarPreview || null} firstName={user.firstName} lastName={user.lastName} />
+            <Avatar
+              size="xl"
+              src={avatarPreview || null}
+              firstName={user.firstName}
+              lastName={user.lastName}
+            />
             <div className="flex flex-col gap-1 text-sm">
               <span className="font-medium">{user.email}</span>
               <span className="flex items-center gap-2 text-fg-muted">
@@ -115,10 +128,20 @@ function ProfileForm({ user }: { user: AuthUser }) {
             </div>
           </div>
           <div className="grid gap-5 sm:grid-cols-2">
-            <FormField id="firstName" label="First name" error={form.formState.errors.firstName?.message} required>
+            <FormField
+              id="firstName"
+              label="First name"
+              error={form.formState.errors.firstName?.message}
+              required
+            >
               <Input autoComplete="given-name" {...form.register('firstName')} />
             </FormField>
-            <FormField id="lastName" label="Last name" error={form.formState.errors.lastName?.message} required>
+            <FormField
+              id="lastName"
+              label="Last name"
+              error={form.formState.errors.lastName?.message}
+              required
+            >
               <Input autoComplete="family-name" {...form.register('lastName')} />
             </FormField>
           </div>
@@ -128,7 +151,12 @@ function ProfileForm({ user }: { user: AuthUser }) {
             description="Image uploads arrive in a later milestone; paste a link for now."
             error={form.formState.errors.avatarUrl?.message}
           >
-            <Input type="url" inputMode="url" placeholder="https://" {...form.register('avatarUrl')} />
+            <Input
+              type="url"
+              inputMode="url"
+              placeholder="https://"
+              {...form.register('avatarUrl')}
+            />
           </FormField>
         </CardContent>
         <CardFooter className="justify-end">
@@ -140,7 +168,11 @@ function ProfileForm({ user }: { user: AuthUser }) {
           >
             Discard
           </Button>
-          <Button type="submit" loading={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
+          <Button
+            type="submit"
+            loading={form.formState.isSubmitting}
+            disabled={!form.formState.isDirty}
+          >
             Save profile
           </Button>
         </CardFooter>
@@ -156,7 +188,9 @@ function PreferencesCard() {
   const prefs = usePreferences();
   const update = useUpdatePreferences();
 
-  const save = (patch: Partial<{ locale: 'en' | 'he'; notifications: { email: boolean; inApp: boolean } }>) => {
+  const save = (
+    patch: Partial<{ locale: 'en' | 'he'; notifications: { email: boolean; inApp: boolean } }>,
+  ) => {
     const next = {
       theme: prefs.theme,
       locale: patch.locale ?? prefs.locale,
@@ -211,8 +245,16 @@ function PreferencesCard() {
           </div>
         </fieldset>
 
-        <FormField id="locale" label="Language" description="Hebrew UI arrives in a later milestone." className="sm:max-w-xs">
-          <NativeSelect value={prefs.locale} onChange={(e) => save({ locale: e.target.value as 'en' | 'he' })}>
+        <FormField
+          id="locale"
+          label="Language"
+          description="Hebrew UI arrives in a later milestone."
+          className="sm:max-w-xs"
+        >
+          <NativeSelect
+            value={prefs.locale}
+            onChange={(e) => save({ locale: e.target.value as 'en' | 'he' })}
+          >
             <option value="en">English</option>
             <option value="he">Hebrew</option>
           </NativeSelect>
@@ -234,7 +276,9 @@ function PreferencesCard() {
           <label className="flex items-center justify-between gap-4 rounded-md border border-border px-4 py-3 sm:max-w-md">
             <span className="flex flex-col">
               <span className="text-sm font-medium">Email</span>
-              <span className="text-xs text-fg-muted">Send a summary of important events by email.</span>
+              <span className="text-xs text-fg-muted">
+                Send a summary of important events by email.
+              </span>
             </span>
             <Switch
               checked={prefs.notifications.email}
@@ -252,7 +296,10 @@ function PreferencesCard() {
 
 const passwordFormSchema = changePasswordSchema
   .extend({ confirmPassword: z.string() })
-  .refine((v) => v.newPassword === v.confirmPassword, { message: 'Passwords don’t match', path: ['confirmPassword'] });
+  .refine((v) => v.newPassword === v.confirmPassword, {
+    message: 'Passwords don’t match',
+    path: ['confirmPassword'],
+  });
 type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 function PasswordCard() {
@@ -281,7 +328,9 @@ function PasswordCard() {
       <form onSubmit={onSubmit} noValidate>
         <CardHeader>
           <CardTitle>Password</CardTitle>
-          <CardDescription>Use at least 10 characters with upper and lower case letters and a number.</CardDescription>
+          <CardDescription>
+            Use at least 10 characters with upper and lower case letters and a number.
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           {formError ? <Alert tone="danger">{formError}</Alert> : null}
@@ -295,7 +344,12 @@ function PasswordCard() {
             <PasswordInput autoComplete="current-password" {...form.register('currentPassword')} />
           </FormField>
           <div className="grid gap-5 sm:grid-cols-2">
-            <FormField id="newPassword" label="New password" error={form.formState.errors.newPassword?.message} required>
+            <FormField
+              id="newPassword"
+              label="New password"
+              error={form.formState.errors.newPassword?.message}
+              required
+            >
               <PasswordInput autoComplete="new-password" {...form.register('newPassword')} />
             </FormField>
             <FormField
@@ -355,7 +409,9 @@ function SessionsCard() {
     <Card>
       <CardHeader>
         <CardTitle>Active sessions</CardTitle>
-        <CardDescription>Devices currently signed in to your account. Sign out any you don’t recognise.</CardDescription>
+        <CardDescription>
+          Devices currently signed in to your account. Sign out any you don’t recognise.
+        </CardDescription>
       </CardHeader>
       <CardContent className="p-0">
         <QueryState
@@ -375,7 +431,13 @@ function SessionsCard() {
             </ul>
           }
           isEmpty={(list) => list.length === 0}
-          empty={<EmptyState compact title="No active sessions" description="This is unexpected — try refreshing the page." />}
+          empty={
+            <EmptyState
+              compact
+              title="No active sessions"
+              description="This is unexpected — try refreshing the page."
+            />
+          }
         >
           {(list) => (
             <ul className="divide-y divide-border">
@@ -384,7 +446,10 @@ function SessionsCard() {
                 .map((s) => {
                   const { label, icon: Icon } = describeAgent(s.userAgent);
                   return (
-                    <li key={s.familyId} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center">
+                    <li
+                      key={s.familyId}
+                      className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center"
+                    >
                       <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-surface-muted text-fg-muted">
                         <Icon className="size-4" aria-hidden />
                       </div>
@@ -392,15 +457,18 @@ function SessionsCard() {
                         <span className="flex items-center gap-2 font-medium">
                           {label}
                           {s.current ? (
-                            <Badge variant="accent" className="px-1.5 py-0 text-[0.625rem] leading-4">
+                            <Badge
+                              variant="accent"
+                              className="px-1.5 py-0 text-[0.625rem] leading-4"
+                            >
                               This device
                             </Badge>
                           ) : null}
                         </span>
                         <span className="text-xs text-fg-muted">
                           {s.ipAddress ?? 'Unknown IP'} · Last active{' '}
-                          {formatDistanceToNow(new Date(s.lastUsedAt), { addSuffix: true })} · Signed in{' '}
-                          {format(new Date(s.createdAt), 'd MMM yyyy')}
+                          {formatDistanceToNow(new Date(s.lastUsedAt), { addSuffix: true })} ·
+                          Signed in {format(new Date(s.createdAt), 'd MMM yyyy')}
                         </span>
                       </div>
                       {s.current ? null : (
@@ -424,7 +492,11 @@ function SessionsCard() {
         open={!!target}
         onOpenChange={(open) => !open && setTarget(null)}
         title="Sign out this device?"
-        description={target ? `${describeAgent(target.userAgent).label} will need to sign in again.` : undefined}
+        description={
+          target
+            ? `${describeAgent(target.userAgent).label} will need to sign in again.`
+            : undefined
+        }
         confirmLabel="Sign out device"
         tone="danger"
         loading={revoke.isPending}

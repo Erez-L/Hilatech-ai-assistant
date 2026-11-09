@@ -20,7 +20,12 @@ export function buildLoggerOptions(env: WorkersEnv): Params {
         ? {
             transport: {
               target: 'pino-pretty',
-              options: { colorize: true, singleLine: true, translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,hostname,service' },
+              options: {
+                colorize: true,
+                singleLine: true,
+                translateTime: 'SYS:HH:MM:ss.l',
+                ignore: 'pid,hostname,service',
+              },
             },
           }
         : {}),

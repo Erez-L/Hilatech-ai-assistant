@@ -12,7 +12,9 @@ import { withTimeout } from '../common/with-timeout';
 export function parseRedisUrl(redisUrl: string): RedisOptions {
   const url = new URL(redisUrl);
   if (url.protocol !== 'redis:' && url.protocol !== 'rediss:') {
-    throw new Error(`Unsupported Redis URL protocol "${url.protocol}" (expected redis:// or rediss://)`);
+    throw new Error(
+      `Unsupported Redis URL protocol "${url.protocol}" (expected redis:// or rediss://)`,
+    );
   }
   const options: RedisOptions = {
     host: url.hostname,

@@ -1,4 +1,11 @@
-const UNIT_MS: Record<string, number> = { ms: 1, s: 1_000, m: 60_000, h: 3_600_000, d: 86_400_000, w: 604_800_000 };
+const UNIT_MS: Record<string, number> = {
+  ms: 1,
+  s: 1_000,
+  m: 60_000,
+  h: 3_600_000,
+  d: 86_400_000,
+  w: 604_800_000,
+};
 
 /** Parse durations like "15m", "7d", "900s" into milliseconds. Throws on invalid input. */
 export function parseDuration(value: string | number): number {

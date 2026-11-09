@@ -26,7 +26,10 @@ export class NotificationsProcessor implements JobProcessor<typeof QueueName.NOT
     @InjectPinoLogger(NotificationsProcessor.name) private readonly logger: PinoLogger,
   ) {}
 
-  async process(job: Job<JobPayload<typeof QueueName.NOTIFICATIONS>>, context: JobContext): Promise<JobOutcome> {
+  async process(
+    job: Job<JobPayload<typeof QueueName.NOTIFICATIONS>>,
+    context: JobContext,
+  ): Promise<JobOutcome> {
     const { userId, organizationId, type, title, body, link, data, idempotencyKey } = job.data;
 
     // The queue contract types `type` loosely; the API reads rows back as `NotificationType`, so an
@@ -34,7 +37,9 @@ export class NotificationsProcessor implements JobProcessor<typeof QueueName.NOT
     const parsedType = NotificationType.safeParse(type);
     if (!parsedType.success) {
       this.logger.error({ ...context, type }, 'Unknown notification type; discarding job');
-      throw new UnrecoverableError(`Unknown notification type "${type}" (expected one of ${NotificationType.options.join(', ')})`);
+      throw new UnrecoverableError(
+        `Unknown notification type "${type}" (expected one of ${NotificationType.options.join(', ')})`,
+      );
     }
 
     const existing = await this.prisma.client.notification.findFirst({
@@ -42,11 +47,17 @@ export class NotificationsProcessor implements JobProcessor<typeof QueueName.NOT
       select: { id: true },
     });
     if (existing) {
-      this.logger.info({ ...context, notificationId: existing.id }, 'Notification already exists for idempotency key; skipping');
+      this.logger.info(
+        { ...context, notificationId: existing.id },
+        'Notification already exists for idempotency key; skipping',
+      );
       return { status: 'skipped', reason: 'duplicate', notificationId: existing.id };
     }
 
-    const payload: Prisma.InputJsonObject = { ...(data as Prisma.InputJsonObject), [NOTIFICATION_IDEMPOTENCY_FIELD]: idempotencyKey };
+    const payload: Prisma.InputJsonObject = {
+      ...(data as Prisma.InputJsonObject),
+      [NOTIFICATION_IDEMPOTENCY_FIELD]: idempotencyKey,
+    };
 
     try {
       const created = await this.prisma.client.notification.create({
@@ -65,8 +76,13 @@ export class NotificationsProcessor implements JobProcessor<typeof QueueName.NOT
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003') {
         // Foreign key violation: the user/organization no longer exists. Retrying cannot fix that.
-        this.logger.warn({ ...context, userId, code: err.code }, 'Notification target does not exist; discarding job');
-        throw new UnrecoverableError(`Notification target not found (userId=${userId}, organizationId=${organizationId ?? 'null'})`);
+        this.logger.warn(
+          { ...context, userId, code: err.code },
+          'Notification target does not exist; discarding job',
+        );
+        throw new UnrecoverableError(
+          `Notification target not found (userId=${userId}, organizationId=${organizationId ?? 'null'})`,
+        );
       }
       throw err;
     }

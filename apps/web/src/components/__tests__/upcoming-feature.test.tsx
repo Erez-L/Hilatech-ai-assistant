@@ -15,9 +15,14 @@ describe('UpcomingFeature', () => {
       />,
     );
     expect(screen.getByRole('heading', { name: 'Leads' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Available in an upcoming milestone' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Available in an upcoming milestone' }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Core business milestone/)).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(2);
-    expect(screen.getByRole('link', { name: /Back to dashboard/ })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: /Back to dashboard/ })).toHaveAttribute(
+      'href',
+      '/dashboard',
+    );
   });
 });

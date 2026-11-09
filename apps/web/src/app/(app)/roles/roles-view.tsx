@@ -27,7 +27,8 @@ import { QueryState } from '@/components/common/query-state';
 import { PermissionGate } from '@/components/common/permission-gate';
 import { RoleDialog } from './role-dialog';
 
-type DialogState = { mode: 'create' } | { mode: 'edit'; role: Role } | { mode: 'view'; role: Role } | null;
+type DialogState =
+  { mode: 'create' } | { mode: 'edit'; role: Role } | { mode: 'view'; role: Role } | null;
 
 export function RolesView() {
   const roles = useRoles();
@@ -53,7 +54,10 @@ export function RolesView() {
           description="Roles bundle permissions. System roles come with every organization; custom roles are yours to shape."
           actions={
             canManage ? (
-              <Button leadingIcon={<Plus aria-hidden />} onClick={() => setDialog({ mode: 'create' })}>
+              <Button
+                leadingIcon={<Plus aria-hidden />}
+                onClick={() => setDialog({ mode: 'create' })}
+              >
                 Create role
               </Button>
             ) : undefined

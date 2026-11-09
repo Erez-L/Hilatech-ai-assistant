@@ -18,7 +18,9 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     // Optional: run with a locally installed Chrome when Playwright's browsers cannot be downloaded.
-    launchOptions: process.env.E2E_CHROME_EXECUTABLE ? { executablePath: process.env.E2E_CHROME_EXECUTABLE } : {},
+    launchOptions: process.env.E2E_CHROME_EXECUTABLE
+      ? { executablePath: process.env.E2E_CHROME_EXECUTABLE }
+      : {},
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });

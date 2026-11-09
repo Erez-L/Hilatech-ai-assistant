@@ -41,7 +41,15 @@ describe('time', () => {
 
 describe('redaction', () => {
   it('redacts sensitive keys recursively', () => {
-    const out = redactSensitive({ user: { password: 'p', name: 'n' }, apiKey: 'k', list: [{ token: 't' }] });
-    expect(out).toEqual({ user: { password: '[REDACTED]', name: 'n' }, apiKey: '[REDACTED]', list: [{ token: '[REDACTED]' }] });
+    const out = redactSensitive({
+      user: { password: 'p', name: 'n' },
+      apiKey: 'k',
+      list: [{ token: 't' }],
+    });
+    expect(out).toEqual({
+      user: { password: '[REDACTED]', name: 'n' },
+      apiKey: '[REDACTED]',
+      list: [{ token: '[REDACTED]' }],
+    });
   });
 });

@@ -19,7 +19,15 @@ export interface QueryStateProps<T> {
 }
 
 /** Renders loading / error (with retry) / empty / success for a react-query result. */
-export function QueryState<T>({ query, loading, children, isEmpty, empty, compact, errorTitle }: QueryStateProps<T>) {
+export function QueryState<T>({
+  query,
+  loading,
+  children,
+  isEmpty,
+  empty,
+  compact,
+  errorTitle,
+}: QueryStateProps<T>) {
   if (query.isPending) return <>{loading}</>;
   if (query.isError) {
     const err = query.error;
@@ -27,7 +35,9 @@ export function QueryState<T>({ query, loading, children, isEmpty, empty, compac
     return (
       <ErrorState
         compact={compact}
-        title={forbidden ? 'You don’t have access to this' : (errorTitle ?? 'This couldn’t be loaded')}
+        title={
+          forbidden ? 'You don’t have access to this' : (errorTitle ?? 'This couldn’t be loaded')
+        }
         message={getErrorMessage(err)}
         requestId={isApiError(err) ? err.requestId : undefined}
         onRetry={forbidden ? undefined : () => void query.refetch()}

@@ -65,7 +65,10 @@ export function AuthGate({ children, requireOrganization = true }: AuthGateProps
 
   // 4. No organization yet → onboarding.
   const needsOnboarding =
-    requireOrganization && status === 'authenticated' && sessionLoaded && organizations.length === 0;
+    requireOrganization &&
+    status === 'authenticated' &&
+    sessionLoaded &&
+    organizations.length === 0;
   React.useEffect(() => {
     if (needsOnboarding) router.replace('/onboarding');
   }, [needsOnboarding, router]);

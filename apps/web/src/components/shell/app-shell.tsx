@@ -41,7 +41,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <TopBar
           start={
             <>
-              <IconButton label="Open navigation" className="lg:hidden" onClick={() => setMobileOpen(true)}>
+              <IconButton
+                label="Open navigation"
+                className="lg:hidden"
+                onClick={() => setMobileOpen(true)}
+              >
                 <Menu aria-hidden />
               </IconButton>
               <span className="truncate text-sm font-medium text-fg-muted">{title}</span>
@@ -56,7 +60,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </>
           }
         />
-        <main id="main" tabIndex={-1} className="relative flex-1 px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8">
+        <main
+          id="main"
+          tabIndex={-1}
+          className="relative flex-1 px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8"
+        >
           <div className="mx-auto w-full max-w-6xl">
             {sessionLoaded ? (
               children

@@ -1,4 +1,9 @@
-import type { CreateInvitationRequest, Invitation, InvitationPreview, Member } from '@hilatech/contracts';
+import type {
+  CreateInvitationRequest,
+  Invitation,
+  InvitationPreview,
+  Member,
+} from '@hilatech/contracts';
 import { api } from './client';
 
 export const invitationsApi = {
@@ -13,5 +18,6 @@ export const invitationsApi = {
       organization: false,
     }),
   /** Requires a signed-in user; the organization is derived from the token server-side. */
-  accept: (token: string) => api.post<Member>('/invitations/accept', { token }, { organization: false }),
+  accept: (token: string) =>
+    api.post<Member>('/invitations/accept', { token }, { organization: false }),
 };

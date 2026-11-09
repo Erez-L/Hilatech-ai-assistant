@@ -58,7 +58,10 @@ export function OrganizationSettingsView() {
   return (
     <PermissionGate anyOf={[Permission.ORG_READ]}>
       <div className="flex flex-col gap-6">
-        <PageHeader title="Settings" description="How this organization presents itself and how its assistant behaves.">
+        <PageHeader
+          title="Settings"
+          description="How this organization presents itself and how its assistant behaves."
+        >
           <SettingsTabs />
         </PageHeader>
 
@@ -70,7 +73,11 @@ export function OrganizationSettingsView() {
           {(org) => <ProfileForm organization={org} readOnly={!canUpdate} />}
         </QueryState>
 
-        <QueryState query={settings} loading={<FormSkeleton rows={6} />} errorTitle="Settings couldn’t be loaded">
+        <QueryState
+          query={settings}
+          loading={<FormSkeleton rows={6} />}
+          errorTitle="Settings couldn’t be loaded"
+        >
           {(s) => <AssistantAndHoursForm settings={s} readOnly={!canUpdate} />}
         </QueryState>
 
@@ -104,14 +111,22 @@ function FormSkeleton({ rows }: { rows: number }) {
 // ---------------------------------------------------------------------------
 
 const profileFormSchema = updateOrganizationSchema.extend({
-  website: z.union([z.string().url('Enter a full URL, e.g. https://example.com'), z.literal('')]).optional(),
+  website: z
+    .union([z.string().url('Enter a full URL, e.g. https://example.com'), z.literal('')])
+    .optional(),
   logoUrl: z.union([z.string().url('Enter a full URL'), z.literal('')]).optional(),
   description: z.string().trim().max(2000).optional(),
   industry: z.string().trim().max(100).optional(),
 });
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-function ProfileForm({ organization, readOnly }: { organization: Organization; readOnly: boolean }) {
+function ProfileForm({
+  organization,
+  readOnly,
+}: {
+  organization: Organization;
+  readOnly: boolean;
+}) {
   const update = useUpdateOrganization();
   const [formError, setFormError] = React.useState<string | null>(null);
 
@@ -129,7 +144,10 @@ function ProfileForm({ organization, readOnly }: { organization: Organization; r
     [organization],
   );
 
-  const form = useForm<ProfileFormValues>({ resolver: zodResolver(profileFormSchema), defaultValues: defaults });
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema),
+    defaultValues: defaults,
+  });
   React.useEffect(() => form.reset(defaults), [defaults, form]);
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -155,7 +173,12 @@ function ProfileForm({ organization, readOnly }: { organization: Organization; r
             o.id === org.id ? { ...o, name: org.name, slug: org.slug, logoUrl: org.logoUrl } : o,
           ),
           activeOrganization: session.activeOrganization
-            ? { ...session.activeOrganization, name: org.name, slug: org.slug, logoUrl: org.logoUrl }
+            ? {
+                ...session.activeOrganization,
+                name: org.name,
+                slug: org.slug,
+                logoUrl: org.logoUrl,
+              }
             : null,
           permissions: session.permissions,
         },
@@ -191,10 +214,17 @@ function ProfileForm({ organization, readOnly }: { organization: Organization; r
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           {formError ? <Alert tone="danger">{formError}</Alert> : null}
-          {readOnly ? <Alert tone="neutral">Your role can view these settings but not change them.</Alert> : null}
+          {readOnly ? (
+            <Alert tone="neutral">Your role can view these settings but not change them.</Alert>
+          ) : null}
           <fieldset disabled={readOnly} className="flex flex-col gap-5">
             <div className="grid gap-5 sm:grid-cols-2">
-              <FormField id="org-name" label="Name" error={form.formState.errors.name?.message} required>
+              <FormField
+                id="org-name"
+                label="Name"
+                error={form.formState.errors.name?.message}
+                required
+              >
                 <Input {...form.register('name')} />
               </FormField>
               <FormField
@@ -207,10 +237,15 @@ function ProfileForm({ organization, readOnly }: { organization: Organization; r
               </FormField>
             </div>
             <div className="grid gap-5 sm:grid-cols-3">
-              <FormField id="org-industry" label="Industry" error={form.formState.errors.industry?.message}>
+              <FormField
+                id="org-industry"
+                label="Industry"
+                error={form.formState.errors.industry?.message}
+              >
                 <NativeSelect {...form.register('industry')}>
                   <option value="">Not set</option>
-                  {organization.industry && !(INDUSTRIES as readonly string[]).includes(organization.industry) ? (
+                  {organization.industry &&
+                  !(INDUSTRIES as readonly string[]).includes(organization.industry) ? (
                     <option value={organization.industry}>{organization.industry}</option>
                   ) : null}
                   {INDUSTRIES.map((i) => (
@@ -220,7 +255,11 @@ function ProfileForm({ organization, readOnly }: { organization: Organization; r
                   ))}
                 </NativeSelect>
               </FormField>
-              <FormField id="org-timezone" label="Time zone" error={form.formState.errors.timezone?.message}>
+              <FormField
+                id="org-timezone"
+                label="Time zone"
+                error={form.formState.errors.timezone?.message}
+              >
                 <NativeSelect {...form.register('timezone')}>
                   {!COMMON_TIMEZONES.includes(tz) ? <option value={tz}>{tz}</option> : null}
                   {COMMON_TIMEZONES.map((z) => (
@@ -230,7 +269,11 @@ function ProfileForm({ organization, readOnly }: { organization: Organization; r
                   ))}
                 </NativeSelect>
               </FormField>
-              <FormField id="org-locale" label="Language" error={form.formState.errors.locale?.message}>
+              <FormField
+                id="org-locale"
+                label="Language"
+                error={form.formState.errors.locale?.message}
+              >
                 <NativeSelect {...form.register('locale')}>
                   <option value="en">English</option>
                   <option value="he">Hebrew</option>
@@ -238,8 +281,17 @@ function ProfileForm({ organization, readOnly }: { organization: Organization; r
               </FormField>
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
-              <FormField id="org-website" label="Website" error={form.formState.errors.website?.message}>
-                <Input type="url" inputMode="url" placeholder="https://" {...form.register('website')} />
+              <FormField
+                id="org-website"
+                label="Website"
+                error={form.formState.errors.website?.message}
+              >
+                <Input
+                  type="url"
+                  inputMode="url"
+                  placeholder="https://"
+                  {...form.register('website')}
+                />
               </FormField>
               <FormField
                 id="org-logo"
@@ -247,7 +299,12 @@ function ProfileForm({ organization, readOnly }: { organization: Organization; r
                 description="A square image works best."
                 error={form.formState.errors.logoUrl?.message}
               >
-                <Input type="url" inputMode="url" placeholder="https://" {...form.register('logoUrl')} />
+                <Input
+                  type="url"
+                  inputMode="url"
+                  placeholder="https://"
+                  {...form.register('logoUrl')}
+                />
               </FormField>
             </div>
             <FormField
@@ -270,7 +327,11 @@ function ProfileForm({ organization, readOnly }: { organization: Organization; r
             >
               Discard
             </Button>
-            <Button type="submit" loading={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
+            <Button
+              type="submit"
+              loading={form.formState.isSubmitting}
+              disabled={!form.formState.isDirty}
+            >
               Save profile
             </Button>
           </CardFooter>
@@ -298,7 +359,10 @@ const settingsFormSchema = z
       fri: daySchema,
       sat: daySchema,
     }),
-    primaryColor: z.union([z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Use a hex colour like #0B7A75'), z.literal('')]),
+    primaryColor: z.union([
+      z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Use a hex colour like #0B7A75'),
+      z.literal(''),
+    ]),
     aiProvider: z.enum(['', 'anthropic', 'openai']),
     aiModel: z.string().max(100),
     assistantName: z.string().max(60),
@@ -308,7 +372,11 @@ const settingsFormSchema = z
     for (const day of DAYS) {
       const d = v.days[day.key];
       if (d.enabled && d.open >= d.close) {
-        ctx.addIssue({ code: 'custom', path: ['days', day.key, 'close'], message: 'Closing time must be after opening' });
+        ctx.addIssue({
+          code: 'custom',
+          path: ['days', day.key, 'close'],
+          message: 'Closing time must be after opening',
+        });
       }
     }
   });
@@ -361,14 +429,23 @@ function toSettings(v: SettingsFormValues): OrganizationSettings {
   return organizationSettingsSchema.parse(settings);
 }
 
-function AssistantAndHoursForm({ settings, readOnly }: { settings: OrganizationSettings; readOnly: boolean }) {
+function AssistantAndHoursForm({
+  settings,
+  readOnly,
+}: {
+  settings: OrganizationSettings;
+  readOnly: boolean;
+}) {
   const update = useUpdateOrganizationSettings();
   const organization = useOrganization();
   const fallbackTz = organization.data?.timezone ?? 'UTC';
   const [formError, setFormError] = React.useState<string | null>(null);
 
   const defaults = React.useMemo(() => toFormValues(settings, fallbackTz), [settings, fallbackTz]);
-  const form = useForm<SettingsFormValues>({ resolver: zodResolver(settingsFormSchema), defaultValues: defaults });
+  const form = useForm<SettingsFormValues>({
+    resolver: zodResolver(settingsFormSchema),
+    defaultValues: defaults,
+  });
   React.useEffect(() => form.reset(defaults), [defaults, form]);
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -377,7 +454,14 @@ function AssistantAndHoursForm({ settings, readOnly }: { settings: OrganizationS
       await update.mutateAsync(toSettings(values));
       toast.success('Settings saved');
     } catch (error) {
-      if (!applyServerErrors(error, form.setError, ['hoursTimezone', 'primaryColor', 'aiModel', 'assistantName'])) {
+      if (
+        !applyServerErrors(error, form.setError, [
+          'hoursTimezone',
+          'primaryColor',
+          'aiModel',
+          'assistantName',
+        ])
+      ) {
         setFormError(getErrorMessage(error));
       }
     }
@@ -406,7 +490,9 @@ function AssistantAndHoursForm({ settings, readOnly }: { settings: OrganizationS
               className="sm:max-w-xs"
             >
               <NativeSelect {...form.register('hoursTimezone')}>
-                {tzValue && !COMMON_TIMEZONES.includes(tzValue) ? <option value={tzValue}>{tzValue}</option> : null}
+                {tzValue && !COMMON_TIMEZONES.includes(tzValue) ? (
+                  <option value={tzValue}>{tzValue}</option>
+                ) : null}
                 {COMMON_TIMEZONES.map((z) => (
                   <option key={z} value={z}>
                     {z}
@@ -432,7 +518,11 @@ function AssistantAndHoursForm({ settings, readOnly }: { settings: OrganizationS
               >
                 <Input placeholder="e.g. Maya" {...form.register('assistantName')} />
               </FormField>
-              <FormField id="assistant-tone" label="Tone" error={form.formState.errors.tone?.message}>
+              <FormField
+                id="assistant-tone"
+                label="Tone"
+                error={form.formState.errors.tone?.message}
+              >
                 <NativeSelect {...form.register('tone')}>
                   <option value="">Platform default</option>
                   <option value="professional">Professional</option>
@@ -458,7 +548,11 @@ function AssistantAndHoursForm({ settings, readOnly }: { settings: OrganizationS
                 description="Leave empty to use the provider’s recommended model."
                 error={form.formState.errors.aiModel?.message}
               >
-                <Input placeholder="e.g. claude-sonnet-4-5" className="font-mono" {...form.register('aiModel')} />
+                <Input
+                  placeholder="e.g. claude-sonnet-4-5"
+                  className="font-mono"
+                  {...form.register('aiModel')}
+                />
               </FormField>
             </div>
           </fieldset>
@@ -477,11 +571,17 @@ function AssistantAndHoursForm({ settings, readOnly }: { settings: OrganizationS
                   type="color"
                   aria-label="Pick a colour"
                   value={/^#[0-9a-fA-F]{6}$/.test(primaryColor) ? primaryColor : '#0b7a75'}
-                  onChange={(e) => form.setValue('primaryColor', e.target.value, { shouldDirty: true })}
+                  onChange={(e) =>
+                    form.setValue('primaryColor', e.target.value, { shouldDirty: true })
+                  }
                   className="size-9 cursor-pointer rounded-sm border border-border bg-surface p-0.5"
                   disabled={readOnly}
                 />
-                <Input placeholder="#0B7A75" className="font-mono uppercase" {...form.register('primaryColor')} />
+                <Input
+                  placeholder="#0B7A75"
+                  className="font-mono uppercase"
+                  {...form.register('primaryColor')}
+                />
               </div>
             </FormField>
           </fieldset>
@@ -496,7 +596,11 @@ function AssistantAndHoursForm({ settings, readOnly }: { settings: OrganizationS
             >
               Discard
             </Button>
-            <Button type="submit" loading={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
+            <Button
+              type="submit"
+              loading={form.formState.isSubmitting}
+              disabled={!form.formState.isDirty}
+            >
               Save settings
             </Button>
           </CardFooter>
@@ -535,11 +639,23 @@ function DayRow({
         <div className="flex flex-1 flex-wrap items-center gap-2 text-sm">
           <label className="flex items-center gap-2">
             <span className="text-fg-muted">From</span>
-            <Input type="time" step={300} className="w-32" invalid={!!openError} {...form.register(`days.${day}.open`)} />
+            <Input
+              type="time"
+              step={300}
+              className="w-32"
+              invalid={!!openError}
+              {...form.register(`days.${day}.open`)}
+            />
           </label>
           <label className="flex items-center gap-2">
             <span className="text-fg-muted">to</span>
-            <Input type="time" step={300} className="w-32" invalid={!!closeError} {...form.register(`days.${day}.close`)} />
+            <Input
+              type="time"
+              step={300}
+              className="w-32"
+              invalid={!!closeError}
+              {...form.register(`days.${day}.close`)}
+            />
           </label>
           {openError || closeError ? (
             <span role="alert" className="text-xs text-danger">
@@ -583,7 +699,9 @@ function DangerZone({ organization }: { organization: Organization | undefined }
     <Card className="border-danger/30">
       <CardHeader>
         <CardTitle>Danger zone</CardTitle>
-        <CardDescription>These actions affect your access or the whole organization.</CardDescription>
+        <CardDescription>
+          These actions affect your access or the whole organization.
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col divide-y divide-border p-0">
         <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -595,7 +713,11 @@ function DangerZone({ organization }: { organization: Organization | undefined }
                 : 'You’ll lose access immediately. Another member can invite you back.'}
             </p>
           </div>
-          <Button variant="danger-outline" disabled={roleKey === 'owner'} onClick={() => setLeaveOpen(true)}>
+          <Button
+            variant="danger-outline"
+            disabled={roleKey === 'owner'}
+            onClick={() => setLeaveOpen(true)}
+          >
             Leave organization
           </Button>
         </div>
@@ -653,7 +775,11 @@ function DangerZone({ organization }: { organization: Organization | undefined }
         }}
       >
         <FormField id="confirm-org-name" label={`Type “${organization?.name ?? ''}” to confirm`}>
-          <Input value={confirmName} onChange={(e) => setConfirmName(e.target.value)} autoComplete="off" />
+          <Input
+            value={confirmName}
+            onChange={(e) => setConfirmName(e.target.value)}
+            autoComplete="off"
+          />
         </FormField>
       </ConfirmDialog>
     </Card>

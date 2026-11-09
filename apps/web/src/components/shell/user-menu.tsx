@@ -46,7 +46,12 @@ export function UserMenu() {
           aria-label={`Account menu for ${fullName}`}
           className="flex size-9 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          <Avatar src={user.avatarUrl} firstName={user.firstName} lastName={user.lastName} size="md" />
+          <Avatar
+            src={user.avatarUrl}
+            firstName={user.firstName}
+            lastName={user.lastName}
+            size="md"
+          />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">

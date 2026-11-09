@@ -16,7 +16,13 @@ export class ApiError extends Error {
   readonly details?: unknown;
   readonly requestId?: string;
 
-  constructor(input: { status: number; code: string; message: string; details?: unknown; requestId?: string }) {
+  constructor(input: {
+    status: number;
+    code: string;
+    message: string;
+    details?: unknown;
+    requestId?: string;
+  }) {
     super(input.message);
     this.name = 'ApiError';
     this.status = input.status;
@@ -47,10 +53,15 @@ export function isApiError(error: unknown): error is ApiError {
 }
 
 /** Human-readable message for any thrown value. */
-export function getErrorMessage(error: unknown, fallback = 'Something went wrong. Please try again.'): string {
+export function getErrorMessage(
+  error: unknown,
+  fallback = 'Something went wrong. Please try again.',
+): string {
   if (isApiError(error)) {
-    if (error.code === ErrorCode.RATE_LIMITED) return 'Too many attempts. Wait a moment and try again.';
-    if (error.status === 0) return 'The server could not be reached. Check your connection and try again.';
+    if (error.code === ErrorCode.RATE_LIMITED)
+      return 'Too many attempts. Wait a moment and try again.';
+    if (error.status === 0)
+      return 'The server could not be reached. Check your connection and try again.';
     return error.message || fallback;
   }
   if (error instanceof Error && error.message) return error.message;
@@ -93,11 +104,27 @@ export interface ApiClientConfig {
 export interface ApiClient {
   request<T>(path: string, options?: RequestOptions): Promise<ApiSuccess<T>>;
   get<T>(path: string, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T>;
-  post<T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T>;
-  put<T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T>;
-  patch<T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T>;
+  post<T>(
+    path: string,
+    body?: unknown,
+    options?: Omit<RequestOptions, 'method' | 'body'>,
+  ): Promise<T>;
+  put<T>(
+    path: string,
+    body?: unknown,
+    options?: Omit<RequestOptions, 'method' | 'body'>,
+  ): Promise<T>;
+  patch<T>(
+    path: string,
+    body?: unknown,
+    options?: Omit<RequestOptions, 'method' | 'body'>,
+  ): Promise<T>;
   delete<T = void>(path: string, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T>;
-  list<T>(path: string, query?: QueryParams, options?: Omit<RequestOptions, 'method' | 'body' | 'query'>): Promise<ApiListResult<T>>;
+  list<T>(
+    path: string,
+    query?: QueryParams,
+    options?: Omit<RequestOptions, 'method' | 'body' | 'query'>,
+  ): Promise<ApiListResult<T>>;
   /** POST /auth/refresh using the httpOnly cookie. Deduplicates concurrent calls. Returns null when the session is gone. */
   refresh(): Promise<AuthResponse | null>;
 }
@@ -136,7 +163,9 @@ async function toApiError(res: Response): Promise<ApiError> {
     message,
     details: error?.details,
     requestId:
-      typeof error?.requestId === 'string' ? error.requestId : (res.headers.get('x-request-id') ?? undefined),
+      typeof error?.requestId === 'string'
+        ? error.requestId
+        : (res.headers.get('x-request-id') ?? undefined),
   });
 }
 
@@ -172,7 +201,9 @@ function defaultMessageForStatus(status: number): string {
     case 429:
       return 'Too many requests. Wait a moment and try again.';
     default:
-      return status >= 500 ? 'The server ran into a problem. Please try again.' : 'The request could not be completed.';
+      return status >= 500
+        ? 'The server ran into a problem. Please try again.'
+        : 'The request could not be completed.';
   }
 }
 
@@ -283,17 +314,17 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
 
   type Opts = Omit<RequestOptions, 'method' | 'body'>;
 
-  const get = async <T,>(path: string, options?: Opts): Promise<T> =>
+  const get = async <T>(path: string, options?: Opts): Promise<T> =>
     (await request<T>(path, { ...options, method: 'GET' })).data;
-  const post = async <T,>(path: string, body?: unknown, options?: Opts): Promise<T> =>
+  const post = async <T>(path: string, body?: unknown, options?: Opts): Promise<T> =>
     (await request<T>(path, { ...options, method: 'POST', body })).data;
-  const put = async <T,>(path: string, body?: unknown, options?: Opts): Promise<T> =>
+  const put = async <T>(path: string, body?: unknown, options?: Opts): Promise<T> =>
     (await request<T>(path, { ...options, method: 'PUT', body })).data;
-  const patch = async <T,>(path: string, body?: unknown, options?: Opts): Promise<T> =>
+  const patch = async <T>(path: string, body?: unknown, options?: Opts): Promise<T> =>
     (await request<T>(path, { ...options, method: 'PATCH', body })).data;
-  const del = async <T = void,>(path: string, options?: Opts): Promise<T> =>
+  const del = async <T = void>(path: string, options?: Opts): Promise<T> =>
     (await request<T>(path, { ...options, method: 'DELETE' })).data;
-  const list = async <T,>(
+  const list = async <T>(
     path: string,
     query?: QueryParams,
     options?: Omit<RequestOptions, 'method' | 'body' | 'query'>,

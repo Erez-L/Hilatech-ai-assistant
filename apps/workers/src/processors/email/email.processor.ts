@@ -26,7 +26,10 @@ export class EmailProcessor implements JobProcessor<typeof QueueName.EMAIL> {
     @InjectPinoLogger(EmailProcessor.name) private readonly logger: PinoLogger,
   ) {}
 
-  async process(job: Job<JobPayload<typeof QueueName.EMAIL>>, context: JobContext): Promise<JobOutcome> {
+  async process(
+    job: Job<JobPayload<typeof QueueName.EMAIL>>,
+    context: JobContext,
+  ): Promise<JobOutcome> {
     const { to, template, variables, idempotencyKey, organizationId } = job.data;
 
     let rendered;
@@ -34,7 +37,10 @@ export class EmailProcessor implements JobProcessor<typeof QueueName.EMAIL> {
       rendered = renderEmail(template, variables, { appUrl: this.env.APP_URL });
     } catch (err) {
       if (err instanceof EmailTemplateRenderError) {
-        this.logger.error({ ...context, template, issues: err.issues }, 'Email template variables are invalid; discarding job');
+        this.logger.error(
+          { ...context, template, issues: err.issues },
+          'Email template variables are invalid; discarding job',
+        );
         throw new UnrecoverableError(err.message);
       }
       throw err;

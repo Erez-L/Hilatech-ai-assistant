@@ -3,7 +3,15 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowRight, Contact, MailPlus, MessageSquare, ScrollText, Target, Users } from 'lucide-react';
+import {
+  ArrowRight,
+  Contact,
+  MailPlus,
+  MessageSquare,
+  ScrollText,
+  Target,
+  Users,
+} from 'lucide-react';
 import { Permission } from '@hilatech/contracts';
 import {
   Badge,
@@ -97,7 +105,12 @@ export function DashboardView() {
                     : 'Across all stages'
                 }
               />
-              <StatCard label="Contacts" value={d.contacts} icon={<Contact />} hint="In your address book" />
+              <StatCard
+                label="Contacts"
+                value={d.contacts}
+                icon={<Contact />}
+                hint="In your address book"
+              />
               <StatCard
                 label="Open conversations"
                 value={d.openConversations}
@@ -156,8 +169,13 @@ export function DashboardView() {
                         <Badge variant={auditTone(log.action)} dot className="shrink-0">
                           {log.action.split('.')[0]}
                         </Badge>
-                        <span className="min-w-0 flex-1 truncate">{describeAuditAction(log.action)}</span>
-                        <time dateTime={log.createdAt} className="shrink-0 text-xs text-fg-subtle tabular">
+                        <span className="min-w-0 flex-1 truncate">
+                          {describeAuditAction(log.action)}
+                        </span>
+                        <time
+                          dateTime={log.createdAt}
+                          className="shrink-0 text-xs text-fg-subtle tabular"
+                        >
                           {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
                         </time>
                       </li>
@@ -216,7 +234,10 @@ export function DashboardView() {
                           <span className="text-fg-muted">{label}</span>
                           <span className="font-medium tabular">
                             {format(entry.used)}
-                            <span className="text-fg-subtle"> / {entry.limit == null ? 'unlimited' : format(entry.limit)}</span>
+                            <span className="text-fg-subtle">
+                              {' '}
+                              / {entry.limit == null ? 'unlimited' : format(entry.limit)}
+                            </span>
                           </span>
                         </div>
                         <Meter label={label} value={entry.used} max={entry.limit} size="sm" />

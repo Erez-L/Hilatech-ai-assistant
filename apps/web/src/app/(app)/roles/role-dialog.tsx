@@ -51,13 +51,26 @@ export function RoleDialog({ open, onOpenChange, role, readOnly = false }: RoleD
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="xl">
         {/* Keyed by role so switching between roles always starts from that role's values. */}
-        <RoleForm key={role?.id ?? 'new'} role={role} readOnly={readOnly} onDone={() => onOpenChange(false)} />
+        <RoleForm
+          key={role?.id ?? 'new'}
+          role={role}
+          readOnly={readOnly}
+          onDone={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );
 }
 
-function RoleForm({ role, readOnly, onDone }: { role?: Role; readOnly: boolean; onDone: () => void }) {
+function RoleForm({
+  role,
+  readOnly,
+  onDone,
+}: {
+  role?: Role;
+  readOnly: boolean;
+  onDone: () => void;
+}) {
   const catalog = usePermissionCatalog();
   const create = useCreateRole();
   const update = useUpdateRole();
@@ -84,7 +97,9 @@ function RoleForm({ role, readOnly, onDone }: { role?: Role; readOnly: boolean; 
   const groups = React.useMemo(() => groupPermissions(catalog.data ?? []), [catalog.data]);
 
   const toggle = (key: string, checked: boolean) => {
-    const next = checked ? Array.from(new Set([...selected, key])) : selected.filter((p) => p !== key);
+    const next = checked
+      ? Array.from(new Set([...selected, key]))
+      : selected.filter((p) => p !== key);
     form.setValue('permissions', next, { shouldDirty: true });
   };
 
@@ -106,7 +121,10 @@ function RoleForm({ role, readOnly, onDone }: { role?: Role; readOnly: boolean; 
         });
         toast.success(`Role “${updated.name}” saved`);
       } else {
-        const created = await create.mutateAsync({ ...values, description: values.description || undefined });
+        const created = await create.mutateAsync({
+          ...values,
+          description: values.description || undefined,
+        });
         toast.success(`Role “${created.name}” created`);
       }
       onDone();
@@ -132,13 +150,25 @@ function RoleForm({ role, readOnly, onDone }: { role?: Role; readOnly: boolean; 
       <DialogBody className="flex flex-col gap-6 pb-2">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
         <div className="grid gap-5 sm:grid-cols-2">
-          <FormField id="role-name" label="Name" error={form.formState.errors.name?.message} required>
-            <Input autoFocus={!readOnly} readOnly={readOnly} placeholder="Sales lead" {...form.register('name')} />
+          <FormField
+            id="role-name"
+            label="Name"
+            error={form.formState.errors.name?.message}
+            required
+          >
+            <Input
+              autoFocus={!readOnly}
+              readOnly={readOnly}
+              placeholder="Sales lead"
+              {...form.register('name')}
+            />
           </FormField>
           <FormField
             id="role-key"
             label="Key"
-            description={isEdit ? 'Keys cannot change after creation.' : 'Lowercase letters, numbers, _ or -.'}
+            description={
+              isEdit ? 'Keys cannot change after creation.' : 'Lowercase letters, numbers, _ or -.'
+            }
             error={form.formState.errors.key?.message}
             required
           >
@@ -150,14 +180,25 @@ function RoleForm({ role, readOnly, onDone }: { role?: Role; readOnly: boolean; 
             />
           </FormField>
         </div>
-        <FormField id="role-description" label="Description" error={form.formState.errors.description?.message}>
-          <Textarea rows={2} readOnly={readOnly} placeholder="What this role is for" {...form.register('description')} />
+        <FormField
+          id="role-description"
+          label="Description"
+          error={form.formState.errors.description?.message}
+        >
+          <Textarea
+            rows={2}
+            readOnly={readOnly}
+            placeholder="What this role is for"
+            {...form.register('description')}
+          />
         </FormField>
 
         <fieldset className="flex flex-col gap-3" disabled={readOnly}>
           <legend className="flex w-full items-baseline justify-between text-sm font-medium">
             <span>Permissions</span>
-            <span className="text-xs font-normal text-fg-muted tabular">{selected.length} selected</span>
+            <span className="text-xs font-normal text-fg-muted tabular">
+              {selected.length} selected
+            </span>
           </legend>
           {form.formState.errors.permissions?.message ? (
             <p role="alert" className="text-xs text-danger">
@@ -173,7 +214,11 @@ function RoleForm({ role, readOnly, onDone }: { role?: Role; readOnly: boolean; 
           ) : catalog.isError ? (
             <Alert tone="danger">
               The permission catalog could not be loaded. {getErrorMessage(catalog.error)}{' '}
-              <button type="button" className="font-medium underline" onClick={() => void catalog.refetch()}>
+              <button
+                type="button"
+                className="font-medium underline"
+                onClick={() => void catalog.refetch()}
+              >
                 Try again
               </button>
             </Alert>
@@ -212,8 +257,13 @@ function RoleForm({ role, readOnly, onDone }: { role?: Role; readOnly: boolean; 
                               checked={selected.includes(perm.key)}
                               onCheckedChange={(c) => toggle(perm.key, c === true)}
                             />
-                            <Label htmlFor={id} className="flex flex-col gap-0.5 font-normal leading-snug">
-                              <span className="text-sm">{perm.description || describePermission(perm.key)}</span>
+                            <Label
+                              htmlFor={id}
+                              className="flex flex-col gap-0.5 font-normal leading-snug"
+                            >
+                              <span className="text-sm">
+                                {perm.description || describePermission(perm.key)}
+                              </span>
                               <span className="font-mono text-2xs text-fg-subtle">{perm.key}</span>
                             </Label>
                           </li>
@@ -262,7 +312,9 @@ export function describePermission(key: string): string {
   return resource ? `${verb} ${resource}` : verb;
 }
 
-export function groupPermissions(catalog: PermissionDefinition[]): { name: string; items: PermissionDefinition[] }[] {
+export function groupPermissions(
+  catalog: PermissionDefinition[],
+): { name: string; items: PermissionDefinition[] }[] {
   const map = new Map<string, PermissionDefinition[]>();
   for (const perm of catalog) {
     const group = perm.group || perm.key.split(':')[0] || 'other';

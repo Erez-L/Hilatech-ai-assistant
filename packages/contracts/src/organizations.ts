@@ -7,7 +7,10 @@ export const slugSchema = z
   .toLowerCase()
   .min(3)
   .max(50)
-  .regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/, 'Slug may contain lowercase letters, numbers and hyphens');
+  .regex(
+    /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/,
+    'Slug may contain lowercase letters, numbers and hyphens',
+  );
 
 export const createOrganizationSchema = z.object({
   name: z.string().trim().min(2).max(100),
@@ -34,13 +37,21 @@ export const organizationSettingsSchema = z
         timezone: z.string().max(64),
         days: z.record(
           z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']),
-          z.object({ open: z.string().regex(/^\d{2}:\d{2}$/), close: z.string().regex(/^\d{2}:\d{2}$/) }).nullable(),
+          z
+            .object({
+              open: z.string().regex(/^\d{2}:\d{2}$/),
+              close: z.string().regex(/^\d{2}:\d{2}$/),
+            })
+            .nullable(),
         ),
       })
       .optional(),
     branding: z
       .object({
-        primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+        primaryColor: z
+          .string()
+          .regex(/^#[0-9a-fA-F]{6}$/)
+          .optional(),
       })
       .optional(),
     ai: z

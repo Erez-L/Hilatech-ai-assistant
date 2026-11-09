@@ -37,7 +37,9 @@ export function OrgSwitcher({ className }: { className?: string }) {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label={active ? `Organization: ${active.name}. Switch organization` : 'Switch organization'}
+          aria-label={
+            active ? `Organization: ${active.name}. Switch organization` : 'Switch organization'
+          }
           className={cn(
             'flex h-11 w-full items-center gap-2.5 rounded-md border border-transparent px-2 text-left',
             'transition-colors hover:border-border hover:bg-surface-muted',
@@ -54,7 +56,9 @@ export function OrgSwitcher({ className }: { className?: string }) {
             className="rounded-sm bg-fg text-fg-inverted"
           />
           <span className="flex min-w-0 flex-1 flex-col leading-tight">
-            <span className="truncate text-sm font-semibold text-fg">{active?.name ?? 'Select organization'}</span>
+            <span className="truncate text-sm font-semibold text-fg">
+              {active?.name ?? 'Select organization'}
+            </span>
             <span className="truncate text-xs text-fg-muted">{active?.roleName ?? '—'}</span>
           </span>
           <ChevronsUpDown className="size-4 shrink-0 text-fg-subtle" aria-hidden />
@@ -64,7 +68,13 @@ export function OrgSwitcher({ className }: { className?: string }) {
         <DropdownMenuLabel>Organizations</DropdownMenuLabel>
         {organizations.map((org) => (
           <DropdownMenuItem key={org.id} onSelect={() => switchTo(org.id)} className="gap-2.5">
-            <Avatar size="sm" src={org.logoUrl} name={org.name} firstName={org.name} className="rounded-xs" />
+            <Avatar
+              size="sm"
+              src={org.logoUrl}
+              name={org.name}
+              firstName={org.name}
+              className="rounded-xs"
+            />
             <span className="flex min-w-0 flex-1 flex-col leading-tight">
               <span className="truncate font-medium">{org.name}</span>
               <span className="truncate text-xs text-fg-muted">{org.roleName}</span>

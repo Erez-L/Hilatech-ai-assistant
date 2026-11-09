@@ -6,14 +6,14 @@ and reports insights — built as the foundation of a commercial SaaS product.
 
 ## Stack
 
-| Layer | Technology |
-| --- | --- |
-| Frontend | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS 4 |
-| Backend | NestJS 11, REST under `/api/v1`, Swagger/OpenAPI, zod contracts |
-| Database | PostgreSQL 16 + pgvector, Prisma 7 (pg driver adapter) |
-| Background | Redis 7, BullMQ 5 |
-| AI | Provider-independent adapter layer (Anthropic Claude, OpenAI) |
-| Infra | Docker, Docker Compose, GitHub Actions, pnpm workspaces + Turborepo |
+| Layer      | Technology                                                          |
+| ---------- | ------------------------------------------------------------------- |
+| Frontend   | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS 4       |
+| Backend    | NestJS 11, REST under `/api/v1`, Swagger/OpenAPI, zod contracts     |
+| Database   | PostgreSQL 16 + pgvector, Prisma 7 (pg driver adapter)              |
+| Background | Redis 7, BullMQ 5                                                   |
+| AI         | Provider-independent adapter layer (Anthropic Claude, OpenAI)       |
+| Infra      | Docker, Docker Compose, GitHub Actions, pnpm workspaces + Turborepo |
 
 ## Repository layout
 

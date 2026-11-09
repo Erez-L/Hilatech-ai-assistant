@@ -12,12 +12,12 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: hilatech
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./infrastructure/docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d hilatech"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d hilatech']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -25,19 +25,19 @@ services:
   redis:
     image: redis:7-alpine
     container_name: hta-redis
-    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 3s
       retries: 10
 
   api:
-    profiles: ["app"]
+    profiles: ['app']
     build:
       context: .
       dockerfile: infrastructure/docker/api.Dockerfile
@@ -48,20 +48,20 @@ services:
       REDIS_URL: redis://redis:6379
       API_PORT: 4000
     ports:
-      - "4000:4000"
+      - '4000:4000'
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:4000/api/v1/health"]
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:4000/api/v1/health']
       interval: 10s
       timeout: 5s
       retries: 10
 
   workers:
-    profiles: ["app"]
+    profiles: ['app']
     build:
       context: .
       dockerfile: infrastructure/docker/workers.Dockerfile
@@ -77,13 +77,13 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:4100/health"]
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:4100/health']
       interval: 10s
       timeout: 5s
       retries: 10
 
   web:
-    profiles: ["app"]
+    profiles: ['app']
     build:
       context: .
       dockerfile: infrastructure/docker/web.Dockerfile
@@ -94,7 +94,7 @@ services:
     environment:
       PORT: 3000
     ports:
-      - "3000:3000"
+      - '3000:3000'
     depends_on:
       api:
         condition: service_healthy

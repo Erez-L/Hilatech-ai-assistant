@@ -4,7 +4,12 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { createTransport, type Transporter } from 'nodemailer';
 import { WORKERS_ENV } from '../../config/config.module';
 import type { WorkersEnv } from '../../config/env.schema';
-import { extractLinks, maskSecretsInText, type EmailTemplate, type RenderedEmail } from './email-templates';
+import {
+  extractLinks,
+  maskSecretsInText,
+  type EmailTemplate,
+  type RenderedEmail,
+} from './email-templates';
 
 export interface OutgoingEmail extends RenderedEmail {
   to: string;
@@ -70,7 +75,10 @@ export class LogEmailDriver implements EmailDriver {
   constructor(@InjectPinoLogger(LogEmailDriver.name) private readonly logger: PinoLogger) {}
 
   async send(email: OutgoingEmail): Promise<EmailDeliveryResult> {
-    this.logger.info({ email: buildLogPreview(email) }, 'Email rendered (log driver — not delivered)');
+    this.logger.info(
+      { email: buildLogPreview(email) },
+      'Email rendered (log driver — not delivered)',
+    );
     return { driver: 'log', messageId: null };
   }
 }
@@ -93,7 +101,10 @@ export class SmtpEmailDriver implements EmailDriver {
         host: this.env.SMTP_HOST,
         port: this.env.SMTP_PORT,
         secure: this.env.SMTP_SECURE,
-        auth: this.env.SMTP_USER && this.env.SMTP_PASSWORD ? { user: this.env.SMTP_USER, pass: this.env.SMTP_PASSWORD } : undefined,
+        auth:
+          this.env.SMTP_USER && this.env.SMTP_PASSWORD
+            ? { user: this.env.SMTP_USER, pass: this.env.SMTP_PASSWORD }
+            : undefined,
         connectionTimeout: 10_000,
         greetingTimeout: 10_000,
         socketTimeout: 30_000,
@@ -113,7 +124,14 @@ export class SmtpEmailDriver implements EmailDriver {
     });
     const messageId: string | null = typeof info.messageId === 'string' ? info.messageId : null;
     this.logger.info(
-      { to: email.to, template: email.template, idempotencyKey: email.idempotencyKey, messageId, accepted: info.accepted?.length ?? 0, rejected: info.rejected?.length ?? 0 },
+      {
+        to: email.to,
+        template: email.template,
+        idempotencyKey: email.idempotencyKey,
+        messageId,
+        accepted: info.accepted?.length ?? 0,
+        rejected: info.rejected?.length ?? 0,
+      },
       'Email sent via SMTP',
     );
     return { driver: 'smtp', messageId };

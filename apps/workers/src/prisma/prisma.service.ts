@@ -28,7 +28,9 @@ export class PrismaService implements OnModuleInit, OnApplicationShutdown {
   }
 
   async onApplicationShutdown(): Promise<void> {
-    await this.client.$disconnect().catch((err: unknown) => this.logger.warn({ err }, 'Prisma disconnect failed'));
+    await this.client
+      .$disconnect()
+      .catch((err: unknown) => this.logger.warn({ err }, 'Prisma disconnect failed'));
   }
 
   /** `true` when a trivial query succeeds within `timeoutMs`. */

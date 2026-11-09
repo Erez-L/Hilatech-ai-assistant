@@ -39,7 +39,8 @@ export function ResetPasswordForm() {
     } catch (error) {
       if (!applyServerErrors(error, form.setError, ['password', 'token'])) {
         setFormError(
-          isApiError(error) && (error.isNotFound || error.code === 'TOKEN_INVALID' || error.code === 'TOKEN_EXPIRED')
+          isApiError(error) &&
+            (error.isNotFound || error.code === 'TOKEN_INVALID' || error.code === 'TOKEN_EXPIRED')
             ? 'This reset link is no longer valid. Request a new one.'
             : getErrorMessage(error),
         );
@@ -58,13 +59,18 @@ export function ResetPasswordForm() {
           </Link>
         }
       >
-        <p className="text-sm text-fg-muted">Reset links expire about an hour after they are sent.</p>
+        <p className="text-sm text-fg-muted">
+          Reset links expire about an hour after they are sent.
+        </p>
       </AuthCard>
     );
   }
 
   return (
-    <AuthCard title="Choose a new password" description="Use something you don’t use anywhere else.">
+    <AuthCard
+      title="Choose a new password"
+      description="Use something you don’t use anywhere else."
+    >
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
         {formError ? (
           <Alert tone="danger">

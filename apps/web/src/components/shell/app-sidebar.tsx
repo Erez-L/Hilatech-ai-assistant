@@ -4,12 +4,25 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LifeBuoy } from 'lucide-react';
-import { Badge, Sidebar, SidebarNavItem, SidebarNavItemContent, SidebarSection, Wordmark } from '@hilatech/ui';
+import {
+  Badge,
+  Sidebar,
+  SidebarNavItem,
+  SidebarNavItemContent,
+  SidebarSection,
+  Wordmark,
+} from '@hilatech/ui';
 import { useSession } from '@/stores/session';
 import { NAV_SECTIONS } from './nav';
 import { OrgSwitcher } from './org-switcher';
 
-export function AppSidebar({ onNavigate, className }: { onNavigate?: () => void; className?: string }) {
+export function AppSidebar({
+  onNavigate,
+  className,
+}: {
+  onNavigate?: () => void;
+  className?: string;
+}) {
   const pathname = usePathname();
   const permissions = useSession((s) => s.permissions);
 
@@ -36,7 +49,9 @@ export function AppSidebar({ onNavigate, className }: { onNavigate?: () => void;
       }
     >
       {NAV_SECTIONS.map((section, index) => {
-        const items = section.items.filter((item) => !item.permission || permissions.includes(item.permission));
+        const items = section.items.filter(
+          (item) => !item.permission || permissions.includes(item.permission),
+        );
         if (items.length === 0) return null;
         return (
           <SidebarSection key={section.label ?? index} label={section.label}>
@@ -51,7 +66,10 @@ export function AppSidebar({ onNavigate, className }: { onNavigate?: () => void;
                       icon={<Icon aria-hidden />}
                       trailing={
                         item.upcoming ? (
-                          <Badge variant="outline" className="px-1.5 py-0 text-[0.625rem] leading-4">
+                          <Badge
+                            variant="outline"
+                            className="px-1.5 py-0 text-[0.625rem] leading-4"
+                          >
                             Soon
                           </Badge>
                         ) : undefined

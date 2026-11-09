@@ -34,7 +34,9 @@ const AUTH: AuthResponse = {
     emailVerifiedAt: null,
     createdAt: '2026-01-01T00:00:00.000Z',
   },
-  organizations: [{ id: 'org-a', name: 'A', slug: 'a', logoUrl: null, roleKey: 'owner', roleName: 'Owner' }],
+  organizations: [
+    { id: 'org-a', name: 'A', slug: 'a', logoUrl: null, roleKey: 'owner', roleName: 'Owner' },
+  ],
 };
 
 describe('LoginForm', () => {
@@ -91,7 +93,9 @@ describe('LoginForm', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     expect(await screen.findByText('Email domain not allowed')).toBeInTheDocument();
 
-    login.mockRejectedValueOnce(new ApiError({ status: 401, code: 'INVALID_CREDENTIALS', message: 'nope' }));
+    login.mockRejectedValueOnce(
+      new ApiError({ status: 401, code: 'INVALID_CREDENTIALS', message: 'nope' }),
+    );
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     expect(await screen.findByText(/don’t match/)).toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();

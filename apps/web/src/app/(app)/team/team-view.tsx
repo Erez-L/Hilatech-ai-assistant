@@ -3,7 +3,16 @@
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { format, formatDistanceToNow } from 'date-fns';
-import { MailPlus, MoreHorizontal, ShieldCheck, Trash2, UserMinus, UserRoundCheck, UserRoundX, Users } from 'lucide-react';
+import {
+  MailPlus,
+  MoreHorizontal,
+  ShieldCheck,
+  Trash2,
+  UserMinus,
+  UserRoundCheck,
+  UserRoundX,
+  Users,
+} from 'lucide-react';
 import { Permission, type Invitation, type Member, type Role } from '@hilatech/contracts';
 import {
   Avatar,
@@ -89,7 +98,11 @@ export function TeamView() {
           description="People who can sign in to this organization, and the role each of them holds."
           actions={
             canInvite ? (
-              <Button leadingIcon={<MailPlus aria-hidden />} onClick={openInvite} disabled={!roles.data}>
+              <Button
+                leadingIcon={<MailPlus aria-hidden />}
+                onClick={openInvite}
+                disabled={!roles.data}
+              >
                 Invite a teammate
               </Button>
             ) : undefined
@@ -101,7 +114,9 @@ export function TeamView() {
             <div className="flex flex-col gap-1">
               <CardTitle>Members</CardTitle>
               <CardDescription>
-                {members.data ? `${members.data.meta.total} member${members.data.meta.total === 1 ? '' : 's'}` : ' '}
+                {members.data
+                  ? `${members.data.meta.total} member${members.data.meta.total === 1 ? '' : 's'}`
+                  : ' '}
               </CardDescription>
             </div>
             <SearchInput
@@ -149,7 +164,9 @@ export function TeamView() {
           </Card>
         ) : null}
 
-        {roles.data ? <InviteDialog open={inviteOpen} onOpenChange={closeInvite} roles={roles.data} /> : null}
+        {roles.data ? (
+          <InviteDialog open={inviteOpen} onOpenChange={closeInvite} roles={roles.data} />
+        ) : null}
       </div>
     </PermissionGate>
   );
@@ -202,7 +219,13 @@ function MembersTable({
           </TableEmptyRow>
         ) : (
           query.data.data.map((member) => (
-            <MemberRow key={member.id} member={member} roles={roles} canUpdate={canUpdate} canRemove={canRemove} />
+            <MemberRow
+              key={member.id}
+              member={member}
+              roles={roles}
+              canUpdate={canUpdate}
+              canRemove={canRemove}
+            />
           ))
         )}
       </TableBody>
@@ -245,7 +268,10 @@ function MemberRow({
     update.mutate(
       { id: member.id, body: { status } },
       {
-        onSuccess: () => toast.success(status === 'suspended' ? `${fullName} suspended` : `${fullName} reactivated`),
+        onSuccess: () =>
+          toast.success(
+            status === 'suspended' ? `${fullName} suspended` : `${fullName} reactivated`,
+          ),
         onError: (e) => toast.error(getErrorMessage(e)),
       },
     );
@@ -267,7 +293,11 @@ function MemberRow({
     <TableRow>
       <TableCell>
         <div className="flex items-center gap-3">
-          <Avatar src={member.user.avatarUrl} firstName={member.user.firstName} lastName={member.user.lastName} />
+          <Avatar
+            src={member.user.avatarUrl}
+            firstName={member.user.firstName}
+            lastName={member.user.lastName}
+          />
           <div className="flex min-w-0 flex-col">
             <span className="flex items-center gap-2 truncate font-medium">
               {fullName}
@@ -283,7 +313,9 @@ function MemberRow({
       </TableCell>
       <TableCell>
         <span className="inline-flex items-center gap-1.5">
-          {member.role.isSystem ? <ShieldCheck className="size-3.5 text-fg-subtle" aria-hidden /> : null}
+          {member.role.isSystem ? (
+            <ShieldCheck className="size-3.5 text-fg-subtle" aria-hidden />
+          ) : null}
           {member.role.name}
         </span>
       </TableCell>
@@ -327,7 +359,11 @@ function MemberRow({
                 ) : null}
                 {canUpdate ? (
                   <DropdownMenuItem onSelect={toggleStatus}>
-                    {member.status === 'active' ? <UserRoundX aria-hidden /> : <UserRoundCheck aria-hidden />}
+                    {member.status === 'active' ? (
+                      <UserRoundX aria-hidden />
+                    ) : (
+                      <UserRoundCheck aria-hidden />
+                    )}
                     {member.status === 'active' ? 'Suspend access' : 'Reactivate'}
                   </DropdownMenuItem>
                 ) : null}
@@ -361,12 +397,21 @@ function MemberRow({
 
 // ---------------------------------------------------------------------------
 
-function InvitationsTable({ query, onInvite }: { query: ReturnType<typeof useInvitations>; onInvite: () => void }) {
+function InvitationsTable({
+  query,
+  onInvite,
+}: {
+  query: ReturnType<typeof useInvitations>;
+  onInvite: () => void;
+}) {
   const revoke = useRevokeInvitation();
   const [target, setTarget] = React.useState<Invitation | null>(null);
   const columns = 5;
 
-  const pending = React.useMemo(() => (query.data ?? []).filter((i) => i.status === 'pending'), [query.data]);
+  const pending = React.useMemo(
+    () => (query.data ?? []).filter((i) => i.status === 'pending'),
+    [query.data],
+  );
 
   return (
     <>
@@ -422,7 +467,11 @@ function InvitationsTable({ query, onInvite }: { query: ReturnType<typeof useInv
                     </time>
                   </TableCell>
                   <TableCell className="text-right">
-                    <IconButton label={`Revoke invitation for ${inv.email}`} variant="danger" onClick={() => setTarget(inv)}>
+                    <IconButton
+                      label={`Revoke invitation for ${inv.email}`}
+                      variant="danger"
+                      onClick={() => setTarget(inv)}
+                    >
                       <Trash2 aria-hidden />
                     </IconButton>
                   </TableCell>
@@ -436,7 +485,9 @@ function InvitationsTable({ query, onInvite }: { query: ReturnType<typeof useInv
         open={!!target}
         onOpenChange={(open) => !open && setTarget(null)}
         title="Revoke this invitation?"
-        description={target ? `${target.email} will no longer be able to join with this link.` : undefined}
+        description={
+          target ? `${target.email} will no longer be able to join with this link.` : undefined
+        }
         confirmLabel="Revoke invitation"
         tone="danger"
         loading={revoke.isPending}

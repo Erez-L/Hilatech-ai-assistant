@@ -28,7 +28,13 @@ const baseJobSchema = z.object({
 
 export const emailJobSchema = baseJobSchema.extend({
   to: z.string().email(),
-  template: z.enum(['verify_email', 'password_reset', 'invitation', 'notification_digest', 'generic']),
+  template: z.enum([
+    'verify_email',
+    'password_reset',
+    'invitation',
+    'notification_digest',
+    'generic',
+  ]),
   variables: z.record(z.string(), z.unknown()),
 });
 export type EmailJob = z.infer<typeof emailJobSchema>;

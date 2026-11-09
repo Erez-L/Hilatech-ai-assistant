@@ -20,7 +20,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres}']
       interval: 10s
       timeout: 5s
       retries: 10
@@ -28,24 +28,29 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 3s
       retries: 10
 
   migrate:
     image: ghcr.io/${GITHUB_REPOSITORY}/api:${IMAGE_TAG:-latest}
-    command: ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy --config node_modules/@hilatech/database/prisma.config.ts"]
+    command:
+      [
+        'sh',
+        '-c',
+        'node node_modules/prisma/build/index.js migrate deploy --config node_modules/@hilatech/database/prisma.config.ts',
+      ]
     environment:
       <<: *common-env
     depends_on:
       postgres:
         condition: service_healthy
-    restart: "no"
+    restart: 'no'
 
   api:
     image: ghcr.io/${GITHUB_REPOSITORY}/api:${IMAGE_TAG:-latest}
@@ -60,7 +65,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:4000/api/v1/health"]
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:4000/api/v1/health']
       interval: 15s
       timeout: 5s
       retries: 10
@@ -92,8 +97,8 @@ services:
     image: caddy:2-alpine
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data

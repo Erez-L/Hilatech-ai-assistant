@@ -13,7 +13,13 @@ export interface UpcomingFeatureProps {
 }
 
 /** Consistent placeholder for areas scheduled for a later milestone. Shows no fabricated data. */
-export function UpcomingFeature({ title, description, capabilities, icon: Icon, milestone }: UpcomingFeatureProps) {
+export function UpcomingFeature({
+  title,
+  description,
+  capabilities,
+  icon: Icon,
+  milestone,
+}: UpcomingFeatureProps) {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader title={title} description={description} />

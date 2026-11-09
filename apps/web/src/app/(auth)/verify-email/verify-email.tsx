@@ -30,7 +30,10 @@ export function VerifyEmail() {
 
   if (!token || token.length < 16) {
     return (
-      <AuthCard title="This link isn’t complete" description="Open the verification link from your email again.">
+      <AuthCard
+        title="This link isn’t complete"
+        description="Open the verification link from your email again."
+      >
         <Button asChild variant="secondary">
           <Link href="/login">Go to sign in</Link>
         </Button>
@@ -44,7 +47,9 @@ export function VerifyEmail() {
         <div className="flex flex-col items-start gap-4">
           <CheckCircle2 className="size-8 text-success" aria-hidden />
           <Button asChild>
-            <Link href={signedIn ? '/dashboard' : '/login'}>{signedIn ? 'Go to dashboard' : 'Sign in'}</Link>
+            <Link href={signedIn ? '/dashboard' : '/login'}>
+              {signedIn ? 'Go to dashboard' : 'Sign in'}
+            </Link>
           </Button>
         </div>
       </AuthCard>
@@ -53,11 +58,18 @@ export function VerifyEmail() {
 
   if (mutation.isError) {
     return (
-      <AuthCard title="We couldn’t verify this link" description="It may have expired or already been used.">
+      <AuthCard
+        title="We couldn’t verify this link"
+        description="It may have expired or already been used."
+      >
         <div className="flex flex-col gap-4">
           <Alert tone="danger">{getErrorMessage(mutation.error)}</Alert>
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => mutation.mutate()} loading={mutation.isPending}>
+            <Button
+              variant="secondary"
+              onClick={() => mutation.mutate()}
+              loading={mutation.isPending}
+            >
               Try again
             </Button>
             <Button asChild variant="ghost">

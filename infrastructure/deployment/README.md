@@ -13,12 +13,14 @@ except Postgres and Redis).
 4. Verify: `https://APP_DOMAIN/api/v1/health/ready`, then log in.
 
 ## Backups
+
 - PostgreSQL: nightly `pg_dump -Fc` to object storage (`infrastructure/monitoring/backup.sh` template)
   plus WAL archiving if RPO < 24h is required.
 - Redis holds queues only; persistence is enabled (AOF) but data is reconstructible.
 - Uploaded documents live in object storage (`STORAGE_DRIVER=s3`) — use bucket versioning.
 
 ## Monitoring hooks
+
 Structured JSON logs (pino) from every service → ship with the Docker logging driver of your choice.
 Health endpoints: API `/api/v1/health`, `/api/v1/health/ready`; workers `:4100/health`. Metrics
 integration points are documented in `infrastructure/monitoring/README.md`.

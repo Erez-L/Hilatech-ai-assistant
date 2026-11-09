@@ -18,13 +18,24 @@ export function Spinner({ size = 'md', label = 'Loading', className, ...props }:
       {...props}
     >
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.2" strokeWidth="2.5" />
-      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
 
 /** Centered spinner for whole-page or whole-card loading. */
-export function LoadingBlock({ label = 'Loading', className }: { label?: string; className?: string }) {
+export function LoadingBlock({
+  label = 'Loading',
+  className,
+}: {
+  label?: string;
+  className?: string;
+}) {
   return (
     <div className={cn('flex min-h-40 items-center justify-center', className)}>
       <Spinner label={label} />

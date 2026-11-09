@@ -30,7 +30,8 @@ export function Toaster(props: ToasterProps) {
           description: '!text-fg-muted !text-xs',
           actionButton: '!bg-accent !text-accent-fg !rounded-sm !text-xs !font-medium',
           cancelButton: '!bg-surface-muted !text-fg-muted !rounded-sm !text-xs',
-          closeButton: '!bg-surface-raised !border-border !text-fg-muted hover:!bg-surface-muted hover:!text-fg',
+          closeButton:
+            '!bg-surface-raised !border-border !text-fg-muted hover:!bg-surface-muted hover:!text-fg',
           icon: '!mt-0.5',
         },
       }}

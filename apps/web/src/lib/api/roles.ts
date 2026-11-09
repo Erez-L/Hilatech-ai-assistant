@@ -7,6 +7,7 @@ export const rolesApi = {
   list: () => api.get<Role[]>('/roles'),
   get: (id: string) => api.get<Role>(`/roles/${encodeURIComponent(id)}`),
   create: (body: CreateRoleRequest) => api.post<Role>('/roles', body),
-  update: (id: string, body: UpdateRoleRequest) => api.patch<Role>(`/roles/${encodeURIComponent(id)}`, body),
+  update: (id: string, body: UpdateRoleRequest) =>
+    api.patch<Role>(`/roles/${encodeURIComponent(id)}`, body),
   remove: (id: string) => api.delete<void>(`/roles/${encodeURIComponent(id)}`),
 };

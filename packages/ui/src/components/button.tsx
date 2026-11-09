@@ -37,8 +37,7 @@ export const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   /** Render the child element instead of a <button> (e.g. a Next.js Link). */
   asChild?: boolean;
   /** Shows a spinner, disables the button and keeps its width. */
@@ -100,7 +99,8 @@ export const iconButtonVariants = cva(
     variants: {
       variant: {
         ghost: 'text-fg-muted hover:bg-surface-muted hover:text-fg',
-        secondary: 'border border-border bg-surface text-fg-muted shadow-xs hover:bg-surface-muted hover:text-fg',
+        secondary:
+          'border border-border bg-surface text-fg-muted shadow-xs hover:bg-surface-muted hover:text-fg',
         danger: 'text-fg-muted hover:bg-danger-soft hover:text-danger',
       },
       size: {
@@ -114,8 +114,7 @@ export const iconButtonVariants = cva(
 );
 
 export interface IconButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof iconButtonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof iconButtonVariants> {
   /** Accessible name — required because the button has no visible text. */
   label: string;
   asChild?: boolean;

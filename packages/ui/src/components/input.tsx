@@ -47,7 +47,11 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(fun
       ref={ref}
       rows={rows}
       aria-invalid={invalid || props['aria-invalid'] ? true : undefined}
-      className={cn(inputClassName, 'h-auto min-h-[2.25rem] resize-y py-2 leading-relaxed', className)}
+      className={cn(
+        inputClassName,
+        'h-auto min-h-[2.25rem] resize-y py-2 leading-relaxed',
+        className,
+      )}
       {...props}
     />
   );
@@ -91,9 +95,12 @@ export function SearchInput({
     [debounceMs, onValueChange],
   );
 
-  React.useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
+  React.useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
 
   return (
     <div className={cn('relative', className)}>
@@ -136,32 +143,31 @@ export interface NativeSelectProps extends React.SelectHTMLAttributes<HTMLSelect
 }
 
 /** Styled native <select>; the simplest accessible choice for forms using register(). */
-export const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProps>(function NativeSelect(
-  { className, invalid, children, ...props },
-  ref,
-) {
-  return (
-    <div className="relative">
-      <select
-        ref={ref}
-        aria-invalid={invalid || props['aria-invalid'] ? true : undefined}
-        className={cn(inputClassName, 'appearance-none pr-9', className)}
-        {...props}
-      >
-        {children}
-      </select>
-      <svg
-        aria-hidden
-        viewBox="0 0 16 16"
-        className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-fg-subtle"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="m4 6 4 4 4-4" />
-      </svg>
-    </div>
-  );
-});
+export const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProps>(
+  function NativeSelect({ className, invalid, children, ...props }, ref) {
+    return (
+      <div className="relative">
+        <select
+          ref={ref}
+          aria-invalid={invalid || props['aria-invalid'] ? true : undefined}
+          className={cn(inputClassName, 'appearance-none pr-9', className)}
+          {...props}
+        >
+          {children}
+        </select>
+        <svg
+          aria-hidden
+          viewBox="0 0 16 16"
+          className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-fg-subtle"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m4 6 4 4 4-4" />
+        </svg>
+      </div>
+    );
+  },
+);

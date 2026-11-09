@@ -22,12 +22,7 @@ export function LogoMark({ size = 28, className, ...props }: LogoMarkProps) {
       {...props}
     >
       <rect width="32" height="32" rx="8" className="fill-accent" />
-      <path
-        d="M10 24V8.5"
-        stroke="var(--color-accent-fg)"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
+      <path d="M10 24V8.5" stroke="var(--color-accent-fg)" strokeWidth="3" strokeLinecap="round" />
       <path
         d="M10 16.5c1.6-2 3.6-3 5.6-3 3 0 5.4 2 5.4 5.4V24"
         stroke="var(--color-accent-fg)"
@@ -55,7 +50,9 @@ export function Wordmark({ compact, className, ...props }: WordmarkProps) {
     <span className={cn('flex items-center gap-2.5 text-fg', className)} {...props}>
       <LogoMark size={compact ? 24 : 28} />
       <span className="flex flex-col leading-none">
-        <span className={cn('font-semibold tracking-tight', compact ? 'text-sm' : 'text-[15px]')}>HilaTech</span>
+        <span className={cn('font-semibold tracking-tight', compact ? 'text-sm' : 'text-[15px]')}>
+          HilaTech
+        </span>
         {compact ? null : <span className="mt-0.5 text-xs text-fg-muted">AI Assistant</span>}
       </span>
     </span>

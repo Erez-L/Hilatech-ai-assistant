@@ -1,4 +1,9 @@
-import { Inject, Injectable, type BeforeApplicationShutdown, type OnApplicationBootstrap } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  type BeforeApplicationShutdown,
+  type OnApplicationBootstrap,
+} from '@nestjs/common';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
@@ -27,7 +32,9 @@ export class HealthServer implements OnApplicationBootstrap, BeforeApplicationSh
   /** Port actually bound (differs from the env value only when it is 0 → ephemeral, used by tests). */
   get port(): number {
     const address = this.server?.address();
-    return address && typeof address === 'object' ? (address as AddressInfo).port : this.env.WORKERS_HEALTH_PORT;
+    return address && typeof address === 'object'
+      ? (address as AddressInfo).port
+      : this.env.WORKERS_HEALTH_PORT;
   }
 
   async onApplicationBootstrap(): Promise<void> {
@@ -75,7 +82,9 @@ export class HealthServer implements OnApplicationBootstrap, BeforeApplicationSh
       return;
     }
     if (req.method !== 'GET' && req.method !== 'HEAD') {
-      res.writeHead(405, { Allow: 'GET, HEAD' }).end(JSON.stringify({ error: 'method_not_allowed' }));
+      res
+        .writeHead(405, { Allow: 'GET, HEAD' })
+        .end(JSON.stringify({ error: 'method_not_allowed' }));
       return;
     }
 

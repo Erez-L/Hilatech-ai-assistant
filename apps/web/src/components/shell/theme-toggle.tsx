@@ -25,7 +25,11 @@ export function useThemePreference() {
     if (useSession.getState().status === 'authenticated') {
       const prefs = usePreferences.getState();
       void usersApi
-        .updatePreferences({ theme: next, locale: prefs.locale, notifications: prefs.notifications })
+        .updatePreferences({
+          theme: next,
+          locale: prefs.locale,
+          notifications: prefs.notifications,
+        })
         .catch(() => undefined);
     }
   };

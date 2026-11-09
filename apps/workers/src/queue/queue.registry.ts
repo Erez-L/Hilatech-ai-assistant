@@ -1,4 +1,9 @@
-import { Inject, Injectable, type OnApplicationBootstrap, type OnModuleDestroy } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  type OnApplicationBootstrap,
+  type OnModuleDestroy,
+} from '@nestjs/common';
 import { ALL_QUEUES, type QueueName } from '@hilatech/contracts';
 import { UnrecoverableError, Worker, type Job } from 'bullmq';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
@@ -60,10 +65,14 @@ export class QueueRegistry implements OnApplicationBootstrap, OnModuleDestroy {
   async stop(): Promise<void> {
     if (!this.started) return;
     this.started = false;
-    this.logger.info({ workers: this.workers.size }, 'Closing workers (waiting for in-flight jobs)');
+    this.logger.info(
+      { workers: this.workers.size },
+      'Closing workers (waiting for in-flight jobs)',
+    );
     const results = await Promise.allSettled([...this.workers.values()].map((w) => w.close()));
     const failures = results.filter((r) => r.status === 'rejected');
-    for (const f of failures) this.logger.warn({ err: (f as PromiseRejectedResult).reason }, 'Worker close failed');
+    for (const f of failures)
+      this.logger.warn({ err: (f as PromiseRejectedResult).reason }, 'Worker close failed');
     this.workers.clear();
     await this.metrics.stop();
     this.logger.info('All workers closed');
@@ -105,7 +114,9 @@ export class QueueRegistry implements OnApplicationBootstrap, OnModuleDestroy {
       const finalFailure = err instanceof UnrecoverableError || made >= attempts;
       this.logger.warn(
         { queue, jobId: job?.id, attemptsMade: made, attempts, finalFailure, reason: err.message },
-        finalFailure ? 'Worker event: job failed permanently (kept for inspection)' : 'Worker event: job failed, retry scheduled',
+        finalFailure
+          ? 'Worker event: job failed permanently (kept for inspection)'
+          : 'Worker event: job failed, retry scheduled',
       );
     });
     worker.on('error', (err: Error) => {

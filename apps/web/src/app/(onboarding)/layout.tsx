@@ -10,7 +10,10 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
       <AuthGate requireOrganization={false}>
         <div className="flex min-h-dvh flex-col bg-bg">
           <header className="flex h-16 items-center px-6 sm:px-10">
-            <Link href="/" className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+            <Link
+              href="/"
+              className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
               <Wordmark />
             </Link>
           </header>

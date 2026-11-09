@@ -41,7 +41,11 @@ export default function ForgotPasswordPage() {
       >
         <p className="text-sm text-fg-muted">
           Didn’t get it? Check your spam folder, or{' '}
-          <button type="button" className="font-medium text-accent hover:underline" onClick={() => setSent(null)}>
+          <button
+            type="button"
+            className="font-medium text-accent hover:underline"
+            onClick={() => setSent(null)}
+          >
             send it again
           </button>
           .
@@ -63,7 +67,13 @@ export default function ForgotPasswordPage() {
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
         <FormField id="email" label="Email" error={form.formState.errors.email?.message} required>
-          <Input type="email" autoComplete="email" inputMode="email" autoFocus {...form.register('email')} />
+          <Input
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            autoFocus
+            {...form.register('email')}
+          />
         </FormField>
         <Button type="submit" size="lg" loading={form.formState.isSubmitting} className="w-full">
           Send reset link

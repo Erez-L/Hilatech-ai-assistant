@@ -20,7 +20,8 @@ export const badgeVariants = cva(
   },
 );
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement>, VariantProps<typeof badgeVariants> {
+export interface BadgeProps
+  extends React.HTMLAttributes<HTMLSpanElement>, VariantProps<typeof badgeVariants> {
   /** Show a leading dot in the badge colour. */
   dot?: boolean;
 }

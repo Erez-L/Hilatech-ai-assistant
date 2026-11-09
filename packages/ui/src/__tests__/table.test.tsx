@@ -1,7 +1,15 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { SortableHead, Table, TableBody, TableEmptyRow, TableHeader, TableRow, sortRows } from '../components/table';
+import {
+  SortableHead,
+  Table,
+  TableBody,
+  TableEmptyRow,
+  TableHeader,
+  TableRow,
+  sortRows,
+} from '../components/table';
 
 describe('SortableHead', () => {
   it('cycles sort direction and reports aria-sort', async () => {
@@ -28,7 +36,11 @@ describe('SortableHead', () => {
       <Table>
         <TableHeader>
           <TableRow>
-            <SortableHead sortKey="name" sort={{ key: 'name', direction: 'asc' }} onSortChange={onSortChange}>
+            <SortableHead
+              sortKey="name"
+              sort={{ key: 'name', direction: 'asc' }}
+              onSortChange={onSortChange}
+            >
               Name
             </SortableHead>
           </TableRow>
@@ -52,15 +64,11 @@ describe('sortRows', () => {
     { name: 'Dana', age: null },
   ];
   it('sorts strings case-insensitively and numbers numerically, nulls last', () => {
-    expect(sortRows(rows, { key: 'name', direction: 'asc' }, (r, k) => r[k]).map((r) => r.name)).toEqual([
-      'amir',
-      'Dana',
-      'Noa',
-    ]);
-    expect(sortRows(rows, { key: 'age', direction: 'desc' }, (r, k) => r[k]).map((r) => r.name)).toEqual([
-      'Noa',
-      'amir',
-      'Dana',
-    ]);
+    expect(
+      sortRows(rows, { key: 'name', direction: 'asc' }, (r, k) => r[k]).map((r) => r.name),
+    ).toEqual(['amir', 'Dana', 'Noa']);
+    expect(
+      sortRows(rows, { key: 'age', direction: 'desc' }, (r, k) => r[k]).map((r) => r.name),
+    ).toEqual(['Noa', 'amir', 'Dana']);
   });
 });

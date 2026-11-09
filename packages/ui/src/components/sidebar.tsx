@@ -15,7 +15,10 @@ export interface SidebarProps extends React.HTMLAttributes<HTMLElement> {
 export function Sidebar({ header, footer, className, children, ...props }: SidebarProps) {
   return (
     <aside
-      className={cn('flex h-full w-64 flex-col border-r border-border bg-surface text-fg', className)}
+      className={cn(
+        'flex h-full w-64 flex-col border-r border-border bg-surface text-fg',
+        className,
+      )}
       {...props}
     >
       {header ? <div className="flex flex-col gap-2 px-3 pt-4 pb-2">{header}</div> : null}
@@ -34,7 +37,12 @@ export interface SidebarSectionProps extends React.HTMLAttributes<HTMLDivElement
 export function SidebarSection({ label, className, children, ...props }: SidebarSectionProps) {
   const id = React.useId();
   return (
-    <div className={cn('mb-4 flex flex-col gap-0.5', className)} role="group" aria-labelledby={label ? id : undefined} {...props}>
+    <div
+      className={cn('mb-4 flex flex-col gap-0.5', className)}
+      role="group"
+      aria-labelledby={label ? id : undefined}
+      {...props}
+    >
       {label ? (
         <p id={id} className="mt-1 mb-1.5 px-2.5 text-xs font-medium text-fg-subtle">
           {label}
@@ -55,43 +63,52 @@ export interface SidebarNavItemProps extends React.AnchorHTMLAttributes<HTMLAnch
   disabled?: boolean;
 }
 
-export const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(function SidebarNavItem(
-  { asChild, active, icon, trailing, disabled, className, children, ...props },
-  ref,
-) {
-  const Comp = asChild ? Slot : 'a';
-  return (
-    <Comp
-      ref={ref}
-      aria-current={active ? 'page' : undefined}
-      aria-disabled={disabled || undefined}
-      className={cn(
-        'group flex h-9 items-center gap-2.5 rounded-sm px-2.5 text-sm font-medium outline-none',
-        'transition-colors duration-100',
-        'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
-        active ? 'bg-accent-soft text-accent-soft-fg' : 'text-fg-muted hover:bg-surface-muted hover:text-fg',
-        disabled && 'pointer-events-none opacity-50',
-        '[&_svg]:size-4 [&_svg]:shrink-0',
-        className,
-      )}
-      {...props}
-    >
-      {asChild ? (
-        children
-      ) : (
-        <>
-          {icon ? (
-            <span className={cn('flex items-center', active ? 'text-accent' : 'text-fg-subtle group-hover:text-fg-muted')}>
-              {icon}
-            </span>
-          ) : null}
-          <span className="flex-1 truncate">{children}</span>
-          {trailing ? <span className="flex items-center">{trailing}</span> : null}
-        </>
-      )}
-    </Comp>
-  );
-});
+export const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
+  function SidebarNavItem(
+    { asChild, active, icon, trailing, disabled, className, children, ...props },
+    ref,
+  ) {
+    const Comp = asChild ? Slot : 'a';
+    return (
+      <Comp
+        ref={ref}
+        aria-current={active ? 'page' : undefined}
+        aria-disabled={disabled || undefined}
+        className={cn(
+          'group flex h-9 items-center gap-2.5 rounded-sm px-2.5 text-sm font-medium outline-none',
+          'transition-colors duration-100',
+          'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
+          active
+            ? 'bg-accent-soft text-accent-soft-fg'
+            : 'text-fg-muted hover:bg-surface-muted hover:text-fg',
+          disabled && 'pointer-events-none opacity-50',
+          '[&_svg]:size-4 [&_svg]:shrink-0',
+          className,
+        )}
+        {...props}
+      >
+        {asChild ? (
+          children
+        ) : (
+          <>
+            {icon ? (
+              <span
+                className={cn(
+                  'flex items-center',
+                  active ? 'text-accent' : 'text-fg-subtle group-hover:text-fg-muted',
+                )}
+              >
+                {icon}
+              </span>
+            ) : null}
+            <span className="flex-1 truncate">{children}</span>
+            {trailing ? <span className="flex items-center">{trailing}</span> : null}
+          </>
+        )}
+      </Comp>
+    );
+  },
+);
 
 /** Inner layout for a nav item when using asChild (so the Link receives the styling). */
 export function SidebarNavItemContent({
@@ -103,7 +120,12 @@ export function SidebarNavItemContent({
   return (
     <>
       {icon ? (
-        <span className={cn('flex items-center', active ? 'text-accent' : 'text-fg-subtle group-hover:text-fg-muted')}>
+        <span
+          className={cn(
+            'flex items-center',
+            active ? 'text-accent' : 'text-fg-subtle group-hover:text-fg-muted',
+          )}
+        >
           {icon}
         </span>
       ) : null}

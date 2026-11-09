@@ -50,17 +50,28 @@ export function ChartTooltipContent({
   return (
     <div className="min-w-[8rem] rounded-md border border-border bg-surface-raised px-3 py-2 text-xs text-fg shadow-popover">
       {label !== undefined ? (
-        <p className="mb-1.5 font-medium text-fg">{labelFormatter ? labelFormatter(label) : String(label)}</p>
+        <p className="mb-1.5 font-medium text-fg">
+          {labelFormatter ? labelFormatter(label) : String(label)}
+        </p>
       ) : null}
       <ul className="flex flex-col gap-1">
         {payload.map((entry) => (
-          <li key={String(entry.dataKey ?? entry.name)} className="flex items-center justify-between gap-4">
+          <li
+            key={String(entry.dataKey ?? entry.name)}
+            className="flex items-center justify-between gap-4"
+          >
             <span className="flex items-center gap-1.5 text-fg-muted">
-              <span className="size-2 rounded-full" style={{ background: entry.color }} aria-hidden />
+              <span
+                className="size-2 rounded-full"
+                style={{ background: entry.color }}
+                aria-hidden
+              />
               {entry.name}
             </span>
             <span className="font-medium tabular text-fg">
-              {typeof entry.value === 'number' ? valueFormatter(entry.value) : String(entry.value ?? '—')}
+              {typeof entry.value === 'number'
+                ? valueFormatter(entry.value)
+                : String(entry.value ?? '—')}
             </span>
           </li>
         ))}
@@ -76,7 +87,9 @@ export interface ChartLegendProps {
 
 export function ChartLegend({ items, className }: ChartLegendProps) {
   return (
-    <ul className={cn('flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-muted', className)}>
+    <ul
+      className={cn('flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-muted', className)}
+    >
       {items.map((item) => (
         <li key={item.label} className="flex items-center gap-1.5">
           <span
@@ -100,7 +113,14 @@ export interface ChartFrameProps {
   children: React.ReactNode;
 }
 
-export function ChartFrame({ title, description, legend, height = 240, className, children }: ChartFrameProps) {
+export function ChartFrame({
+  title,
+  description,
+  legend,
+  height = 240,
+  className,
+  children,
+}: ChartFrameProps) {
   return (
     <figure className={cn('flex flex-col gap-3', className)}>
       {title || description || legend ? (

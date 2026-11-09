@@ -42,7 +42,13 @@ export const DropdownMenuSubContent = React.forwardRef<
   React.ComponentRef<typeof DropdownMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
 >(function DropdownMenuSubContent({ className, ...props }, ref) {
-  return <DropdownMenuPrimitive.SubContent ref={ref} className={cn(contentClass, className)} {...props} />;
+  return (
+    <DropdownMenuPrimitive.SubContent
+      ref={ref}
+      className={cn(contentClass, className)}
+      {...props}
+    />
+  );
 });
 
 export const DropdownMenuContent = React.forwardRef<
@@ -77,7 +83,8 @@ export const DropdownMenuItem = React.forwardRef<
         'transition-colors focus:bg-surface-muted focus:text-fg',
         'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         '[&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-fg-subtle',
-        tone === 'danger' && 'text-danger focus:bg-danger-soft focus:text-danger [&_svg]:text-danger',
+        tone === 'danger' &&
+          'text-danger focus:bg-danger-soft focus:text-danger [&_svg]:text-danger',
         inset && 'pl-8',
         className,
       )}
@@ -153,10 +160,19 @@ export const DropdownMenuSeparator = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
 >(function DropdownMenuSeparator({ className, ...props }, ref) {
   return (
-    <DropdownMenuPrimitive.Separator ref={ref} className={cn('-mx-1 my-1 h-px bg-border', className)} {...props} />
+    <DropdownMenuPrimitive.Separator
+      ref={ref}
+      className={cn('-mx-1 my-1 h-px bg-border', className)}
+      {...props}
+    />
   );
 });
 
-export function DropdownMenuShortcut({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) {
-  return <span className={cn('ml-auto text-xs tracking-wide text-fg-subtle', className)} {...props} />;
+export function DropdownMenuShortcut({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLSpanElement>) {
+  return (
+    <span className={cn('ml-auto text-xs tracking-wide text-fg-subtle', className)} {...props} />
+  );
 }

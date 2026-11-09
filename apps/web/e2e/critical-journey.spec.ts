@@ -14,7 +14,9 @@ test.describe('critical journey', () => {
   const password = 'E2e-Passw0rd-Strong';
   const orgName = `E2E Org ${stamp}`;
 
-  test('register, create an organization, reach the dashboard and invite a teammate', async ({ page }) => {
+  test('register, create an organization, reach the dashboard and invite a teammate', async ({
+    page,
+  }) => {
     await page.goto('/register');
     await page.getByLabel('First name').fill('Erez');
     await page.getByLabel('Last name').fill('Tester');
@@ -28,8 +30,12 @@ test.describe('critical journey', () => {
     await page.getByRole('button', { name: 'Create organization' }).click();
 
     await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Good (morning|afternoon|evening)/);
-    await expect(page.getByRole('button', { name: new RegExp(`Organization: ${orgName}`) })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      /Good (morning|afternoon|evening)/,
+    );
+    await expect(
+      page.getByRole('button', { name: new RegExp(`Organization: ${orgName}`) }),
+    ).toBeVisible();
     await expect(page.getByText('Team members')).toBeVisible();
 
     // Invite a teammate from the team page.
@@ -40,7 +46,9 @@ test.describe('critical journey', () => {
     await dialog.getByLabel('Email').fill(`invitee-${stamp}@example.test`);
     await dialog.getByRole('button', { name: 'Send invitation' }).click();
     await expect(page.getByText(`Invitation sent to invitee-${stamp}@example.test`)).toBeVisible();
-    await expect(page.getByRole('cell', { name: `invitee-${stamp}@example.test` })).toBeVisible();
+    await expect(
+      page.getByRole('cell', { name: `invitee-${stamp}@example.test`, exact: true }),
+    ).toBeVisible();
 
     // Session survives a reload (refresh cookie → access token).
     await page.reload();

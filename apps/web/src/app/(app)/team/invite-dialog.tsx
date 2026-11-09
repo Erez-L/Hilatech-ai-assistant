@@ -3,7 +3,11 @@
 import * as React from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createInvitationSchema, type CreateInvitationRequest, type Role } from '@hilatech/contracts';
+import {
+  createInvitationSchema,
+  type CreateInvitationRequest,
+  type Role,
+} from '@hilatech/contracts';
 import {
   Alert,
   Button,
@@ -60,7 +64,8 @@ function InviteForm({ roles, onDone }: { roles: Role[]; onDone: () => void }) {
       toast.success(`Invitation sent to ${invitation.email}`);
       onDone();
     } catch (error) {
-      if (!applyServerErrors(error, form.setError, ['email', 'roleId'])) setFormError(getErrorMessage(error));
+      if (!applyServerErrors(error, form.setError, ['email', 'roleId']))
+        setFormError(getErrorMessage(error));
     }
   });
 
@@ -68,12 +73,25 @@ function InviteForm({ roles, onDone }: { roles: Role[]; onDone: () => void }) {
     <form onSubmit={onSubmit} noValidate className="flex flex-col">
       <DialogHeader>
         <DialogTitle>Invite a teammate</DialogTitle>
-        <DialogDescription>They’ll get an email with a link that’s valid for seven days.</DialogDescription>
+        <DialogDescription>
+          They’ll get an email with a link that’s valid for seven days.
+        </DialogDescription>
       </DialogHeader>
       <DialogBody className="flex flex-col gap-5 pb-2">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
-        <FormField id="invite-email" label="Email" error={form.formState.errors.email?.message} required>
-          <Input type="email" autoComplete="off" autoFocus placeholder="name@company.com" {...form.register('email')} />
+        <FormField
+          id="invite-email"
+          label="Email"
+          error={form.formState.errors.email?.message}
+          required
+        >
+          <Input
+            type="email"
+            autoComplete="off"
+            autoFocus
+            placeholder="name@company.com"
+            {...form.register('email')}
+          />
         </FormField>
         <FormField
           id="invite-role"

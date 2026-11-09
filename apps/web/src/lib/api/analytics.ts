@@ -25,15 +25,21 @@ export function normalizeDashboard(raw: RawDashboard): DashboardSummary {
   const leads = raw.leads;
   const conversations = raw.conversations;
   return {
-    members: typeof members === 'object' && members ? n(members.active ?? members.total) : n(members),
+    members:
+      typeof members === 'object' && members ? n(members.active ?? members.total) : n(members),
     suspendedMembers: typeof members === 'object' && members ? n(members.suspended) : 0,
     pendingInvitations: n(raw.invitations?.pending ?? raw.pendingInvitations),
     contacts: typeof contacts === 'object' && contacts ? n(contacts.total) : n(contacts),
     leads: typeof leads === 'object' && leads ? n(leads.total) : n(leads),
     leadsByStatus: typeof leads === 'object' && leads?.byStatus ? leads.byStatus : {},
-    conversations: typeof conversations === 'object' && conversations ? n(conversations.total) : n(conversations),
+    conversations:
+      typeof conversations === 'object' && conversations
+        ? n(conversations.total)
+        : n(conversations),
     openConversations:
-      typeof conversations === 'object' && conversations ? n(conversations.open) : n(raw.openConversations),
+      typeof conversations === 'object' && conversations
+        ? n(conversations.open)
+        : n(raw.openConversations),
     generatedAt: raw.generatedAt ?? null,
   };
 }

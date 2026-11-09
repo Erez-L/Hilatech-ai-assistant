@@ -49,12 +49,19 @@ export function OnboardingForm() {
 
   const form = useForm<CreateOrganizationInput, unknown, CreateOrganizationRequest>({
     resolver: zodResolver(createOrganizationSchema),
-    defaultValues: { name: '', slug: undefined, industry: undefined, timezone: defaultTz, locale: 'en' },
+    defaultValues: {
+      name: '',
+      slug: undefined,
+      industry: undefined,
+      timezone: defaultTz,
+      locale: 'en',
+    },
   });
 
   const name = useWatch({ control: form.control, name: 'name' });
   React.useEffect(() => {
-    if (!slugTouched) form.setValue('slug', name ? slugify(name) : undefined, { shouldValidate: false });
+    if (!slugTouched)
+      form.setValue('slug', name ? slugify(name) : undefined, { shouldValidate: false });
   }, [name, slugTouched, form]);
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -73,7 +80,9 @@ export function OnboardingForm() {
       toast.success(`${org.name} is ready`);
       router.replace('/dashboard');
     } catch (error) {
-      if (!applyServerErrors(error, form.setError, ['name', 'slug', 'industry', 'timezone', 'locale'])) {
+      if (
+        !applyServerErrors(error, form.setError, ['name', 'slug', 'industry', 'timezone', 'locale'])
+      ) {
         setFormError(getErrorMessage(error));
       }
     }
@@ -83,7 +92,9 @@ export function OnboardingForm() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1.5">
         <h1 className="text-2xl font-semibold tracking-tight">
-          {isAdditional ? 'Create another organization' : `Welcome${user ? `, ${user.firstName}` : ''}`}
+          {isAdditional
+            ? 'Create another organization'
+            : `Welcome${user ? `, ${user.firstName}` : ''}`}
         </h1>
         <p className="text-sm text-fg-muted">
           {isAdditional
@@ -95,7 +106,12 @@ export function OnboardingForm() {
       <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
           {formError ? <Alert tone="danger">{formError}</Alert> : null}
-          <FormField id="name" label="Organization name" error={form.formState.errors.name?.message} required>
+          <FormField
+            id="name"
+            label="Organization name"
+            error={form.formState.errors.name?.message}
+            required
+          >
             <Input autoFocus placeholder="Acme Dental Clinic" {...form.register('name')} />
           </FormField>
           <FormField
@@ -113,7 +129,11 @@ export function OnboardingForm() {
             />
           </FormField>
           <div className="grid gap-5 sm:grid-cols-2">
-            <FormField id="industry" label="Industry" error={form.formState.errors.industry?.message}>
+            <FormField
+              id="industry"
+              label="Industry"
+              error={form.formState.errors.industry?.message}
+            >
               <NativeSelect {...form.register('industry')}>
                 <option value="">Choose…</option>
                 {INDUSTRIES.map((i) => (
@@ -137,7 +157,9 @@ export function OnboardingForm() {
             error={form.formState.errors.timezone?.message}
           >
             <NativeSelect {...form.register('timezone')}>
-              {!COMMON_TIMEZONES.includes(defaultTz) ? <option value={defaultTz}>{defaultTz}</option> : null}
+              {!COMMON_TIMEZONES.includes(defaultTz) ? (
+                <option value={defaultTz}>{defaultTz}</option>
+              ) : null}
               {COMMON_TIMEZONES.map((tz) => (
                 <option key={tz} value={tz}>
                   {tz}

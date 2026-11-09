@@ -1,10 +1,18 @@
 import { validateEnv } from './env.schema';
 
-const minimal = { REDIS_URL: 'redis://localhost:6379', DATABASE_URL: 'postgresql://u:p@localhost:5432/db' };
+const minimal = {
+  REDIS_URL: 'redis://localhost:6379',
+  DATABASE_URL: 'postgresql://u:p@localhost:5432/db',
+};
 
 describe('validateEnv', () => {
   it('applies defaults and coerces numbers', () => {
-    const env = validateEnv({ ...minimal, WORKERS_HEALTH_PORT: '4101', SMTP_HOST: '', SMTP_PORT: '' });
+    const env = validateEnv({
+      ...minimal,
+      WORKERS_HEALTH_PORT: '4101',
+      SMTP_HOST: '',
+      SMTP_PORT: '',
+    });
     expect(env.WORKERS_HEALTH_PORT).toBe(4101);
     expect(env.WORKER_CONCURRENCY).toBe(5);
     expect(env.EMAIL_DRIVER).toBe('log');
@@ -19,9 +27,23 @@ describe('validateEnv', () => {
   });
 
   it('requires SMTP_HOST when EMAIL_DRIVER=smtp', () => {
-    expect(() => validateEnv({ ...minimal, EMAIL_DRIVER: 'smtp' })).toThrow(/SMTP_HOST is required/);
-    expect(() => validateEnv({ ...minimal, EMAIL_DRIVER: 'smtp', SMTP_HOST: 'smtp.example.com', SMTP_USER: 'u' })).toThrow(/SMTP_USER and SMTP_PASSWORD/);
-    const ok = validateEnv({ ...minimal, EMAIL_DRIVER: 'smtp', SMTP_HOST: 'smtp.example.com', SMTP_SECURE: 'true' });
+    expect(() => validateEnv({ ...minimal, EMAIL_DRIVER: 'smtp' })).toThrow(
+      /SMTP_HOST is required/,
+    );
+    expect(() =>
+      validateEnv({
+        ...minimal,
+        EMAIL_DRIVER: 'smtp',
+        SMTP_HOST: 'smtp.example.com',
+        SMTP_USER: 'u',
+      }),
+    ).toThrow(/SMTP_USER and SMTP_PASSWORD/);
+    const ok = validateEnv({
+      ...minimal,
+      EMAIL_DRIVER: 'smtp',
+      SMTP_HOST: 'smtp.example.com',
+      SMTP_SECURE: 'true',
+    });
     expect(ok.SMTP_SECURE).toBe(true);
   });
 

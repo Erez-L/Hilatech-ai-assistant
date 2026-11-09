@@ -6,13 +6,13 @@ system from `@hilatech/ui` (consumed as TypeScript source via `transpilePackages
 
 ## Scripts
 
-| Script | What it does |
-| --- | --- |
-| `pnpm --filter @hilatech/web dev` | `next dev -p 3000` |
-| `build` / `start` | production build with `output: 'standalone'` (see `infrastructure/docker/web.Dockerfile`) |
-| `lint` / `typecheck` | ESLint 9 flat config (`@hilatech/config/eslint/next.js` + `@next/eslint-plugin-next`) / `tsc --noEmit` |
-| `test` | Vitest + Testing Library (API client, session store, forms, components) |
-| `test:e2e` | Playwright; specs skip themselves unless `E2E_BASE_URL` points at a running stack |
+| Script                            | What it does                                                                                           |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `pnpm --filter @hilatech/web dev` | `next dev -p 3000`                                                                                     |
+| `build` / `start`                 | production build with `output: 'standalone'` (see `infrastructure/docker/web.Dockerfile`)              |
+| `lint` / `typecheck`              | ESLint 9 flat config (`@hilatech/config/eslint/next.js` + `@next/eslint-plugin-next`) / `tsc --noEmit` |
+| `test`                            | Vitest + Testing Library (API client, session store, forms, components)                                |
+| `test:e2e`                        | Playwright; specs skip themselves unless `E2E_BASE_URL` points at a running stack                      |
 
 Environment: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL` (root `.env` or `apps/web/.env.local`).
 

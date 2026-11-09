@@ -58,17 +58,24 @@ export function BillingView() {
   return (
     <PermissionGate anyOf={[Permission.ORG_BILLING_MANAGE]}>
       <div className="flex flex-col gap-6">
-        <PageHeader title="Settings" description="Your plan, what it includes, and how much of it you’re using.">
+        <PageHeader
+          title="Settings"
+          description="Your plan, what it includes, and how much of it you’re using."
+        >
           <SettingsTabs />
         </PageHeader>
 
         <Alert tone="neutral" title="Payments are not switched on yet">
-          Plans and limits are live; upgrading and invoicing will arrive with a payment provider in a later
-          milestone. To change plan today, contact sales.
+          Plans and limits are live; upgrading and invoicing will arrive with a payment provider in
+          a later milestone. To change plan today, contact sales.
         </Alert>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-          <QueryState query={subscription} loading={<PlanSkeleton />} errorTitle="Your subscription couldn’t be loaded">
+          <QueryState
+            query={subscription}
+            loading={<PlanSkeleton />}
+            errorTitle="Your subscription couldn’t be loaded"
+          >
             {(sub) => <CurrentPlanCard subscription={sub} />}
           </QueryState>
 
@@ -109,9 +116,21 @@ export function BillingView() {
                             <span className="text-fg-muted">{label}</span>
                             <span className="font-medium tabular">
                               {fmt(entry.used)}
-                              <span className="text-fg-subtle"> / {entry.limit == null ? 'unlimited' : fmt(entry.limit)}</span>
+                              <span className="text-fg-subtle">
+                                {' '}
+                                / {entry.limit == null ? 'unlimited' : fmt(entry.limit)}
+                              </span>
                               {entry.limit ? (
-                                <span className={cn('ml-2 text-xs', ratio >= 0.9 ? 'text-danger' : ratio >= 0.75 ? 'text-warning' : 'text-fg-subtle')}>
+                                <span
+                                  className={cn(
+                                    'ml-2 text-xs',
+                                    ratio >= 0.9
+                                      ? 'text-danger'
+                                      : ratio >= 0.75
+                                        ? 'text-warning'
+                                        : 'text-fg-subtle',
+                                  )}
+                                >
                                   {Math.round(ratio * 100)}%
                                 </span>
                               ) : null}
@@ -131,7 +150,9 @@ export function BillingView() {
         <Card>
           <CardHeader>
             <CardTitle>Compare plans</CardTitle>
-            <CardDescription>Limits per organization. Enterprise limits are negotiated.</CardDescription>
+            <CardDescription>
+              Limits per organization. Enterprise limits are negotiated.
+            </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <QueryState
@@ -185,7 +206,9 @@ function CurrentPlanCard({ subscription }: { subscription: Subscription }) {
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         <div className="flex items-baseline gap-3">
-          <span className="text-3xl font-semibold tracking-tight">{humanize(subscription.plan)}</span>
+          <span className="text-3xl font-semibold tracking-tight">
+            {humanize(subscription.plan)}
+          </span>
           <span className="text-sm text-fg-muted">{PLAN_BLURB[subscription.plan]}</span>
         </div>
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
@@ -198,9 +221,16 @@ function CurrentPlanCard({ subscription }: { subscription: Subscription }) {
         </dl>
         <div className="flex flex-col gap-2 border-t border-border pt-4 sm:flex-row">
           <Button asChild variant="secondary" leadingIcon={<Mail aria-hidden />}>
-            <a href="mailto:sales@hilatech.dev?subject=HilaTech%20AI%20Assistant%20plan%20change">Contact sales</a>
+            <a href="mailto:sales@hilatech.dev?subject=HilaTech%20AI%20Assistant%20plan%20change">
+              Contact sales
+            </a>
           </Button>
-          <Button variant="ghost" disabled leadingIcon={<CreditCard aria-hidden />} title="Self-service upgrades arrive with a payment provider">
+          <Button
+            variant="ghost"
+            disabled
+            leadingIcon={<CreditCard aria-hidden />}
+            title="Self-service upgrades arrive with a payment provider"
+          >
             Upgrade (coming soon)
           </Button>
         </div>
@@ -212,7 +242,13 @@ function CurrentPlanCard({ subscription }: { subscription: Subscription }) {
   );
 }
 
-function PlansTable({ plans, current }: { plans: Partial<Record<PlanKey, PlanLimits>>; current?: PlanKey }) {
+function PlansTable({
+  plans,
+  current,
+}: {
+  plans: Partial<Record<PlanKey, PlanLimits>>;
+  current?: PlanKey;
+}) {
   const available = PLAN_ORDER.filter((k): k is PlanKey => !!plans[k]);
   return (
     <Table>
@@ -239,7 +275,13 @@ function PlansTable({ plans, current }: { plans: Partial<Record<PlanKey, PlanLim
           <TableRow key={row.key}>
             <TableCell className="text-fg-muted">{row.label}</TableCell>
             {available.map((k) => (
-              <TableCell key={k} className={cn('text-right tabular', k === current && 'bg-accent-soft/30 font-medium')}>
+              <TableCell
+                key={k}
+                className={cn(
+                  'text-right tabular',
+                  k === current && 'bg-accent-soft/30 font-medium',
+                )}
+              >
                 {row.format(plans[k]![row.key])}
               </TableCell>
             ))}

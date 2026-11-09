@@ -121,7 +121,13 @@ export type NotificationPreferences = z.infer<typeof notificationPreferencesSche
 export const PlanKey = z.enum(['free', 'starter', 'pro', 'enterprise']);
 export type PlanKey = z.infer<typeof PlanKey>;
 
-export const SubscriptionStatus = z.enum(['trialing', 'active', 'past_due', 'canceled', 'incomplete']);
+export const SubscriptionStatus = z.enum([
+  'trialing',
+  'active',
+  'past_due',
+  'canceled',
+  'incomplete',
+]);
 export type SubscriptionStatus = z.infer<typeof SubscriptionStatus>;
 
 export const planLimitsSchema = z.object({
@@ -135,9 +141,30 @@ export const planLimitsSchema = z.object({
 export type PlanLimits = z.infer<typeof planLimitsSchema>;
 
 export const PLAN_LIMITS: Record<PlanKey, PlanLimits> = {
-  free: { seats: 2, aiTokensPerMonth: 100_000, agents: 1, knowledgeDocuments: 10, storageMb: 100, automations: 2 },
-  starter: { seats: 5, aiTokensPerMonth: 1_000_000, agents: 5, knowledgeDocuments: 100, storageMb: 1_024, automations: 10 },
-  pro: { seats: 25, aiTokensPerMonth: 10_000_000, agents: 25, knowledgeDocuments: 1_000, storageMb: 10_240, automations: 100 },
+  free: {
+    seats: 2,
+    aiTokensPerMonth: 100_000,
+    agents: 1,
+    knowledgeDocuments: 10,
+    storageMb: 100,
+    automations: 2,
+  },
+  starter: {
+    seats: 5,
+    aiTokensPerMonth: 1_000_000,
+    agents: 5,
+    knowledgeDocuments: 100,
+    storageMb: 1_024,
+    automations: 10,
+  },
+  pro: {
+    seats: 25,
+    aiTokensPerMonth: 10_000_000,
+    agents: 25,
+    knowledgeDocuments: 1_000,
+    storageMb: 10_240,
+    automations: 100,
+  },
   enterprise: {
     seats: 1_000,
     aiTokensPerMonth: 1_000_000_000,
@@ -162,7 +189,13 @@ export const subscriptionSchema = z.object({
 });
 export type Subscription = z.infer<typeof subscriptionSchema>;
 
-export const UsageMetric = z.enum(['ai_tokens', 'agent_executions', 'documents', 'storage_mb', 'automation_runs']);
+export const UsageMetric = z.enum([
+  'ai_tokens',
+  'agent_executions',
+  'documents',
+  'storage_mb',
+  'automation_runs',
+]);
 export type UsageMetric = z.infer<typeof UsageMetric>;
 
 export const usageSummarySchema = z.object({

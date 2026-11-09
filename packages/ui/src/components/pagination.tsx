@@ -34,7 +34,10 @@ export function Pagination({
   return (
     <nav
       aria-label="Pagination"
-      className={cn('flex flex-col gap-3 text-sm text-fg-muted sm:flex-row sm:items-center sm:justify-between', className)}
+      className={cn(
+        'flex flex-col gap-3 text-sm text-fg-muted sm:flex-row sm:items-center sm:justify-between',
+        className,
+      )}
       {...props}
     >
       <p className="tabular">

@@ -5,7 +5,15 @@ import globals from 'globals';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
-  { ignores: ['**/dist/**', '**/.next/**', '**/coverage/**', '**/generated/**', '**/node_modules/**'] },
+  {
+    ignores: [
+      '**/dist/**',
+      '**/.next/**',
+      '**/coverage/**',
+      '**/generated/**',
+      '**/node_modules/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   prettier,
@@ -19,7 +27,10 @@ export default [
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports', fixStyle: 'inline-type-imports' }],
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
+      ],
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
   },

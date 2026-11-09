@@ -14,7 +14,13 @@ function makeQueryClient() {
         refetchOnWindowFocus: false,
         retry: (failureCount, error) => {
           // Never retry auth/permission/validation failures; retry transient errors once.
-          if (isApiError(error) && (error.status === 401 || error.status === 403 || error.status === 404 || error.status === 400)) {
+          if (
+            isApiError(error) &&
+            (error.status === 401 ||
+              error.status === 403 ||
+              error.status === 404 ||
+              error.status === 400)
+          ) {
             return false;
           }
           return failureCount < 1;

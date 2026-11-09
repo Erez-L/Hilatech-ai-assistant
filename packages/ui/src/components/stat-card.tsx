@@ -31,26 +31,44 @@ export function StatCard({
   ...props
 }: StatCardProps) {
   const display = typeof value === 'number' ? formatCompact(value) : (value ?? '—');
-  const deltaGood = delta != null && (delta >= 0) === upIsGood;
+  const deltaGood = delta != null && delta >= 0 === upIsGood;
   return (
     <div
-      className={cn('flex flex-col gap-3 rounded-lg border border-border bg-surface px-5 py-4 shadow-xs', className)}
+      className={cn(
+        'flex flex-col gap-3 rounded-lg border border-border bg-surface px-5 py-4 shadow-xs',
+        className,
+      )}
       {...props}
     >
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-fg-muted">{label}</p>
-        {icon ? <span className="text-fg-subtle [&_svg]:size-4" aria-hidden>{icon}</span> : null}
+        {icon ? (
+          <span className="text-fg-subtle [&_svg]:size-4" aria-hidden>
+            {icon}
+          </span>
+        ) : null}
       </div>
       {loading ? (
         <Skeleton className="h-8 w-24" />
       ) : (
-        <p className="text-[1.75rem] leading-none font-semibold tracking-tight tabular text-fg">{display}</p>
+        <p className="text-[1.75rem] leading-none font-semibold tracking-tight tabular text-fg">
+          {display}
+        </p>
       )}
       {delta != null || hint ? (
         <div className="flex items-center gap-2 text-xs">
           {delta != null ? (
-            <span className={cn('inline-flex items-center gap-0.5 font-medium tabular', deltaGood ? 'text-success' : 'text-danger')}>
-              {delta >= 0 ? <ArrowUpRight className="size-3.5" aria-hidden /> : <ArrowDownRight className="size-3.5" aria-hidden />}
+            <span
+              className={cn(
+                'inline-flex items-center gap-0.5 font-medium tabular',
+                deltaGood ? 'text-success' : 'text-danger',
+              )}
+            >
+              {delta >= 0 ? (
+                <ArrowUpRight className="size-3.5" aria-hidden />
+              ) : (
+                <ArrowDownRight className="size-3.5" aria-hidden />
+              )}
               {Math.abs(delta * 100).toFixed(0)}%
             </span>
           ) : null}

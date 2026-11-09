@@ -23,7 +23,10 @@ export interface JobContext {
  */
 export type JobOutcome =
   | ({ status: 'completed' } & Record<string, unknown>)
-  | ({ status: 'skipped'; reason: 'not_implemented' | 'duplicate' | string } & Record<string, unknown>);
+  | ({ status: 'skipped'; reason: 'not_implemented' | 'duplicate' | string } & Record<
+      string,
+      unknown
+    >);
 
 export interface JobProcessor<Q extends QueueName = QueueName> {
   readonly queue: Q;

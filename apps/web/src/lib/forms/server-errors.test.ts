@@ -4,7 +4,9 @@ import { applyServerErrors, extractIssues } from './server-errors';
 
 describe('extractIssues', () => {
   it('reads zod issue arrays, { issues }, and flattened fieldErrors', () => {
-    expect(extractIssues([{ path: ['email'], message: 'bad' }])).toEqual([{ path: 'email', message: 'bad' }]);
+    expect(extractIssues([{ path: ['email'], message: 'bad' }])).toEqual([
+      { path: 'email', message: 'bad' },
+    ]);
     expect(extractIssues({ issues: [{ path: ['a', 'b'], message: 'nested' }] })).toEqual([
       { path: 'a.b', message: 'nested' },
     ]);

@@ -5,16 +5,16 @@ PostgreSQL 16 with the `vector` (pgvector) and `citext` extensions. Schema lives
 
 ## Entity groups
 
-| Group | Entities | Notes |
-| --- | --- | --- |
-| Identity | `User`, `RefreshToken`, `PasswordResetToken`, `EmailVerificationToken` | Tokens stored hashed; refresh tokens grouped by `familyId` |
-| Tenancy | `Organization`, `OrganizationMember`, `Role`, `Permission`, `Invitation` | Members unique per (organization, user); roles unique per (organization, key) |
-| Governance | `AuditLog`, `Subscription`, `UsageRecord` | Audit indexed by (organization, createdAt desc) |
-| CRM | `Contact`, `Lead`, `LeadNote`, `LeadActivity`, `Conversation`, `Message` | Soft delete on Contact/Lead |
-| Notifications | `Notification` | Preferences stored in `User.preferences` JSON |
-| AI (Priority 3) | `AiProviderConfig`, `Agent`, `AgentExecution`, `AiUsageLog`, prompt templates | Added by later migrations |
-| Knowledge (Priority 4) | `KnowledgeBase`, `Document`, `DocumentChunk` (vector) | pgvector columns via `Unsupported("vector(…)")` |
-| Automation (Priority 4) | `Workflow`, `WorkflowExecution`, `WebhookEndpoint`, `Integration` | |
+| Group                   | Entities                                                                      | Notes                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Identity                | `User`, `RefreshToken`, `PasswordResetToken`, `EmailVerificationToken`        | Tokens stored hashed; refresh tokens grouped by `familyId`                    |
+| Tenancy                 | `Organization`, `OrganizationMember`, `Role`, `Permission`, `Invitation`      | Members unique per (organization, user); roles unique per (organization, key) |
+| Governance              | `AuditLog`, `Subscription`, `UsageRecord`                                     | Audit indexed by (organization, createdAt desc)                               |
+| CRM                     | `Contact`, `Lead`, `LeadNote`, `LeadActivity`, `Conversation`, `Message`      | Soft delete on Contact/Lead                                                   |
+| Notifications           | `Notification`                                                                | Preferences stored in `User.preferences` JSON                                 |
+| AI (Priority 3)         | `AiProviderConfig`, `Agent`, `AgentExecution`, `AiUsageLog`, prompt templates | Added by later migrations                                                     |
+| Knowledge (Priority 4)  | `KnowledgeBase`, `Document`, `DocumentChunk` (vector)                         | pgvector columns via `Unsupported("vector(…)")`                               |
+| Automation (Priority 4) | `Workflow`, `WorkflowExecution`, `WebhookEndpoint`, `Integration`             |                                                                               |
 
 ## Rules
 

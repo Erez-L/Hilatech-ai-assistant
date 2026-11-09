@@ -68,7 +68,9 @@ export class EmailTemplateRenderError extends Error {
     readonly template: EmailTemplate,
     readonly issues: ZodIssue[],
   ) {
-    super(`Invalid variables for email template "${template}": ${issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`);
+    super(
+      `Invalid variables for email template "${template}": ${issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`,
+    );
     this.name = 'EmailTemplateRenderError';
   }
 }
@@ -150,13 +152,18 @@ ${button}
 </html>`;
 }
 
-const p = (text: string): string => `<p style="margin:0 0 14px;font-size:15px;line-height:24px;color:#374151">${escapeHtml(text)}</p>`;
+const p = (text: string): string =>
+  `<p style="margin:0 0 14px;font-size:15px;line-height:24px;color:#374151">${escapeHtml(text)}</p>`;
 
 // ---------------------------------------------------------------------------
 // Renderer
 // ---------------------------------------------------------------------------
 
-export function renderEmail(template: EmailTemplate, variables: Record<string, unknown>, options: RenderOptions): RenderedEmail {
+export function renderEmail(
+  template: EmailTemplate,
+  variables: Record<string, unknown>,
+  options: RenderOptions,
+): RenderedEmail {
   const productName = options.productName ?? 'HilaTech AI Assistant';
   const schema = TEMPLATE_VARIABLES[template];
   const parsed = schema.safeParse(variables);
@@ -180,7 +187,12 @@ export function renderEmail(template: EmailTemplate, variables: Record<string, u
       const html = layout({
         productName,
         heading: 'Confirm your email address',
-        blocks: [p(greeting(v.firstName)), p(`Please confirm your email address to finish setting up your ${productName} account.${expiry}`)],
+        blocks: [
+          p(greeting(v.firstName)),
+          p(
+            `Please confirm your email address to finish setting up your ${productName} account.${expiry}`,
+          ),
+        ],
         cta: { label: 'Verify email', url: link },
         footer: 'If you did not create an account, you can safely ignore this email.',
       });
@@ -204,9 +216,13 @@ export function renderEmail(template: EmailTemplate, variables: Record<string, u
       const html = layout({
         productName,
         heading: 'Reset your password',
-        blocks: [p(greeting(v.firstName)), p(`We received a request to reset the password for your account.${expiry}`)],
+        blocks: [
+          p(greeting(v.firstName)),
+          p(`We received a request to reset the password for your account.${expiry}`),
+        ],
         cta: { label: 'Choose a new password', url: link },
-        footer: 'If you did not request a password reset, no action is needed — your password stays unchanged.',
+        footer:
+          'If you did not request a password reset, no action is needed — your password stays unchanged.',
       });
       return { subject, text, html };
     }
@@ -219,7 +235,16 @@ export function renderEmail(template: EmailTemplate, variables: Record<string, u
       const expiry = v.expiresIn ? ` The invitation expires in ${v.expiresIn}.` : '';
       const subject = `You're invited to join ${v.organizationName} on ${productName}`;
       const intro = `${who} to join ${v.organizationName}${role} on ${productName}.${expiry}`;
-      const text = ['Hello,', '', intro, '', 'Accept the invitation:', link, '', 'If you were not expecting this invitation, you can ignore this email.'].join('\n');
+      const text = [
+        'Hello,',
+        '',
+        intro,
+        '',
+        'Accept the invitation:',
+        link,
+        '',
+        'If you were not expecting this invitation, you can ignore this email.',
+      ].join('\n');
       const html = layout({
         productName,
         heading: `Join ${v.organizationName}`,
@@ -236,9 +261,24 @@ export function renderEmail(template: EmailTemplate, variables: Record<string, u
       const scope = v.organizationName ? ` in ${v.organizationName}` : '';
       const period = v.periodLabel ? ` (${v.periodLabel})` : '';
       const subject = `${count} new notification${count === 1 ? '' : 's'}${scope}${period}`;
-      const items = v.notifications.map((n) => ({ ...n, url: resolveLink(options.appUrl, n.link) }));
-      const textItems = items.map((n) => [`• ${n.title}`, n.body ? `  ${n.body}` : null, n.url ? `  ${n.url}` : null].filter(Boolean).join('\n'));
-      const text = [greeting(v.firstName), '', `Here is what happened${scope}${period}:`, '', ...textItems, '', `Open ${productName}: ${options.appUrl}`].join('\n');
+      const items = v.notifications.map((n) => ({
+        ...n,
+        url: resolveLink(options.appUrl, n.link),
+      }));
+      const textItems = items.map((n) =>
+        [`• ${n.title}`, n.body ? `  ${n.body}` : null, n.url ? `  ${n.url}` : null]
+          .filter(Boolean)
+          .join('\n'),
+      );
+      const text = [
+        greeting(v.firstName),
+        '',
+        `Here is what happened${scope}${period}:`,
+        '',
+        ...textItems,
+        '',
+        `Open ${productName}: ${options.appUrl}`,
+      ].join('\n');
       const htmlItems = items
         .map(
           (n) => `<tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9">
@@ -250,9 +290,14 @@ export function renderEmail(template: EmailTemplate, variables: Record<string, u
       const html = layout({
         productName,
         heading: subject,
-        blocks: [p(greeting(v.firstName)), p(`Here is what happened${scope}${period}:`), `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 18px">${htmlItems}</table>`],
+        blocks: [
+          p(greeting(v.firstName)),
+          p(`Here is what happened${scope}${period}:`),
+          `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 18px">${htmlItems}</table>`,
+        ],
         cta: { label: `Open ${productName}`, url: options.appUrl },
-        footer: 'You receive this digest because email notifications are enabled in your preferences.',
+        footer:
+          'You receive this digest because email notifications are enabled in your preferences.',
       });
       return { subject, text, html };
     }
@@ -261,8 +306,16 @@ export function renderEmail(template: EmailTemplate, variables: Record<string, u
       const v = parsed.data as TemplateVariables<'generic'>;
       const ctaUrl = resolveLink(options.appUrl, v.ctaUrl);
       const cta = ctaUrl && v.ctaLabel ? { label: v.ctaLabel, url: ctaUrl } : undefined;
-      const paragraphs = v.body.split(/\n{2,}/).map((s) => s.trim()).filter(Boolean);
-      const text = [v.heading ?? v.subject, '', v.body, ...(cta ? ['', `${cta.label}: ${cta.url}`] : [])].join('\n');
+      const paragraphs = v.body
+        .split(/\n{2,}/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const text = [
+        v.heading ?? v.subject,
+        '',
+        v.body,
+        ...(cta ? ['', `${cta.label}: ${cta.url}`] : []),
+      ].join('\n');
       const html = layout({
         productName,
         heading: v.heading ?? v.subject,
@@ -306,7 +359,10 @@ export function collectSecretValues(variables: Record<string, unknown>): string[
 export function maskSecretsInText(text: string, secrets: readonly string[]): string {
   let out = text;
   for (const secret of secrets) out = out.split(secret).join(maskSecret(secret));
-  out = out.replace(SECRET_QUERY_PARAM, (_m, prefix: string, value: string) => `${prefix}${maskSecret(value)}`);
+  out = out.replace(
+    SECRET_QUERY_PARAM,
+    (_m, prefix: string, value: string) => `${prefix}${maskSecret(value)}`,
+  );
   return out;
 }
 

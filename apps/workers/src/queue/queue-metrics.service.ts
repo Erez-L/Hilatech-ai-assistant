@@ -48,7 +48,8 @@ export class QueueMetricsService implements OnModuleDestroy {
     private readonly redis: RedisService,
     @InjectPinoLogger(QueueMetricsService.name) private readonly logger: PinoLogger,
   ) {
-    for (const queue of ALL_QUEUES) this.counters.set(queue, { completed: 0, failed: 0, stalled: 0 });
+    for (const queue of ALL_QUEUES)
+      this.counters.set(queue, { completed: 0, failed: 0, stalled: 0 });
   }
 
   start(): void {
@@ -58,18 +59,28 @@ export class QueueMetricsService implements OnModuleDestroy {
       const connection = { ...this.redis.connectionOptions };
       this.queues.set(queue, new Queue(queue, { connection, prefix: this.env.BULLMQ_PREFIX }));
 
-      const events = new QueueEvents(queue, { connection, prefix: this.env.BULLMQ_PREFIX, autorun: true });
+      const events = new QueueEvents(queue, {
+        connection,
+        prefix: this.env.BULLMQ_PREFIX,
+        autorun: true,
+      });
       const counters = this.counters.get(queue)!;
       events.on('completed', () => void counters.completed++);
       events.on('failed', () => void counters.failed++);
       events.on('stalled', ({ jobId }) => {
         counters.stalled++;
-        this.logger.warn({ queue, jobId }, 'Job stalled (lock expired) — it will be re-processed or failed');
+        this.logger.warn(
+          { queue, jobId },
+          'Job stalled (lock expired) — it will be re-processed or failed',
+        );
       });
       events.on('error', (err: Error) => this.logThrottled(queue, err));
       this.events.set(queue, events);
     }
-    this.logger.info({ queues: ALL_QUEUES.length, prefix: this.env.BULLMQ_PREFIX }, 'Queue metrics collector started');
+    this.logger.info(
+      { queues: ALL_QUEUES.length, prefix: this.env.BULLMQ_PREFIX },
+      'Queue metrics collector started',
+    );
   }
 
   eventCounters(queue: QueueName): QueueEventCounters {
@@ -82,7 +93,11 @@ export class QueueMetricsService implements OnModuleDestroy {
       ALL_QUEUES.map(async (queue): Promise<[QueueName, QueueMetrics]> => {
         const handle = this.queues.get(queue);
         if (!handle) throw new Error(`Metrics collector not started (queue "${queue}")`);
-        const counts = await withTimeout(handle.getJobCounts(...COUNT_TYPES), timeoutMs, `getJobCounts(${queue})`);
+        const counts = await withTimeout(
+          handle.getJobCounts(...COUNT_TYPES),
+          timeoutMs,
+          `getJobCounts(${queue})`,
+        );
         return [
           queue,
           {

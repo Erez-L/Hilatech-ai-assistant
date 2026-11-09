@@ -8,7 +8,13 @@ import { Meter } from '../components/progress';
 
 describe('EmptyState / ErrorState', () => {
   it('renders an empty state with an action', () => {
-    render(<EmptyState title="No members yet" description="Invite your team." action={<button>Invite</button>} />);
+    render(
+      <EmptyState
+        title="No members yet"
+        description="Invite your team."
+        action={<button>Invite</button>}
+      />,
+    );
     expect(screen.getByRole('heading', { name: 'No members yet' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Invite' })).toBeInTheDocument();
   });
@@ -39,6 +45,9 @@ describe('Meter', () => {
   });
   it('handles unlimited', () => {
     render(<Meter label="Tokens" value={10} max={null} />);
-    expect(screen.getByRole('meter', { name: 'Tokens' })).toHaveAttribute('aria-valuetext', '10 used, no limit');
+    expect(screen.getByRole('meter', { name: 'Tokens' })).toHaveAttribute(
+      'aria-valuetext',
+      '10 used, no limit',
+    );
   });
 });

@@ -5,21 +5,24 @@ import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { Skeleton } from './skeleton';
 
-export const Table = React.forwardRef<HTMLTableElement, React.TableHTMLAttributes<HTMLTableElement>>(
-  function Table({ className, ...props }, ref) {
-    return (
-      <div className="relative w-full overflow-x-auto scrollbar-thin">
-        <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props} />
-      </div>
-    );
-  },
-);
+export const Table = React.forwardRef<
+  HTMLTableElement,
+  React.TableHTMLAttributes<HTMLTableElement>
+>(function Table({ className, ...props }, ref) {
+  return (
+    <div className="relative w-full overflow-x-auto scrollbar-thin">
+      <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props} />
+    </div>
+  );
+});
 
 export const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(function TableHeader({ className, ...props }, ref) {
-  return <thead ref={ref} className={cn('[&_tr]:border-b [&_tr]:border-border', className)} {...props} />;
+  return (
+    <thead ref={ref} className={cn('[&_tr]:border-b [&_tr]:border-border', className)} {...props} />
+  );
 });
 
 export const TableBody = React.forwardRef<
@@ -42,20 +45,21 @@ export const TableFooter = React.forwardRef<
   );
 });
 
-export const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTMLTableRowElement>>(
-  function TableRow({ className, ...props }, ref) {
-    return (
-      <tr
-        ref={ref}
-        className={cn(
-          'border-b border-border transition-colors hover:bg-surface-muted/60 data-[state=selected]:bg-accent-soft/50',
-          className,
-        )}
-        {...props}
-      />
-    );
-  },
-);
+export const TableRow = React.forwardRef<
+  HTMLTableRowElement,
+  React.HTMLAttributes<HTMLTableRowElement>
+>(function TableRow({ className, ...props }, ref) {
+  return (
+    <tr
+      ref={ref}
+      className={cn(
+        'border-b border-border transition-colors hover:bg-surface-muted/60 data-[state=selected]:bg-accent-soft/50',
+        className,
+      )}
+      {...props}
+    />
+  );
+});
 
 export const TableHead = React.forwardRef<
   HTMLTableCellElement,
@@ -94,8 +98,10 @@ export interface SortState<K extends string = string> {
   direction: SortDirection;
 }
 
-export interface SortableHeadProps<K extends string>
-  extends Omit<React.ThHTMLAttributes<HTMLTableCellElement>, 'onChange'> {
+export interface SortableHeadProps<K extends string> extends Omit<
+  React.ThHTMLAttributes<HTMLTableCellElement>,
+  'onChange'
+> {
   sortKey: K;
   sort: SortState<K> | null;
   onSortChange: (next: SortState<K>) => void;
@@ -148,7 +154,10 @@ export interface TableEmptyRowProps {
 export function TableEmptyRow({ colSpan, children, className }: TableEmptyRowProps) {
   return (
     <tr>
-      <td colSpan={colSpan} className={cn('px-5 py-10 text-center text-sm text-fg-muted', className)}>
+      <td
+        colSpan={colSpan}
+        className={cn('px-5 py-10 text-center text-sm text-fg-muted', className)}
+      >
         {children}
       </td>
     </tr>

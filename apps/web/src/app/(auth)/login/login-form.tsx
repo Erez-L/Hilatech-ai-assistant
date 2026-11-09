@@ -19,7 +19,10 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get('next'));
   const [formError, setFormError] = React.useState<string | null>(null);
-  const notice = searchParams.get('reset') === '1' ? 'Your password was changed. Sign in with the new one.' : null;
+  const notice =
+    searchParams.get('reset') === '1'
+      ? 'Your password was changed. Sign in with the new one.'
+      : null;
 
   const form = useForm<LoginRequest>({
     resolver: zodResolver(loginSchema),
@@ -60,13 +63,27 @@ export function LoginForm() {
         {notice ? <Alert tone="success">{notice}</Alert> : null}
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
         <FormField id="email" label="Email" error={form.formState.errors.email?.message} required>
-          <Input type="email" autoComplete="email" inputMode="email" autoFocus {...form.register('email')} />
+          <Input
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            autoFocus
+            {...form.register('email')}
+          />
         </FormField>
-        <FormField id="password" label="Password" error={form.formState.errors.password?.message} required>
+        <FormField
+          id="password"
+          label="Password"
+          error={form.formState.errors.password?.message}
+          required
+        >
           <PasswordInput autoComplete="current-password" {...form.register('password')} />
         </FormField>
         <div className="-mt-2 flex justify-end">
-          <Link href="/forgot-password" className="text-sm text-fg-muted hover:text-fg hover:underline">
+          <Link
+            href="/forgot-password"
+            className="text-sm text-fg-muted hover:text-fg hover:underline"
+          >
             Forgot your password?
           </Link>
         </div>

@@ -116,7 +116,9 @@ export const listLeadsQuerySchema = paginationQuerySchema.extend({
   assigneeId: idSchema.optional(),
   contactId: idSchema.optional(),
   tag: z.string().trim().max(40).optional(),
-  sortBy: z.enum(['createdAt', 'updatedAt', 'value', 'expectedCloseDate', 'title']).default('createdAt'),
+  sortBy: z
+    .enum(['createdAt', 'updatedAt', 'value', 'expectedCloseDate', 'title'])
+    .default('createdAt'),
   sortOrder: sortOrderSchema.default('desc'),
 });
 export type ListLeadsQuery = z.infer<typeof listLeadsQuerySchema>;

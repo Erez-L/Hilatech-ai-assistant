@@ -67,7 +67,9 @@ describe('createApiClient', () => {
   it('attaches bearer token, organization header and credentials, and unwraps the envelope', async () => {
     const h = harness('abc');
     h.fetch.mockResolvedValueOnce(jsonResponse({ data: { ok: true } }));
-    const result = await h.client.get<{ ok: boolean }>('/organizations/current', { query: { a: 1, skip: undefined } });
+    const result = await h.client.get<{ ok: boolean }>('/organizations/current', {
+      query: { a: 1, skip: undefined },
+    });
     expect(result).toEqual({ ok: true });
     expect(calledUrls(h.fetch)[0]).toBe('http://api.test/api/v1/organizations/current?a=1');
     const init = h.fetch.mock.calls[0]?.[1] as RequestInit;
@@ -79,7 +81,11 @@ describe('createApiClient', () => {
   it('omits auth and organization headers when asked (public endpoints)', async () => {
     const h = harness('abc');
     h.fetch.mockResolvedValueOnce(jsonResponse({ data: { email: 'x@y.z' } }));
-    await h.client.get('/invitations/preview', { query: { token: 't' }, auth: false, organization: false });
+    await h.client.get('/invitations/preview', {
+      query: { token: 't' },
+      auth: false,
+      organization: false,
+    });
     const headers = headersOf(h.fetch, 0);
     expect(headers.Authorization).toBeUndefined();
     expect(headers['x-organization-id']).toBeUndefined();
@@ -88,7 +94,9 @@ describe('createApiClient', () => {
   it('refreshes once and retries the original request after a 401', async () => {
     const h = harness('stale');
     h.fetch
-      .mockResolvedValueOnce(jsonResponse({ error: { code: 'TOKEN_EXPIRED', message: 'expired' } }, { status: 401 }))
+      .mockResolvedValueOnce(
+        jsonResponse({ error: { code: 'TOKEN_EXPIRED', message: 'expired' } }, { status: 401 }),
+      )
       .mockResolvedValueOnce(jsonResponse({ data: AUTH }))
       .mockResolvedValueOnce(jsonResponse({ data: [{ id: 'm1' }] }));
 
@@ -110,10 +118,16 @@ describe('createApiClient', () => {
     const h = harness('stale');
     let resolveRefresh: (r: Response) => void = () => {};
     h.fetch.mockImplementation((url: string) => {
-      if (url.endsWith('/auth/refresh')) return new Promise<Response>((res) => (resolveRefresh = res));
-      const auth = (h.fetch.mock.calls.at(-1)?.[1] as RequestInit).headers as Record<string, string>;
+      if (url.endsWith('/auth/refresh'))
+        return new Promise<Response>((res) => (resolveRefresh = res));
+      const auth = (h.fetch.mock.calls.at(-1)?.[1] as RequestInit).headers as Record<
+        string,
+        string
+      >;
       if (auth.Authorization === 'Bearer stale') {
-        return Promise.resolve(jsonResponse({ error: { code: 'UNAUTHORIZED', message: 'no' } }, { status: 401 }));
+        return Promise.resolve(
+          jsonResponse({ error: { code: 'UNAUTHORIZED', message: 'no' } }, { status: 401 }),
+        );
       }
       return Promise.resolve(jsonResponse({ data: url.endsWith('/roles') ? 'roles' : 'members' }));
     });
@@ -134,10 +148,17 @@ describe('createApiClient', () => {
   it('signals logout when the refresh fails and does not retry', async () => {
     const h = harness('stale');
     h.fetch
-      .mockResolvedValueOnce(jsonResponse({ error: { code: 'TOKEN_EXPIRED', message: 'expired' } }, { status: 401 }))
-      .mockResolvedValueOnce(jsonResponse({ error: { code: 'TOKEN_INVALID', message: 'gone' } }, { status: 401 }));
+      .mockResolvedValueOnce(
+        jsonResponse({ error: { code: 'TOKEN_EXPIRED', message: 'expired' } }, { status: 401 }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({ error: { code: 'TOKEN_INVALID', message: 'gone' } }, { status: 401 }),
+      );
 
-    await expect(h.client.get('/members')).rejects.toMatchObject({ status: 401, code: 'TOKEN_EXPIRED' });
+    await expect(h.client.get('/members')).rejects.toMatchObject({
+      status: 401,
+      code: 'TOKEN_EXPIRED',
+    });
     expect(h.fetch).toHaveBeenCalledTimes(2);
     expect(h.token.current).toBeNull();
     expect(h.onUnauthorized).toHaveBeenCalledTimes(1);
@@ -145,7 +166,9 @@ describe('createApiClient', () => {
 
   it('tries the cookie first when there is no token in memory', async () => {
     const h = harness(null);
-    h.fetch.mockResolvedValueOnce(jsonResponse({ data: AUTH })).mockResolvedValueOnce(jsonResponse({ data: { me: 1 } }));
+    h.fetch
+      .mockResolvedValueOnce(jsonResponse({ data: AUTH }))
+      .mockResolvedValueOnce(jsonResponse({ data: { me: 1 } }));
     const me = await h.client.get<{ me: number }>('/auth/me');
     expect(me).toEqual({ me: 1 });
     expect(calledUrls(h.fetch)[0]).toBe('http://api.test/api/v1/auth/refresh');
@@ -187,7 +210,10 @@ describe('createApiClient', () => {
   it('falls back to status-based errors for non-JSON bodies and handles 204', async () => {
     const h = harness('abc');
     h.fetch.mockResolvedValueOnce(new Response('<html>gateway</html>', { status: 503 }));
-    await expect(h.client.get('/health')).rejects.toMatchObject({ status: 503, code: 'INTERNAL_ERROR' });
+    await expect(h.client.get('/health')).rejects.toMatchObject({
+      status: 503,
+      code: 'INTERNAL_ERROR',
+    });
 
     h.fetch.mockResolvedValueOnce(new Response(null, { status: 204 }));
     await expect(h.client.delete('/members/1')).resolves.toBeUndefined();
@@ -237,13 +263,34 @@ describe('response normalisers', () => {
       generatedAt: '2026-11-09T00:00:00.000Z',
     });
     expect(
-      normalizeDashboard({ members: 2, pendingInvitations: 0, leads: 1, contacts: 1, conversations: 5, openConversations: 1 }),
-    ).toMatchObject({ members: 2, leads: 1, contacts: 1, conversations: 5, openConversations: 1, pendingInvitations: 0 });
+      normalizeDashboard({
+        members: 2,
+        pendingInvitations: 0,
+        leads: 1,
+        contacts: 1,
+        conversations: 5,
+        openConversations: 1,
+      }),
+    ).toMatchObject({
+      members: 2,
+      leads: 1,
+      contacts: 1,
+      conversations: 5,
+      openConversations: 1,
+      pendingInvitations: 0,
+    });
   });
 
   it('normalizePlans accepts arrays and records', async () => {
     const { normalizePlans } = await import('../billing');
-    const limits = { seats: 2, aiTokensPerMonth: 1, agents: 1, knowledgeDocuments: 1, storageMb: 1, automations: 1 };
+    const limits = {
+      seats: 2,
+      aiTokensPerMonth: 1,
+      agents: 1,
+      knowledgeDocuments: 1,
+      storageMb: 1,
+      automations: 1,
+    };
     expect(normalizePlans([{ key: 'free', limits }])).toEqual({ free: limits });
     expect(normalizePlans({ pro: limits })).toEqual({ pro: limits });
   });

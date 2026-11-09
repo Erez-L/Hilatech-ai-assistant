@@ -16,4 +16,5 @@ Priorities follow the product specification. Status detail per task is in `task-
    documentation, regression tests.
 
 ## Dependency upgrades to evaluate later
+
 Next 16, NestJS 12, Prisma 7 (driver adapters), TypeScript 7, zod 4, BullMQ 6 — see ADR-002.

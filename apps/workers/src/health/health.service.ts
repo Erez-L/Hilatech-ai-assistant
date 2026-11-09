@@ -39,7 +39,11 @@ export function httpStatusFor(health: HealthResponse): number {
   return health.status === 'ok' ? 200 : 503;
 }
 
-export async function computeHealth(probes: HealthProbes, version: string, startedAt: number): Promise<HealthResponse> {
+export async function computeHealth(
+  probes: HealthProbes,
+  version: string,
+  startedAt: number,
+): Promise<HealthResponse> {
   const [redisUp, databaseUp, queues] = await Promise.all([
     probes.redis.ping(),
     probes.database.ping(),
@@ -67,6 +71,10 @@ export class HealthService {
   ) {}
 
   check(): Promise<HealthResponse> {
-    return computeHealth({ redis: this.redis, database: this.prisma, metrics: this.metrics }, this.version, this.startedAt);
+    return computeHealth(
+      { redis: this.redis, database: this.prisma, metrics: this.metrics },
+      this.version,
+      this.startedAt,
+    );
   }
 }

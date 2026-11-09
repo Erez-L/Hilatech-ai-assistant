@@ -92,7 +92,8 @@ export const useSession = create<SessionState>()((set, get) => ({
   applySession: (session, requestedOrganizationId = null) => {
     const preferred = get().activeOrganizationId ?? readPersistedOrganizationId();
     const activeOrganizationId =
-      session.activeOrganization?.id ?? resolveActiveOrganizationId(session.organizations, preferred);
+      session.activeOrganization?.id ??
+      resolveActiveOrganizationId(session.organizations, preferred);
     persistOrganizationId(activeOrganizationId);
     // Permissions are final when the server resolved an organization, the user has none, or the
     // response already answers the organization we asked for. Otherwise a re-fetch with the
@@ -107,7 +108,9 @@ export const useSession = create<SessionState>()((set, get) => ({
       organizations: session.organizations,
       activeOrganizationId,
       activeOrganization:
-        session.activeOrganization ?? session.organizations.find((o) => o.id === activeOrganizationId) ?? null,
+        session.activeOrganization ??
+        session.organizations.find((o) => o.id === activeOrganizationId) ??
+        null,
       permissions: session.permissions,
       sessionLoaded,
     });
@@ -116,7 +119,12 @@ export const useSession = create<SessionState>()((set, get) => ({
   setActiveOrganization: (id) => {
     persistOrganizationId(id);
     const org = get().organizations.find((o) => o.id === id) ?? null;
-    set({ activeOrganizationId: id, activeOrganization: org, permissions: [], sessionLoaded: false });
+    set({
+      activeOrganizationId: id,
+      activeOrganization: org,
+      permissions: [],
+      sessionLoaded: false,
+    });
   },
 
   updateUser: (patch) => {

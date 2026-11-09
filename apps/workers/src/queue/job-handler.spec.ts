@@ -37,7 +37,10 @@ const validEmailPayload = {
 describe('createJobHandler', () => {
   it('rejects an invalid payload with UnrecoverableError and never calls the processor', async () => {
     const logger = fakeLogger();
-    const processor: JobProcessor<typeof QueueName.EMAIL> = { queue: QueueName.EMAIL, process: jest.fn() };
+    const processor: JobProcessor<typeof QueueName.EMAIL> = {
+      queue: QueueName.EMAIL,
+      process: jest.fn(),
+    };
     const handler = createJobHandler(QueueName.EMAIL, processor, logger);
 
     const job = fakeJob({ ...validEmailPayload, to: 'not-an-email', idempotencyKey: 'short' });
@@ -56,7 +59,10 @@ describe('createJobHandler', () => {
 
   it('rejects a payload with the wrong shape (missing required base fields)', async () => {
     const logger = fakeLogger();
-    const processor: JobProcessor<typeof QueueName.NOTIFICATIONS> = { queue: QueueName.NOTIFICATIONS, process: jest.fn() };
+    const processor: JobProcessor<typeof QueueName.NOTIFICATIONS> = {
+      queue: QueueName.NOTIFICATIONS,
+      process: jest.fn(),
+    };
     const handler = createJobHandler(QueueName.NOTIFICATIONS, processor, logger);
     await expect(handler(fakeJob({ hello: 'world' }))).rejects.toBeInstanceOf(UnrecoverableError);
     expect(processor.process).not.toHaveBeenCalled();
@@ -65,7 +71,10 @@ describe('createJobHandler', () => {
   it('runs the processor with the parsed payload (defaults applied) and logs start/completion with context', async () => {
     const logger = fakeLogger();
     const outcome: JobOutcome = { status: 'completed', notificationId: 'n-1' };
-    const processor: JobProcessor<typeof QueueName.NOTIFICATIONS> = { queue: QueueName.NOTIFICATIONS, process: jest.fn().mockResolvedValue(outcome) };
+    const processor: JobProcessor<typeof QueueName.NOTIFICATIONS> = {
+      queue: QueueName.NOTIFICATIONS,
+      process: jest.fn().mockResolvedValue(outcome),
+    };
     const handler = createJobHandler(QueueName.NOTIFICATIONS, processor, logger);
 
     const payload = {
@@ -82,7 +91,10 @@ describe('createJobHandler', () => {
 
     await expect(handler(job)).resolves.toEqual(outcome);
 
-    const [passedJob, context] = (processor.process as jest.Mock).mock.calls[0] as [Job, Record<string, unknown>];
+    const [passedJob, context] = (processor.process as jest.Mock).mock.calls[0] as [
+      Job,
+      Record<string, unknown>,
+    ];
     expect(passedJob.data.data).toEqual({});
     expect(context).toMatchObject({
       queue: 'notifications',
@@ -109,25 +121,40 @@ describe('createJobHandler', () => {
     };
     const handler = createJobHandler(QueueName.EMAIL, processor, logger);
     await handler(fakeJob(validEmailPayload));
-    expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'skipped', reason: 'not_implemented' }), 'Job skipped');
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'skipped', reason: 'not_implemented' }),
+      'Job skipped',
+    );
   });
 
   it('re-throws processor errors and records whether a retry will happen', async () => {
     const logger = fakeLogger();
     const boom = new Error('smtp down');
-    const processor: JobProcessor<typeof QueueName.EMAIL> = { queue: QueueName.EMAIL, process: jest.fn().mockRejectedValue(boom) };
+    const processor: JobProcessor<typeof QueueName.EMAIL> = {
+      queue: QueueName.EMAIL,
+      process: jest.fn().mockRejectedValue(boom),
+    };
     const handler = createJobHandler(QueueName.EMAIL, processor, logger);
 
     await expect(handler(fakeJob(validEmailPayload, { attemptsStarted: 1 }))).rejects.toBe(boom);
-    expect(logger.error).toHaveBeenCalledWith(expect.objectContaining({ willRetry: true, unrecoverable: false, err: boom }), 'Job failed');
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ willRetry: true, unrecoverable: false, err: boom }),
+      'Job failed',
+    );
 
     logger.error.mockClear();
     await expect(handler(fakeJob(validEmailPayload, { attemptsStarted: 5 }))).rejects.toBe(boom);
-    expect(logger.error).toHaveBeenCalledWith(expect.objectContaining({ willRetry: false }), 'Job failed');
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ willRetry: false }),
+      'Job failed',
+    );
 
     logger.error.mockClear();
     (processor.process as jest.Mock).mockRejectedValue(new UnrecoverableError('bad'));
     await expect(handler(fakeJob(validEmailPayload))).rejects.toBeInstanceOf(UnrecoverableError);
-    expect(logger.error).toHaveBeenCalledWith(expect.objectContaining({ willRetry: false, unrecoverable: true }), 'Job failed');
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ willRetry: false, unrecoverable: true }),
+      'Job failed',
+    );
   });
 });
