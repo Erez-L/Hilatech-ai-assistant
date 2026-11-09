@@ -28,7 +28,10 @@ export class PricingTable {
       if (!parsed.success) return { table: new PricingTable(), error: parsed.error.message };
       return { table: new PricingTable(parsed.data), error: null };
     } catch (error) {
-      return { table: new PricingTable(), error: error instanceof Error ? error.message : String(error) };
+      return {
+        table: new PricingTable(),
+        error: error instanceof Error ? error.message : String(error),
+      };
     }
   }
 
@@ -40,7 +43,9 @@ export class PricingTable {
   estimate(provider: AiProviderKind, model: string, usage: TokenUsage): number | null {
     const entry = this.entries.get(key(provider, model));
     if (!entry) return null;
-    const cost = (usage.inputTokens / 1_000_000) * entry.inputPerMillionUsd + (usage.outputTokens / 1_000_000) * entry.outputPerMillionUsd;
+    const cost =
+      (usage.inputTokens / 1_000_000) * entry.inputPerMillionUsd +
+      (usage.outputTokens / 1_000_000) * entry.outputPerMillionUsd;
     return Math.round(cost * 1_000_000) / 1_000_000;
   }
 

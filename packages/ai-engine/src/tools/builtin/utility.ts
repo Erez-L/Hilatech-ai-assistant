@@ -16,7 +16,10 @@ export const timeNowTool: ToolDefinition = {
     return {
       ok: true,
       summary: `Now is ${now.toISOString()}`,
-      data: { iso: now.toISOString(), dayOfWeek: now.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' }) },
+      data: {
+        iso: now.toISOString(),
+        dayOfWeek: now.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' }),
+      },
     };
   },
 };
@@ -38,16 +41,28 @@ export function createKnowledgeSearchTool(searcher: KnowledgeSearcher | null): T
   return {
     key: 'knowledge.search',
     name: 'Search knowledge base',
-    description: "Semantic search over the organization's uploaded documents. Returns the most relevant passages with sources.",
+    description:
+      "Semantic search over the organization's uploaded documents. Returns the most relevant passages with sources.",
     category: 'knowledge',
     riskLevel: 'read',
     requiredPermission: Permission.KNOWLEDGE_READ,
-    input: z.object({ query: z.string().trim().min(1).max(500), limit: z.number().int().min(1).max(10).default(5) }),
+    input: z.object({
+      query: z.string().trim().min(1).max(500),
+      limit: z.number().int().min(1).max(10).default(5),
+    }),
     async execute(ctx, input) {
       if (!searcher) {
-        return { ok: false, summary: 'Knowledge base retrieval is not configured yet', error: 'not_configured' };
+        return {
+          ok: false,
+          summary: 'Knowledge base retrieval is not configured yet',
+          error: 'not_configured',
+        };
       }
-      const hits = await searcher.search({ organizationId: ctx.organizationId, query: input.query, limit: input.limit });
+      const hits = await searcher.search({
+        organizationId: ctx.organizationId,
+        query: input.query,
+        limit: input.limit,
+      });
       return { ok: true, summary: `${hits.length} passage(s) found`, data: hits };
     },
   };

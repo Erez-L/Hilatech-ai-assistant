@@ -7,16 +7,32 @@ import type { AiModelInfo, AiProviderKind } from '@hilatech/contracts';
  */
 const CATALOGUE: AiModelInfo[] = [
   // Anthropic
-  model('anthropic', 'claude-sonnet-4-5', 'Claude Sonnet 4.5', 200_000, 64_000, { tools: true, structured: true }),
-  model('anthropic', 'claude-opus-4-1', 'Claude Opus 4.1', 200_000, 32_000, { tools: true, structured: true }),
-  model('anthropic', 'claude-haiku-4-5', 'Claude Haiku 4.5', 200_000, 64_000, { tools: true, structured: true }),
+  model('anthropic', 'claude-sonnet-4-5', 'Claude Sonnet 4.5', 200_000, 64_000, {
+    tools: true,
+    structured: true,
+  }),
+  model('anthropic', 'claude-opus-4-1', 'Claude Opus 4.1', 200_000, 32_000, {
+    tools: true,
+    structured: true,
+  }),
+  model('anthropic', 'claude-haiku-4-5', 'Claude Haiku 4.5', 200_000, 64_000, {
+    tools: true,
+    structured: true,
+  }),
   // OpenAI
   model('openai', 'gpt-4.1', 'GPT-4.1', 1_000_000, 32_768, { tools: true, structured: true }),
-  model('openai', 'gpt-4.1-mini', 'GPT-4.1 mini', 1_000_000, 32_768, { tools: true, structured: true }),
+  model('openai', 'gpt-4.1-mini', 'GPT-4.1 mini', 1_000_000, 32_768, {
+    tools: true,
+    structured: true,
+  }),
   model('openai', 'gpt-4o', 'GPT-4o', 128_000, 16_384, { tools: true, structured: true }),
   model('openai', 'gpt-4o-mini', 'GPT-4o mini', 128_000, 16_384, { tools: true, structured: true }),
-  model('openai', 'text-embedding-3-small', 'Text Embedding 3 small', null, null, { embeddings: true }),
-  model('openai', 'text-embedding-3-large', 'Text Embedding 3 large', null, null, { embeddings: true }),
+  model('openai', 'text-embedding-3-small', 'Text Embedding 3 small', null, null, {
+    embeddings: true,
+  }),
+  model('openai', 'text-embedding-3-large', 'Text Embedding 3 large', null, null, {
+    embeddings: true,
+  }),
   // Mock (tests / local development only)
   model('mock', 'mock-chat', 'Mock chat model', 32_000, 4_096, { tools: true, structured: true }),
   model('mock', 'mock-embedding', 'Mock embedding model', null, null, { embeddings: true }),

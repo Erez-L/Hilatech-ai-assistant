@@ -42,7 +42,12 @@ const leadView = {
 function serialise<T>(value: T): T {
   return JSON.parse(
     JSON.stringify(value, (_k, v: unknown) => {
-      if (v && typeof v === 'object' && 'toNumber' in (v as object) && typeof (v as { toNumber: unknown }).toNumber === 'function') {
+      if (
+        v &&
+        typeof v === 'object' &&
+        'toNumber' in (v as object) &&
+        typeof (v as { toNumber: unknown }).toNumber === 'function'
+      ) {
         return (v as { toNumber: () => number }).toNumber();
       }
       return v;
@@ -94,12 +99,24 @@ export const getContactTool: ToolDefinition = {
       select: {
         ...contactView,
         notes: true,
-        leads: { where: { deletedAt: null }, select: { id: true, title: true, status: true, value: true, currency: true }, take: 10, orderBy: { updatedAt: 'desc' } },
-        conversations: { select: { id: true, subject: true, status: true, channel: true, lastMessageAt: true }, take: 10, orderBy: { lastMessageAt: 'desc' } },
+        leads: {
+          where: { deletedAt: null },
+          select: { id: true, title: true, status: true, value: true, currency: true },
+          take: 10,
+          orderBy: { updatedAt: 'desc' },
+        },
+        conversations: {
+          select: { id: true, subject: true, status: true, channel: true, lastMessageAt: true },
+          take: 10,
+          orderBy: { lastMessageAt: 'desc' },
+        },
       },
     });
     if (!contact) return fail('Contact not found');
-    return ok(`Loaded contact ${contact.firstName} ${contact.lastName ?? ''}`.trim(), serialise(contact));
+    return ok(
+      `Loaded contact ${contact.firstName} ${contact.lastName ?? ''}`.trim(),
+      serialise(contact),
+    );
   },
 };
 
@@ -131,7 +148,8 @@ export const createContactTool: ToolDefinition = {
 export const searchLeadsTool: ToolDefinition = {
   key: 'crm.search_leads',
   name: 'Search leads',
-  description: 'List leads, optionally filtered by text, status or assignee. Returns the most recently updated first.',
+  description:
+    'List leads, optionally filtered by text, status or assignee. Returns the most recently updated first.',
   category: 'crm',
   riskLevel: 'read',
   requiredPermission: Permission.LEADS_READ,
@@ -153,7 +171,17 @@ export const searchLeadsTool: ToolDefinition = {
               OR: [
                 { title: { contains: input.query, mode: 'insensitive' } },
                 { description: { contains: input.query, mode: 'insensitive' } },
-                { contact: { is: { OR: [{ firstName: { contains: input.query, mode: 'insensitive' } }, { lastName: { contains: input.query, mode: 'insensitive' } }, { company: { contains: input.query, mode: 'insensitive' } }] } } },
+                {
+                  contact: {
+                    is: {
+                      OR: [
+                        { firstName: { contains: input.query, mode: 'insensitive' } },
+                        { lastName: { contains: input.query, mode: 'insensitive' } },
+                        { company: { contains: input.query, mode: 'insensitive' } },
+                      ],
+                    },
+                  },
+                },
               ],
             }
           : {}),
@@ -182,8 +210,16 @@ export const getLeadTool: ToolDefinition = {
         description: true,
         tags: true,
         lostReason: true,
-        notes: { select: { id: true, body: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: 5 },
-        activities: { select: { type: true, payload: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: 10 },
+        notes: {
+          select: { id: true, body: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        },
+        activities: {
+          select: { type: true, payload: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        },
       },
     });
     if (!lead) return fail('Lead not found');
@@ -208,7 +244,10 @@ export const createLeadTool: ToolDefinition = {
   }),
   async execute(ctx, input) {
     if (input.contactId) {
-      const contact = await ctx.prisma.contact.findFirst({ where: { id: input.contactId, organizationId: ctx.organizationId, deletedAt: null }, select: { id: true } });
+      const contact = await ctx.prisma.contact.findFirst({
+        where: { id: input.contactId, organizationId: ctx.organizationId, deletedAt: null },
+        select: { id: true },
+      });
       if (!contact) return fail('Contact not found in this organization', 'invalid_reference');
     }
     const lead = await ctx.prisma.$transaction(async (tx) => {
@@ -226,7 +265,12 @@ export const createLeadTool: ToolDefinition = {
         select: leadView,
       });
       await tx.leadActivity.create({
-        data: { leadId: created.id, actorId: ctx.userId, type: 'created', payload: { by: 'ai', agentId: ctx.agentId, executionId: ctx.executionId } },
+        data: {
+          leadId: created.id,
+          actorId: ctx.userId,
+          type: 'created',
+          payload: { by: 'ai', agentId: ctx.agentId, executionId: ctx.executionId },
+        },
       });
       return created;
     });
@@ -237,15 +281,27 @@ export const createLeadTool: ToolDefinition = {
 export const updateLeadStatusTool: ToolDefinition = {
   key: 'crm.update_lead_status',
   name: 'Update lead status',
-  description: 'Move a lead to another pipeline status (new, contacted, qualified, proposal, won, lost).',
+  description:
+    'Move a lead to another pipeline status (new, contacted, qualified, proposal, won, lost).',
   category: 'crm',
   riskLevel: 'write',
   requiredPermission: Permission.LEADS_UPDATE,
-  input: z.object({ leadId: z.string().uuid(), status: LeadStatus, lostReason: z.string().trim().max(500).optional() }),
+  input: z.object({
+    leadId: z.string().uuid(),
+    status: LeadStatus,
+    lostReason: z.string().trim().max(500).optional(),
+  }),
   async execute(ctx, input) {
-    const existing = await ctx.prisma.lead.findFirst({ where: { id: input.leadId, organizationId: ctx.organizationId, deletedAt: null }, select: { id: true, status: true, title: true } });
+    const existing = await ctx.prisma.lead.findFirst({
+      where: { id: input.leadId, organizationId: ctx.organizationId, deletedAt: null },
+      select: { id: true, status: true, title: true },
+    });
     if (!existing) return fail('Lead not found');
-    if (existing.status === input.status) return ok(`Lead "${existing.title}" is already ${input.status}`, { id: existing.id, status: existing.status });
+    if (existing.status === input.status)
+      return ok(`Lead "${existing.title}" is already ${input.status}`, {
+        id: existing.id,
+        status: existing.status,
+      });
     const updated = await ctx.prisma.$transaction(async (tx) => {
       const row = await tx.lead.update({
         where: { id: existing.id },
@@ -261,12 +317,21 @@ export const updateLeadStatusTool: ToolDefinition = {
           leadId: existing.id,
           actorId: ctx.userId,
           type: 'status_changed',
-          payload: { from: existing.status, to: input.status, by: 'ai', agentId: ctx.agentId, executionId: ctx.executionId },
+          payload: {
+            from: existing.status,
+            to: input.status,
+            by: 'ai',
+            agentId: ctx.agentId,
+            executionId: ctx.executionId,
+          },
         },
       });
       return row;
     });
-    return ok(`Lead "${existing.title}" moved from ${existing.status} to ${input.status}`, serialise(updated));
+    return ok(
+      `Lead "${existing.title}" moved from ${existing.status} to ${input.status}`,
+      serialise(updated),
+    );
   },
 };
 
@@ -279,12 +344,26 @@ export const addLeadNoteTool: ToolDefinition = {
   requiredPermission: Permission.LEADS_UPDATE,
   input: z.object({ leadId: z.string().uuid(), body: z.string().trim().min(1).max(5000) }),
   async execute(ctx, input) {
-    if (!ctx.userId) return fail('Notes require a human author; this run has no acting user', 'no_actor');
-    const lead = await ctx.prisma.lead.findFirst({ where: { id: input.leadId, organizationId: ctx.organizationId, deletedAt: null }, select: { id: true, title: true } });
+    if (!ctx.userId)
+      return fail('Notes require a human author; this run has no acting user', 'no_actor');
+    const lead = await ctx.prisma.lead.findFirst({
+      where: { id: input.leadId, organizationId: ctx.organizationId, deletedAt: null },
+      select: { id: true, title: true },
+    });
     if (!lead) return fail('Lead not found');
     const note = await ctx.prisma.$transaction(async (tx) => {
-      const created = await tx.leadNote.create({ data: { leadId: lead.id, authorId: ctx.userId as string, body: input.body }, select: { id: true, body: true, createdAt: true } });
-      await tx.leadActivity.create({ data: { leadId: lead.id, actorId: ctx.userId, type: 'note_added', payload: { noteId: created.id, by: 'ai', agentId: ctx.agentId } } });
+      const created = await tx.leadNote.create({
+        data: { leadId: lead.id, authorId: ctx.userId as string, body: input.body },
+        select: { id: true, body: true, createdAt: true },
+      });
+      await tx.leadActivity.create({
+        data: {
+          leadId: lead.id,
+          actorId: ctx.userId,
+          type: 'note_added',
+          payload: { noteId: created.id, by: 'ai', agentId: ctx.agentId },
+        },
+      });
       return created;
     });
     return ok(`Added a note to lead "${lead.title}"`, serialise(note));
@@ -312,7 +391,18 @@ export const listConversationsTool: ToolDefinition = {
         ...(input.contactId ? { contactId: input.contactId } : {}),
         ...(input.leadId ? { leadId: input.leadId } : {}),
       },
-      select: { id: true, subject: true, status: true, channel: true, contactId: true, leadId: true, assigneeId: true, summary: true, lastMessageAt: true, messageCount: true },
+      select: {
+        id: true,
+        subject: true,
+        status: true,
+        channel: true,
+        contactId: true,
+        leadId: true,
+        assigneeId: true,
+        summary: true,
+        lastMessageAt: true,
+        messageCount: true,
+      },
       orderBy: { lastMessageAt: 'desc' },
       take: input.limit,
     });
@@ -327,9 +417,15 @@ export const getConversationMessagesTool: ToolDefinition = {
   category: 'crm',
   riskLevel: 'read',
   requiredPermission: Permission.CONVERSATIONS_READ,
-  input: z.object({ conversationId: z.string().uuid(), limit: z.number().int().min(1).max(50).default(20) }),
+  input: z.object({
+    conversationId: z.string().uuid(),
+    limit: z.number().int().min(1).max(50).default(20),
+  }),
   async execute(ctx, input) {
-    const conversation = await ctx.prisma.conversation.findFirst({ where: { id: input.conversationId, organizationId: ctx.organizationId }, select: { id: true, subject: true, status: true } });
+    const conversation = await ctx.prisma.conversation.findFirst({
+      where: { id: input.conversationId, organizationId: ctx.organizationId },
+      select: { id: true, subject: true, status: true },
+    });
     if (!conversation) return fail('Conversation not found');
     const messages = await ctx.prisma.message.findMany({
       where: { conversationId: conversation.id },
@@ -337,7 +433,10 @@ export const getConversationMessagesTool: ToolDefinition = {
       orderBy: { createdAt: 'desc' },
       take: input.limit,
     });
-    return ok(`${messages.length} message(s) from "${conversation.subject ?? 'conversation'}"`, serialise({ conversation, messages: messages.reverse() }));
+    return ok(
+      `${messages.length} message(s) from "${conversation.subject ?? 'conversation'}"`,
+      serialise({ conversation, messages: messages.reverse() }),
+    );
   },
 };
 

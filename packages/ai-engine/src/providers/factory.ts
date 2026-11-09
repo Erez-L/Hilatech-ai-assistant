@@ -27,12 +27,14 @@ export function createProvider(
       return new OpenAiProvider(credentials);
     case 'mock': {
       const env = options.nodeEnv ?? process.env.NODE_ENV ?? 'development';
-      const allowed = options.allowMock ?? (env === 'test' || process.env.AI_ALLOW_MOCK_PROVIDER === 'true');
+      const allowed =
+        options.allowMock ?? (env === 'test' || process.env.AI_ALLOW_MOCK_PROVIDER === 'true');
       if (env === 'production' || !allowed) {
         throw new AiProviderError({
           provider: 'mock',
           code: 'unsupported',
-          message: 'The mock AI provider is only available in test/development with AI_ALLOW_MOCK_PROVIDER=true',
+          message:
+            'The mock AI provider is only available in test/development with AI_ALLOW_MOCK_PROVIDER=true',
           retryable: false,
         });
       }
@@ -40,7 +42,12 @@ export function createProvider(
     }
     default: {
       const never: never = kind;
-      throw new AiProviderError({ provider: String(never), code: 'unsupported', message: `Unknown provider ${String(never)}`, retryable: false });
+      throw new AiProviderError({
+        provider: String(never),
+        code: 'unsupported',
+        message: `Unknown provider ${String(never)}`,
+        retryable: false,
+      });
     }
   }
 }

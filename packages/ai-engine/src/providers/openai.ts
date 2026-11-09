@@ -33,7 +33,11 @@ export class OpenAiProvider implements AiProvider {
 
   constructor(credentials: ProviderCredentials, client?: OpenAI) {
     if (!credentials.apiKey && !client) {
-      throw new AiProviderError({ provider: 'openai', code: 'auth', message: 'OpenAI API key is missing' });
+      throw new AiProviderError({
+        provider: 'openai',
+        code: 'auth',
+        message: 'OpenAI API key is missing',
+      });
     }
     this.client =
       client ??
@@ -56,7 +60,9 @@ export class OpenAiProvider implements AiProvider {
           model: request.model,
           messages: toOpenAiMessages(request),
           ...(request.tools?.length ? { tools: request.tools.map(toOpenAiTool) } : {}),
-          ...(request.tools?.length && request.toolChoice ? { tool_choice: toToolChoice(request.toolChoice) } : {}),
+          ...(request.tools?.length && request.toolChoice
+            ? { tool_choice: toToolChoice(request.toolChoice) }
+            : {}),
           ...(request.maxTokens !== undefined ? { max_completion_tokens: request.maxTokens } : {}),
           ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
           ...(request.stopSequences?.length ? { stop: request.stopSequences } : {}),
@@ -77,7 +83,9 @@ export class OpenAiProvider implements AiProvider {
           model: request.model,
           messages: toOpenAiMessages(request),
           ...(request.tools?.length ? { tools: request.tools.map(toOpenAiTool) } : {}),
-          ...(request.tools?.length && request.toolChoice ? { tool_choice: toToolChoice(request.toolChoice) } : {}),
+          ...(request.tools?.length && request.toolChoice
+            ? { tool_choice: toToolChoice(request.toolChoice) }
+            : {}),
           ...(request.maxTokens !== undefined ? { max_completion_tokens: request.maxTokens } : {}),
           ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
           ...(request.stopSequences?.length ? { stop: request.stopSequences } : {}),
@@ -127,7 +135,11 @@ export class OpenAiProvider implements AiProvider {
 
     const toolCalls: ToolCall[] = [];
     for (const [, entry] of [...partial.entries()].sort((a, b) => a[0] - b[0])) {
-      const call: ToolCall = { id: entry.id || `call_${toolCalls.length}`, name: entry.name, input: safeParseObject(entry.args) };
+      const call: ToolCall = {
+        id: entry.id || `call_${toolCalls.length}`,
+        name: entry.name,
+        input: safeParseObject(entry.args),
+      };
       toolCalls.push(call);
       yield { type: 'tool_call', toolCall: call };
     }
@@ -147,7 +159,9 @@ export class OpenAiProvider implements AiProvider {
 
   async generateStructured<T>(request: StructuredRequest<T>): Promise<StructuredResult<T>> {
     const name = request.schemaName ?? 'structured_output';
-    const schema = stripSchemaMeta(zodToJsonSchema(request.schema, { $refStrategy: 'none' }) as Record<string, unknown>);
+    const schema = stripSchemaMeta(
+      zodToJsonSchema(request.schema, { $refStrategy: 'none' }) as Record<string, unknown>,
+    );
     const run = async (messages: AiMessage[]): Promise<StructuredResult<T>> => {
       let response: OpenAI.Chat.Completions.ChatCompletion;
       try {
@@ -156,7 +170,9 @@ export class OpenAiProvider implements AiProvider {
             model: request.model,
             messages: toOpenAiMessages({ ...request, messages }),
             response_format: { type: 'json_schema', json_schema: { name, schema, strict: false } },
-            ...(request.maxTokens !== undefined ? { max_completion_tokens: request.maxTokens } : {}),
+            ...(request.maxTokens !== undefined
+              ? { max_completion_tokens: request.maxTokens }
+              : {}),
             ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
           },
           { signal: request.signal },
@@ -175,7 +191,10 @@ export class OpenAiProvider implements AiProvider {
       if (!parsed.success) throw new StructuredValidationError(raw, parsed.error.message);
       return {
         data: parsed.data as T,
-        usage: { inputTokens: response.usage?.prompt_tokens ?? 0, outputTokens: response.usage?.completion_tokens ?? 0 },
+        usage: {
+          inputTokens: response.usage?.prompt_tokens ?? 0,
+          outputTokens: response.usage?.completion_tokens ?? 0,
+        },
         model: response.model ?? request.model,
         raw,
       };
@@ -187,7 +206,15 @@ export class OpenAiProvider implements AiProvider {
         return run([
           ...request.messages,
           { role: 'assistant', parts: [{ type: 'text', text: error.raw }] },
-          { role: 'user', parts: [{ type: 'text', text: `The previous output did not match the required schema: ${error.issues}. Return a corrected JSON object only.` }] },
+          {
+            role: 'user',
+            parts: [
+              {
+                type: 'text',
+                text: `The previous output did not match the required schema: ${error.issues}. Return a corrected JSON object only.`,
+              },
+            ],
+          },
         ]);
       }
       throw error;
@@ -215,10 +242,18 @@ export class OpenAiProvider implements AiProvider {
   async healthCheck(model = 'gpt-4o-mini'): Promise<HealthResult> {
     const started = Date.now();
     try {
-      await this.generate({ model, maxTokens: 8, messages: [{ role: 'user', parts: [{ type: 'text', text: 'ping' }] }] });
+      await this.generate({
+        model,
+        maxTokens: 8,
+        messages: [{ role: 'user', parts: [{ type: 'text', text: 'ping' }] }],
+      });
       return { ok: true, latencyMs: Date.now() - started, error: null };
     } catch (error) {
-      return { ok: false, latencyMs: Date.now() - started, error: error instanceof Error ? error.message : String(error) };
+      return {
+        ok: false,
+        latencyMs: Date.now() - started,
+        error: error instanceof Error ? error.message : String(error),
+      };
     }
   }
 }
@@ -236,7 +271,9 @@ class StructuredValidationError extends Error {
 // Mapping helpers
 // ---------------------------------------------------------------------------
 
-export function toOpenAiMessages(request: Pick<GenerateRequest, 'system' | 'messages'>): ChatMessage[] {
+export function toOpenAiMessages(
+  request: Pick<GenerateRequest, 'system' | 'messages'>,
+): ChatMessage[] {
   const out: ChatMessage[] = [];
   if (request.system) out.push({ role: 'system', content: request.system });
   for (const message of request.messages) {
@@ -253,8 +290,15 @@ export function toOpenAiMessages(request: Pick<GenerateRequest, 'system' | 'mess
       continue;
     }
     if (message.role === 'assistant') {
-      const textValue = message.parts.filter((p) => p.type === 'text').map((p) => (p as { text: string }).text).join('');
-      const calls = message.parts.filter((p) => p.type === 'tool_call') as Array<{ id: string; name: string; input: Record<string, unknown> }>;
+      const textValue = message.parts
+        .filter((p) => p.type === 'text')
+        .map((p) => (p as { text: string }).text)
+        .join('');
+      const calls = message.parts.filter((p) => p.type === 'tool_call') as Array<{
+        id: string;
+        name: string;
+        input: Record<string, unknown>;
+      }>;
       out.push({
         role: 'assistant',
         content: textValue.length > 0 ? textValue : null,
@@ -271,7 +315,10 @@ export function toOpenAiMessages(request: Pick<GenerateRequest, 'system' | 'mess
       continue;
     }
     // user: text parts (tool results inside a user message are also accepted for robustness)
-    const textValue = message.parts.filter((p) => p.type === 'text').map((p) => (p as { text: string }).text).join('');
+    const textValue = message.parts
+      .filter((p) => p.type === 'text')
+      .map((p) => (p as { text: string }).text)
+      .join('');
     if (textValue.length > 0) out.push({ role: 'user', content: textValue });
     for (const part of message.parts) {
       if (part.type === 'tool_result') {
@@ -286,31 +333,51 @@ export function toOpenAiMessages(request: Pick<GenerateRequest, 'system' | 'mess
   return out;
 }
 
-function toOpenAiTool(tool: { name: string; description: string; inputSchema: Record<string, unknown> }): ChatTool {
+function toOpenAiTool(tool: {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+}): ChatTool {
   return {
     type: 'function',
-    function: { name: tool.name, description: tool.description, parameters: stripSchemaMeta(tool.inputSchema) },
+    function: {
+      name: tool.name,
+      description: tool.description,
+      parameters: stripSchemaMeta(tool.inputSchema),
+    },
   };
 }
 
-function toToolChoice(choice: NonNullable<GenerateRequest['toolChoice']>): OpenAI.Chat.Completions.ChatCompletionToolChoiceOption {
+function toToolChoice(
+  choice: NonNullable<GenerateRequest['toolChoice']>,
+): OpenAI.Chat.Completions.ChatCompletionToolChoiceOption {
   if (choice === 'auto' || choice === 'none' || choice === 'required') return choice;
   return { type: 'function', function: { name: choice.name } };
 }
 
-function fromOpenAiResponse(response: OpenAI.Chat.Completions.ChatCompletion, requestedModel: string): GenerateResult {
+function fromOpenAiResponse(
+  response: OpenAI.Chat.Completions.ChatCompletion,
+  requestedModel: string,
+): GenerateResult {
   const choice = response.choices[0];
   const message = choice?.message;
   const toolCalls: ToolCall[] = [];
   for (const tc of message?.tool_calls ?? []) {
     if (tc.type !== 'function') continue;
-    toolCalls.push({ id: tc.id, name: tc.function.name, input: safeParseObject(tc.function.arguments) });
+    toolCalls.push({
+      id: tc.id,
+      name: tc.function.name,
+      input: safeParseObject(tc.function.arguments),
+    });
   }
   return {
     text: message?.content ?? '',
     toolCalls,
     finishReason: mapFinish(choice?.finish_reason ?? null, toolCalls.length > 0),
-    usage: { inputTokens: response.usage?.prompt_tokens ?? 0, outputTokens: response.usage?.completion_tokens ?? 0 },
+    usage: {
+      inputTokens: response.usage?.prompt_tokens ?? 0,
+      outputTokens: response.usage?.completion_tokens ?? 0,
+    },
     model: response.model ?? requestedModel,
     responseId: response.id,
   };
@@ -328,7 +395,9 @@ function safeParseObject(json: string): Record<string, unknown> {
   if (!json?.trim()) return {};
   try {
     const value: unknown = JSON.parse(json);
-    return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : { value };
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : { value };
   } catch {
     return { _raw: json };
   }
@@ -337,15 +406,39 @@ function safeParseObject(json: string): Record<string, unknown> {
 function normalise(error: unknown): AiProviderError {
   if (error instanceof AiProviderError) return error;
   if (isAbortError(error)) {
-    return new AiProviderError({ provider: 'openai', code: 'timeout', message: 'Request aborted', retryable: false, cause: error });
+    return new AiProviderError({
+      provider: 'openai',
+      code: 'timeout',
+      message: 'Request aborted',
+      retryable: false,
+      cause: error,
+    });
   }
   const status = (error as { status?: number })?.status ?? null;
   const message = error instanceof Error ? error.message : String(error);
   if (error instanceof OpenAI.APIConnectionTimeoutError) {
-    return new AiProviderError({ provider: 'openai', code: 'timeout', message, status, cause: error });
+    return new AiProviderError({
+      provider: 'openai',
+      code: 'timeout',
+      message,
+      status,
+      cause: error,
+    });
   }
   if (error instanceof OpenAI.APIConnectionError) {
-    return new AiProviderError({ provider: 'openai', code: 'server', message, status, cause: error });
+    return new AiProviderError({
+      provider: 'openai',
+      code: 'server',
+      message,
+      status,
+      cause: error,
+    });
   }
-  return new AiProviderError({ provider: 'openai', code: codeFromStatus(status), message, status, cause: error });
+  return new AiProviderError({
+    provider: 'openai',
+    code: codeFromStatus(status),
+    message,
+    status,
+    cause: error,
+  });
 }

@@ -37,7 +37,11 @@ export class AnthropicProvider implements AiProvider {
 
   constructor(credentials: ProviderCredentials, client?: Anthropic) {
     if (!credentials.apiKey && !client) {
-      throw new AiProviderError({ provider: 'anthropic', code: 'auth', message: 'Anthropic API key is missing' });
+      throw new AiProviderError({
+        provider: 'anthropic',
+        code: 'auth',
+        message: 'Anthropic API key is missing',
+      });
     }
     this.client =
       client ??
@@ -62,7 +66,9 @@ export class AnthropicProvider implements AiProvider {
           ...(request.system ? { system: request.system } : {}),
           messages: toAnthropicMessages(request.messages),
           ...(request.tools?.length ? { tools: request.tools.map(toAnthropicTool) } : {}),
-          ...(request.tools?.length && request.toolChoice ? { tool_choice: toToolChoice(request.toolChoice) } : {}),
+          ...(request.tools?.length && request.toolChoice
+            ? { tool_choice: toToolChoice(request.toolChoice) }
+            : {}),
           ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
           ...(request.stopSequences?.length ? { stop_sequences: request.stopSequences } : {}),
         },
@@ -84,7 +90,9 @@ export class AnthropicProvider implements AiProvider {
           ...(request.system ? { system: request.system } : {}),
           messages: toAnthropicMessages(request.messages),
           ...(request.tools?.length ? { tools: request.tools.map(toAnthropicTool) } : {}),
-          ...(request.tools?.length && request.toolChoice ? { tool_choice: toToolChoice(request.toolChoice) } : {}),
+          ...(request.tools?.length && request.toolChoice
+            ? { tool_choice: toToolChoice(request.toolChoice) }
+            : {}),
           ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
           ...(request.stopSequences?.length ? { stop_sequences: request.stopSequences } : {}),
           stream: true,
@@ -114,7 +122,11 @@ export class AnthropicProvider implements AiProvider {
             break;
           case 'content_block_start':
             if (event.content_block.type === 'tool_use') {
-              partialTools.set(event.index, { id: event.content_block.id, name: event.content_block.name, json: '' });
+              partialTools.set(event.index, {
+                id: event.content_block.id,
+                name: event.content_block.name,
+                json: '',
+              });
             }
             break;
           case 'content_block_delta':
@@ -129,7 +141,11 @@ export class AnthropicProvider implements AiProvider {
           case 'content_block_stop': {
             const partial = partialTools.get(event.index);
             if (partial) {
-              const call: ToolCall = { id: partial.id, name: partial.name, input: safeParseObject(partial.json) };
+              const call: ToolCall = {
+                id: partial.id,
+                name: partial.name,
+                input: safeParseObject(partial.json),
+              };
               toolCalls.push(call);
               partialTools.delete(event.index);
               yield { type: 'tool_call', toolCall: call };
@@ -164,12 +180,21 @@ export class AnthropicProvider implements AiProvider {
   /** Structured output via a forced tool call whose input schema is the requested schema. */
   async generateStructured<T>(request: StructuredRequest<T>): Promise<StructuredResult<T>> {
     const name = request.schemaName ?? 'structured_output';
-    const jsonSchema = zodToJsonSchema(request.schema, { $refStrategy: 'none' }) as Record<string, unknown>;
+    const jsonSchema = zodToJsonSchema(request.schema, { $refStrategy: 'none' }) as Record<
+      string,
+      unknown
+    >;
     const attempt = async (messages: AiMessage[]): Promise<StructuredResult<T>> => {
       const result = await this.generate({
         ...request,
         messages,
-        tools: [{ name, description: 'Return the structured result.', inputSchema: stripSchemaMeta(jsonSchema) }],
+        tools: [
+          {
+            name,
+            description: 'Return the structured result.',
+            inputSchema: stripSchemaMeta(jsonSchema),
+          },
+        ],
         toolChoice: { name },
       });
       const call = result.toolCalls.find((c) => c.name === name);
@@ -183,9 +208,18 @@ export class AnthropicProvider implements AiProvider {
       }
       const parsed = request.schema.safeParse(call.input);
       if (!parsed.success) {
-        throw new StructuredValidationError(JSON.stringify(call.input), parsed.error.message, result);
+        throw new StructuredValidationError(
+          JSON.stringify(call.input),
+          parsed.error.message,
+          result,
+        );
       }
-      return { data: parsed.data as T, usage: result.usage, model: result.model, raw: JSON.stringify(call.input) };
+      return {
+        data: parsed.data as T,
+        usage: result.usage,
+        model: result.model,
+        raw: JSON.stringify(call.input),
+      };
     };
     try {
       return await attempt(request.messages);
@@ -197,7 +231,12 @@ export class AnthropicProvider implements AiProvider {
           { role: 'assistant', parts: [{ type: 'text', text: error.raw }] },
           {
             role: 'user',
-            parts: [{ type: 'text', text: `The previous output did not match the required schema: ${error.issues}. Return a corrected result.` }],
+            parts: [
+              {
+                type: 'text',
+                text: `The previous output did not match the required schema: ${error.issues}. Return a corrected result.`,
+              },
+            ],
           },
         ];
         return attempt(retryMessages);
@@ -210,7 +249,8 @@ export class AnthropicProvider implements AiProvider {
     throw new AiProviderError({
       provider: 'anthropic',
       code: 'unsupported',
-      message: 'Anthropic does not offer an embeddings API; configure an embedding-capable provider',
+      message:
+        'Anthropic does not offer an embeddings API; configure an embedding-capable provider',
       retryable: false,
     });
   }
@@ -218,10 +258,18 @@ export class AnthropicProvider implements AiProvider {
   async healthCheck(model = 'claude-haiku-4-5'): Promise<HealthResult> {
     const started = Date.now();
     try {
-      await this.generate({ model, maxTokens: 8, messages: [{ role: 'user', parts: [{ type: 'text', text: 'ping' }] }] });
+      await this.generate({
+        model,
+        maxTokens: 8,
+        messages: [{ role: 'user', parts: [{ type: 'text', text: 'ping' }] }],
+      });
       return { ok: true, latencyMs: Date.now() - started, error: null };
     } catch (error) {
-      return { ok: false, latencyMs: Date.now() - started, error: error instanceof Error ? error.message : String(error) };
+      return {
+        ok: false,
+        latencyMs: Date.now() - started,
+        error: error instanceof Error ? error.message : String(error),
+      };
     }
   }
 }
@@ -271,7 +319,11 @@ export function toAnthropicMessages(messages: AiMessage[]): AnthropicMessagePara
   return out;
 }
 
-function toAnthropicTool(tool: { name: string; description: string; inputSchema: Record<string, unknown> }): AnthropicTool {
+function toAnthropicTool(tool: {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+}): AnthropicTool {
   return {
     name: tool.name,
     description: tool.description,
@@ -279,7 +331,9 @@ function toAnthropicTool(tool: { name: string; description: string; inputSchema:
   };
 }
 
-function toToolChoice(choice: NonNullable<GenerateRequest['toolChoice']>): Anthropic.Messages.ToolChoice {
+function toToolChoice(
+  choice: NonNullable<GenerateRequest['toolChoice']>,
+): Anthropic.Messages.ToolChoice {
   if (choice === 'auto') return { type: 'auto' };
   if (choice === 'required') return { type: 'any' };
   if (choice === 'none') return { type: 'none' };
@@ -292,14 +346,21 @@ function fromAnthropicResponse(response: Anthropic.Messages.Message): GenerateRe
   for (const block of response.content) {
     if (block.type === 'text') textOut += block.text;
     else if (block.type === 'tool_use') {
-      toolCalls.push({ id: block.id, name: block.name, input: (block.input ?? {}) as Record<string, unknown> });
+      toolCalls.push({
+        id: block.id,
+        name: block.name,
+        input: (block.input ?? {}) as Record<string, unknown>,
+      });
     }
   }
   return {
     text: textOut,
     toolCalls,
     finishReason: mapStopReason(response.stop_reason, toolCalls.length > 0),
-    usage: { inputTokens: response.usage?.input_tokens ?? 0, outputTokens: response.usage?.output_tokens ?? 0 },
+    usage: {
+      inputTokens: response.usage?.input_tokens ?? 0,
+      outputTokens: response.usage?.output_tokens ?? 0,
+    },
     model: response.model,
     responseId: response.id,
   };
@@ -317,7 +378,9 @@ function safeParseObject(json: string): Record<string, unknown> {
   if (!json.trim()) return {};
   try {
     const value: unknown = JSON.parse(json);
-    return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : { value };
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : { value };
   } catch {
     return { _raw: json };
   }
@@ -333,15 +396,39 @@ export function stripSchemaMeta(schema: Record<string, unknown>): Record<string,
 function normalise(error: unknown): AiProviderError {
   if (error instanceof AiProviderError) return error;
   if (isAbortError(error)) {
-    return new AiProviderError({ provider: 'anthropic', code: 'timeout', message: 'Request aborted', retryable: false, cause: error });
+    return new AiProviderError({
+      provider: 'anthropic',
+      code: 'timeout',
+      message: 'Request aborted',
+      retryable: false,
+      cause: error,
+    });
   }
   const status = (error as { status?: number })?.status ?? null;
   const message = error instanceof Error ? error.message : String(error);
   if (error instanceof Anthropic.APIConnectionTimeoutError) {
-    return new AiProviderError({ provider: 'anthropic', code: 'timeout', message, status, cause: error });
+    return new AiProviderError({
+      provider: 'anthropic',
+      code: 'timeout',
+      message,
+      status,
+      cause: error,
+    });
   }
   if (error instanceof Anthropic.APIConnectionError) {
-    return new AiProviderError({ provider: 'anthropic', code: 'server', message, status, cause: error });
+    return new AiProviderError({
+      provider: 'anthropic',
+      code: 'server',
+      message,
+      status,
+      cause: error,
+    });
   }
-  return new AiProviderError({ provider: 'anthropic', code: codeFromStatus(status), message, status, cause: error });
+  return new AiProviderError({
+    provider: 'anthropic',
+    code: codeFromStatus(status),
+    message,
+    status,
+    cause: error,
+  });
 }

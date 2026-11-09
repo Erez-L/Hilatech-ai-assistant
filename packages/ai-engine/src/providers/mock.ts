@@ -63,12 +63,24 @@ export class MockProvider implements AiProvider {
         const timer = setTimeout(resolve, this.latencyMs);
         request.signal?.addEventListener('abort', () => {
           clearTimeout(timer);
-          reject(new AiProviderError({ provider: 'mock', code: 'timeout', message: 'Request aborted', retryable: false }));
+          reject(
+            new AiProviderError({
+              provider: 'mock',
+              code: 'timeout',
+              message: 'Request aborted',
+              retryable: false,
+            }),
+          );
         });
       });
     }
     if (request.signal?.aborted) {
-      throw new AiProviderError({ provider: 'mock', code: 'timeout', message: 'Request aborted', retryable: false });
+      throw new AiProviderError({
+        provider: 'mock',
+        code: 'timeout',
+        message: 'Request aborted',
+        retryable: false,
+      });
     }
     const scripted = this.script.shift();
     if (scripted) return scripted;
@@ -80,14 +92,22 @@ export class MockProvider implements AiProvider {
     if ('error' in turn) throw turn.error;
     const toolCalls: ToolCall[] =
       'toolCalls' in turn
-        ? turn.toolCalls.map((c) => ({ id: `mock_call_${++this.callCounter}`, name: c.name, input: c.input }))
+        ? turn.toolCalls.map((c) => ({
+            id: `mock_call_${++this.callCounter}`,
+            name: c.name,
+            input: c.input,
+          }))
         : [];
     const textOut = 'structured' in turn ? JSON.stringify(turn.structured) : (turn.text ?? '');
     return {
       text: textOut,
       toolCalls,
       finishReason: toolCalls.length ? 'tool_calls' : 'stop',
-      usage: { inputTokens: estimateMessagesTokens(request.messages) + estimateTokens(request.system ?? ''), outputTokens: estimateTokens(textOut) + toolCalls.length * 10 },
+      usage: {
+        inputTokens:
+          estimateMessagesTokens(request.messages) + estimateTokens(request.system ?? ''),
+        outputTokens: estimateTokens(textOut) + toolCalls.length * 10,
+      },
       model: request.model,
       responseId: `mock_${Date.now()}_${this.callCounter}`,
     };
@@ -111,18 +131,37 @@ export class MockProvider implements AiProvider {
   async generateStructured<T>(request: StructuredRequest<T>): Promise<StructuredResult<T>> {
     const turn = await this.nextTurn({ ...request });
     if ('error' in turn) throw turn.error;
-    const raw = 'structured' in turn ? JSON.stringify(turn.structured) : 'text' in turn ? turn.text : '{}';
+    const raw: string =
+      'structured' in turn ? JSON.stringify(turn.structured) : (turn.text ?? '{}');
     let value: unknown;
     try {
       value = JSON.parse(raw);
     } catch {
-      throw new AiProviderError({ provider: 'mock', code: 'invalid_request', message: 'mock structured output was not JSON', retryable: false });
+      throw new AiProviderError({
+        provider: 'mock',
+        code: 'invalid_request',
+        message: 'mock structured output was not JSON',
+        retryable: false,
+      });
     }
     const parsed = request.schema.safeParse(value);
     if (!parsed.success) {
-      throw new AiProviderError({ provider: 'mock', code: 'invalid_request', message: `mock structured output invalid: ${parsed.error.message}`, retryable: false });
+      throw new AiProviderError({
+        provider: 'mock',
+        code: 'invalid_request',
+        message: `mock structured output invalid: ${parsed.error.message}`,
+        retryable: false,
+      });
     }
-    return { data: parsed.data as T, usage: { inputTokens: estimateMessagesTokens(request.messages), outputTokens: estimateTokens(raw) }, model: request.model, raw };
+    return {
+      data: parsed.data as T,
+      usage: {
+        inputTokens: estimateMessagesTokens(request.messages),
+        outputTokens: estimateTokens(raw),
+      },
+      model: request.model,
+      raw,
+    };
   }
 
   /** Deterministic pseudo-embeddings (hash-based) with 64 dimensions. */
@@ -132,12 +171,17 @@ export class MockProvider implements AiProvider {
       const vector = new Array<number>(dims).fill(0);
       for (let i = 0; i < textValue.length; i += 1) {
         const code = textValue.charCodeAt(i);
-        vector[(code + i) % dims] += ((code % 13) - 6) / 10;
+        vector[(code + i) % dims] = (vector[(code + i) % dims] ?? 0) + ((code % 13) - 6) / 10;
       }
       const norm = Math.sqrt(vector.reduce((s, v) => s + v * v, 0)) || 1;
       return vector.map((v) => v / norm);
     });
-    return { embeddings, usage: { inputTokens: request.input.reduce((s, t) => s + estimateTokens(t), 0) }, model: request.model, dimensions: dims };
+    return {
+      embeddings,
+      usage: { inputTokens: request.input.reduce((s, t) => s + estimateTokens(t), 0) },
+      model: request.model,
+      dimensions: dims,
+    };
   }
 
   async healthCheck(): Promise<HealthResult> {

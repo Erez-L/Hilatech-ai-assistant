@@ -30,7 +30,9 @@ export function estimateMessageTokens(message: AiMessage): number {
         total += estimateTokens(part.name) + estimateTokens(JSON.stringify(part.input ?? {}));
         break;
       case 'tool_result':
-        total += estimateTokens(typeof part.content === 'string' ? part.content : JSON.stringify(part.content));
+        total += estimateTokens(
+          typeof part.content === 'string' ? part.content : JSON.stringify(part.content),
+        );
         break;
       default:
         break;

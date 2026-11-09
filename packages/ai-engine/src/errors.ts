@@ -27,7 +27,9 @@ export class AiProviderError extends Error {
     this.name = 'AiProviderError';
     this.provider = params.provider;
     this.code = params.code;
-    this.retryable = params.retryable ?? (params.code === 'rate_limited' || params.code === 'server' || params.code === 'timeout');
+    this.retryable =
+      params.retryable ??
+      (params.code === 'rate_limited' || params.code === 'server' || params.code === 'timeout');
     this.status = params.status ?? null;
   }
 }
@@ -40,7 +42,8 @@ export class AiNotConfiguredError extends Error {
   }
 }
 
-export type LimitKind = 'steps' | 'duration' | 'tokens' | 'delegations' | 'delegation_depth' | 'tool_calls';
+export type LimitKind =
+  'steps' | 'duration' | 'tokens' | 'delegations' | 'delegation_depth' | 'tool_calls';
 
 /** An execution hit one of its hard or configured limits. */
 export class LimitExceededError extends Error {

@@ -5,7 +5,12 @@ import { z } from 'zod';
 import { ToolExecutor } from '../tools/executor';
 import { ToolRegistry } from '../tools/registry';
 import { timeNowTool } from '../tools/builtin/utility';
-import { noopLogger, type ToolContext, type ToolDefinition, type ToolPrincipal } from '../tools/types';
+import {
+  noopLogger,
+  type ToolContext,
+  type ToolDefinition,
+  type ToolPrincipal,
+} from '../tools/types';
 
 const writeTool: ToolDefinition = {
   key: 'crm.create_lead',
@@ -77,7 +82,11 @@ describe('ToolExecutor permission layer', () => {
   };
 
   it('executes an allowed read tool (function names use __ for dots)', async () => {
-    const outcome = await new ToolExecutor(registry).execute(ctx(), principal, { id: '1', name: 'time__now', input: {} });
+    const outcome = await new ToolExecutor(registry).execute(ctx(), principal, {
+      id: '1',
+      name: 'time__now',
+      input: {},
+    });
     expect(outcome.status).toBe('ok');
     expect(outcome.toolKey).toBe('time.now');
     expect((outcome.result.data as { iso: string }).iso).toBe('2026-01-01T00:00:00.000Z');
@@ -88,27 +97,51 @@ describe('ToolExecutor permission layer', () => {
     const unknown = await exec.execute(ctx(), principal, { id: '1', name: 'nope', input: {} });
     expect(unknown.status).toBe('denied');
     expect(unknown.status === 'denied' && unknown.reason).toBe('unknown_tool');
-    const notAllowed = await exec.execute(ctx(), { ...principal, allowedTools: ['time.now'] }, { id: '2', name: 'crm__create_lead', input: { title: 'x' } });
+    const notAllowed = await exec.execute(
+      ctx(),
+      { ...principal, allowedTools: ['time.now'] },
+      { id: '2', name: 'crm__create_lead', input: { title: 'x' } },
+    );
     expect(notAllowed.status === 'denied' && notAllowed.reason).toBe('not_allowed_for_agent');
   });
 
   it('requires the tool permission and the write grant', async () => {
     const exec = new ToolExecutor(registry);
-    const noPerm = await exec.execute(ctx(), { ...principal, permissions: [] }, { id: '1', name: 'crm__create_lead', input: { title: 'x' } });
+    const noPerm = await exec.execute(
+      ctx(),
+      { ...principal, permissions: [] },
+      { id: '1', name: 'crm__create_lead', input: { title: 'x' } },
+    );
     expect(noPerm.status === 'denied' && noPerm.reason).toBe('missing_permission');
-    const noWrite = await exec.execute(ctx(), { ...principal, allowWrite: false }, { id: '2', name: 'crm__create_lead', input: { title: 'x' } });
+    const noWrite = await exec.execute(
+      ctx(),
+      { ...principal, allowWrite: false },
+      { id: '2', name: 'crm__create_lead', input: { title: 'x' } },
+    );
     expect(noWrite.status === 'denied' && noWrite.reason).toBe('write_not_allowed');
-    const ok = await exec.execute(ctx(), principal, { id: '3', name: 'crm__create_lead', input: { title: 'Big deal' } });
+    const ok = await exec.execute(ctx(), principal, {
+      id: '3',
+      name: 'crm__create_lead',
+      input: { title: 'Big deal' },
+    });
     expect(ok.status).toBe('ok');
   });
 
   it('never executes dangerous tools autonomously', async () => {
-    const outcome = await new ToolExecutor(registry).execute(ctx(), principal, { id: '1', name: 'admin__delete_everything', input: {} });
+    const outcome = await new ToolExecutor(registry).execute(ctx(), principal, {
+      id: '1',
+      name: 'admin__delete_everything',
+      input: {},
+    });
     expect(outcome.status).toBe('requires_authorization');
   });
 
   it('validates input and reports issues without throwing', async () => {
-    const outcome = await new ToolExecutor(registry).execute(ctx(), principal, { id: '1', name: 'crm__create_lead', input: { title: '' } });
+    const outcome = await new ToolExecutor(registry).execute(ctx(), principal, {
+      id: '1',
+      name: 'crm__create_lead',
+      input: { title: '' },
+    });
     expect(outcome.status === 'denied' && outcome.reason).toBe('invalid_input');
     expect(outcome.result.summary).toContain('title');
   });
@@ -116,7 +149,11 @@ describe('ToolExecutor permission layer', () => {
   it('times out slow tools and calls the outcome hook for every call', async () => {
     const onOutcome = vi.fn();
     const exec = new ToolExecutor(registry, { onOutcome });
-    const outcome = await exec.execute(ctx(), principal, { id: '1', name: 'test__slow', input: {} });
+    const outcome = await exec.execute(ctx(), principal, {
+      id: '1',
+      name: 'test__slow',
+      input: {},
+    });
     expect(outcome.status).toBe('error');
     expect(outcome.result.error).toMatch(/timed out/);
     expect(onOutcome).toHaveBeenCalledTimes(1);
@@ -125,7 +162,9 @@ describe('ToolExecutor permission layer', () => {
   it('exposes a JSON-schema catalogue for the UI and model', () => {
     const specs = registry.toSpecs(['crm.create_lead']);
     expect(specs[0]?.name).toBe('crm__create_lead');
-    expect((specs[0]?.inputSchema as { properties: Record<string, unknown> }).properties).toHaveProperty('title');
+    expect(
+      (specs[0]?.inputSchema as { properties: Record<string, unknown> }).properties,
+    ).toHaveProperty('title');
     const dto = registry.toDtos().find((t) => t.key === 'admin.delete_everything');
     expect(dto?.riskLevel).toBe('dangerous');
   });

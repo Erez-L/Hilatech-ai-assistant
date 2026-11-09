@@ -181,7 +181,14 @@ export interface RunnerDeps {
   /** Load another agent of the same organization (delegation). */
   loadAgent(organizationId: string, agentId: string): Promise<AgentDefinition | null>;
   /** Audit hook for tool outcomes (optional). */
-  onToolOutcome?: (params: { organizationId: string; userId: string | null; agentId: string; executionId: string; toolKey: string; outcome: ToolOutcome }) => void | Promise<void>;
+  onToolOutcome?: (params: {
+    organizationId: string;
+    userId: string | null;
+    agentId: string;
+    executionId: string;
+    toolKey: string;
+    outcome: ToolOutcome;
+  }) => void | Promise<void>;
   now?: () => Date;
   /** Default per-tool timeout. */
   toolTimeoutMs?: number;

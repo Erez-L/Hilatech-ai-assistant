@@ -58,15 +58,35 @@ export { AnthropicProvider, toAnthropicMessages, stripSchemaMeta } from './provi
 export { OpenAiProvider, toOpenAiMessages } from './providers/openai';
 export { MockProvider, type MockProviderOptions, type MockTurn } from './providers/mock';
 export { createProvider, requiresApiKey, type CreateProviderOptions } from './providers/factory';
-export { DEFAULT_CONTEXT_WINDOW, contextWindowFor, findModel, listModels } from './providers/models';
+export {
+  DEFAULT_CONTEXT_WINDOW,
+  contextWindowFor,
+  findModel,
+  listModels,
+} from './providers/models';
 
 // Tools
-export type { EngineLogger, ToolContext, ToolDefinition, ToolPrincipal, ToolResult } from './tools/types';
+export type {
+  EngineLogger,
+  ToolContext,
+  ToolDefinition,
+  ToolPrincipal,
+  ToolResult,
+} from './tools/types';
 export { noopLogger } from './tools/types';
 export { ToolRegistry, fromFunctionName, inputJsonSchema, toFunctionName } from './tools/registry';
-export { ToolExecutor, outcomeToModelContent, type ToolExecutorOptions, type ToolOutcome } from './tools/executor';
+export {
+  ToolExecutor,
+  outcomeToModelContent,
+  type ToolExecutorOptions,
+  type ToolOutcome,
+} from './tools/executor';
 export { crmTools } from './tools/builtin/crm';
-export { createKnowledgeSearchTool, timeNowTool, type KnowledgeSearcher } from './tools/builtin/utility';
+export {
+  createKnowledgeSearchTool,
+  timeNowTool,
+  type KnowledgeSearcher,
+} from './tools/builtin/utility';
 
 // Orchestrator
 export { AgentRunner, effectiveLimits, toolFunctionName } from './orchestrator/runner';
@@ -87,7 +107,12 @@ export type {
 } from './orchestrator/types';
 
 // Usage
-export { PricingTable, pricingEntrySchema, pricingTableSchema, type PricingEntry } from './usage/pricing';
+export {
+  PricingTable,
+  pricingEntrySchema,
+  pricingTableSchema,
+  type PricingEntry,
+} from './usage/pricing';
 
 /** Tool keys the interactive assistant may use by default (read + safe write CRM actions). */
 export const ASSISTANT_DEFAULT_TOOLS: readonly string[] = [

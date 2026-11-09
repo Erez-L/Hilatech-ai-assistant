@@ -53,7 +53,10 @@ export class AgentRunner {
     if (request.signal?.aborted) controller.abort(request.signal.reason);
     else request.signal?.addEventListener('abort', abortOnParent, { once: true });
     const deadlineTimer = setTimeout(
-      () => controller.abort(new LimitExceededError('duration', limits.maxDurationMs, limits.maxDurationMs)),
+      () =>
+        controller.abort(
+          new LimitExceededError('duration', limits.maxDurationMs, limits.maxDurationMs),
+        ),
       Math.max(0, budget.deadlineAt - startedAt.getTime()),
     );
 
@@ -73,7 +76,11 @@ export class AgentRunner {
       return full;
     };
 
-    const finish = async (status: RunStatus, output: string | null, error: string | null): Promise<RunResult> => {
+    const finish = async (
+      status: RunStatus,
+      output: string | null,
+      error: string | null,
+    ): Promise<RunResult> => {
       clearTimeout(deadlineTimer);
       request.signal?.removeEventListener('abort', abortOnParent);
       const finishedAt = now();
@@ -145,7 +152,15 @@ export class AgentRunner {
       const history: AiMessage[] = [...(request.history ?? [])];
       const userMessage: AiMessage = {
         role: 'user',
-        parts: [{ type: 'text', text: typeof request.input === 'string' ? request.input : dataBlock('task-input', JSON.stringify(request.input, null, 2)) }],
+        parts: [
+          {
+            type: 'text',
+            text:
+              typeof request.input === 'string'
+                ? request.input
+                : dataBlock('task-input', JSON.stringify(request.input, null, 2)),
+          },
+        ],
       };
       history.push(userMessage);
       transcript.push(userMessage);
@@ -155,15 +170,21 @@ export class AgentRunner {
 
       for (let step = 0; ; step += 1) {
         if (controller.signal.aborted) throw controller.signal.reason ?? new Error('aborted');
-        if (await this.deps.store.isCancelled(request.executionId)) return await finish('cancelled', null, 'Cancelled by user');
-        if (step >= limits.maxSteps) throw new LimitExceededError('steps', step + 1, limits.maxSteps);
-        if (budget.tokens.used >= budget.tokens.max) throw new LimitExceededError('tokens', budget.tokens.used, budget.tokens.max);
+        if (await this.deps.store.isCancelled(request.executionId))
+          return await finish('cancelled', null, 'Cancelled by user');
+        if (step >= limits.maxSteps)
+          throw new LimitExceededError('steps', step + 1, limits.maxSteps);
+        if (budget.tokens.used >= budget.tokens.max)
+          throw new LimitExceededError('tokens', budget.tokens.used, budget.tokens.max);
 
         const window = buildContext({
           system,
           summary: request.summary,
           history,
-          budgetTokens: Math.min(resolved.contextWindow, budget.tokens.max - budget.tokens.used + reserve),
+          budgetTokens: Math.min(
+            resolved.contextWindow,
+            budget.tokens.max - budget.tokens.used + reserve,
+          ),
           reserveForOutputTokens: reserve,
         });
         if (window.messages.length === 0) {
@@ -203,7 +224,17 @@ export class AgentRunner {
             errorCode: code,
             errorMessage: error instanceof Error ? error.message : String(error),
           });
-          await recordStep({ type: 'error', name: 'llm_call', input: { model: resolved.model, messages: window.messages.length }, output: null, status: 'failed', error: error instanceof Error ? error.message : String(error), durationMs, inputTokens: null, outputTokens: null });
+          await recordStep({
+            type: 'error',
+            name: 'llm_call',
+            input: { model: resolved.model, messages: window.messages.length },
+            output: null,
+            status: 'failed',
+            error: error instanceof Error ? error.message : String(error),
+            durationMs,
+            inputTokens: null,
+            outputTokens: null,
+          });
           throw error;
         }
         const llmDuration = Date.now() - llmStarted;
@@ -230,8 +261,16 @@ export class AgentRunner {
         await recordStep({
           type: 'llm_call',
           name: resolved.model,
-          input: { messages: window.messages.length, truncated: window.truncated, tools: toolSpecs.length },
-          output: { text: truncateForContext(result.text, 4000), toolCalls: result.toolCalls.map((c) => ({ name: c.name, input: c.input })), finishReason: result.finishReason },
+          input: {
+            messages: window.messages.length,
+            truncated: window.truncated,
+            tools: toolSpecs.length,
+          },
+          output: {
+            text: truncateForContext(result.text, 4000),
+            toolCalls: result.toolCalls.map((c) => ({ name: c.name, input: c.input })),
+            finishReason: result.finishReason,
+          },
           status: 'succeeded',
           error: null,
           durationMs: llmDuration,
@@ -243,20 +282,40 @@ export class AgentRunner {
           role: 'assistant',
           parts: [
             ...(result.text ? [{ type: 'text' as const, text: result.text }] : []),
-            ...result.toolCalls.map((c) => ({ type: 'tool_call' as const, id: c.id, name: c.name, input: c.input })),
+            ...result.toolCalls.map((c) => ({
+              type: 'tool_call' as const,
+              id: c.id,
+              name: c.name,
+              input: c.input,
+            })),
           ],
         };
-        if (assistantMessage.parts.length === 0) assistantMessage.parts.push({ type: 'text', text: '' });
+        if (assistantMessage.parts.length === 0)
+          assistantMessage.parts.push({ type: 'text', text: '' });
         history.push(assistantMessage);
         transcript.push(assistantMessage);
 
         if (result.toolCalls.length === 0) {
-          await recordStep({ type: 'final', name: null, input: null, output: { text: truncateForContext(result.text, 8000) }, status: 'succeeded', error: null, durationMs: 0, inputTokens: null, outputTokens: null });
+          await recordStep({
+            type: 'final',
+            name: null,
+            input: null,
+            output: { text: truncateForContext(result.text, 8000) },
+            status: 'succeeded',
+            error: null,
+            durationMs: 0,
+            inputTokens: null,
+            outputTokens: null,
+          });
           return await finish('succeeded', result.text, null);
         }
 
         if (result.toolCalls.length > AGENT_HARD_LIMITS.maxToolCallsPerStep) {
-          throw new LimitExceededError('tool_calls', result.toolCalls.length, AGENT_HARD_LIMITS.maxToolCallsPerStep);
+          throw new LimitExceededError(
+            'tool_calls',
+            result.toolCalls.length,
+            AGENT_HARD_LIMITS.maxToolCallsPerStep,
+          );
         }
         const outcomes = await executor.executeAll(toolCtx, principal, result.toolCalls);
         const toolMessage: AiMessage = { role: 'tool', parts: [] };
@@ -266,14 +325,31 @@ export class AgentRunner {
           request.onEvent?.({ type: 'tool_result', toolCall: call, outcome });
           const { content, isError } = outcomeToModelContent(outcome);
           const rendered = truncateForContext(JSON.stringify(content));
-          toolMessage.parts.push({ type: 'tool_result', toolCallId: call.id, name: call.name, content: dataBlock(`tool:${outcome.toolKey}`, rendered), isError });
+          toolMessage.parts.push({
+            type: 'tool_result',
+            toolCallId: call.id,
+            name: call.name,
+            content: dataBlock(`tool:${outcome.toolKey}`, rendered),
+            isError,
+          });
           await recordStep({
-            type: outcome.toolKey === DELEGATE_TOOL || outcome.toolKey === DELEGATE_PARALLEL_TOOL ? 'delegation' : 'tool_call',
+            type:
+              outcome.toolKey === DELEGATE_TOOL || outcome.toolKey === DELEGATE_PARALLEL_TOOL
+                ? 'delegation'
+                : 'tool_call',
             name: outcome.toolKey,
             input: call.input,
             output: outcome.result.data ?? { summary: outcome.result.summary },
-            status: outcome.status === 'ok' ? 'succeeded' : outcome.status === 'denied' ? 'denied' : outcome.status === 'requires_authorization' ? 'requires_authorization' : 'failed',
-            error: outcome.status === 'ok' ? null : (outcome.result.error ?? outcome.result.summary),
+            status:
+              outcome.status === 'ok'
+                ? 'succeeded'
+                : outcome.status === 'denied'
+                  ? 'denied'
+                  : outcome.status === 'requires_authorization'
+                    ? 'requires_authorization'
+                    : 'failed',
+            error:
+              outcome.status === 'ok' ? null : (outcome.result.error ?? outcome.result.summary),
             durationMs: outcome.durationMs,
             inputTokens: null,
             outputTokens: null,
@@ -285,7 +361,10 @@ export class AgentRunner {
     } catch (error) {
       if (error instanceof LimitExceededError) {
         const status: RunStatus = error.limit === 'duration' ? 'timed_out' : 'failed';
-        log.warn({ executionId: request.executionId, limit: error.limit }, 'agent execution hit a limit');
+        log.warn(
+          { executionId: request.executionId, limit: error.limit },
+          'agent execution hit a limit',
+        );
         return finish(status, null, error.message);
       }
       if (controller.signal.aborted && !(error instanceof AiProviderError)) {
@@ -293,7 +372,11 @@ export class AgentRunner {
         if (reason instanceof LimitExceededError) return finish('timed_out', null, reason.message);
         return finish('cancelled', null, reason instanceof Error ? reason.message : 'Cancelled');
       }
-      if (error instanceof AiProviderError && error.code === 'timeout' && Date.now() >= budget.deadlineAt) {
+      if (
+        error instanceof AiProviderError &&
+        error.code === 'timeout' &&
+        Date.now() >= budget.deadlineAt
+      ) {
         return finish('timed_out', null, `Execution exceeded ${limits.maxDurationMs}ms`);
       }
       log.error({ err: error, executionId: request.executionId }, 'agent execution failed');
@@ -302,7 +385,11 @@ export class AgentRunner {
   }
 
   /** Provider call with retry on retryable errors, honouring the retry policy and the deadline. */
-  private async callModel(resolved: ResolvedModel, generateRequest: GenerateRequest, request: RunRequest): Promise<GenerateResult> {
+  private async callModel(
+    resolved: ResolvedModel,
+    generateRequest: GenerateRequest,
+    request: RunRequest,
+  ): Promise<GenerateResult> {
     const policy = request.agent.retryPolicy;
     let attempt = 0;
     for (;;) {
@@ -311,31 +398,51 @@ export class AgentRunner {
         if (request.stream) {
           let final: GenerateResult | null = null;
           for await (const event of resolved.provider.stream(generateRequest)) {
-            if (event.type === 'text_delta') request.onEvent?.({ type: 'text_delta', delta: event.delta });
-            else if (event.type === 'tool_call') request.onEvent?.({ type: 'tool_call', toolCall: event.toolCall });
+            if (event.type === 'text_delta')
+              request.onEvent?.({ type: 'text_delta', delta: event.delta });
+            else if (event.type === 'tool_call')
+              request.onEvent?.({ type: 'tool_call', toolCall: event.toolCall });
             else final = event.result;
           }
-          if (!final) throw new AiProviderError({ provider: resolved.providerKind, code: 'unknown', message: 'Stream ended without a result', retryable: false });
+          if (!final)
+            throw new AiProviderError({
+              provider: resolved.providerKind,
+              code: 'unknown',
+              message: 'Stream ended without a result',
+              retryable: false,
+            });
           return final;
         }
         return await resolved.provider.generate(generateRequest);
       } catch (error) {
-        const retryable = error instanceof AiProviderError && error.retryable && !generateRequest.signal?.aborted;
+        const retryable =
+          error instanceof AiProviderError && error.retryable && !generateRequest.signal?.aborted;
         if (!retryable || attempt >= policy.maxAttempts) throw error;
         const delay = policy.backoffMs * 2 ** (attempt - 1);
-        this.deps.logger.warn({ attempt, delay, code: (error as AiProviderError).code }, 'retrying provider call');
+        this.deps.logger.warn(
+          { attempt, delay, code: (error as AiProviderError).code },
+          'retrying provider call',
+        );
         await sleep(delay, generateRequest.signal);
       }
     }
   }
 
   /** Per-run registry = shared tools + delegation tools bound to this run; plus the effective principal. */
-  private buildToolset(request: RunRequest, limits: EffectiveLimits, budget: Budget, signal: AbortSignal): { registry: ToolRegistry; principal: ToolPrincipal } {
+  private buildToolset(
+    request: RunRequest,
+    limits: EffectiveLimits,
+    budget: Budget,
+    signal: AbortSignal,
+  ): { registry: ToolRegistry; principal: ToolPrincipal } {
     const registry = new ToolRegistry();
     registry.registerAll(this.deps.registry.list());
     const allowed = new Set(request.agent.tools.filter((k) => this.deps.registry.has(k)));
 
-    const canDelegate = request.agent.permissions.allowDelegation && request.depth < AGENT_HARD_LIMITS.maxDelegationDepth && limits.maxDelegations > 0;
+    const canDelegate =
+      request.agent.permissions.allowDelegation &&
+      request.depth < AGENT_HARD_LIMITS.maxDelegationDepth &&
+      limits.maxDelegations > 0;
     if (canDelegate) {
       for (const tool of this.delegationTools(request, budget, signal)) {
         registry.register(tool);
@@ -345,30 +452,60 @@ export class AgentRunner {
 
     // Effective permissions: the user's (if any) — an agent never exceeds the human it acts for.
     // Without a human, the admin-configured tool list itself is the grant.
-    const toolPermissions = [...allowed].map((k) => registry.get(k)?.requiredPermission).filter((p): p is Permission => Boolean(p));
+    const toolPermissions = [...allowed]
+      .map((k) => registry.get(k)?.requiredPermission)
+      .filter((p): p is Permission => Boolean(p));
     if (canDelegate) toolPermissions.push(Permission.AGENTS_EXECUTE);
-    const permissions = request.userPermissions ? request.userPermissions.filter((p) => toolPermissions.includes(p as Permission)) : toolPermissions;
+    const permissions = request.userPermissions
+      ? request.userPermissions.filter((p) => toolPermissions.includes(p as Permission))
+      : toolPermissions;
 
     return {
       registry,
-      principal: { allowedTools: [...allowed], permissions, allowWrite: request.agent.permissions.allowWrite },
+      principal: {
+        allowedTools: [...allowed],
+        permissions,
+        allowWrite: request.agent.permissions.allowWrite,
+      },
     };
   }
 
-  private delegationTools(request: RunRequest, budget: Budget, signal: AbortSignal): ToolDefinition[] {
-    const delegateOnce = async (ctx: ToolContext, agentId: string, task: string, context: Record<string, unknown> | undefined) => {
+  private delegationTools(
+    request: RunRequest,
+    budget: Budget,
+    signal: AbortSignal,
+  ): ToolDefinition[] {
+    const delegateOnce = async (
+      ctx: ToolContext,
+      agentId: string,
+      task: string,
+      context: Record<string, unknown> | undefined,
+    ) => {
+      if (agentId === request.agent.id || request.ancestry.includes(agentId)) {
+        return {
+          ok: false,
+          summary: 'Delegation cycle detected (agent is already in the execution chain)',
+          error: 'delegation_cycle',
+        };
+      }
       const allowedTargets = request.agent.permissions.delegateTo;
       if (allowedTargets.length > 0 && !allowedTargets.includes(agentId)) {
-        return { ok: false, summary: `Delegation to agent ${agentId} is not allowed`, error: 'delegation_not_allowed' };
-      }
-      if (agentId === request.agent.id || request.ancestry.includes(agentId)) {
-        return { ok: false, summary: 'Delegation cycle detected (agent is already in the execution chain)', error: 'delegation_cycle' };
+        return {
+          ok: false,
+          summary: `Delegation to agent ${agentId} is not allowed`,
+          error: 'delegation_not_allowed',
+        };
       }
       if (budget.delegations.used >= budget.delegations.max) {
-        return { ok: false, summary: `Delegation limit reached (${budget.delegations.max})`, error: 'delegation_limit' };
+        return {
+          ok: false,
+          summary: `Delegation limit reached (${budget.delegations.max})`,
+          error: 'delegation_limit',
+        };
       }
       const target = await this.deps.loadAgent(request.agent.organizationId, agentId);
-      if (!target || !target.isEnabled) return { ok: false, summary: 'Target agent not found or disabled', error: 'not_found' };
+      if (!target || !target.isEnabled)
+        return { ok: false, summary: 'Target agent not found or disabled', error: 'not_found' };
       budget.delegations.used += 1;
       const child = await this.deps.store.createChild({
         organizationId: request.agent.organizationId,
@@ -382,7 +519,9 @@ export class AgentRunner {
       const childResult = await this.run({
         executionId: child.id,
         agent: target,
-        input: context ? `${task}\n\n${dataBlock('delegation-context', JSON.stringify(context, null, 2))}` : task,
+        input: context
+          ? `${task}\n\n${dataBlock('delegation-context', JSON.stringify(context, null, 2))}`
+          : task,
         userId: request.userId,
         userPermissions: request.userPermissions,
         trigger: 'agent',
@@ -394,11 +533,22 @@ export class AgentRunner {
         organizationName: request.organizationName,
         locale: request.locale,
       });
-      request.onEvent?.({ type: 'delegation', executionId: child.id, agentId: target.id, status: childResult.status });
+      request.onEvent?.({
+        type: 'delegation',
+        executionId: child.id,
+        agentId: target.id,
+        status: childResult.status,
+      });
       return {
         ok: childResult.status === 'succeeded',
         summary: `Agent "${target.name}" ${childResult.status}`,
-        data: { executionId: child.id, agent: target.name, status: childResult.status, output: childResult.output, error: childResult.error },
+        data: {
+          executionId: child.id,
+          agent: target.name,
+          status: childResult.status,
+          output: childResult.output,
+          error: childResult.error,
+        },
         error: childResult.error ?? undefined,
       };
     };
@@ -406,40 +556,82 @@ export class AgentRunner {
     const delegate: ToolDefinition = {
       key: DELEGATE_TOOL,
       name: 'Delegate to agent',
-      description: 'Hand a well-defined sub-task to another agent of the organization and wait for its result.',
+      description:
+        'Hand a well-defined sub-task to another agent of the organization and wait for its result.',
       category: 'agents',
       riskLevel: 'read',
       requiredPermission: Permission.AGENTS_EXECUTE,
-      input: z.object({ agentId: z.string().uuid(), task: z.string().trim().min(1).max(20_000), context: z.record(z.string(), z.unknown()).optional() }),
+      input: z.object({
+        agentId: z.string().uuid(),
+        task: z.string().trim().min(1).max(20_000),
+        context: z.record(z.string(), z.unknown()).optional(),
+      }),
       timeoutMs: Math.max(1000, budget.deadlineAt - Date.now()),
       execute: (ctx, input) => delegateOnce(ctx, input.agentId, input.task, input.context),
     };
     const delegateParallel: ToolDefinition = {
       key: DELEGATE_PARALLEL_TOOL,
       name: 'Delegate in parallel',
-      description: 'Run several independent sub-tasks on other agents at the same time and aggregate their results.',
+      description:
+        'Run several independent sub-tasks on other agents at the same time and aggregate their results.',
       category: 'agents',
       riskLevel: 'read',
       requiredPermission: Permission.AGENTS_EXECUTE,
       input: z.object({
-        tasks: z.array(z.object({ agentId: z.string().uuid(), task: z.string().trim().min(1).max(20_000), context: z.record(z.string(), z.unknown()).optional() })).min(1).max(5),
+        tasks: z
+          .array(
+            z.object({
+              agentId: z.string().uuid(),
+              task: z.string().trim().min(1).max(20_000),
+              context: z.record(z.string(), z.unknown()).optional(),
+            }),
+          )
+          .min(1)
+          .max(5),
       }),
       timeoutMs: Math.max(1000, budget.deadlineAt - Date.now()),
       async execute(ctx, input) {
-        const settled = await Promise.allSettled(input.tasks.map((t) => delegateOnce(ctx, t.agentId, t.task, t.context)));
-        const results = settled.map((s, i) => (s.status === 'fulfilled' ? s.value : { ok: false, summary: `Delegation ${i} crashed`, error: s.reason instanceof Error ? s.reason.message : String(s.reason) }));
+        const settled = await Promise.allSettled(
+          (
+            input.tasks as Array<{
+              agentId: string;
+              task: string;
+              context?: Record<string, unknown>;
+            }>
+          ).map((t) => delegateOnce(ctx, t.agentId, t.task, t.context)),
+        );
+        const results = settled.map((s, i) =>
+          s.status === 'fulfilled'
+            ? s.value
+            : {
+                ok: false,
+                summary: `Delegation ${i} crashed`,
+                error: s.reason instanceof Error ? s.reason.message : String(s.reason),
+              },
+        );
         const okCount = results.filter((r) => r.ok).length;
-        return { ok: okCount > 0, summary: `${okCount}/${results.length} delegated task(s) succeeded`, data: results.map((r) => r.data ?? { error: r.error, summary: r.summary }) };
+        return {
+          ok: okCount > 0,
+          summary: `${okCount}/${results.length} delegated task(s) succeeded`,
+          data: results.map((r) => r.data ?? { error: r.error, summary: r.summary }),
+        };
       },
     };
     return [delegate, delegateParallel];
   }
 }
 
-export function effectiveLimits(agent: AgentDefinition, caps?: RunRequest['caps']): EffectiveLimits {
+export function effectiveLimits(
+  agent: AgentDefinition,
+  caps?: RunRequest['caps'],
+): EffectiveLimits {
   return {
     maxSteps: Math.min(agent.maxSteps, caps?.maxSteps ?? Infinity, AGENT_HARD_LIMITS.maxSteps),
-    maxDurationMs: Math.min(agent.maxDurationMs, caps?.maxDurationMs ?? Infinity, AGENT_HARD_LIMITS.maxDurationMs),
+    maxDurationMs: Math.min(
+      agent.maxDurationMs,
+      caps?.maxDurationMs ?? Infinity,
+      AGENT_HARD_LIMITS.maxDurationMs,
+    ),
     maxTokens: Math.min(agent.maxTokens, caps?.maxTokens ?? Infinity, AGENT_HARD_LIMITS.maxTokens),
     maxDelegations: Math.min(agent.maxDelegations, AGENT_HARD_LIMITS.maxDelegationsPerExecution),
   };

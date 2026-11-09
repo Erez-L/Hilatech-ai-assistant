@@ -8,7 +8,12 @@ import type { ZodTypeAny } from 'zod';
 export type AiRole = 'user' | 'assistant' | 'tool';
 
 export type TextPart = { type: 'text'; text: string };
-export type ToolCallPart = { type: 'tool_call'; id: string; name: string; input: Record<string, unknown> };
+export type ToolCallPart = {
+  type: 'tool_call';
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+};
 export type ToolResultPart = {
   type: 'tool_result';
   toolCallId: string;

@@ -3,7 +3,14 @@ import { describe, expect, it } from 'vitest';
 
 import { AiProviderError } from '../errors';
 import { AgentRunner } from '../orchestrator/runner';
-import type { AgentDefinition, ExecutionStore, RunnerDeps, StepRecord, UsageEntry, UsageRecorder } from '../orchestrator/types';
+import type {
+  AgentDefinition,
+  ExecutionStore,
+  RunnerDeps,
+  StepRecord,
+  UsageEntry,
+  UsageRecorder,
+} from '../orchestrator/types';
 import { MockProvider, type MockTurn } from '../providers/mock';
 import { timeNowTool } from '../tools/builtin/utility';
 import { ToolRegistry } from '../tools/registry';
@@ -20,7 +27,10 @@ class MemoryStore implements ExecutionStore {
   async addStep(executionId: string, step: StepRecord): Promise<void> {
     this.steps.set(executionId, [...(this.steps.get(executionId) ?? []), step]);
   }
-  async finish(executionId: string, result: Parameters<ExecutionStore['finish']>[1]): Promise<void> {
+  async finish(
+    executionId: string,
+    result: Parameters<ExecutionStore['finish']>[1],
+  ): Promise<void> {
     this.finished.set(executionId, result);
   }
   async createChild(params: Parameters<ExecutionStore['createChild']>[0]): Promise<{ id: string }> {
@@ -65,8 +75,17 @@ function agent(overrides: Partial<AgentDefinition> = {}): AgentDefinition {
   };
 }
 
-function setup(script: MockTurn[], options: { agents?: AgentDefinition[]; latencyMs?: number; pricing?: PricingTable; sharedProvider?: MockProvider } = {}) {
-  const provider = options.sharedProvider ?? new MockProvider({ script, latencyMs: options.latencyMs });
+function setup(
+  script: MockTurn[],
+  options: {
+    agents?: AgentDefinition[];
+    latencyMs?: number;
+    pricing?: PricingTable;
+    sharedProvider?: MockProvider;
+  } = {},
+) {
+  const provider =
+    options.sharedProvider ?? new MockProvider({ script, latencyMs: options.latencyMs });
   const store = new MemoryStore();
   const usage = new MemoryUsage(options.pricing);
   const deps: RunnerDeps = {
@@ -75,14 +94,28 @@ function setup(script: MockTurn[], options: { agents?: AgentDefinition[]; latenc
     registry: new ToolRegistry().register(timeNowTool),
     store,
     usage,
-    resolveModel: async (a) => ({ provider, providerKind: 'mock', providerConfigId: null, model: a.model ?? 'mock-chat', contextWindow: 32_000 }),
+    resolveModel: async (a) => ({
+      provider,
+      providerKind: 'mock',
+      providerConfigId: null,
+      model: a.model ?? 'mock-chat',
+      contextWindow: 32_000,
+    }),
     loadAgent: async (_org, id) => options.agents?.find((a) => a.id === id) ?? null,
     now: () => new Date(),
   };
   return { runner: new AgentRunner(deps), store, usage, provider };
 }
 
-const base = { executionId: 'exec-1', userId: 'user-1', userPermissions: ['leads:read'], trigger: 'manual' as const, depth: 0, rootExecutionId: 'exec-1', ancestry: [] };
+const base = {
+  executionId: 'exec-1',
+  userId: 'user-1',
+  userPermissions: ['leads:read'],
+  trigger: 'manual' as const,
+  depth: 0,
+  rootExecutionId: 'exec-1',
+  ancestry: [],
+};
 
 describe('AgentRunner', () => {
   it('answers directly and records llm_call + final steps and usage', async () => {
@@ -98,32 +131,66 @@ describe('AgentRunner', () => {
   });
 
   it('runs the tool loop: tool call → tool result → final answer', async () => {
-    const { runner, store, provider } = setup([{ toolCalls: [{ name: 'time__now', input: {} }] }, { text: 'It is now.' }]);
+    const { runner, store, provider } = setup([
+      { toolCalls: [{ name: 'time__now', input: {} }] },
+      { text: 'It is now.' },
+    ]);
     const events: string[] = [];
-    const result = await runner.run({ ...base, agent: agent(), input: 'What time is it?', onEvent: (e) => events.push(e.type) });
+    const result = await runner.run({
+      ...base,
+      agent: agent(),
+      input: 'What time is it?',
+      onEvent: (e) => events.push(e.type),
+    });
     expect(result.status).toBe('succeeded');
-    expect(store.steps.get('exec-1')?.map((s) => s.type)).toEqual(['llm_call', 'tool_call', 'llm_call', 'final']);
+    expect(store.steps.get('exec-1')?.map((s) => s.type)).toEqual([
+      'llm_call',
+      'tool_call',
+      'llm_call',
+      'final',
+    ]);
     expect(events).toContain('tool_result');
     // The second request carried the tool result as data, not as instructions.
     const second = provider.requests[1];
     const toolMsg = second?.messages.find((m) => m.role === 'tool');
     expect(toolMsg).toBeDefined();
-    expect(JSON.stringify(toolMsg)).toContain('<data source="tool:time.now">');
-    expect(result.transcript.map((m) => m.role)).toEqual(['user', 'assistant', 'tool', 'assistant']);
+    const part = toolMsg?.parts[0];
+    expect(part?.type === 'tool_result' && String(part.content)).toContain(
+      '<data source="tool:time.now">',
+    );
+    expect(result.transcript.map((m) => m.role)).toEqual([
+      'user',
+      'assistant',
+      'tool',
+      'assistant',
+    ]);
   });
 
   it('reports denied tools back to the model instead of crashing', async () => {
-    const { runner, store } = setup([{ toolCalls: [{ name: 'crm__create_lead', input: { title: 'x' } }] }, { text: 'I cannot do that.' }]);
-    const result = await runner.run({ ...base, agent: agent({ tools: ['time.now'] }), input: 'create a lead' });
+    const { runner, store } = setup([
+      { toolCalls: [{ name: 'crm__create_lead', input: { title: 'x' } }] },
+      { text: 'I cannot do that.' },
+    ]);
+    const result = await runner.run({
+      ...base,
+      agent: agent({ tools: ['time.now'] }),
+      input: 'create a lead',
+    });
     expect(result.status).toBe('succeeded');
     const toolStep = store.steps.get('exec-1')?.find((s) => s.type === 'tool_call');
     expect(toolStep?.status).toBe('denied');
   });
 
   it('stops at the step limit', async () => {
-    const loop: MockTurn[] = Array.from({ length: 10 }, () => ({ toolCalls: [{ name: 'time__now', input: {} }] }));
+    const loop: MockTurn[] = Array.from({ length: 10 }, () => ({
+      toolCalls: [{ name: 'time__now', input: {} }],
+    }));
     const { runner } = setup(loop);
-    const result = await runner.run({ ...base, agent: agent({ maxSteps: 3 }), input: 'loop forever' });
+    const result = await runner.run({
+      ...base,
+      agent: agent({ maxSteps: 3 }),
+      input: 'loop forever',
+    });
     expect(result.status).toBe('failed');
     expect(result.error).toMatch(/steps/);
     expect(result.stepCount).toBeGreaterThan(0);
@@ -131,12 +198,19 @@ describe('AgentRunner', () => {
 
   it('times out when the duration limit is hit', async () => {
     const { runner } = setup([{ text: 'late' }], { latencyMs: 300 });
-    const result = await runner.run({ ...base, agent: agent({ maxDurationMs: 50 }), input: 'slow' });
+    const result = await runner.run({
+      ...base,
+      agent: agent({ maxDurationMs: 50 }),
+      input: 'slow',
+    });
     expect(result.status).toBe('timed_out');
   });
 
   it('honours cooperative cancellation between steps', async () => {
-    const { runner, store } = setup([{ toolCalls: [{ name: 'time__now', input: {} }] }, { text: 'never' }]);
+    const { runner, store } = setup([
+      { toolCalls: [{ name: 'time__now', input: {} }] },
+      { text: 'never' },
+    ]);
     const original = store.isCancelled.bind(store);
     let calls = 0;
     store.isCancelled = async (id) => {
@@ -157,7 +231,12 @@ describe('AgentRunner', () => {
   });
 
   it('fails cleanly on non-retryable provider errors', async () => {
-    const err = new AiProviderError({ provider: 'mock', code: 'auth', message: 'bad key', retryable: false });
+    const err = new AiProviderError({
+      provider: 'mock',
+      code: 'auth',
+      message: 'bad key',
+      retryable: false,
+    });
     const { runner, usage, store } = setup([{ error: err }]);
     const result = await runner.run({ ...base, agent: agent(), input: 'hi' });
     expect(result.status).toBe('failed');
@@ -167,7 +246,9 @@ describe('AgentRunner', () => {
   });
 
   it('estimates cost only when pricing is configured', async () => {
-    const pricing = new PricingTable([{ provider: 'mock', model: 'mock-chat', inputPerMillionUsd: 1, outputPerMillionUsd: 2 }]);
+    const pricing = new PricingTable([
+      { provider: 'mock', model: 'mock-chat', inputPerMillionUsd: 1, outputPerMillionUsd: 2 },
+    ]);
     const { runner } = setup([{ text: 'priced' }], { pricing });
     const result = await runner.run({ ...base, agent: agent(), input: 'hello' });
     expect(result.estimatedCostUsd).not.toBeNull();
@@ -175,21 +256,32 @@ describe('AgentRunner', () => {
   });
 
   describe('delegation', () => {
+    const delegator = { ...base, userPermissions: ['leads:read', 'agents:execute'] };
     const childId = '22222222-2222-4222-8222-222222222222';
     const parentId = '11111111-1111-4111-8111-111111111111';
 
     it('delegates to another agent, records a child execution and aggregates the result', async () => {
       const provider = new MockProvider({
         script: [
-          { toolCalls: [{ name: 'agents__delegate', input: { agentId: childId, task: 'Research the market' } }] }, // parent step 1
+          {
+            toolCalls: [
+              {
+                name: 'agents__delegate',
+                input: { agentId: childId, task: 'Research the market' },
+              },
+            ],
+          }, // parent step 1
           { text: 'Child research complete.' }, // child answer
           { text: 'Based on the research: done.' }, // parent final
         ],
       });
       const child = agent({ id: childId, name: 'Researcher' });
-      const parent = agent({ id: parentId, permissions: { allowWrite: false, allowDelegation: true, delegateTo: [] } });
+      const parent = agent({
+        id: parentId,
+        permissions: { allowWrite: false, allowDelegation: true, delegateTo: [] },
+      });
       const { runner, store } = setup([], { agents: [child, parent], sharedProvider: provider });
-      const result = await runner.run({ ...base, agent: parent, input: 'Plan a launch' });
+      const result = await runner.run({ ...delegator, agent: parent, input: 'Plan a launch' });
       expect(result.status).toBe('succeeded');
       expect(store.children).toHaveLength(1);
       expect(store.children[0]?.depth).toBe(1);
@@ -201,34 +293,82 @@ describe('AgentRunner', () => {
     it('refuses cycles and respects the delegateTo allow-list', async () => {
       const provider = new MockProvider({
         script: [
-          { toolCalls: [{ name: 'agents__delegate', input: { agentId: parentId, task: 'call yourself' } }] },
-          { toolCalls: [{ name: 'agents__delegate', input: { agentId: childId, task: 'not allowed target' } }] },
+          {
+            toolCalls: [
+              { name: 'agents__delegate', input: { agentId: parentId, task: 'call yourself' } },
+            ],
+          },
+          {
+            toolCalls: [
+              { name: 'agents__delegate', input: { agentId: childId, task: 'not allowed target' } },
+            ],
+          },
           { text: 'gave up' },
         ],
       });
       const other = '33333333-3333-4333-8333-333333333333';
-      const parent = agent({ id: parentId, permissions: { allowWrite: false, allowDelegation: true, delegateTo: [other] } });
-      const { runner, store } = setup([], { agents: [parent, agent({ id: childId })], sharedProvider: provider });
-      const result = await runner.run({ ...base, agent: parent, input: 'x' });
+      const parent = agent({
+        id: parentId,
+        permissions: { allowWrite: false, allowDelegation: true, delegateTo: [other] },
+      });
+      const { runner, store } = setup([], {
+        agents: [parent, agent({ id: childId })],
+        sharedProvider: provider,
+      });
+      const result = await runner.run({ ...delegator, agent: parent, input: 'x' });
       expect(result.status).toBe('succeeded');
       expect(store.children).toHaveLength(0);
-      const delegationSteps = store.steps.get('exec-1')?.filter((s) => s.type === 'delegation') ?? [];
-      expect(delegationSteps.map((s) => s.error)).toEqual(['delegation_cycle', 'delegation_not_allowed']);
+      const delegationSteps =
+        store.steps.get('exec-1')?.filter((s) => s.type === 'delegation') ?? [];
+      expect(delegationSteps.map((s) => s.error)).toEqual([
+        'delegation_cycle',
+        'delegation_not_allowed',
+      ]);
+    });
+
+    it('denies delegation when the triggering user lacks agents:execute', async () => {
+      const provider = new MockProvider({
+        script: [
+          { toolCalls: [{ name: 'agents__delegate', input: { agentId: childId, task: 'x' } }] },
+          { text: 'ok' },
+        ],
+      });
+      const parent = agent({
+        id: parentId,
+        permissions: { allowWrite: false, allowDelegation: true, delegateTo: [] },
+      });
+      const { runner, store } = setup([], {
+        agents: [parent, agent({ id: childId })],
+        sharedProvider: provider,
+      });
+      await runner.run({ ...base, agent: parent, input: 'x' });
+      expect(store.children).toHaveLength(0);
+      expect(store.steps.get('exec-1')?.find((s) => s.type === 'delegation')?.error).toBe(
+        'missing_permission',
+      );
     });
 
     it('does not expose delegation tools when the agent may not delegate or depth is exhausted', async () => {
       const provider = new MockProvider({ script: [{ text: 'ok' }] });
-      const parent = agent({ id: parentId, permissions: { allowWrite: false, allowDelegation: false, delegateTo: [] } });
+      const parent = agent({
+        id: parentId,
+        permissions: { allowWrite: false, allowDelegation: false, delegateTo: [] },
+      });
       const { runner } = setup([], { sharedProvider: provider });
       await runner.run({ ...base, agent: parent, input: 'x' });
       const toolNames = provider.requests[0]?.tools?.map((t) => t.name) ?? [];
       expect(toolNames).not.toContain('agents__delegate');
 
       const provider2 = new MockProvider({ script: [{ text: 'ok' }] });
-      const deep = agent({ id: parentId, permissions: { allowWrite: false, allowDelegation: true, delegateTo: [] } });
+      const deep = agent({
+        id: parentId,
+        permissions: { allowWrite: false, allowDelegation: true, delegateTo: [] },
+      });
       const { runner: runner2 } = setup([], { sharedProvider: provider2 });
       await runner2.run({ ...base, agent: deep, input: 'x', depth: 2 });
-      expect(provider2.requests[0]?.tools?.map((t) => t.name) ?? []).not.toContain('agents__delegate');
+      expect(provider2.requests[0]?.tools?.map((t) => t.name) ?? []).not.toContain(
+        'agents__delegate',
+      );
     });
   });
 });

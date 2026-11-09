@@ -74,7 +74,9 @@ export class ToolRegistry {
 }
 
 export function inputJsonSchema(tool: ToolDefinition): Record<string, unknown> {
-  return stripSchemaMeta(zodToJsonSchema(tool.input, { $refStrategy: 'none' }) as Record<string, unknown>);
+  return stripSchemaMeta(
+    zodToJsonSchema(tool.input, { $refStrategy: 'none' }) as Record<string, unknown>,
+  );
 }
 
 /** Providers restrict function names to `[a-zA-Z0-9_-]`; map dotted keys both ways. */
