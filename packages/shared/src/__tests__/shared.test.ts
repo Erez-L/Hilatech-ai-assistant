@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { generateOpaqueToken, sha256, safeEqual } from '../crypto';
+import { randomBytes as rb } from 'node:crypto';
+import { SecretBox, generateOpaqueToken, sha256, safeEqual } from '../crypto';
 import { slugify, withRandomSuffix } from '../strings';
 import { parseDuration, monthPeriod } from '../time';
 import { redactSensitive } from '../redaction';
@@ -51,5 +52,25 @@ describe('redaction', () => {
       apiKey: '[REDACTED]',
       list: [{ token: '[REDACTED]' }],
     });
+  });
+});
+
+describe('SecretBox', () => {
+  const box = new SecretBox(rb(32).toString('base64'));
+  it('round-trips plaintext and binds AAD', () => {
+    const env = box.encrypt('sk-test-123456', 'org-1');
+    expect(env.startsWith('v1.')).toBe(true);
+    expect(box.decrypt(env, 'org-1')).toBe('sk-test-123456');
+    expect(() => box.decrypt(env, 'org-2')).toThrow();
+  });
+  it('rejects wrong key length and tampered envelopes', () => {
+    expect(() => new SecretBox('short')).toThrow();
+    const env = box.encrypt('secret');
+    const tampered = env.slice(0, -2) + (env.endsWith('A') ? 'BB' : 'AA');
+    expect(() => box.decrypt(tampered)).toThrow();
+    expect(() => box.decrypt('v0.a.b.c')).toThrow();
+  });
+  it('exposes only the last characters', () => {
+    expect(SecretBox.last('sk-abcdef1234')).toBe('1234');
   });
 });

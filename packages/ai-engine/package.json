@@ -1,0 +1,45 @@
+{
+  "name": "@hilatech/ai-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Provider-independent AI engine: provider adapters, context management, permission-gated tools, agent orchestration, usage tracking",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean --sourcemap",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.6.0",
+    "@hilatech/contracts": "workspace:*",
+    "@hilatech/database": "workspace:*",
+    "@hilatech/shared": "workspace:*",
+    "@hilatech/types": "workspace:*",
+    "openai": "7.53.0",
+    "zod": "3.25.76",
+    "zod-to-json-schema": "3.25.2"
+  },
+  "devDependencies": {
+    "@hilatech/config": "workspace:*",
+    "@types/node": "22.20.5",
+    "eslint": "9.39.5",
+    "tsup": "9.0.0",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  }
+}

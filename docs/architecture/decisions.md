@@ -68,3 +68,37 @@ helpers inside the API (`src/common/openapi`).
 Accepted. `EMAIL_DRIVER=log|smtp`, `STORAGE_DRIVER=local|s3`, AI providers via adapter registry.
 Local development works with no external credentials; production features switch on by
 configuration. Nothing pretends to be live when a driver is unconfigured.
+
+## ADR-009 — AI engine as a shared package with ports for persistence (2026-11-09)
+
+Accepted. `packages/ai-engine` holds the provider adapters, context builder, tool registry/executor
+and the agent runner, with **no** NestJS or Prisma-model dependencies beyond the Prisma client type
+used by tools. Persistence (`AgentExecution`, steps, `AiRequestLog`) goes through two ports
+(`ExecutionStore`, `UsageRecorder`) implemented by the API and the workers. Reason: the interactive
+assistant (API) and asynchronous agent runs (workers) must execute identical logic, and the engine
+must be unit-testable with the deterministic `MockProvider` and no database.
+
+## ADR-010 — Tool permission layer: least privilege, no autonomous dangerous actions (2026-11-09)
+
+Accepted. Every tool declares a `riskLevel` (`read` | `write` | `dangerous`) and a required
+`Permission`. The executor checks allow-list → permission → write grant → input schema → timeout.
+The effective permission set of an agent is the triggering user's permissions when a human
+triggered the run (an agent never exceeds the human it acts for); for automation/schedule triggers it
+is the permissions implied by the admin-configured tool list. `dangerous` tools are never executed
+without explicit human authorization (they return `requires_authorization`). Tool results and
+documents are wrapped in `<data>` blocks and the system prompt marks them as untrusted data.
+
+## ADR-011 — Agent execution model: async by default, bounded budgets shared across delegation (2026-11-09)
+
+Accepted. `POST /agents/:id/execute` enqueues on `ai-tasks` and the workers run it; `mode: 'sync'` is a
+capped interactive path. A single `Budget` (deadline, tokens, delegations) is shared by reference
+through the whole delegation tree so children can never exceed the root's limits; delegation depth is
+capped at 2, cycles are rejected by checking the agent ancestry, and children receive only the
+delegated task plus an explicit context object — never the parent's full transcript.
+
+## ADR-012 — Cost estimates only from configured pricing (2026-11-09)
+
+Accepted. The engine ships no model prices. `AI_PRICING_JSON` may supply USD-per-million-token
+rates; when a model is missing from it, `estimatedCostUsd` is `null` on request logs, executions and
+usage summaries (a summary is `null` if any request in it lacks pricing). Token counts are always
+recorded from provider responses.

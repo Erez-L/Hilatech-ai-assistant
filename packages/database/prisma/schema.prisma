@@ -53,6 +53,10 @@ model User {
   assignedConversations   Conversation[]           @relation("ConversationAssignee")
   messages                Message[]
   usageRecords            UsageRecord[]
+  assistantThreads        AssistantThread[]
+  createdAgents           Agent[]                  @relation("AgentCreator")
+  triggeredExecutions     AgentExecution[]         @relation("ExecutionTrigger")
+  aiRequestLogs           AiRequestLog[]
 
   @@index([isActive])
 }
@@ -83,6 +87,12 @@ model Organization {
   leads         Lead[]
   conversations Conversation[]
   notifications Notification[]
+  aiProviderConfigs AiProviderConfig[]
+  aiRequestLogs     AiRequestLog[]
+  promptTemplates   PromptTemplate[]
+  assistantThreads  AssistantThread[]
+  agents            Agent[]
+  agentExecutions   AgentExecution[]
 
   @@index([deletedAt])
 }
@@ -510,4 +520,280 @@ model Notification {
 
   @@index([userId, readAt, createdAt(sort: Desc)])
   @@index([organizationId])
+}
+
+// ---------------------------------------------------------------------------
+// AI platform: provider configuration, usage, prompts, assistant, agents
+// ---------------------------------------------------------------------------
+
+enum AiProviderKind {
+  anthropic
+  openai
+  mock
+}
+
+enum AiHealthStatus {
+  unknown
+  ok
+  error
+}
+
+/// Organization-level AI provider credentials and defaults. `encryptedApiKey` is AES-256-GCM
+/// (APP_ENCRYPTION_KEY); only `keyLast4` ever leaves the API.
+model AiProviderConfig {
+  id                String         @id @default(uuid()) @db.Uuid
+  organizationId    String         @db.Uuid
+  provider          AiProviderKind
+  name              String         @db.VarChar(80)
+  encryptedApiKey   String?
+  keyLast4          String?        @db.VarChar(4)
+  baseUrl           String?
+  defaultModel      String         @db.VarChar(120)
+  embeddingModel    String?        @db.VarChar(120)
+  isDefault         Boolean        @default(false)
+  isEnabled         Boolean        @default(true)
+  lastHealthStatus  AiHealthStatus @default(unknown)
+  lastHealthCheckAt DateTime?
+  lastHealthError   String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agents       Agent[]
+  threads      AssistantThread[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, isDefault])
+}
+
+enum AiOperation {
+  generate
+  stream
+  structured
+  embed
+}
+
+enum AiRequestStatus {
+  success
+  error
+  timeout
+  cancelled
+}
+
+/// One row per model call. Cost is only filled when pricing configuration exists for the model.
+model AiRequestLog {
+  id               String          @id @default(uuid()) @db.Uuid
+  organizationId   String          @db.Uuid
+  userId           String?         @db.Uuid
+  agentId          String?         @db.Uuid
+  executionId      String?         @db.Uuid
+  threadId         String?         @db.Uuid
+  provider         AiProviderKind
+  model            String          @db.VarChar(120)
+  operation        AiOperation
+  status           AiRequestStatus
+  inputTokens      Int             @default(0)
+  outputTokens     Int             @default(0)
+  durationMs       Int             @default(0)
+  estimatedCostUsd Decimal?        @db.Decimal(12, 6)
+  errorCode        String?         @db.VarChar(60)
+  errorMessage     String?
+  metadata         Json            @default("{}")
+  createdAt        DateTime        @default(now())
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  agent        Agent?          @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  execution    AgentExecution? @relation(fields: [executionId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([organizationId, agentId])
+  @@index([executionId])
+}
+
+/// Reusable prompt templates with `{{variable}}` placeholders.
+model PromptTemplate {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  key            String   @db.VarChar(80)
+  name           String   @db.VarChar(120)
+  description    String?
+  content        String
+  variables      String[] @default([])
+  isSystem       Boolean  @default(false)
+  version        Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, key])
+}
+
+/// Interactive assistant conversation between one user and the AI (distinct from customer `Conversation`).
+model AssistantThread {
+  id               String    @id @default(uuid()) @db.Uuid
+  organizationId   String    @db.Uuid
+  userId           String    @db.Uuid
+  title            String?   @db.VarChar(200)
+  providerConfigId String?   @db.Uuid
+  model            String?   @db.VarChar(120)
+  /// Rolling summary of older messages that fell out of the context window.
+  summary          String?
+  summarizedUpTo   DateTime?
+  messageCount     Int       @default(0)
+  lastMessageAt    DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerConfig AiProviderConfig? @relation(fields: [providerConfigId], references: [id], onDelete: SetNull)
+  messages       AssistantMessage[]
+
+  @@index([organizationId, userId, lastMessageAt(sort: Desc)])
+}
+
+enum AssistantRole {
+  user
+  assistant
+  system
+  tool
+}
+
+model AssistantMessage {
+  id           String        @id @default(uuid()) @db.Uuid
+  threadId     String        @db.Uuid
+  role         AssistantRole
+  content      String
+  /// Tool calls requested by the assistant: [{ id, name, input }]
+  toolCalls    Json?
+  /// For role=tool: the id of the tool call this message answers.
+  toolCallId   String?       @db.VarChar(120)
+  toolName     String?       @db.VarChar(120)
+  inputTokens  Int?
+  outputTokens Int?
+  metadata     Json          @default("{}")
+  createdAt    DateTime      @default(now())
+
+  thread AssistantThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+}
+
+model Agent {
+  id               String   @id @default(uuid()) @db.Uuid
+  organizationId   String   @db.Uuid
+  name             String   @db.VarChar(120)
+  description      String?
+  instructions     String
+  providerConfigId String?  @db.Uuid
+  model            String?  @db.VarChar(120)
+  temperature      Float?
+  maxOutputTokens  Int?
+  /// Tool keys from the tool registry this agent may call.
+  tools            String[] @default([])
+  /// Permission grants for tool execution: { allowWrite: boolean, allowDelegation: boolean, delegateTo: string[] }
+  permissions      Json     @default("{}")
+  knowledgeBaseIds String[] @default([]) @db.Uuid
+  maxSteps         Int      @default(12)
+  maxDurationMs    Int      @default(120000)
+  maxTokens        Int      @default(150000)
+  maxDelegations   Int      @default(3)
+  retryPolicy      Json     @default("{\"maxAttempts\":2,\"backoffMs\":2000}")
+  isEnabled        Boolean  @default(true)
+  createdById      String?  @db.Uuid
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  providerConfig AiProviderConfig? @relation(fields: [providerConfigId], references: [id], onDelete: SetNull)
+  createdBy      User?             @relation("AgentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  executions     AgentExecution[]
+  requestLogs    AiRequestLog[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, isEnabled])
+}
+
+enum AgentExecutionStatus {
+  queued
+  running
+  succeeded
+  failed
+  timed_out
+  cancelled
+}
+
+enum AgentTrigger {
+  manual
+  api
+  automation
+  agent
+  schedule
+}
+
+model AgentExecution {
+  id                String               @id @default(uuid()) @db.Uuid
+  organizationId    String               @db.Uuid
+  agentId           String               @db.Uuid
+  parentExecutionId String?              @db.Uuid
+  rootExecutionId   String?              @db.Uuid
+  triggeredByUserId String?              @db.Uuid
+  trigger           AgentTrigger         @default(manual)
+  status            AgentExecutionStatus @default(queued)
+  input             Json
+  output            Json?
+  error             String?
+  depth             Int                  @default(0)
+  stepCount         Int                  @default(0)
+  inputTokens       Int                  @default(0)
+  outputTokens      Int                  @default(0)
+  estimatedCostUsd  Decimal?             @db.Decimal(12, 6)
+  startedAt         DateTime?
+  finishedAt        DateTime?
+  durationMs        Int?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agent        Agent                @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  parent       AgentExecution?      @relation("ExecutionTree", fields: [parentExecutionId], references: [id], onDelete: SetNull)
+  children     AgentExecution[]     @relation("ExecutionTree")
+  triggeredBy  User?                @relation("ExecutionTrigger", fields: [triggeredByUserId], references: [id], onDelete: SetNull)
+  steps        AgentExecutionStep[]
+  requestLogs  AiRequestLog[]
+
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([organizationId, agentId, status])
+  @@index([parentExecutionId])
+  @@index([rootExecutionId])
+}
+
+enum AgentStepType {
+  llm_call
+  tool_call
+  delegation
+  final
+  error
+}
+
+model AgentExecutionStep {
+  id           String        @id @default(uuid()) @db.Uuid
+  executionId  String        @db.Uuid
+  index        Int
+  type         AgentStepType
+  name         String?       @db.VarChar(120)
+  input        Json?
+  output       Json?
+  status       String        @default("succeeded") @db.VarChar(20)
+  error        String?
+  durationMs   Int?
+  inputTokens  Int?
+  outputTokens Int?
+  createdAt    DateTime      @default(now())
+
+  execution AgentExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@unique([executionId, index])
 }

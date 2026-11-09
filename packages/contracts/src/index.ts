@@ -5,4 +5,5 @@ export * from './organizations';
 export * from './crm';
 export * from './platform';
 export * from './analytics';
+export * from './ai';
 export * from './queues';
