@@ -78,3 +78,13 @@ export const timestampsSchema = z.object({
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
+
+/** Minimal user shape embedded in other resources (assignee, owner, author). Never includes credentials. */
+export const userSummarySchema = z.object({
+  id: idSchema,
+  email: z.string().email(),
+  firstName: z.string(),
+  lastName: z.string(),
+  avatarUrl: z.string().nullable(),
+});
+export type UserSummary = z.infer<typeof userSummarySchema>;

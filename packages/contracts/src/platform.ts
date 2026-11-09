@@ -108,6 +108,17 @@ export const notificationSchema = z.object({
 });
 export type Notification = z.infer<typeof notificationSchema>;
 
+export const listNotificationsQuerySchema = paginationQuerySchema.extend({
+  unread: z
+    .union([z.boolean(), z.enum(['true', 'false'])])
+    .transform((v) => v === true || v === 'true')
+    .optional(),
+});
+export type ListNotificationsQuery = z.infer<typeof listNotificationsQuerySchema>;
+
+export const unreadCountSchema = z.object({ unread: z.number().int().nonnegative() });
+export type UnreadCount = z.infer<typeof unreadCountSchema>;
+
 export const notificationPreferencesSchema = z.object({
   inApp: z.record(NotificationType, z.boolean()).optional(),
   email: z.record(NotificationType, z.boolean()).optional(),

@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { idSchema, paginationQuerySchema, sortOrderSchema, timestampsSchema } from './common';
+import {
+  idSchema,
+  paginationQuerySchema,
+  sortOrderSchema,
+  timestampsSchema,
+  userSummarySchema,
+} from './common';
 
 // ---------------------------------------------------------------------------
 // Contacts
@@ -22,6 +28,25 @@ export const contactSchema = z
   })
   .merge(timestampsSchema);
 export type Contact = z.infer<typeof contactSchema>;
+
+/** Minimal contact shape embedded in leads and conversations. */
+export const contactSummarySchema = contactSchema.pick({
+  id: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  phone: true,
+  company: true,
+});
+export type ContactSummary = z.infer<typeof contactSummarySchema>;
+
+/** Contact with its owner and relationship counts (detail view). */
+export const contactDetailSchema = contactSchema.extend({
+  owner: userSummarySchema.nullable(),
+  leadCount: z.number().int().nonnegative(),
+  conversationCount: z.number().int().nonnegative(),
+});
+export type ContactDetail = z.infer<typeof contactDetailSchema>;
 
 export const createContactSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
@@ -90,6 +115,36 @@ export const leadSchema = z
   .merge(timestampsSchema);
 export type Lead = z.infer<typeof leadSchema>;
 
+/** Lead as returned by list/detail endpoints: embeds contact and assignee summaries. */
+export const leadWithRelationsSchema = leadSchema.extend({
+  contact: contactSummarySchema.nullable(),
+  assignee: userSummarySchema.nullable(),
+});
+export type LeadWithRelations = z.infer<typeof leadWithRelationsSchema>;
+
+/** Convert a lead into a contact (and optionally mark it won). Either link an existing contact or create one. */
+export const convertLeadSchema = z
+  .object({
+    contactId: idSchema.optional(),
+    contact: z
+      .object({
+        firstName: z.string().trim().min(1).max(80),
+        lastName: z.string().trim().max(80).optional(),
+        email: z.string().trim().toLowerCase().email().optional(),
+        phone: z.string().trim().max(32).optional(),
+        company: z.string().trim().max(120).optional(),
+      })
+      .optional(),
+    markWon: z.boolean().default(false),
+  })
+  .refine((v) => Boolean(v.contactId) !== Boolean(v.contact), {
+    message: 'Provide exactly one of contactId or contact',
+  });
+export type ConvertLeadRequest = z.infer<typeof convertLeadSchema>;
+
+export const assignLeadSchema = z.object({ assigneeId: idSchema.nullable() });
+export type AssignLeadRequest = z.infer<typeof assignLeadSchema>;
+
 export const createLeadSchema = z.object({
   title: z.string().trim().min(1).max(160),
   status: LeadStatus.default('new'),
@@ -131,6 +186,10 @@ export const leadNoteSchema = z.object({
   createdAt: z.string().datetime(),
 });
 export type LeadNote = z.infer<typeof leadNoteSchema>;
+export const leadNoteWithAuthorSchema = leadNoteSchema.extend({
+  author: userSummarySchema.nullable(),
+});
+export type LeadNoteWithAuthor = z.infer<typeof leadNoteWithAuthorSchema>;
 export const createLeadNoteSchema = z.object({ body: z.string().trim().min(1).max(5000) });
 
 export const LeadActivityType = z.enum([
@@ -152,6 +211,10 @@ export const leadActivitySchema = z.object({
   createdAt: z.string().datetime(),
 });
 export type LeadActivity = z.infer<typeof leadActivitySchema>;
+export const leadActivityWithActorSchema = leadActivitySchema.extend({
+  actor: userSummarySchema.nullable(),
+});
+export type LeadActivityWithActor = z.infer<typeof leadActivityWithActorSchema>;
 
 // ---------------------------------------------------------------------------
 // Conversations
@@ -181,6 +244,20 @@ export const conversationSchema = z
   .merge(timestampsSchema);
 export type Conversation = z.infer<typeof conversationSchema>;
 
+export const conversationWithRelationsSchema = conversationSchema.extend({
+  contact: contactSummarySchema.nullable(),
+  lead: leadSchema.pick({ id: true, title: true, status: true }).nullable(),
+  assignee: userSummarySchema.nullable(),
+  /** Preview of the latest message, if any. */
+  lastMessage: z
+    .object({ role: z.enum(['customer', 'agent', 'assistant', 'system']), content: z.string() })
+    .nullable(),
+});
+export type ConversationWithRelations = z.infer<typeof conversationWithRelationsSchema>;
+
+export const assignConversationSchema = z.object({ assigneeId: idSchema.nullable() });
+export type AssignConversationRequest = z.infer<typeof assignConversationSchema>;
+
 export const createConversationSchema = z.object({
   subject: z.string().trim().max(200).optional(),
   channel: ConversationChannel.default('internal'),
@@ -209,6 +286,15 @@ export const messageSchema = z.object({
   createdAt: z.string().datetime(),
 });
 export type Message = z.infer<typeof messageSchema>;
+export const messageWithAuthorSchema = messageSchema.extend({
+  author: userSummarySchema.nullable(),
+});
+export type MessageWithAuthor = z.infer<typeof messageWithAuthorSchema>;
+
+export const listMessagesQuerySchema = paginationQuerySchema.extend({
+  sortOrder: sortOrderSchema.default('asc'),
+});
+export type ListMessagesQuery = z.infer<typeof listMessagesQuerySchema>;
 export const createMessageSchema = z.object({
   role: MessageRole.default('agent'),
   content: z.string().trim().min(1).max(20000),
