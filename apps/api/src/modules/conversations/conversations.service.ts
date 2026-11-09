@@ -1,0 +1,347 @@
+import {
+  type AssignConversationRequest,
+  AuditAction,
+  type ConversationWithRelations,
+  type CreateConversationRequest,
+  type CreateMessageRequest,
+  type ListConversationsQuery,
+  type ListMessagesQuery,
+  type MessageWithAuthor,
+  type UpdateConversationRequest,
+} from '@hilatech/contracts';
+import { type Conversation, type Prisma } from '@hilatech/database';
+import { truncate } from '@hilatech/shared';
+import { type TenantContext } from '@hilatech/types';
+import { Injectable } from '@nestjs/common';
+
+import { AppException } from '../../common/errors/app.exception';
+import { type RequestMeta } from '../../common/request';
+import { type PageResult, page, skipTake } from '../../common/utils/pagination';
+import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
+import { CrmReferencesService } from '../crm/crm-references.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { ConversationRules } from './conversation.rules';
+import {
+  CONVERSATION_INCLUDE,
+  MESSAGE_INCLUDE,
+  toConversationWithRelations,
+  toMessage,
+} from './conversations.mappers';
+
+@Injectable()
+export class ConversationsService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+    private readonly refs: CrmReferencesService,
+    private readonly notifications: NotificationsService,
+  ) {}
+
+  // ---------------------------------------------------------------------------------------------
+  // Conversations
+  // ---------------------------------------------------------------------------------------------
+
+  async list(
+    tenant: TenantContext,
+    query: ListConversationsQuery,
+  ): Promise<PageResult<ConversationWithRelations>> {
+    const where: Prisma.ConversationWhereInput = {
+      organizationId: tenant.organizationId,
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.channel ? { channel: query.channel } : {}),
+      ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
+      ...(query.contactId ? { contactId: query.contactId } : {}),
+      ...(query.search ? { OR: searchClauses(query.search) } : {}),
+    };
+    const [rows, total] = await this.prisma.client.$transaction([
+      this.prisma.client.conversation.findMany({
+        where,
+        include: CONVERSATION_INCLUDE,
+        orderBy: orderBy(query),
+        ...skipTake(query),
+      }),
+      this.prisma.client.conversation.count({ where }),
+    ]);
+    return page(rows.map(toConversationWithRelations), query, total);
+  }
+
+  async create(
+    tenant: TenantContext,
+    dto: CreateConversationRequest,
+    meta: RequestMeta,
+  ): Promise<ConversationWithRelations> {
+    if (dto.contactId) await this.refs.assertContact(tenant, dto.contactId, 'contactId');
+    if (dto.leadId) await this.refs.assertLead(tenant, dto.leadId, 'leadId');
+    if (dto.assigneeId) {
+      await this.refs.assertActiveMember(tenant, dto.assigneeId, 'assigneeId');
+      ConversationRules.assertCanSetAssignee(tenant, dto.assigneeId, null);
+    }
+
+    const conversation = await this.prisma.client.$transaction(async (tx) => {
+      const created = await tx.conversation.create({
+        data: {
+          organizationId: tenant.organizationId,
+          subject: dto.subject ?? null,
+          channel: dto.channel,
+          contactId: dto.contactId ?? null,
+          leadId: dto.leadId ?? null,
+          assigneeId: dto.assigneeId ?? null,
+        },
+      });
+      if (dto.initialMessage) {
+        // The opening message is written by the caller, so it is an `agent` message authored by them.
+        const message = await tx.message.create({
+          data: {
+            conversationId: created.id,
+            role: 'agent',
+            authorUserId: tenant.userId,
+            content: dto.initialMessage,
+          },
+        });
+        await tx.conversation.update({
+          where: { id: created.id },
+          data: { lastMessageAt: message.createdAt, messageCount: 1 },
+        });
+      }
+      return tx.conversation.findUniqueOrThrow({
+        where: { id: created.id },
+        include: CONVERSATION_INCLUDE,
+      });
+    });
+
+    await this.audit.log({
+      action: AuditAction.CONVERSATION_CREATED,
+      organizationId: tenant.organizationId,
+      actorUserId: tenant.userId,
+      targetType: 'conversation',
+      targetId: conversation.id,
+      metadata: {
+        channel: conversation.channel,
+        contactId: conversation.contactId,
+        leadId: conversation.leadId,
+        withInitialMessage: Boolean(dto.initialMessage),
+      },
+      request: meta,
+    });
+    if (conversation.assigneeId) {
+      await this.notifyAssigned(tenant, conversation, conversation.assigneeId, meta);
+    }
+    return toConversationWithRelations(conversation);
+  }
+
+  async get(tenant: TenantContext, id: string): Promise<ConversationWithRelations> {
+    return toConversationWithRelations(await this.requireConversation(tenant, id));
+  }
+
+  async update(
+    tenant: TenantContext,
+    id: string,
+    dto: UpdateConversationRequest,
+    meta: RequestMeta,
+  ): Promise<ConversationWithRelations> {
+    const existing = await this.requireConversation(tenant, id);
+    if (dto.contactId) await this.refs.assertContact(tenant, dto.contactId, 'contactId');
+    if (dto.leadId) await this.refs.assertLead(tenant, dto.leadId, 'leadId');
+    if (dto.assigneeId !== undefined && dto.assigneeId !== existing.assigneeId) {
+      if (dto.assigneeId) await this.refs.assertActiveMember(tenant, dto.assigneeId, 'assigneeId');
+      ConversationRules.assertCanSetAssignee(tenant, dto.assigneeId, existing.assigneeId);
+    }
+
+    const data: Prisma.ConversationUncheckedUpdateInput = {};
+    if (dto.subject !== undefined && dto.subject !== existing.subject) data.subject = dto.subject;
+    if (dto.status !== undefined && dto.status !== existing.status) data.status = dto.status;
+    if (dto.assigneeId !== undefined && dto.assigneeId !== existing.assigneeId) {
+      data.assigneeId = dto.assigneeId;
+    }
+    if (dto.contactId !== undefined && dto.contactId !== existing.contactId) {
+      data.contactId = dto.contactId;
+    }
+    if (dto.leadId !== undefined && dto.leadId !== existing.leadId) data.leadId = dto.leadId;
+    if (Object.keys(data).length === 0) return toConversationWithRelations(existing);
+
+    const updated = await this.prisma.client.conversation.update({
+      where: { id: existing.id },
+      data,
+      include: CONVERSATION_INCLUDE,
+    });
+    await this.audit.log({
+      action: AuditAction.CONVERSATION_UPDATED,
+      organizationId: tenant.organizationId,
+      actorUserId: tenant.userId,
+      targetType: 'conversation',
+      targetId: existing.id,
+      metadata: {
+        kind: 'update',
+        changes: Object.keys(data),
+        ...(data.status ? { from: existing.status, to: data.status } : {}),
+      },
+      request: meta,
+    });
+    if (data.assigneeId && typeof data.assigneeId === 'string') {
+      await this.notifyAssigned(tenant, updated, data.assigneeId, meta);
+    }
+    return toConversationWithRelations(updated);
+  }
+
+  async assign(
+    tenant: TenantContext,
+    id: string,
+    dto: AssignConversationRequest,
+    meta: RequestMeta,
+  ): Promise<ConversationWithRelations> {
+    const existing = await this.requireConversation(tenant, id);
+    if (dto.assigneeId) await this.refs.assertActiveMember(tenant, dto.assigneeId, 'assigneeId');
+    if (dto.assigneeId === existing.assigneeId) return toConversationWithRelations(existing);
+
+    const updated = await this.prisma.client.conversation.update({
+      where: { id: existing.id },
+      data: { assigneeId: dto.assigneeId },
+      include: CONVERSATION_INCLUDE,
+    });
+    await this.audit.log({
+      action: AuditAction.CONVERSATION_UPDATED,
+      organizationId: tenant.organizationId,
+      actorUserId: tenant.userId,
+      targetType: 'conversation',
+      targetId: existing.id,
+      metadata: { kind: 'assign', from: existing.assigneeId, to: dto.assigneeId },
+      request: meta,
+    });
+    if (dto.assigneeId) await this.notifyAssigned(tenant, updated, dto.assigneeId, meta);
+    return toConversationWithRelations(updated);
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Messages
+  // ---------------------------------------------------------------------------------------------
+
+  async listMessages(
+    tenant: TenantContext,
+    conversationId: string,
+    query: ListMessagesQuery,
+  ): Promise<PageResult<MessageWithAuthor>> {
+    const conversation = await this.requireConversation(tenant, conversationId);
+    const where = { conversationId: conversation.id };
+    const [rows, total] = await this.prisma.client.$transaction([
+      this.prisma.client.message.findMany({
+        where,
+        include: MESSAGE_INCLUDE,
+        orderBy: { createdAt: query.sortOrder },
+        ...skipTake(query),
+      }),
+      this.prisma.client.message.count({ where }),
+    ]);
+    return page(rows.map(toMessage), query, total);
+  }
+
+  /**
+   * Appends a message and updates the conversation counters in the same transaction. Archived
+   * conversations reject new messages (409); a resolved conversation is reopened.
+   */
+  async postMessage(
+    tenant: TenantContext,
+    conversationId: string,
+    dto: CreateMessageRequest,
+    meta: RequestMeta,
+  ): Promise<MessageWithAuthor> {
+    ConversationRules.assertApiRole(dto.role);
+    const conversation = await this.requireConversation(tenant, conversationId);
+    ConversationRules.assertPostable(conversation);
+    const nextStatus = ConversationRules.statusAfterMessage(conversation.status);
+
+    const message = await this.prisma.client.$transaction(async (tx) => {
+      const created = await tx.message.create({
+        data: {
+          conversationId: conversation.id,
+          role: dto.role,
+          authorUserId: ConversationRules.authorFor(dto.role, tenant),
+          content: dto.content,
+          metadata: dto.metadata as Prisma.InputJsonObject,
+        },
+        include: MESSAGE_INCLUDE,
+      });
+      await tx.conversation.update({
+        where: { id: conversation.id },
+        data: {
+          lastMessageAt: created.createdAt,
+          messageCount: { increment: 1 },
+          ...(nextStatus !== conversation.status ? { status: nextStatus } : {}),
+        },
+      });
+      return created;
+    });
+
+    if (nextStatus !== conversation.status) {
+      await this.audit.log({
+        action: AuditAction.CONVERSATION_UPDATED,
+        organizationId: tenant.organizationId,
+        actorUserId: tenant.userId,
+        targetType: 'conversation',
+        targetId: conversation.id,
+        metadata: { kind: 'reopened', from: conversation.status, to: nextStatus },
+        request: meta,
+      });
+    }
+    return toMessage(message);
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Internals
+  // ---------------------------------------------------------------------------------------------
+
+  private async requireConversation(tenant: TenantContext, id: string) {
+    const conversation = await this.prisma.client.conversation.findFirst({
+      where: { id, organizationId: tenant.organizationId },
+      include: CONVERSATION_INCLUDE,
+    });
+    if (!conversation) throw AppException.notFound('Conversation');
+    return conversation;
+  }
+
+  private async notifyAssigned(
+    tenant: TenantContext,
+    conversation: Pick<Conversation, 'id' | 'subject'>,
+    assigneeId: string,
+    meta: RequestMeta,
+  ): Promise<void> {
+    if (assigneeId === tenant.userId) return;
+    const actor = await this.prisma.client.user.findUnique({
+      where: { id: tenant.userId },
+      select: { firstName: true, lastName: true },
+    });
+    const actorName = actor ? `${actor.firstName} ${actor.lastName}`.trim() : 'A teammate';
+    const subject = conversation.subject ?? 'a conversation';
+    await this.notifications.notify({
+      organizationId: tenant.organizationId,
+      userId: assigneeId,
+      type: 'conversation_assigned',
+      title: truncate(`Conversation assigned to you: ${subject}`, 200),
+      body: `${actorName} assigned you ${conversation.subject ? `"${conversation.subject}"` : subject}.`,
+      link: `/conversations/${conversation.id}`,
+      data: { conversationId: conversation.id, assignedBy: tenant.userId },
+      requestId: meta.requestId,
+    });
+  }
+}
+
+// -----------------------------------------------------------------------------------------------
+// Helpers (pure)
+// -----------------------------------------------------------------------------------------------
+
+/** Case-insensitive search over subject and the linked contact's name. */
+export function searchClauses(search: string): Prisma.ConversationWhereInput[] {
+  const contains = { contains: search, mode: 'insensitive' as const };
+  return [
+    { subject: contains },
+    { contact: { firstName: contains } },
+    { contact: { lastName: contains } },
+  ];
+}
+
+function orderBy(query: ListConversationsQuery): Prisma.ConversationOrderByWithRelationInput {
+  if (query.sortBy === 'lastMessageAt') {
+    return { lastMessageAt: { sort: query.sortOrder, nulls: 'last' } };
+  }
+  return { [query.sortBy]: query.sortOrder };
+}

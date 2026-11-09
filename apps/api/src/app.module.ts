@@ -21,6 +21,10 @@ import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
 import { BillingModule } from './modules/billing/billing.module';
+import { ContactsModule } from './modules/contacts/contacts.module';
+import { ConversationsModule } from './modules/conversations/conversations.module';
+import { LeadsModule } from './modules/leads/leads.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { OrganizationGuard } from './modules/tenancy/organization.guard';
 import { PermissionsGuard } from './modules/tenancy/permissions.guard';
@@ -63,6 +67,11 @@ import { UsersModule } from './modules/users/users.module';
     OrganizationsModule,
     UsersModule,
     BillingModule,
+    // Priority 2 — core business modules
+    NotificationsModule,
+    ContactsModule,
+    LeadsModule,
+    ConversationsModule,
     AnalyticsModule,
   ],
   providers: [

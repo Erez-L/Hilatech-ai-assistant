@@ -16,6 +16,8 @@ type ModelName =
   | 'usageRecord'
   | 'contact'
   | 'lead'
+  | 'leadNote'
+  | 'leadActivity'
   | 'conversation'
   | 'message'
   | 'notification';
@@ -26,6 +28,7 @@ type ModelMock = {
   findFirst: jest.Mock;
   findMany: jest.Mock;
   create: jest.Mock;
+  createMany: jest.Mock;
   update: jest.Mock;
   updateMany: jest.Mock;
   upsert: jest.Mock;
