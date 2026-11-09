@@ -88,15 +88,17 @@ describe('toolOutcomeAuditData', () => {
 describe('createToolAuditHook', () => {
   it('writes one AuditLog row and never throws when the write fails', async () => {
     const create = jest.fn().mockRejectedValue(new Error('db down'));
-    const hook = createToolAuditHook(
-      { auditLog: { create } } as unknown as AuditWriter,
-      logger,
-    );
+    const hook = createToolAuditHook({ auditLog: { create } } as unknown as AuditWriter, logger);
     await expect(
       hook({
         ...base,
         toolKey: 'time.now',
-        outcome: { status: 'ok', toolKey: 'time.now', durationMs: 1, result: { ok: true, summary: '' } },
+        outcome: {
+          status: 'ok',
+          toolKey: 'time.now',
+          durationMs: 1,
+          result: { ok: true, summary: '' },
+        },
       }),
     ).resolves.toBeUndefined();
     expect(create).toHaveBeenCalledTimes(1);

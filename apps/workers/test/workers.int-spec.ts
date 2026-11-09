@@ -215,13 +215,15 @@ describe('workers (integration)', () => {
     expect(await prisma.client.notification.count({ where: { userId } })).toBe(1);
   });
 
-  it('completes not-yet-implemented queues with a skipped outcome instead of failing', async () => {
+  it('completes not-yet-implemented work with a skipped outcome instead of failing', async () => {
+    // `agent_execution` and `conversation_summary` are implemented (see ai-tasks.int-spec.ts);
+    // `lead_enrichment` is still a documented no-op.
     const idempotencyKey = `ai-int-${randomUUID()}`;
     const payload: AiTaskJob = {
       ...base(),
       organizationId,
       idempotencyKey,
-      kind: 'conversation_summary',
+      kind: 'lead_enrichment',
       targetId: randomUUID(),
       requestedByUserId: null,
     };
