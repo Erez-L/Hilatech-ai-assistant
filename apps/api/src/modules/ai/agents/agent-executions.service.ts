@@ -19,6 +19,8 @@ import { type PageResult, page, skipTake } from '../../../common/utils/paginatio
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { QueueService } from '../../../infrastructure/queue/queue.service';
 import { AuditService } from '../../audit/audit.service';
+import { estimateRequest } from '../../billing/budget.rules';
+import { BudgetService } from '../../billing/budget.service';
 import { EntitlementsService } from '../../billing/entitlements.service';
 import { DomainEventsService } from '../../events/domain-events.service';
 import { withEngineErrors } from '../core/ai-errors';
@@ -47,6 +49,7 @@ export class AgentExecutionsService {
     private readonly audit: AuditService,
     private readonly agents: AgentsService,
     private readonly entitlements: EntitlementsService,
+    private readonly budget: BudgetService,
     private readonly queue: QueueService,
     private readonly runners: AiRunnersService,
     private readonly cancellation: CancellationService,
@@ -70,8 +73,35 @@ export class AgentExecutionsService {
     AgentRules.assertExecutable(agent);
     const definition = toAgentDefinition(agent);
     // 409 AI_NOT_CONFIGURED up-front: never create or enqueue an execution that cannot run.
-    await withEngineErrors(() => this.resolver.forAgent(definition));
+    const resolved = await withEngineErrors(() => this.resolver.forAgent(definition));
 
+    // Budget admission control (hard stop): refuse BEFORE the execution row exists or a provider is called.
+    // Sync runs hold the reservation while they run; async runs are admitted against recorded usage
+    // at enqueue time (the reservation is released right after the job is queued).
+    const estimate = estimateRequest({
+      textChars: JSON.stringify(dto.input ?? '').length + definition.instructions.length,
+      outputReserveTokens: definition.maxOutputTokens,
+      maxTokens: definition.maxTokens,
+    });
+    const reservation = await this.budget.admit(tenant.organizationId, {
+      tokens: estimate.total,
+      costUsd: this.budget.estimateCostUsd(resolved.providerKind, resolved.model, estimate),
+    });
+    try {
+      return await this.createAndStart(tenant, agent, definition, dto, meta);
+    } finally {
+      await reservation.release();
+      if (dto.mode === 'sync') await this.budget.reconcile(tenant.organizationId);
+    }
+  }
+
+  private async createAndStart(
+    tenant: TenantContext,
+    agent: Awaited<ReturnType<AgentsService['requireAgent']>>,
+    definition: ReturnType<typeof toAgentDefinition>,
+    dto: ExecuteAgentRequest,
+    meta: RequestMeta,
+  ): Promise<ExecuteOutcome> {
     const execution = await this.prisma.client.$transaction(async (tx) => {
       const created = await tx.agentExecution.create({
         data: {

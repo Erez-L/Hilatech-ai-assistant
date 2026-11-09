@@ -11,3 +11,5 @@ export * from './automation';
 export * from './automation-rules';
 export * from './integrations';
 export * from './queues';
+export * from './billing';
+export * from './analytics-reports';

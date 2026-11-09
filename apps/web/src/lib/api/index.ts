@@ -23,3 +23,11 @@ export {
   type ExecuteAgentResponse,
 } from './agents';
 export { createSseParser, parseAssistantEvent, streamSse, type RawSseEvent } from './sse';
+export { knowledgeApi, type ListKnowledgeBasesParams, type ListDocumentsParams } from './knowledge';
+export {
+  workflowsApi,
+  webhooksApi,
+  type ListWorkflowsParams,
+  type ListWorkflowExecutionsParams,
+} from './automation';
+export { integrationsApi, type IntegrationStatusEntry } from './integrations';

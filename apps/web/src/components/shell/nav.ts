@@ -80,7 +80,6 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Knowledge',
         icon: BookOpen,
         permission: Permission.KNOWLEDGE_READ,
-        upcoming: true,
       },
     ],
   },
@@ -92,14 +91,12 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Automations',
         icon: Workflow,
         permission: Permission.AUTOMATIONS_READ,
-        upcoming: true,
       },
       {
         href: '/integrations',
         label: 'Integrations',
         icon: Plug,
         permission: Permission.INTEGRATIONS_READ,
-        upcoming: true,
       },
       {
         href: '/analytics',

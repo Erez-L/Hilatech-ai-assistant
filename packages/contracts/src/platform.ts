@@ -21,6 +21,7 @@ export const AuditAction = {
   ORG_CREATED: 'organization.created',
   ORG_UPDATED: 'organization.updated',
   ORG_SETTINGS_UPDATED: 'organization.settings_updated',
+  BILLING_BUDGET_UPDATED: 'billing.budget_updated',
   ORG_DELETED: 'organization.deleted',
   // members / roles / invitations
   MEMBER_INVITED: 'member.invited',

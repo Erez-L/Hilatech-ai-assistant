@@ -171,3 +171,47 @@ config, a job `{ kind: 'conversation_summary', targetId: conversationId, request
 'conv-summary-<id>-<messageCount>' }` is enqueued on `ai-tasks` with a 30s delay.
 
 Environment: `AI_ALLOW_MOCK_PROVIDER`, `AI_PRICING_JSON`, `AI_TOOL_TIMEOUT_MS`, `AI_PROVIDER_TIMEOUT_MS`.
+
+## Priority 5 — analytics, billing readiness, AI budget (backend, 2026-11-09)
+
+Response schemas live in `packages/contracts/src/analytics-reports.ts` and `billing.ts`. All endpoints are
+tenant-scoped (`x-organization-id`); a forged header answers `403 NOT_A_MEMBER`. No payment provider exists:
+nothing charges money and no prices are defined.
+
+### Analytics reports (`analytics:read`)
+
+Common query (`analyticsRangeQuerySchema`): `from` / `to` (ISO datetimes, `to` exclusive; default = last 30 days
+ending now; max 366 days, else `400`), `granularity` = `day` \| `week` (Monday start) \| `month` (default `day`).
+Every series is zero-filled to `range.buckets` UTC buckets. Costs are `null` unless `AI_PRICING_JSON` prices the model.
+
+| Endpoint | Response | Notes |
+| -------- | -------- | ----- |
+| `GET /analytics/business` | `BusinessAnalytics` | leads (created in range, current `byStatus`, `bySource`, series), funnel, conversations (status/channel/series), contacts. Funnel has no stage history: "reached" = current status at or beyond the stage. `tasks: { modelled: false }` (no Task model) |
+| `GET /analytics/sales` | `SalesAnalytics` | `dealsModelled: false`: derived from leads with `value`. Open pipeline per status+currency, won/lost in range per currency (close date = `convertedAt` else `updatedAt`), win rate, avg cycle days, by source. Never sums across currencies |
+| `GET /analytics/agents` | `AgentAnalytics` | executions by status, success rate = succeeded / (succeeded+failed+timed_out), p50/p95/avg `durationMs`, tokens, cost + `costCoverage`, per agent, series (`failed` includes `timed_out`) |
+| `GET /analytics/automation` | `AutomationAnalytics` | workflow runs by status, success rate, durations, top failure reasons, per workflow; webhook deliveries by status, success rate (delivered / (delivered+failed)), avg attempts, failure reasons, by event |
+| `GET /analytics/usage` | `UsageAnalytics` | AI requests/tokens/cost by model, agent (`agentId: null` = assistant & non-agent calls), user, series; `currentPeriod` = this month vs plan token limit and budget status |
+| `GET /analytics/export?report=business\|usage&section=series\|breakdown` | `text/csv` attachment | RFC 4180; text cells starting with `= + - @` are apostrophe-prefixed (CSV injection) |
+
+### Billing (`/billing`)
+
+| Endpoint | Permission | Response |
+| -------- | ---------- | -------- |
+| `GET /plans` (no tenant) | – | `PlanCatalogEntry[]` (`key`, `name`, `rank`, `limits`, `pricing: { configured: false }`) |
+| `GET /subscription` | `organization:read` | `Subscription` |
+| `GET /usage` | `organization:read` | `UsageSummary`; `documents`/`storage_mb` now from the Document table (stock), `agent_executions`/`automation_runs` from their tables (month), `ai_tokens` from UsageRecord (month) |
+| `GET /entitlements` | `organization:read` | `EntitlementsOverview`: per entitlement `used`, `limit`, `percent`, `state` (ok < 80% <= warning < 100% <= exceeded), `basis` (stock/period), `enforced` |
+| `GET /upgrade-options` | `organization:read` | `UpgradeOptions`: pressured entitlements, higher plans with limit deltas and which pressure each would resolve, `payment.configured: false` |
+| `POST /checkout` `{ plan }` | `organization:billing:manage` | always `501 PAYMENT_NOT_CONFIGURED` |
+| `GET /budget` | `organization:read` | `BudgetStatus` (settings, month usage, levels, `blocked`); also raises due alerts |
+| `PUT /budget` | `organization:billing:manage` | `UpdateBudgetRequest` (`monthlyTokenBudget`, `monthlyCostBudgetUsd`, `warnThresholdPct` 1-100, `hardStopEnabled`; `null` clears) → `BudgetStatus`. Hard stop needs a budget. Audited as `billing.budget_updated` |
+| `GET /alerts` | `organization:billing:manage` | paginated `BudgetAlert` (scope `budget_tokens` \| `budget_cost` \| `plan_tokens`, kind `warning` \| `exceeded`); one row per org+month+scope+kind |
+
+Enforcement: hard stop is **admission control** in the assistant (`POST /assistant/threads/:id/messages`, JSON and SSE) and
+agent execute (`POST /agents/:id/execute`, sync and async). Before any provider call the API estimates the call
+(prompt chars/4 + overhead + output reserve, capped by the run's token cap), checks it against the remaining monthly
+budget minus calls still running (atomic Redis reservation) and refuses with `402 BUDGET_EXCEEDED`
+(`details: { scope, reason: exhausted | would_exceed, used, budget, estimate }`). The reservation is released after the
+run, when real usage is already recorded. A cost budget is only measurable/enforceable when pricing is configured
+(`cost.enforceable`, `cost.note`). Alerts create in-app `system` notifications (`data.kind = "budget_alert"`) for members
+holding `organization:billing:manage`.

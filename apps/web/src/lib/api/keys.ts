@@ -84,4 +84,37 @@ export const keys = {
     ['org', orgId, 'agents', 'executions', 'list', params ?? {}] as const,
   execution: (orgId: string | null, id: string) =>
     ['org', orgId, 'agents', 'executions', 'detail', id] as const,
+  // Knowledge
+  knowledgeRoot: (orgId: string | null) => ['org', orgId, 'knowledge'] as const,
+  knowledgeBases: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'knowledge', 'bases', 'list', params ?? {}] as const,
+  knowledgeBase: (orgId: string | null, id: string) =>
+    ['org', orgId, 'knowledge', 'bases', 'detail', id] as const,
+  knowledgeDocuments: (orgId: string | null, baseId: string, params?: object) =>
+    ['org', orgId, 'knowledge', 'bases', 'detail', baseId, 'documents', params ?? {}] as const,
+  knowledgeChunks: (orgId: string | null, documentId: string, params?: object) =>
+    ['org', orgId, 'knowledge', 'documents', documentId, 'chunks', params ?? {}] as const,
+
+  // Automations
+  automationsRoot: (orgId: string | null) => ['org', orgId, 'automations'] as const,
+  workflows: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'automations', 'workflows', 'list', params ?? {}] as const,
+  workflow: (orgId: string | null, id: string) =>
+    ['org', orgId, 'automations', 'workflows', 'detail', id] as const,
+  workflowTemplates: (orgId: string | null) => ['org', orgId, 'automations', 'templates'] as const,
+  workflowExecutions: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'automations', 'executions', 'list', params ?? {}] as const,
+  workflowExecution: (orgId: string | null, id: string) =>
+    ['org', orgId, 'automations', 'executions', 'detail', id] as const,
+  webhooks: (orgId: string | null) => ['org', orgId, 'automations', 'webhooks', 'list'] as const,
+  webhookDeliveries: (orgId: string | null, id: string, params?: object) =>
+    ['org', orgId, 'automations', 'webhooks', 'deliveries', id, params ?? {}] as const,
+  webhookEndpoints: (orgId: string | null) =>
+    ['org', orgId, 'automations', 'endpoints', 'list'] as const,
+
+  // Integrations
+  integrationsRoot: (orgId: string | null) => ['org', orgId, 'integrations'] as const,
+  integrationCatalog: (orgId: string | null) => ['org', orgId, 'integrations', 'catalog'] as const,
+  integrationStatus: (orgId: string | null) => ['org', orgId, 'integrations', 'status'] as const,
+  integrations: (orgId: string | null) => ['org', orgId, 'integrations', 'list'] as const,
 };

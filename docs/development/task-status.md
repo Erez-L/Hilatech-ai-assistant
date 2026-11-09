@@ -116,3 +116,33 @@ Backend only; the web screens for these modules are not built yet. Mock provider
 | Integrations | Generic REST and n8n, encrypted credentials | Verified locally; not tested against a real n8n | — |
 | Integrations | Email, WhatsApp, CRM | Catalogue only, shown as unconfigured; nothing simulated | — |
 | Cross-app | API and workers were not run together for a document upload → search round trip | Not verified end to end | — |
+
+## Priority 5 — analytics, billing readiness, AI budget (backend, 2026-11-09)
+
+Backend only (web pages are built separately). One migration: `20261109183059_budgets_and_analytics_indexes`
+(`OrganizationBudget`, `BudgetAlert`, `WebhookDelivery(organizationId, createdAt)` index).
+
+| Area | Item | Status | Evidence |
+| ---- | ---- | ------ | -------- |
+| Analytics | business, sales (derived from leads), agents, automation, usage reports; CSV export (business, usage) | Verified | `analytics-reports.int-spec`; EXPLAIN on ~800k seeded rows uses the org/date indexes |
+| Analytics | Tasks / Deals | Not modelled | no Task or Deal model in the schema; reported as such |
+| Billing | Plan catalogue, entitlements overview, usage fix (documents/storage from Document table), upgrade data, checkout 501 | Verified | `billing-budget.int-spec` |
+| Billing | Monthly AI token/cost budget, hard-stop admission control (assistant + agent execute), alerts + notifications | Verified (mock provider) | `billing-budget.int-spec`, `billing-budget-cost.int-spec` |
+| Billing | Payment processing | Not implemented | no provider; `501 PAYMENT_NOT_CONFIGURED` |
+| Security | Cross-tenant tests for every new endpoint | Verified | `security/analytics-billing-cross-tenant.int-spec` |
+| Known gaps | Async agent executions are admitted at enqueue time only (workers do not re-check); workflow `agent` steps and knowledge embeddings are not behind budget admission; plan limits `agents`/`automations` are reported but not enforced at creation | Partial | see hand-off |
+
+## Priority 4 frontend + Priority 5 backend (2026-11-09)
+
+| Area | Item | Status | Evidence |
+| ---- | ---- | ------ | -------- |
+| Web | Knowledge, automations (editor, templates, executions, webhooks), integrations pages on real APIs | Verified | 104 web unit tests; `knowledge-automation-journey` e2e (upload → ready → search hit; template workflow validate/enable/run; webhook secret shown once) |
+| Cross-app | Document upload → worker → embeddings → search through the real stack | Verified (mock embeddings) | e2e above |
+| Web | Inbound endpoints, rotate, deliveries log, live test delivery, document reprocess/download/delete, integration connect against real API | Not run in a browser/live | unit tests with mocked fetch only |
+| Web | Analytics, billing, budget screens | Not built | — |
+| API | Analytics reports (business, sales-from-leads, agents, automation, usage) + CSV export | Verified | 337 integration tests; EXPLAIN on ~800k rows |
+| API | Entitlements overview, plans, upgrade options, budget + alerts | Verified | `billing-budget.int-spec` |
+| API | Budget admission control (token budget; cost budget only when AI_PRICING_JSON prices the model) before provider calls in assistant and agent execute | Verified | `billing-budget*.int-spec` |
+| Workers | Budget re-check before calling providers in queued runs / workflow agent steps | Not implemented (hard stop can be overshot) | — |
+| API | Payments | Not configured: `POST /billing/checkout` returns 501 | — |
+| API | Tasks/Deals analytics | Not modelled in schema; sales derived from leads | — |

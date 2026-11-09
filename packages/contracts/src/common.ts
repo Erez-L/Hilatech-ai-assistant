@@ -43,6 +43,10 @@ export const ErrorCode = {
   PAYLOAD_TOO_LARGE: 'PAYLOAD_TOO_LARGE',
   UNSUPPORTED_MEDIA_TYPE: 'UNSUPPORTED_MEDIA_TYPE',
   ENTITLEMENT_EXCEEDED: 'ENTITLEMENT_EXCEEDED',
+  /** 402 — the organization's configured monthly AI budget (hard stop) is used up; AI requests are refused before any provider call. */
+  BUDGET_EXCEEDED: 'BUDGET_EXCEEDED',
+  /** 501 — no payment provider is configured; checkout/plan changes through the API are unavailable. */
+  PAYMENT_NOT_CONFIGURED: 'PAYMENT_NOT_CONFIGURED',
   PROVIDER_NOT_CONFIGURED: 'PROVIDER_NOT_CONFIGURED',
   PROVIDER_ERROR: 'PROVIDER_ERROR',
   /** 409 — the organization has no usable AI provider configuration (or the selected one is disabled / has no key). */

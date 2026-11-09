@@ -82,10 +82,76 @@ describe('EntitlementsService', () => {
     await expect(service.assertWithinLimit(tenant, 'ai_tokens')).rejects.toMatchObject({
       code: ErrorCode.ENTITLEMENT_EXCEEDED,
     });
-    await expect(service.check(tenant, 'agent_executions')).resolves.toEqual({
-      metric: 'agent_executions',
-      used: 1_000_000,
-      limit: null,
+  });
+
+  it('derives documents and storage from the Document table (stock), not from monthly UsageRecord sums', async () => {
+    const { service, client } = build();
+    client.subscription.findUnique.mockResolvedValue({ plan: 'free', limits: PLAN_LIMITS.free });
+    client.document.count.mockResolvedValue(10);
+    client.document.aggregate.mockResolvedValue({ _sum: { sizeBytes: 150 * 1024 * 1024 } });
+    await expect(service.check(tenant, 'documents')).resolves.toEqual({
+      metric: 'documents',
+      used: 10,
+      limit: PLAN_LIMITS.free.knowledgeDocuments,
     });
+    await expect(service.check(tenant, 'storage_mb')).resolves.toEqual({
+      metric: 'storage_mb',
+      used: 150,
+      limit: PLAN_LIMITS.free.storageMb,
+    });
+    expect(client.usageRecord.aggregate).not.toHaveBeenCalled();
+    await expect(service.assertWithinLimit(tenant, 'documents')).rejects.toMatchObject({
+      code: ErrorCode.ENTITLEMENT_EXCEEDED,
+    });
+    await expect(service.assertWithinLimit(tenant, 'storage_mb')).rejects.toMatchObject({
+      code: ErrorCode.ENTITLEMENT_EXCEEDED,
+    });
+  });
+
+  it('counts executions and runs of the current month from their own tables', async () => {
+    const { service, client } = build();
+    client.subscription.findUnique.mockResolvedValue({ plan: 'free', limits: PLAN_LIMITS.free });
+    client.agentExecution.count.mockResolvedValue(7);
+    client.workflowExecution.count.mockResolvedValue(3);
+    await expect(service.check(tenant, 'agent_executions')).resolves.toMatchObject({ used: 7 });
+    await expect(service.check(tenant, 'automation_runs')).resolves.toMatchObject({ used: 3 });
+    expect(client.agentExecution.count.mock.calls[0]?.[0].where).toMatchObject({
+      organizationId: ORG,
+      parentExecutionId: null,
+    });
+  });
+
+  it('checks agents and automations against their stock', async () => {
+    const { service, client } = build();
+    client.subscription.findUnique.mockResolvedValue({ plan: 'free', limits: PLAN_LIMITS.free });
+    client.agent.count.mockResolvedValue(1);
+    client.workflow.count.mockResolvedValue(0);
+    await expect(service.assertWithinLimit(tenant, 'agents')).rejects.toMatchObject({
+      code: ErrorCode.ENTITLEMENT_EXCEEDED,
+      details: { metric: 'agents', used: 1, limit: 1 },
+    });
+    await expect(service.assertWithinLimit(tenant, 'automations')).resolves.toMatchObject({
+      used: 0,
+    });
+  });
+
+  it('builds the overview with state per entitlement from real figures', async () => {
+    const { service, client } = build();
+    client.subscription.findUnique.mockResolvedValue({ plan: 'free', limits: PLAN_LIMITS.free });
+    client.organizationMember.count.mockResolvedValue(2);
+    client.invitation.count.mockResolvedValue(0);
+    client.agent.count.mockResolvedValue(0);
+    client.workflow.count.mockResolvedValue(0);
+    client.usageRecord.aggregate.mockResolvedValue({ _sum: { quantity: BigInt(85_000) } });
+    client.document.count.mockResolvedValue(3);
+    client.document.aggregate.mockResolvedValue({ _sum: { sizeBytes: 0 } });
+    client.agentExecution.count.mockResolvedValue(0);
+    client.workflowExecution.count.mockResolvedValue(0);
+    const rows = await service.overview(ORG);
+    const byKey = Object.fromEntries(rows.map((r) => [r.key, r]));
+    expect(byKey.seats).toMatchObject({ used: 2, limit: 2, state: 'exceeded', enforced: true });
+    expect(byKey.ai_tokens).toMatchObject({ used: 85_000, percent: 85, state: 'warning' });
+    expect(byKey.documents).toMatchObject({ used: 3, state: 'ok', basis: 'stock' });
+    expect(byKey.agent_executions).toMatchObject({ limit: null, percent: null, state: 'ok' });
   });
 });

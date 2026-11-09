@@ -28,7 +28,12 @@ type ModelName =
   | 'assistantMessage'
   | 'agent'
   | 'agentExecution'
-  | 'agentExecutionStep';
+  | 'agentExecutionStep'
+  | 'document'
+  | 'workflow'
+  | 'workflowExecution'
+  | 'organizationBudget'
+  | 'budgetAlert';
 
 type ModelMock = {
   findUnique: jest.Mock;
@@ -37,6 +42,7 @@ type ModelMock = {
   findMany: jest.Mock;
   create: jest.Mock;
   createMany: jest.Mock;
+  createManyAndReturn: jest.Mock;
   update: jest.Mock;
   updateMany: jest.Mock;
   upsert: jest.Mock;

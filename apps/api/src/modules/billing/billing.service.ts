@@ -1,25 +1,22 @@
 import {
+  ErrorCode,
+  type EntitlementsOverview,
   PLAN_LIMITS,
-  type PlanKey,
-  type PlanLimits,
+  type PlanCatalogEntry,
   type Subscription as SubscriptionDto,
   UsageMetric,
+  type UpgradeOptions,
   type UsageSummary,
   planLimitsSchema,
 } from '@hilatech/contracts';
 import { monthPeriod } from '@hilatech/shared';
 import { type TenantContext } from '@hilatech/types';
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 
 import { AppException } from '../../common/errors/app.exception';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { EntitlementsService, USAGE_LIMIT_KEY } from './entitlements.service';
-
-/** TODO(contracts): add `planCatalogEntrySchema` to `@hilatech/contracts`. */
-export interface PlanCatalogEntry {
-  key: PlanKey;
-  limits: PlanLimits;
-}
+import { PRICING_NOTE, buildUpgradeOptions, planCatalog } from './plan-catalog';
 
 @Injectable()
 export class BillingService {
@@ -63,9 +60,46 @@ export class BillingService {
   }
 
   listPlans(): PlanCatalogEntry[] {
-    return (Object.keys(PLAN_LIMITS) as PlanKey[]).map((key) => ({
-      key,
-      limits: PLAN_LIMITS[key],
-    }));
+    return planCatalog();
+  }
+
+  /** Every entitlement with its real consumption (stock tables / current-month records) and state. */
+  async getEntitlements(tenant: TenantContext): Promise<EntitlementsOverview> {
+    const [sub, entitlements] = await Promise.all([
+      this.getSubscription(tenant),
+      this.entitlements.overview(tenant.organizationId),
+    ]);
+    return {
+      plan: sub.plan,
+      status: sub.status,
+      periodStart: sub.currentPeriodStart,
+      periodEnd: sub.currentPeriodEnd,
+      entitlements,
+    };
+  }
+
+  /** Upgrade-flow data only. There is no payment provider: the response says so explicitly. */
+  async getUpgradeOptions(tenant: TenantContext): Promise<UpgradeOptions> {
+    const overview = await this.getEntitlements(tenant);
+    const sub = await this.getSubscription(tenant);
+    const pressure = overview.entitlements
+      .filter((e) => e.state !== 'ok')
+      .sort((a, b) => (b.percent ?? 0) - (a.percent ?? 0));
+    return {
+      currentPlan: sub.plan,
+      subscriptionStatus: sub.status,
+      pressure,
+      options: buildUpgradeOptions(sub.plan, sub.limits, pressure),
+      payment: { configured: false, provider: null, message: PRICING_NOTE },
+    };
+  }
+
+  /** No payment provider exists, so no plan change can be paid for: answer honestly. */
+  checkoutNotConfigured(): never {
+    throw new AppException(
+      HttpStatus.NOT_IMPLEMENTED,
+      ErrorCode.PAYMENT_NOT_CONFIGURED,
+      'Online checkout is not available: no payment provider is configured. Contact your account team to change plan.',
+    );
   }
 }

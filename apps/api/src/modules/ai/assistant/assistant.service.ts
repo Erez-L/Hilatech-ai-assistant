@@ -37,6 +37,8 @@ import { AppException } from '../../../common/errors/app.exception';
 import { type RequestMeta } from '../../../common/request';
 import { type PageResult, page, skipTake } from '../../../common/utils/pagination';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
+import { estimateRequest } from '../../billing/budget.rules';
+import { BudgetService } from '../../billing/budget.service';
 import { EntitlementsService } from '../../billing/entitlements.service';
 import { parseSettings } from '../../organizations/organizations.mappers';
 import { withEngineErrors } from '../core/ai-errors';
@@ -87,6 +89,7 @@ export class AssistantService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly entitlements: EntitlementsService,
+    private readonly budget: BudgetService,
     private readonly resolver: ProviderResolver,
     private readonly runners: AiRunnersService,
     private readonly usage: PrismaUsageRecorder,
@@ -225,7 +228,60 @@ export class AssistantService {
     const history = rowsToHistory(rows.reverse());
     const agent = buildAssistantAgent(thread, organization, resolved);
 
-    const userMessage = await this.prisma.client.$transaction(async (tx) => {
+    // Budget admission control: BEFORE anything is persisted or any provider is called.
+    const outputReserve = agent.maxOutputTokens ?? ASSISTANT_OUTPUT_RESERVE;
+    const estimate = estimateRequest({
+      textChars:
+        dto.content.length +
+        (thread.summary?.length ?? 0) +
+        dataBlocks.reduce((n, b) => n + b.length, 0) +
+        rows.reduce((n, r) => n + r.content.length, 0),
+      outputReserveTokens: outputReserve,
+      maxTokens: agent.maxTokens,
+    });
+    const reservation = await this.budget.admit(tenant.organizationId, {
+      tokens: estimate.total,
+      costUsd: this.budget.estimateCostUsd(resolved.providerKind, resolved.model, estimate),
+    });
+
+    let userMessage: AssistantMessage;
+    try {
+      userMessage = await this.persistUserMessage(thread, dto);
+    } catch (error) {
+      await reservation.release();
+      throw error;
+    }
+
+    return {
+      threadId: thread.id,
+      userMessageId: userMessage.id,
+      run: async (options) => {
+        try {
+          return await this.runTurn({
+            tenant,
+            thread,
+            organization,
+            userName,
+            resolved,
+            agent,
+            dataBlocks,
+            history,
+            input: dto.content,
+            options,
+          });
+        } finally {
+          await reservation.release();
+          await this.budget.reconcile(tenant.organizationId);
+        }
+      },
+    };
+  }
+
+  private async persistUserMessage(
+    thread: AssistantThread,
+    dto: SendAssistantMessageRequest,
+  ): Promise<AssistantMessage> {
+    return this.prisma.client.$transaction(async (tx) => {
       const created = await tx.assistantMessage.create({
         data: {
           threadId: thread.id,
@@ -244,24 +300,6 @@ export class AssistantService {
       });
       return created;
     });
-
-    return {
-      threadId: thread.id,
-      userMessageId: userMessage.id,
-      run: (options) =>
-        this.runTurn({
-          tenant,
-          thread,
-          organization,
-          userName,
-          resolved,
-          agent,
-          dataBlocks,
-          history,
-          input: dto.content,
-          options,
-        }),
-    };
   }
 
   private async runTurn(params: {

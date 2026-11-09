@@ -83,6 +83,8 @@ model Organization {
   auditLogs     AuditLog[]
   subscription  Subscription?
   usageRecords  UsageRecord[]
+  budget        OrganizationBudget?
+  budgetAlerts  BudgetAlert[]
   contacts      Contact[]
   leads         Lead[]
   conversations Conversation[]
@@ -326,6 +328,52 @@ model UsageRecord {
 
   @@index([organizationId, metric, periodStart])
   @@index([userId])
+}
+
+/// Per-organization monthly AI budget (tokens and/or USD). Cost can only be enforced where model pricing is configured.
+model OrganizationBudget {
+  id                   String   @id @default(uuid()) @db.Uuid
+  organizationId       String   @unique @db.Uuid
+  monthlyTokenBudget   BigInt?
+  monthlyCostBudgetUsd Decimal? @db.Decimal(14, 4)
+  /// Percentage (1-100) of a budget at which a warning alert is raised.
+  warnThresholdPct     Int      @default(80)
+  /// When true, AI requests are refused (402 BUDGET_EXCEEDED) once the budget is used up.
+  hardStopEnabled      Boolean  @default(false)
+  updatedById          String?  @db.Uuid
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+enum BudgetAlertScope {
+  budget_tokens
+  budget_cost
+  plan_tokens
+}
+
+enum BudgetAlertKind {
+  warning
+  exceeded
+}
+
+/// One row per (organization, month, scope, kind): the first time a threshold is crossed in a period.
+model BudgetAlert {
+  id             String           @id @default(uuid()) @db.Uuid
+  organizationId String           @db.Uuid
+  periodStart    DateTime
+  scope          BudgetAlertScope
+  kind           BudgetAlertKind
+  used           Decimal          @db.Decimal(20, 6)
+  limit          Decimal          @db.Decimal(20, 6)
+  thresholdPct   Int
+  createdAt      DateTime         @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, periodStart, scope, kind])
+  @@index([organizationId, createdAt(sort: Desc)])
 }
 
 // ---------------------------------------------------------------------------
@@ -1019,6 +1067,7 @@ model WebhookDelivery {
 
   @@index([organizationId, webhookId, createdAt(sort: Desc)])
   @@index([status, nextAttemptAt])
+  @@index([organizationId, createdAt(sort: Desc)])
 }
 
 enum IntegrationKind {

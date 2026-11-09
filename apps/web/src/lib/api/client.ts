@@ -259,7 +259,9 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
 
     const perform = async (token: string | null): Promise<Response> => {
       const headers: Record<string, string> = { Accept: 'application/json', ...extraHeaders };
-      if (body !== undefined) headers['Content-Type'] = 'application/json';
+      // FormData bodies (uploads) get their multipart Content-Type (with boundary) from the browser.
+      const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
+      if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
       if (token) headers.Authorization = `Bearer ${token}`;
       const orgId = organization ? config.getOrganizationId() : null;
       if (orgId) headers[ORGANIZATION_HEADER] = orgId;
@@ -267,7 +269,7 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
         return await fetchImpl(url, {
           method,
           headers,
-          body: body === undefined ? undefined : JSON.stringify(body),
+          body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
           credentials: 'include',
           signal,
         });
