@@ -129,3 +129,19 @@ export const ASSISTANT_DEFAULT_TOOLS: readonly string[] = [
   'crm.get_conversation_messages',
   'knowledge.search',
 ];
+
+// Persistence adapters (Prisma-backed implementations of the ports)
+export {
+  PrismaExecutionStore,
+  neverCancelled,
+  type CancellationSignal,
+} from './persistence/prisma-execution-store';
+export {
+  PrismaUsageRecorder,
+  type PrismaUsageRecorderOptions,
+} from './persistence/prisma-usage-recorder';
+export {
+  ProviderResolver,
+  type ProviderResolverOptions,
+  type ResolveOptions,
+} from './persistence/provider-resolver';

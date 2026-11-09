@@ -15,6 +15,7 @@
     "clean": "rm -rf dist coverage .turbo *.tsbuildinfo"
   },
   "dependencies": {
+    "@hilatech/ai-engine": "workspace:*",
     "@hilatech/contracts": "workspace:*",
     "@hilatech/database": "workspace:*",
     "@hilatech/shared": "workspace:*",

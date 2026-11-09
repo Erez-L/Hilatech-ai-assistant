@@ -20,6 +20,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@hilatech/ai-engine':
+        specifier: workspace:*
+        version: link:../../packages/ai-engine
       '@hilatech/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -256,6 +259,9 @@ importers:
 
   apps/workers:
     dependencies:
+      '@hilatech/ai-engine':
+        specifier: workspace:*
+        version: link:../../packages/ai-engine
       '@hilatech/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts

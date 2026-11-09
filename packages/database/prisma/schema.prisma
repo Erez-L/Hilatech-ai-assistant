@@ -93,6 +93,15 @@ model Organization {
   assistantThreads  AssistantThread[]
   agents            Agent[]
   agentExecutions   AgentExecution[]
+  knowledgeBases    KnowledgeBase[]
+  documents         Document[]
+  documentChunks    DocumentChunk[]
+  workflows         Workflow[]
+  workflowExecutions WorkflowExecution[]
+  webhookEndpoints  WebhookEndpoint[]
+  webhooks          Webhook[]
+  webhookDeliveries WebhookDelivery[]
+  integrations      Integration[]
 
   @@index([deletedAt])
 }
@@ -796,4 +805,252 @@ model AgentExecutionStep {
   execution AgentExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
 
   @@unique([executionId, index])
+}
+
+// ---------------------------------------------------------------------------
+// Knowledge base & RAG
+// ---------------------------------------------------------------------------
+
+/// A collection of documents searchable together. Embeddings are produced by the configured
+/// embedding-capable provider; all vectors are normalised to EMBEDDING_DIMENSIONS (1536) so one
+/// HNSW index serves every organization.
+model KnowledgeBase {
+  id                        String   @id @default(uuid()) @db.Uuid
+  organizationId            String   @db.Uuid
+  name                      String   @db.VarChar(120)
+  description               String?
+  embeddingProviderConfigId String?  @db.Uuid
+  embeddingModel            String?  @db.VarChar(120)
+  documentCount             Int      @default(0)
+  chunkCount                Int      @default(0)
+  createdById               String?  @db.Uuid
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  documents    Document[]
+  chunks       DocumentChunk[]
+
+  @@unique([organizationId, name])
+}
+
+enum DocumentStatus {
+  uploaded
+  processing
+  ready
+  failed
+}
+
+model Document {
+  id              String         @id @default(uuid()) @db.Uuid
+  organizationId  String         @db.Uuid
+  knowledgeBaseId String         @db.Uuid
+  title           String         @db.VarChar(255)
+  fileName        String         @db.VarChar(255)
+  mimeType        String         @db.VarChar(120)
+  sizeBytes       Int
+  /// Key in the object storage abstraction (local disk or S3-compatible). Never a public URL.
+  storageKey      String         @unique
+  checksum        String?        @db.VarChar(64)
+  status          DocumentStatus @default(uploaded)
+  error           String?
+  pageCount       Int?
+  chunkCount      Int            @default(0)
+  metadata        Json           @default("{}")
+  uploadedById    String?        @db.Uuid
+  processedAt     DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  organization  Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  knowledgeBase KnowledgeBase   @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+  chunks        DocumentChunk[]
+
+  @@index([organizationId, knowledgeBaseId, status])
+  @@index([organizationId, createdAt(sort: Desc)])
+}
+
+/// Text chunk with its embedding. `embedding` is pgvector (vector(1536)); read/written with raw SQL.
+model DocumentChunk {
+  id              String                       @id @default(uuid()) @db.Uuid
+  organizationId  String                       @db.Uuid
+  knowledgeBaseId String                       @db.Uuid
+  documentId      String                       @db.Uuid
+  index           Int
+  content         String
+  tokenCount      Int                          @default(0)
+  embedding       Unsupported("vector(1536)")?
+  metadata        Json                         @default("{}")
+  createdAt       DateTime                     @default(now())
+
+  organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  knowledgeBase KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+  document      Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, index])
+  @@index([organizationId, knowledgeBaseId])
+}
+
+// ---------------------------------------------------------------------------
+// Automation: workflows, inbound webhooks, outbound webhooks, integrations
+// ---------------------------------------------------------------------------
+
+/// Workflow definition. `trigger` and `steps` are validated by the API with the contracts schemas.
+model Workflow {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  name           String    @db.VarChar(120)
+  description    String?
+  isEnabled      Boolean   @default(true)
+  trigger        Json
+  steps          Json
+  runCount       Int       @default(0)
+  lastRunAt      DateTime?
+  createdById    String?   @db.Uuid
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  executions   WorkflowExecution[]
+  endpoints    WebhookEndpoint[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, isEnabled])
+}
+
+enum WorkflowRunStatus {
+  queued
+  running
+  succeeded
+  failed
+  cancelled
+}
+
+model WorkflowExecution {
+  id             String            @id @default(uuid()) @db.Uuid
+  organizationId String            @db.Uuid
+  workflowId     String            @db.Uuid
+  status         WorkflowRunStatus @default(queued)
+  /// { type: manual|webhook|schedule|event, event?, actorUserId?, endpointId? }
+  trigger        Json
+  input          Json
+  output         Json?
+  error          String?
+  /// Per-step results: [{ stepId, type, status, output?, error?, durationMs }]
+  stepResults    Json              @default("[]")
+  attempt        Int               @default(1)
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  durationMs     Int?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workflow     Workflow     @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, workflowId, createdAt(sort: Desc)])
+  @@index([organizationId, status])
+}
+
+/// Inbound webhook URL that triggers a workflow. The secret is stored hashed (SHA-256).
+model WebhookEndpoint {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  workflowId     String?   @db.Uuid
+  name           String    @db.VarChar(120)
+  slug           String    @db.VarChar(64)
+  secretHash     String    @db.VarChar(64)
+  isEnabled      Boolean   @default(true)
+  receivedCount  Int       @default(0)
+  lastReceivedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workflow     Workflow?    @relation(fields: [workflowId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, slug])
+}
+
+/// Outbound webhook subscription (events → external URL, HMAC-signed).
+model Webhook {
+  id              String   @id @default(uuid()) @db.Uuid
+  organizationId  String   @db.Uuid
+  url             String
+  description     String?
+  events          String[] @default([])
+  /// Encrypted signing secret (SecretBox); clients get only its last 4 characters.
+  encryptedSecret String
+  secretLast4     String   @db.VarChar(4)
+  isEnabled       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deliveries   WebhookDelivery[]
+
+  @@index([organizationId, isEnabled])
+}
+
+enum WebhookDeliveryStatus {
+  pending
+  delivered
+  failed
+}
+
+model WebhookDelivery {
+  id             String                @id @default(uuid()) @db.Uuid
+  organizationId String                @db.Uuid
+  webhookId      String                @db.Uuid
+  event          String                @db.VarChar(80)
+  payload        Json
+  status         WebhookDeliveryStatus @default(pending)
+  attempts       Int                   @default(0)
+  responseStatus Int?
+  responseBody   String?
+  lastError      String?
+  nextAttemptAt  DateTime?
+  deliveredAt    DateTime?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  webhook      Webhook      @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, webhookId, createdAt(sort: Desc)])
+  @@index([status, nextAttemptAt])
+}
+
+enum IntegrationKind {
+  email
+  whatsapp
+  crm
+  rest
+  n8n
+}
+
+enum IntegrationStatus {
+  unconfigured
+  connected
+  error
+}
+
+/// External system connection. Non-secret settings in `config`; credentials encrypted in `encryptedSecrets`.
+model Integration {
+  id               String            @id @default(uuid()) @db.Uuid
+  organizationId   String            @db.Uuid
+  kind             IntegrationKind
+  name             String            @db.VarChar(120)
+  config           Json              @default("{}")
+  encryptedSecrets String?
+  isEnabled        Boolean           @default(true)
+  status           IntegrationStatus @default(unconfigured)
+  lastCheckedAt    DateTime?
+  lastError        String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, kind, name])
 }

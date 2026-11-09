@@ -2,7 +2,7 @@
   "name": "@hilatech/api",
   "version": "0.1.0",
   "private": true,
-  "description": "HilaTech AI Assistant — NestJS REST API (/api/v1)",
+  "description": "HilaTech AI Assistant \u2014 NestJS REST API (/api/v1)",
   "main": "dist/main.js",
   "scripts": {
     "dev": "nest start --watch",
@@ -15,6 +15,7 @@
     "clean": "rm -rf dist .turbo coverage *.tsbuildinfo"
   },
   "dependencies": {
+    "@hilatech/ai-engine": "workspace:*",
     "@hilatech/contracts": "workspace:*",
     "@hilatech/database": "workspace:*",
     "@hilatech/shared": "workspace:*",
