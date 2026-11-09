@@ -85,7 +85,8 @@ describe('env schema', () => {
       JWT_ACCESS_SECRET: 'x'.repeat(48),
       JWT_REFRESH_SECRET: 'y'.repeat(48),
       AI_ALLOW_MOCK_PROVIDER: 'true',
-      AI_PRICING_JSON: '[{"provider":"openai","model":"gpt-4o-mini","inputPerMillionUsd":0.15,"outputPerMillionUsd":0.6}]',
+      AI_PRICING_JSON:
+        '[{"provider":"openai","model":"gpt-4o-mini","inputPerMillionUsd":0.15,"outputPerMillionUsd":0.6}]',
     });
     expect(prod.AI_ALLOW_MOCK_PROVIDER).toBe(false);
     expect(prod.AI_PRICING_JSON).toContain('gpt-4o-mini');

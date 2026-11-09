@@ -7,17 +7,20 @@ import {
   type ListConversationsQuery,
   type ListMessagesQuery,
   type MessageWithAuthor,
+  QueueName,
   type UpdateConversationRequest,
 } from '@hilatech/contracts';
 import { type Conversation, type Prisma } from '@hilatech/database';
 import { truncate } from '@hilatech/shared';
 import { type TenantContext } from '@hilatech/types';
 import { Injectable } from '@nestjs/common';
+import { Logger } from 'nestjs-pino';
 
 import { AppException } from '../../common/errors/app.exception';
 import { type RequestMeta } from '../../common/request';
 import { type PageResult, page, skipTake } from '../../common/utils/pagination';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { QueueService } from '../../infrastructure/queue/queue.service';
 import { AuditService } from '../audit/audit.service';
 import { CrmReferencesService } from '../crm/crm-references.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -29,6 +32,12 @@ import {
   toMessage,
 } from './conversations.mappers';
 
+/** Debounce window before the workers summarise a conversation after new messages. */
+export const CONVERSATION_SUMMARY_DELAY_MS = 30_000;
+
+export const conversationSummaryJobId = (conversationId: string, messageCount: number): string =>
+  `conv-summary-${conversationId}-${messageCount}`;
+
 @Injectable()
 export class ConversationsService {
   constructor(
@@ -36,6 +45,8 @@ export class ConversationsService {
     private readonly audit: AuditService,
     private readonly refs: CrmReferencesService,
     private readonly notifications: NotificationsService,
+    private readonly queue: QueueService,
+    private readonly logger: Logger,
   ) {}
 
   // ---------------------------------------------------------------------------------------------
@@ -284,7 +295,46 @@ export class ConversationsService {
         request: meta,
       });
     }
+    await this.scheduleSummary(tenant, conversation.id, conversation.messageCount + 1, meta);
     return toMessage(message);
+  }
+
+  /**
+   * Asks the workers to refresh the AI summary of a conversation (job kind `conversation_summary` on
+   * `ai-tasks`, delayed 30s so bursts of messages collapse). Only when the organization has an enabled
+   * AI provider; never fails the caller's request.
+   */
+  private async scheduleSummary(
+    tenant: TenantContext,
+    conversationId: string,
+    messageCount: number,
+    meta: RequestMeta,
+  ): Promise<void> {
+    try {
+      const providers = await this.prisma.client.aiProviderConfig.count({
+        where: { organizationId: tenant.organizationId, isEnabled: true },
+      });
+      if (!(providers > 0)) return;
+      await this.queue.enqueue(
+        QueueName.AI_TASKS,
+        {
+          organizationId: tenant.organizationId,
+          kind: 'conversation_summary',
+          targetId: conversationId,
+          requestedByUserId: tenant.userId,
+          idempotencyKey: conversationSummaryJobId(conversationId, messageCount),
+          requestId: meta.requestId ?? undefined,
+          enqueuedAt: new Date().toISOString(),
+        },
+        { delay: CONVERSATION_SUMMARY_DELAY_MS },
+      );
+    } catch (error) {
+      this.logger.warn(
+        { err: error, conversationId },
+        'Could not schedule conversation summary',
+        ConversationsService.name,
+      );
+    }
   }
 
   // ---------------------------------------------------------------------------------------------

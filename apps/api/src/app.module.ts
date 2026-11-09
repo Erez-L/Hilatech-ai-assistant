@@ -16,6 +16,10 @@ import { HealthModule } from './infrastructure/health/health.module';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { QueueModule } from './infrastructure/queue/queue.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
+import { AgentsModule } from './modules/ai/agents/agents.module';
+import { AiPlatformModule } from './modules/ai/ai-platform.module';
+import { AssistantModule } from './modules/ai/assistant/assistant.module';
+import { AiCoreModule } from './modules/ai/core/ai-core.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -73,6 +77,11 @@ import { UsersModule } from './modules/users/users.module';
     LeadsModule,
     ConversationsModule,
     AnalyticsModule,
+    // Priority 3 — AI platform (engine bindings, provider config/usage/prompts/tools, assistant, agents)
+    AiCoreModule,
+    AiPlatformModule,
+    AssistantModule,
+    AgentsModule,
   ],
   providers: [
     // Global guards run in registration order: rate limit → authentication → tenant → permissions.

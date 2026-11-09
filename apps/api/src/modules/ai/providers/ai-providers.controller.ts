@@ -101,7 +101,9 @@ export class AiProvidersController {
 
   @Patch('providers/:id')
   @RequirePermissions(Permission.AI_CONFIG_MANAGE)
-  @ApiOperation({ summary: 'Update a provider configuration (rotate or clear the key, set default)' })
+  @ApiOperation({
+    summary: 'Update a provider configuration (rotate or clear the key, set default)',
+  })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiZodBody(updateAiProviderConfigSchema)
   @ApiZodResponse(aiProviderConfigSchema)

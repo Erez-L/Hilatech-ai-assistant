@@ -30,7 +30,10 @@ export class PromptTemplatesService {
     private readonly audit: AuditService,
   ) {}
 
-  async list(tenant: TenantContext, query: PaginationQuery): Promise<PageResult<PromptTemplateDto>> {
+  async list(
+    tenant: TenantContext,
+    query: PaginationQuery,
+  ): Promise<PageResult<PromptTemplateDto>> {
     const where = { organizationId: tenant.organizationId };
     const [rows, total] = await this.prisma.client.$transaction([
       this.prisma.client.promptTemplate.findMany({
@@ -56,7 +59,8 @@ export class PromptTemplatesService {
       where: { organizationId: tenant.organizationId, key: dto.key },
       select: { id: true },
     });
-    if (clash) throw AppException.conflict(`A prompt template with key "${dto.key}" already exists`);
+    if (clash)
+      throw AppException.conflict(`A prompt template with key "${dto.key}" already exists`);
 
     const created = await this.prisma.client.promptTemplate.create({
       data: {
@@ -162,7 +166,9 @@ export function renderPrompt(
   variables: RenderPromptTemplateRequest['variables'],
 ): RenderedPrompt {
   const referenced = extractVariables(content);
-  const missing = referenced.filter((name) => variables[name] === undefined || variables[name] === null);
+  const missing = referenced.filter(
+    (name) => variables[name] === undefined || variables[name] === null,
+  );
   return { rendered: renderTemplate(content, variables, { strict: false }), missing };
 }
 

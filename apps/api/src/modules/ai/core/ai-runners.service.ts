@@ -60,6 +60,9 @@ export class AiRunnersService {
     this.assistant = this.createRunner({
       ...shared,
       store: new NoopExecutionStore(),
+      // The assistant's synthetic agent id is the thread id: it must not land in the `agentId` /
+      // `executionId` foreign keys of AiRequestLog — attribution goes through `threadId`.
+      usage: { record: (entry) => usage.record({ ...entry, agentId: null, executionId: null }) },
       // The assistant never delegates (allowDelegation=false); nothing to load.
       loadAgent: async () => null,
       kind: 'assistant',
@@ -78,7 +81,9 @@ export class AiRunnersService {
 
   /** Agents of the same organization only — delegation can never cross tenants. */
   async loadAgent(organizationId: string, agentId: string): Promise<AgentDefinition | null> {
-    const row = await this.prisma.client.agent.findFirst({ where: { id: agentId, organizationId } });
+    const row = await this.prisma.client.agent.findFirst({
+      where: { id: agentId, organizationId },
+    });
     return row ? toAgentDefinition(row) : null;
   }
 

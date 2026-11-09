@@ -125,7 +125,10 @@ export function toAiRequestLog(row: AiRequestLog): AiRequestLogDto {
 }
 
 /** `from`/`to` are ISO timestamps; both default to the current UTC month. `to` is exclusive. */
-export function resolvePeriod(query: UsageSummaryQuery, now = new Date()): { from: Date; to: Date } {
+export function resolvePeriod(
+  query: UsageSummaryQuery,
+  now = new Date(),
+): { from: Date; to: Date } {
   const month = monthPeriod(now);
   const from = query.from ? new Date(query.from) : month.start;
   const to = query.to ? new Date(query.to) : query.from ? now : month.end;

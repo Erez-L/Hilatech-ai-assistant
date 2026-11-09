@@ -60,7 +60,11 @@ export class AiProvidersService {
     const needsKey = requiresApiKey(dto.provider);
     if (needsKey && !dto.apiKey) {
       throw AppException.validation('An API key is required for this provider', [
-        { path: 'apiKey', message: `Provider "${dto.provider}" requires an API key`, code: 'custom' },
+        {
+          path: 'apiKey',
+          message: `Provider "${dto.provider}" requires an API key`,
+          code: 'custom',
+        },
       ]);
     }
     await this.assertNameFree(tenant, dto.name);
@@ -276,7 +280,8 @@ export class AiProvidersService {
       where: { organizationId: tenant.organizationId, name },
       select: { id: true },
     });
-    if (clash) throw AppException.conflict(`A provider configuration named "${name}" already exists`);
+    if (clash)
+      throw AppException.conflict(`A provider configuration named "${name}" already exists`);
   }
 
   private encrypt(tenant: TenantContext, apiKey: string) {

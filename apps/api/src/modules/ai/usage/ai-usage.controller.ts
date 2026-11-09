@@ -35,7 +35,8 @@ export class AiUsageController {
   @Get('summary')
   @RequirePermissions(Permission.AI_CONFIG_READ)
   @ApiOperation({
-    summary: 'AI usage summary for a period (default: current UTC month) incl. the plan token limit',
+    summary:
+      'AI usage summary for a period (default: current UTC month) incl. the plan token limit',
   })
   @ApiZodQuery(usageSummaryQuerySchema)
   @ApiZodResponse(aiUsageSummarySchema)

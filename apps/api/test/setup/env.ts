@@ -44,3 +44,10 @@ process.env.JWT_ACCESS_SECRET ??= 'integration-test-access-secret-0123456789abcd
 process.env.JWT_REFRESH_SECRET ??= 'integration-test-refresh-secret-0123456789abcdef';
 process.env.APP_URL ??= 'http://localhost:3000';
 process.env.CORS_ORIGINS ??= 'http://localhost:3000';
+// AI platform: the deterministic mock provider drives the assistant/agent tests; keys are encrypted
+// with a fixed 32-byte test key unless the environment already provides one.
+process.env.AI_ALLOW_MOCK_PROVIDER = 'true';
+process.env.CREDENTIALS_ENCRYPTION_KEY ??= Buffer.from('integration-test-encryption-key!').toString(
+  'base64',
+);
+process.env.AI_PRICING_JSON ??= '';

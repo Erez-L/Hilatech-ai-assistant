@@ -46,7 +46,14 @@ export function buildUsageSummary(input: UsageSummaryInput): AiUsageSummary {
 
   const byModel = new Map<
     string,
-    { provider: AiProviderKind; model: string; requests: number; inputTokens: number; outputTokens: number; cost: CostAccumulator }
+    {
+      provider: AiProviderKind;
+      model: string;
+      requests: number;
+      inputTokens: number;
+      outputTokens: number;
+      cost: CostAccumulator;
+    }
   >();
   const byAgent = new Map<
     string | null,

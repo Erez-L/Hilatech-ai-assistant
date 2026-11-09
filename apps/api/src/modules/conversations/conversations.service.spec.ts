@@ -1,10 +1,12 @@
-import { ALL_PERMISSIONS, ErrorCode } from '@hilatech/contracts';
+import { ALL_PERMISSIONS, ErrorCode, QueueName } from '@hilatech/contracts';
+import { type Logger } from 'nestjs-pino';
 
-import { createAuditMock, createPrismaMock } from '../../test-utils/prisma.mock';
+import { type QueueService } from '../../infrastructure/queue/queue.service';
+import { createAuditMock, createLoggerMock, createPrismaMock } from '../../test-utils/prisma.mock';
 import { type AuditService } from '../audit/audit.service';
 import { type CrmReferencesService } from '../crm/crm-references.service';
 import { type NotificationsService } from '../notifications/notifications.service';
-import { ConversationsService } from './conversations.service';
+import { CONVERSATION_SUMMARY_DELAY_MS, ConversationsService } from './conversations.service';
 
 const ORG = '22222222-2222-4222-8222-222222222222';
 const tenant = {
@@ -65,13 +67,18 @@ describe('ConversationsService.postMessage', () => {
       assertLead: jest.fn(),
     };
     const notifications = { notify: jest.fn().mockResolvedValue(null) };
+    const queue = {
+      enqueue: jest.fn().mockResolvedValue({ jobId: 'j', queue: QueueName.AI_TASKS }),
+    };
     const service = new ConversationsService(
       prisma,
       audit as unknown as AuditService,
       refs as unknown as CrmReferencesService,
       notifications as unknown as NotificationsService,
+      queue as unknown as QueueService,
+      createLoggerMock() as unknown as Logger,
     );
-    return { service, client, audit, notifications };
+    return { service, client, audit, notifications, queue };
   }
 
   it('rejects the assistant role before any database access', async () => {
@@ -157,6 +164,36 @@ describe('ConversationsService.postMessage', () => {
         metadata: { kind: 'reopened', from: 'resolved', to: 'open' },
       }),
     );
+  });
+
+  it('schedules a delayed conversation_summary job only when the organization has an enabled AI provider', async () => {
+    const { service, client, queue } = build();
+    client.conversation.findFirst.mockResolvedValue(conversationRow({ messageCount: 4 }));
+    client.message.create.mockResolvedValue(messageRow());
+
+    client.aiProviderConfig.count.mockResolvedValue(0);
+    await service.postMessage(tenant, 'cv1', { role: 'agent', content: 'a', metadata: {} }, meta);
+    expect(queue.enqueue).not.toHaveBeenCalled();
+
+    client.aiProviderConfig.count.mockResolvedValue(1);
+    await service.postMessage(tenant, 'cv1', { role: 'agent', content: 'b', metadata: {} }, meta);
+    expect(queue.enqueue).toHaveBeenCalledWith(
+      QueueName.AI_TASKS,
+      expect.objectContaining({
+        organizationId: ORG,
+        kind: 'conversation_summary',
+        targetId: 'cv1',
+        requestedByUserId: 'u1',
+        idempotencyKey: 'conv-summary-cv1-5',
+      }),
+      { delay: CONVERSATION_SUMMARY_DELAY_MS },
+    );
+
+    // A queue failure must never fail the message post.
+    queue.enqueue.mockRejectedValueOnce(new Error('redis down'));
+    await expect(
+      service.postMessage(tenant, 'cv1', { role: 'agent', content: 'c', metadata: {} }, meta),
+    ).resolves.toBeDefined();
   });
 
   it('assigning to another member notifies them; self-assignment does not', async () => {

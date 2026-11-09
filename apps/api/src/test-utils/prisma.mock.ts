@@ -20,7 +20,15 @@ type ModelName =
   | 'leadActivity'
   | 'conversation'
   | 'message'
-  | 'notification';
+  | 'notification'
+  | 'aiProviderConfig'
+  | 'aiRequestLog'
+  | 'promptTemplate'
+  | 'assistantThread'
+  | 'assistantMessage'
+  | 'agent'
+  | 'agentExecution'
+  | 'agentExecutionStep';
 
 type ModelMock = {
   findUnique: jest.Mock;
