@@ -1,0 +1,63 @@
+import { z } from 'zod';
+
+/**
+ * Shapes used by the web app that are NOT yet in @hilatech/contracts.
+ * They mirror the endpoint map in docs/api/api-overview.md and should be moved into the
+ * contracts package once the backend confirms them (see apps/web/README.md → Contract gaps).
+ */
+
+/** GET /permissions */
+export interface PermissionDefinition {
+  key: string;
+  group: string;
+  description: string | null;
+}
+
+/** GET /auth/sessions (normalised; the API returns `lastActiveAt`, older drafts said `lastUsedAt`). */
+export interface AuthSessionInfo {
+  familyId: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+  createdAt: string;
+  lastUsedAt: string;
+  expiresAt: string | null;
+  current: boolean;
+}
+
+/** Normalised view of GET /analytics/dashboard (see analytics.ts for the accepted raw shapes). */
+export interface DashboardSummary {
+  members: number;
+  suspendedMembers: number;
+  pendingInvitations: number;
+  leads: number;
+  leadsByStatus: Record<string, number>;
+  contacts: number;
+  conversations: number;
+  openConversations: number;
+  generatedAt: string | null;
+}
+
+/** PUT /users/me/preferences */
+export const userPreferencesSchema = z.object({
+  theme: z.enum(['light', 'dark', 'system']),
+  locale: z.enum(['en', 'he']),
+  notifications: z.object({
+    email: z.boolean(),
+    inApp: z.boolean(),
+  }),
+});
+export type UserPreferences = z.infer<typeof userPreferencesSchema>;
+
+export const DEFAULT_PREFERENCES: UserPreferences = {
+  theme: 'system',
+  locale: 'en',
+  notifications: { email: true, inApp: true },
+};
+
+/** PATCH /users/me */
+export const updateProfileSchema = z.object({
+  firstName: z.string().trim().min(1, 'Enter your first name').max(80),
+  lastName: z.string().trim().min(1, 'Enter your last name').max(80),
+  avatarUrl: z.union([z.string().url('Enter a valid URL'), z.literal('')]).optional(),
+});
+export type UpdateProfileRequest = z.infer<typeof updateProfileSchema>;

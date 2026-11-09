@@ -1,0 +1,306 @@
+@import 'tailwindcss';
+
+/* Scan the design-system sources so component classes are always generated, whichever app imports this file. */
+@source './**/*.{ts,tsx}';
+
+/*
+ * HilaTech design tokens.
+ *
+ * Light and dark are two explicit palettes (not an automatic inversion). The app toggles the
+ * `.dark` class on <html>; utilities read the semantic variables through `@theme inline` so
+ * `bg-surface`, `text-fg-muted`, `border-border` etc. flip with the theme.
+ *
+ * Palette: cool neutral greys with a single deep-teal accent. Status colours are reserved for
+ * state; chart series use a separately validated categorical order (see --chart-*).
+ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-muted: #eef0f3;
+  --surface-raised: #ffffff;
+  --overlay: rgb(16 20 26 / 0.45);
+
+  --border: #e2e5ea;
+  --border-strong: #c9ced7;
+
+  --fg: #171a20;
+  --fg-muted: #5b6472;
+  --fg-subtle: #8a93a1;
+  --fg-inverted: #ffffff;
+
+  --accent: #0b7a75;
+  --accent-hover: #09645f;
+  --accent-fg: #ffffff;
+  --accent-soft: #e2f3f1;
+  --accent-soft-fg: #075f5b;
+
+  --success: #1f8a4c;
+  --success-soft: #e3f4ea;
+  --success-soft-fg: #166a3a;
+  --warning: #b4690e;
+  --warning-soft: #fbf0db;
+  --warning-soft-fg: #8a500a;
+  --danger: #c8322b;
+  --danger-hover: #ab2821;
+  --danger-soft: #fbe5e3;
+  --danger-soft-fg: #9d2722;
+  --info: #2a78d6;
+  --info-soft: #e3eefb;
+  --info-soft-fg: #1c5cab;
+
+  --ring: #0b7a75;
+
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
+  --chart-7: #6250d6;
+  --chart-8: #e34948;
+  --chart-grid: #e2e5ea;
+  --chart-track: #e2e5ea;
+
+  --shadow-xs: 0 1px 2px rgb(23 26 32 / 0.05);
+  --shadow-sm: 0 1px 3px rgb(23 26 32 / 0.06), 0 1px 2px rgb(23 26 32 / 0.04);
+  --shadow-popover: 0 8px 24px rgb(23 26 32 / 0.12), 0 1px 3px rgb(23 26 32 / 0.08);
+  --shadow-dialog: 0 24px 60px rgb(23 26 32 / 0.22), 0 2px 6px rgb(23 26 32 / 0.08);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --bg: #0e1116;
+  --surface: #151a21;
+  --surface-muted: #1b212a;
+  --surface-raised: #1b212a;
+  --overlay: rgb(0 0 0 / 0.6);
+
+  --border: #262d37;
+  --border-strong: #353e4a;
+
+  --fg: #e8ebef;
+  --fg-muted: #9aa4b2;
+  --fg-subtle: #6b7785;
+  --fg-inverted: #0e1116;
+
+  --accent: #3fbfb2;
+  --accent-hover: #5bcdc1;
+  --accent-fg: #06231f;
+  --accent-soft: #11302d;
+  --accent-soft-fg: #7adbd1;
+
+  --success: #47b872;
+  --success-soft: #12301f;
+  --success-soft-fg: #7fd4a1;
+  --warning: #e0a040;
+  --warning-soft: #332511;
+  --warning-soft-fg: #f0c47a;
+  --danger: #ef6b63;
+  --danger-hover: #f3857e;
+  --danger-soft: #3a1a18;
+  --danger-soft-fg: #f6a39d;
+  --info: #3987e5;
+  --info-soft: #14253d;
+  --info-soft-fg: #86b6ef;
+
+  --ring: #3fbfb2;
+
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-6: #008300;
+  --chart-7: #9085e9;
+  --chart-8: #e66767;
+  --chart-grid: #262d37;
+  --chart-track: #262d37;
+
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.4), 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-popover: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.04);
+  --shadow-dialog: 0 24px 60px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.05);
+}
+
+@theme inline {
+  --font-sans:
+    var(--font-inter, 'Inter'), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono:
+    ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-raised: var(--surface-raised);
+  --color-overlay: var(--overlay);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-inverted: var(--fg-inverted);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-fg: var(--accent-soft-fg);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-soft-fg: var(--success-soft-fg);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-soft-fg: var(--warning-soft-fg);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-soft-fg: var(--danger-soft-fg);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-soft-fg: var(--info-soft-fg);
+
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-popover: var(--shadow-popover);
+  --shadow-dialog: var(--shadow-dialog);
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+
+  --animate-fade-in: fade-in 150ms ease-out;
+  --animate-scale-in: scale-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-slide-in-left: slide-in-left 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-shimmer: shimmer 1.6s linear infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  @keyframes slide-in-left {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    font-feature-settings: 'cv11', 'ss01', 'calt';
+  }
+
+  ::selection {
+    background-color: var(--color-accent-soft);
+    color: var(--color-accent-soft-fg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  button,
+  [role='button'] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+}
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}

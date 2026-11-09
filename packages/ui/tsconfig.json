@@ -1,0 +1,8 @@
+{
+  "extends": "@hilatech/config/tsconfig/react-library.json",
+  "compilerOptions": {
+    "types": ["vitest/globals", "@testing-library/jest-dom"],
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "include": ["src", "vitest.setup.ts"]
+}

@@ -1,0 +1,4 @@
+@import '@hilatech/ui/styles.css';
+
+/* The design system is consumed as TypeScript source; make sure its classes are generated. */
+@source '../../../../packages/ui/src/**/*.{ts,tsx}';
