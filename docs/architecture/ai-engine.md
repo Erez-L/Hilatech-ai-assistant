@@ -25,14 +25,14 @@ apps/workers ─► ai-tasks queue ─┘  (async agent executions, conversation
 
 `AiProvider` (packages/ai-engine/src/providers/types.ts):
 
-| Method                       | Purpose                                                              |
-| ---------------------------- | -------------------------------------------------------------------- |
-| `generate(req)`              | One completion; may return `toolCalls` instead of / alongside text.  |
+| Method                       | Purpose                                                               |
+| ---------------------------- | --------------------------------------------------------------------- |
+| `generate(req)`              | One completion; may return `toolCalls` instead of / alongside text.   |
 | `stream(req)`                | Async iterable of `StreamEvent` (`text_delta`, `tool_call`, `usage`). |
 | `generateStructured(req, s)` | JSON output validated against a zod schema (retries once on invalid). |
-| `embed(req)`                 | Embeddings for an array of texts (used by Priority 4).               |
-| `listModels()`               | Static model catalogue with capabilities.                            |
-| `healthCheck()`              | Cheap call to validate credentials/connectivity.                     |
+| `embed(req)`                 | Embeddings for an array of texts (used by Priority 4).                |
+| `listModels()`               | Static model catalogue with capabilities.                             |
+| `healthCheck()`              | Cheap call to validate credentials/connectivity.                      |
 
 Normalised request: `{ model, system?, messages: AiMessage[], tools?: ToolSpec[], toolChoice?,
 maxTokens?, temperature?, stopSequences?, signal?, metadata }`. Normalised result:
@@ -131,8 +131,8 @@ organization's `ai_tokens` usage for entitlements, and estimates cost **only** i
 - `GET/POST /ai/prompts`, `GET/PATCH/DELETE /ai/prompts/:id`, `POST /ai/prompts/:id/render`
 - `GET /ai/tools` (catalogue the UI shows when configuring an agent) — `agents:read`
 - Assistant (`ai:assistant:use`): `GET/POST /assistant/threads`, `GET/PATCH/DELETE
-  /assistant/threads/:id`, `GET /assistant/threads/:id/messages`, `POST
-  /assistant/threads/:id/messages` (JSON, or SSE when `Accept: text/event-stream`)
+/assistant/threads/:id`, `GET /assistant/threads/:id/messages`, `POST
+/assistant/threads/:id/messages` (JSON, or SSE when `Accept: text/event-stream`)
 - Agents: `GET/POST /agents`, `GET/PATCH/DELETE /agents/:id` (`agents:read` / `agents:manage`),
   `POST /agents/:id/execute` (`agents:execute`; `mode: async|sync`), `GET /agents/executions`,
   `GET /agents/executions/:id` (steps + children), `POST /agents/executions/:id/cancel`

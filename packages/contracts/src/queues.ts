@@ -71,12 +71,41 @@ export const aiTaskJobSchema = baseJobSchema.extend({
 });
 export type AiTaskJob = z.infer<typeof aiTaskJobSchema>;
 
-export const automationJobSchema = baseJobSchema.extend({
-  organizationId: idSchema,
-  workflowId: idSchema,
-  executionId: idSchema,
-  trigger: z.object({ type: z.string(), payload: z.record(z.string(), z.unknown()) }),
-});
+/**
+ * Automation queue payloads:
+ *  - `execute`: run a queued WorkflowExecution (created by the API for manual runs / inbound webhooks, or by the
+ *    workers' fan-out for events and schedules);
+ *  - `event`: a domain event happened — fan out to matching workflows and outbound webhook subscriptions;
+ *  - `schedule_tick`: evaluate cron-triggered workflows (repeatable job, every minute);
+ *  - `resume`: continue an execution after a `delay` step.
+ */
+export const automationJobSchema = z.discriminatedUnion('kind', [
+  baseJobSchema.extend({
+    kind: z.literal('execute'),
+    organizationId: idSchema,
+    workflowId: idSchema,
+    executionId: idSchema,
+  }),
+  baseJobSchema.extend({
+    kind: z.literal('event'),
+    organizationId: idSchema,
+    event: z.string().min(1).max(80),
+    payload: z.record(z.string(), z.unknown()),
+    actorUserId: idSchema.nullable().default(null),
+  }),
+  baseJobSchema.extend({
+    kind: z.literal('schedule_tick'),
+    organizationId: idSchema.nullable(),
+    at: z.string().datetime(),
+  }),
+  baseJobSchema.extend({
+    kind: z.literal('resume'),
+    organizationId: idSchema,
+    workflowId: idSchema,
+    executionId: idSchema,
+    fromStepIndex: z.number().int().nonnegative(),
+  }),
+]);
 export type AutomationJob = z.infer<typeof automationJobSchema>;
 
 export const analyticsJobSchema = baseJobSchema.extend({
@@ -85,11 +114,10 @@ export const analyticsJobSchema = baseJobSchema.extend({
 });
 export type AnalyticsJob = z.infer<typeof analyticsJobSchema>;
 
+/** Delivers one `WebhookDelivery` row (the row holds event, payload and the target webhook). */
 export const webhookDeliveryJobSchema = baseJobSchema.extend({
   organizationId: idSchema,
-  endpointId: idSchema,
-  event: z.string(),
-  payload: z.record(z.string(), z.unknown()),
+  deliveryId: idSchema,
   attempt: z.number().int().nonnegative().default(0),
 });
 export type WebhookDeliveryJob = z.infer<typeof webhookDeliveryJobSchema>;

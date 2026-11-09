@@ -102,3 +102,25 @@ Accepted. The engine ships no model prices. `AI_PRICING_JSON` may supply USD-per
 rates; when a model is missing from it, `estimatedCostUsd` is `null` on request logs, executions and
 usage summaries (a summary is `null` if any request in it lacks pricing). Token counts are always
 recorded from provider responses.
+
+## ADR-013 — One embedding dimension for all tenants (2026-11-09)
+
+Accepted. `DocumentChunk.embedding` is `vector(1536)` with a single HNSW cosine index. Providers that
+support native shrinking (`text-embedding-3-*`) are asked for 1536 dimensions; smaller vectors are
+zero-padded, larger ones truncated with a warning. Reason: pgvector indexes need a fixed dimension,
+and a per-knowledge-base dimension would mean per-tenant tables/indexes — more complexity than the
+small quality cost of padding for a shared-schema SaaS.
+
+## ADR-014 — Object storage behind `@hilatech/storage` (2026-11-09)
+
+Accepted. Uploaded documents never live in PostgreSQL. `StorageDriver` (local disk for development,
+S3-compatible for production, SDK loaded lazily) with tenant-scoped keys and strict key validation.
+Downloads go through authenticated API endpoints that check the tenant.
+
+## ADR-015 — Workflows as data, executed by the workers (2026-11-09)
+
+Accepted. `Workflow.trigger`/`steps` are JSON validated by the contracts' discriminated unions; the
+API only validates, stores and enqueues; the workers run steps, persist `stepResults`, and handle
+delays by re-enqueueing a `resume` job. Domain events are emitted by the API as `automation.event`
+jobs and fanned out by the workers to workflows and outbound webhooks, so emitting an event never
+slows a request and the core does not depend on n8n.
