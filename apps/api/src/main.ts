@@ -38,7 +38,13 @@ export async function createApp(options: CreateAppOptions = {}): Promise<NestExp
 
   app.use(assignRequestId);
   const bodyLimit = config.get('BODY_LIMIT');
-  app.useBodyParser('json', { limit: bodyLimit });
+  app.useBodyParser('json', {
+    limit: bodyLimit,
+    // Inbound webhooks verify an HMAC over the exact bytes received, so keep the raw body for /hooks/ only.
+    verify: (req: { url?: string; rawBody?: Buffer }, _res: unknown, buf: Buffer) => {
+      if (req.url?.includes('/hooks/')) req.rawBody = buf;
+    },
+  });
   app.useBodyParser('urlencoded', { extended: true, limit: bodyLimit });
   app.use(cookieParser());
   app.use(

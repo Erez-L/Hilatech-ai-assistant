@@ -1,6 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   AgentRunner,
+  EmbeddingService,
+  PgVectorKnowledgeSearcher,
+  PgVectorStore,
   PricingTable,
   PrismaExecutionStore,
   PrismaUsageRecorder,
@@ -11,6 +14,7 @@ import {
   timeNowTool,
   type AgentDefinition,
   type CancellationSignal,
+  type KnowledgeSearcher,
   type ResolveOptions,
   type ResolvedModel,
 } from '@hilatech/ai-engine';
@@ -52,12 +56,12 @@ export function createProviderResolver(prisma: PrismaService, env: AiRuntimeEnv)
   });
 }
 
-/** The shared tool catalogue: CRM tools, `time.now` and `knowledge.search` (reports not_configured until Priority 4). */
-export function createToolRegistry(): ToolRegistry {
+/** The shared tool catalogue: CRM tools, `time.now` and the permission-gated `knowledge.search`. */
+export function createToolRegistry(knowledge: KnowledgeSearcher | null = null): ToolRegistry {
   return new ToolRegistry().registerAll([
     ...crmTools,
     timeNowTool,
-    createKnowledgeSearchTool(null),
+    createKnowledgeSearchTool(knowledge),
   ]);
 }
 
@@ -70,6 +74,8 @@ export function createToolRegistry(): ToolRegistry {
 @Injectable()
 export class AiRuntime {
   readonly registry: ToolRegistry;
+  readonly embeddings: EmbeddingService;
+  readonly knowledgeSearcher: PgVectorKnowledgeSearcher;
   readonly pricing: PricingTable;
   readonly usage: PrismaUsageRecorder;
   readonly store: PrismaExecutionStore;
@@ -83,8 +89,6 @@ export class AiRuntime {
     @InjectPinoLogger(AiRuntime.name) private readonly logger: PinoLogger,
   ) {
     const engineLogger = toEngineLogger(logger);
-    this.registry = createToolRegistry();
-
     const { table, error } = PricingTable.fromJson(env.AI_PRICING_JSON);
     if (error) {
       this.logger.warn({ error }, 'AI_PRICING_JSON is invalid; cost estimates will be null');
@@ -95,6 +99,14 @@ export class AiRuntime {
       pricing: this.pricing,
       logger: engineLogger,
     });
+    // Embeddings (document ingestion, knowledge.search) go through the organization's embedding provider
+    // and are recorded as `operation: 'embed'` usage.
+    this.embeddings = new EmbeddingService(this.resolver, this.usage, engineLogger);
+    this.knowledgeSearcher = new PgVectorKnowledgeSearcher(
+      this.embeddings,
+      new PgVectorStore(prisma.client),
+    );
+    this.registry = createToolRegistry(this.knowledgeSearcher);
     this.store = new PrismaExecutionStore(prisma.client, cancellation as CancellationSignal);
     this.runner = new AgentRunner({
       prisma: prisma.client,

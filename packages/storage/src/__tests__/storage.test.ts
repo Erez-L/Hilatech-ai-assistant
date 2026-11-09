@@ -70,3 +70,21 @@ describe('LocalStorageDriver', () => {
     expect(() => createStorageDriver({ driver: 's3' })).toThrow();
   });
 });
+
+describe('resolveLocalStoragePath', () => {
+  it('keeps absolute paths and anchors relative ones at the workspace root', async () => {
+    const { resolveLocalStoragePath } = await import('../index');
+    const { mkdtempSync, mkdirSync, writeFileSync, realpathSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    expect(resolveLocalStoragePath('/var/data/uploads')).toBe('/var/data/uploads');
+    const root = realpathSync(mkdtempSync(join(tmpdir(), 'ws-')));
+    writeFileSync(join(root, 'pnpm-workspace.yaml'), 'packages: []\n');
+    mkdirSync(join(root, 'apps', 'api'), { recursive: true });
+    expect(resolveLocalStoragePath('./uploads', join(root, 'apps', 'api'))).toBe(
+      join(root, 'uploads'),
+    );
+    const lone = realpathSync(mkdtempSync(join(tmpdir(), 'nows-')));
+    expect(resolveLocalStoragePath('uploads', lone)).toBe(join(lone, 'uploads'));
+  });
+});

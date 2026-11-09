@@ -1,5 +1,8 @@
 import {
+  EmbeddingService,
   type EngineLogger,
+  PgVectorKnowledgeSearcher,
+  PgVectorStore,
   PricingTable,
   PrismaExecutionStore,
   PrismaUsageRecorder,
@@ -46,13 +49,31 @@ import { ENGINE_LOGGER, createEngineLogger } from './engine-logger';
         }),
     },
     {
+      provide: EmbeddingService,
+      inject: [ProviderResolver, PrismaUsageRecorder, ENGINE_LOGGER],
+      useFactory: (resolver: ProviderResolver, usage: PrismaUsageRecorder, logger: EngineLogger) =>
+        new EmbeddingService(resolver, usage, logger),
+    },
+    {
+      provide: PgVectorStore,
+      inject: [PrismaService],
+      useFactory: (prisma: PrismaService) => new PgVectorStore(prisma.client),
+    },
+    {
+      provide: PgVectorKnowledgeSearcher,
+      inject: [EmbeddingService, PgVectorStore],
+      useFactory: (embeddings: EmbeddingService, store: PgVectorStore) =>
+        new PgVectorKnowledgeSearcher(embeddings, store),
+    },
+    {
       provide: ToolRegistry,
-      useFactory: () =>
+      inject: [PgVectorKnowledgeSearcher],
+      useFactory: (searcher: PgVectorKnowledgeSearcher) =>
         new ToolRegistry().registerAll([
           ...crmTools,
           timeNowTool,
-          // Knowledge retrieval is wired in Priority 4; until then the tool reports `not_configured`.
-          createKnowledgeSearchTool(null),
+          // Permission-gated (knowledge:read) semantic search; passages are returned as untrusted <data>.
+          createKnowledgeSearchTool(searcher),
         ]),
     },
     {
@@ -89,6 +110,9 @@ import { ENGINE_LOGGER, createEngineLogger } from './engine-logger';
     ENGINE_LOGGER,
     ProviderResolver,
     ToolRegistry,
+    EmbeddingService,
+    PgVectorStore,
+    PgVectorKnowledgeSearcher,
     PricingTable,
     PrismaUsageRecorder,
     PrismaExecutionStore,

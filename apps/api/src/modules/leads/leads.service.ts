@@ -14,7 +14,7 @@ import {
 import { type Contact, type Lead, type Prisma } from '@hilatech/database';
 import { truncate } from '@hilatech/shared';
 import { type TenantContext } from '@hilatech/types';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 
 import { AppException } from '../../common/errors/app.exception';
 import { type RequestMeta } from '../../common/request';
@@ -28,6 +28,7 @@ import {
   decimalToNumber,
   toContact,
 } from '../crm/crm.mappers';
+import { DomainEventsService } from '../events/domain-events.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { type LeadActivityDraft, type LeadChanges, LeadRules } from './lead.rules';
 import {
@@ -50,6 +51,7 @@ export class LeadsService {
     private readonly audit: AuditService,
     private readonly refs: CrmReferencesService,
     private readonly notifications: NotificationsService,
+    @Optional() private readonly events?: DomainEventsService,
   ) {}
 
   // ---------------------------------------------------------------------------------------------
@@ -134,6 +136,7 @@ export class LeadsService {
       request: meta,
     });
     if (lead.assigneeId) await this.notifyAssigned(tenant, lead, lead.assigneeId, meta);
+    await this.emitEvent(tenant, meta, 'lead.created', leadEventPayload(lead));
     return toLeadWithRelations(lead);
   }
 
@@ -182,6 +185,18 @@ export class LeadsService {
     });
     if (changes.assigneeId && changes.assigneeId !== existing.assigneeId) {
       await this.notifyAssigned(tenant, updated, changes.assigneeId, meta);
+    }
+    if (changes.status && changes.status !== existing.status) {
+      await this.emitEvent(tenant, meta, 'lead.status_changed', {
+        ...leadEventPayload(updated),
+        previousStatus: existing.status,
+      });
+    }
+    if (data.assigneeId !== undefined && data.assigneeId !== existing.assigneeId) {
+      await this.emitEvent(tenant, meta, 'lead.assigned', {
+        ...leadEventPayload(updated),
+        previousAssigneeId: existing.assigneeId,
+      });
     }
     return toLeadWithRelations(updated);
   }
@@ -238,6 +253,10 @@ export class LeadsService {
       request: meta,
     });
     if (dto.assigneeId) await this.notifyAssigned(tenant, updated, dto.assigneeId, meta);
+    await this.emitEvent(tenant, meta, 'lead.assigned', {
+      ...leadEventPayload(updated),
+      previousAssigneeId: existing.assigneeId,
+    });
     return toLeadWithRelations(updated);
   }
 
@@ -339,6 +358,28 @@ export class LeadsService {
         targetId: result.contact.id,
         metadata: { fromLeadId: existing.id, email: result.contact.email },
         request: meta,
+      });
+    }
+    await this.emitEvent(tenant, meta, 'lead.converted', {
+      ...leadEventPayload(result.lead),
+      markWon: dto.markWon,
+      createdContact: result.createdContact,
+    });
+    if (result.lead.status !== existing.status) {
+      await this.emitEvent(tenant, meta, 'lead.status_changed', {
+        ...leadEventPayload(result.lead),
+        previousStatus: existing.status,
+        viaConversion: true,
+      });
+    }
+    if (result.createdContact) {
+      await this.emitEvent(tenant, meta, 'contact.created', {
+        contactId: result.contact.id,
+        firstName: result.contact.firstName,
+        lastName: result.contact.lastName,
+        email: result.contact.email,
+        company: result.contact.company,
+        fromLeadId: existing.id,
       });
     }
     return { lead: toLeadWithRelations(result.lead), contact: toContact(result.contact) };
@@ -484,6 +525,18 @@ export class LeadsService {
     });
   }
 
+  private async emitEvent(
+    tenant: TenantContext,
+    meta: RequestMeta,
+    event: 'lead.created' | 'lead.status_changed' | 'lead.assigned' | 'lead.converted' | 'contact.created',
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    await this.events?.emit(tenant.organizationId, event, payload, {
+      actorUserId: tenant.userId,
+      requestId: meta.requestId,
+    });
+  }
+
   /** In-app (and, if the assignee opted in, email) notification. Self-assignment is silent. */
   private async notifyAssigned(
     tenant: TenantContext,
@@ -513,6 +566,24 @@ export class LeadsService {
 // -----------------------------------------------------------------------------------------------
 // Helpers (pure)
 // -----------------------------------------------------------------------------------------------
+
+/** Domain-event payload for a lead (ids and scalar facts only; no PII beyond the lead title). */
+export function leadEventPayload(
+  lead: Pick<Lead, 'id' | 'title' | 'status' | 'source' | 'assigneeId' | 'contactId' | 'currency'> & {
+    value: unknown;
+  },
+): Record<string, unknown> {
+  return {
+    leadId: lead.id,
+    title: lead.title,
+    status: lead.status,
+    source: lead.source,
+    assigneeId: lead.assigneeId,
+    contactId: lead.contactId,
+    value: decimalToNumber(lead.value as never),
+    currency: lead.currency,
+  };
+}
 
 /** Case-insensitive search over title, description and the linked contact's name. */
 export function searchClauses(search: string): Prisma.LeadWhereInput[] {

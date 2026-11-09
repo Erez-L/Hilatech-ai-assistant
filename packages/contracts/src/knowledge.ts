@@ -53,6 +53,20 @@ export const SUPPORTED_DOCUMENT_MIME_TYPES = [
   'application/pdf',
 ] as const;
 
+/** Accepted file extensions and the MIME type each one maps to (used to validate and to infer the type). */
+export const DOCUMENT_EXTENSION_MIME: Readonly<
+  Record<string, (typeof SUPPORTED_DOCUMENT_MIME_TYPES)[number]>
+> = {
+  '.txt': 'text/plain',
+  '.md': 'text/markdown',
+  '.markdown': 'text/markdown',
+  '.csv': 'text/csv',
+  '.html': 'text/html',
+  '.htm': 'text/html',
+  '.json': 'application/json',
+  '.pdf': 'application/pdf',
+};
+
 export const documentSchema = z
   .object({
     id: idSchema,

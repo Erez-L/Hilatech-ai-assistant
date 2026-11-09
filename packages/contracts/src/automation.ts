@@ -129,6 +129,13 @@ export const workflowStepSchema = z.discriminatedUnion('type', [
     event: z.string().trim().min(1).max(80),
     payload: z.record(z.string(), z.unknown()).default({}),
   }),
+  /** Stores a value readable by later steps as `{{ vars.<name> }}`. */
+  z.object({
+    id: z.string().trim().min(1).max(40),
+    type: z.literal('set_variable'),
+    name: z.string().trim().min(1).max(60),
+    value: templateString,
+  }),
 ]);
 export type WorkflowStep = z.infer<typeof workflowStepSchema>;
 
@@ -319,3 +326,42 @@ export type ListWebhookDeliveriesQuery = z.infer<typeof listWebhookDeliveriesQue
 export const WEBHOOK_SIGNATURE_HEADER = 'x-hilatech-signature' as const;
 export const WEBHOOK_TIMESTAMP_HEADER = 'x-hilatech-timestamp' as const;
 export const WEBHOOK_EVENT_HEADER = 'x-hilatech-event' as const;
+
+// ---------------------------------------------------------------------------
+// Validation result, templates, rotate
+// ---------------------------------------------------------------------------
+
+export const workflowValidationIssueSchema = z.object({
+  stepId: z.string().nullable(),
+  path: z.string(),
+  message: z.string(),
+});
+export const workflowValidationResultSchema = z.object({
+  valid: z.boolean(),
+  issues: z.array(workflowValidationIssueSchema),
+});
+export type WorkflowValidationResult = z.infer<typeof workflowValidationResultSchema>;
+
+/** Body of `POST /workflows/validate` (nothing is stored). */
+export const validateWorkflowSchema = z.object({
+  trigger: workflowTriggerSchema,
+  steps: z.array(workflowStepSchema).max(60),
+});
+export type ValidateWorkflowRequest = z.infer<typeof validateWorkflowSchema>;
+
+/** A ready-made workflow definition the user can copy into a new workflow. */
+export const workflowTemplateSchema = z.object({
+  key: z.string(),
+  name: z.string(),
+  description: z.string(),
+  category: z.enum(['crm', 'notifications', 'integrations', 'ai', 'scheduling']),
+  /** Resource ids (agents, users) the user must fill in before the template can be activated. */
+  requires: z.array(z.string()),
+  trigger: workflowTriggerSchema,
+  steps: z.array(workflowStepSchema),
+});
+export type WorkflowTemplate = z.infer<typeof workflowTemplateSchema>;
+
+/** `POST /webhooks/:id/test` and `POST /hooks/...` responses. */
+export const inboundWebhookAcceptedSchema = z.object({ executionId: idSchema });
+export type InboundWebhookAccepted = z.infer<typeof inboundWebhookAcceptedSchema>;

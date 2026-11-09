@@ -11,11 +11,14 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { AppConfig } from './config/app-config.service';
 import { AppConfigModule } from './config/config.module';
 import { buildLoggerParams } from './config/logger.config';
+import { CryptoModule } from './infrastructure/crypto/crypto.module';
 import { EmailModule } from './infrastructure/email/email.module';
 import { HealthModule } from './infrastructure/health/health.module';
+import { OutboundHttpModule } from './infrastructure/http/http.module';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { QueueModule } from './infrastructure/queue/queue.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
+import { StorageModule } from './infrastructure/storage/storage.module';
 import { AgentsModule } from './modules/ai/agents/agents.module';
 import { AiPlatformModule } from './modules/ai/ai-platform.module';
 import { AssistantModule } from './modules/ai/assistant/assistant.module';
@@ -27,6 +30,9 @@ import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
 import { BillingModule } from './modules/billing/billing.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
+import { DomainEventsModule } from './modules/events/domain-events.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { KnowledgeModule } from './modules/knowledge/knowledge.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
@@ -34,6 +40,8 @@ import { OrganizationGuard } from './modules/tenancy/organization.guard';
 import { PermissionsGuard } from './modules/tenancy/permissions.guard';
 import { TenancyModule } from './modules/tenancy/tenancy.module';
 import { UsersModule } from './modules/users/users.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { WorkflowsModule } from './modules/workflows/workflows.module';
 
 @Module({
   imports: [
@@ -63,7 +71,11 @@ import { UsersModule } from './modules/users/users.module';
     PrismaModule,
     RedisModule,
     QueueModule,
+    StorageModule,
     EmailModule,
+    CryptoModule,
+    OutboundHttpModule,
+    DomainEventsModule,
     HealthModule,
     AuditModule,
     TenancyModule,
@@ -82,6 +94,12 @@ import { UsersModule } from './modules/users/users.module';
     AiPlatformModule,
     AssistantModule,
     AgentsModule,
+    // Priority 4 — knowledge base, documents and retrieval
+    KnowledgeModule,
+    // Priority 4 — automation: workflows, webhooks (in/out), integrations
+    WorkflowsModule,
+    WebhooksModule,
+    IntegrationsModule,
   ],
   providers: [
     // Global guards run in registration order: rate limit → authentication → tenant → permissions.

@@ -24,6 +24,8 @@ export interface ToolContext {
   userId: string | null;
   agentId: string | null;
   executionId: string | null;
+  /** Knowledge bases the acting agent is limited to (`knowledge.search`); empty/absent = all of the organization's. */
+  knowledgeBaseIds?: readonly string[];
   prisma: PrismaClient;
   logger: EngineLogger;
   signal: AbortSignal;

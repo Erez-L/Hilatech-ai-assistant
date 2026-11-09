@@ -121,6 +121,23 @@ export const envSchema = z
     RATE_LIMIT_TTL_SECONDS: intVar(60, 1),
     RATE_LIMIT_MAX: intVar(120, 1),
     AUTH_RATE_LIMIT_MAX: intVar(10, 1),
+    /** Per-IP limit (per RATE_LIMIT_TTL_SECONDS window) for the public inbound webhook route `POST /hooks/...`. */
+    WEBHOOK_RATE_LIMIT_MAX: intVar(120, 1),
+
+    // Automation / outbound HTTP
+    /**
+     * Comma-separated hostnames that may resolve to private addresses for admin-configured outbound targets
+     * (e.g. an in-cluster n8n). Everything else is subject to the SSRF guard (public addresses only).
+     */
+    OUTBOUND_ALLOWED_HOSTS: z.preprocess(
+      (v) => stripInlineComment(v) || '',
+      z.string().transform((s) =>
+        s
+          .split(',')
+          .map((h) => h.trim().toLowerCase())
+          .filter(Boolean),
+      ),
+    ),
 
     // Email
     EMAIL_DRIVER: z.preprocess((v) => stripInlineComment(v) || 'log', z.enum(['log', 'smtp'])),
@@ -134,10 +151,15 @@ export const envSchema = z
     SMTP_USER: optionalString(),
     SMTP_PASSWORD: optionalString(),
 
-    // Storage (validated now, consumed by later milestones)
+    // Object storage (documents)
     STORAGE_DRIVER: z.preprocess((v) => stripInlineComment(v) || 'local', z.enum(['local', 's3'])),
     STORAGE_LOCAL_PATH: z.preprocess((v) => stripInlineComment(v) || './uploads', z.string()),
     MAX_UPLOAD_MB: intVar(25, 1),
+    S3_BUCKET: optionalString(),
+    S3_REGION: optionalString(),
+    S3_ENDPOINT: optionalString(),
+    S3_ACCESS_KEY_ID: optionalString(),
+    S3_SECRET_ACCESS_KEY: optionalString(),
 
     // Secrets for later milestones (optional, validated for shape when present)
     CREDENTIALS_ENCRYPTION_KEY: optionalString(),
@@ -180,6 +202,13 @@ export const envSchema = z
         code: z.ZodIssueCode.custom,
         path: ['COOKIE_SECURE'],
         message: 'COOKIE_SECURE must be true in production',
+      });
+    }
+    if (env.STORAGE_DRIVER === 's3' && !env.S3_BUCKET) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['S3_BUCKET'],
+        message: 'S3_BUCKET is required when STORAGE_DRIVER=s3',
       });
     }
     if (env.EMAIL_DRIVER === 'smtp' && !env.SMTP_HOST) {

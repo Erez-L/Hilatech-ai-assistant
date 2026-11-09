@@ -36,7 +36,7 @@ const DEFAULT_EMBEDDING_MODEL: Record<string, string> = {
  */
 export class EmbeddingService {
   constructor(
-    private readonly resolver: ProviderResolver,
+    private readonly resolver: Pick<ProviderResolver, 'forOrganization'>,
     private readonly usage: UsageRecorder,
     private readonly logger: EngineLogger = noopLogger,
     private readonly batchSize = 64,

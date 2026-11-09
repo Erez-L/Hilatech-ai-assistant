@@ -20,7 +20,7 @@ import {
 } from '@hilatech/database';
 import { addMs, generateOpaqueToken, sha256, truncate } from '@hilatech/shared';
 import { type Principal, type TenantContext } from '@hilatech/types';
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Optional } from '@nestjs/common';
 
 import { AppException } from '../../common/errors/app.exception';
 import { type RequestMeta } from '../../common/request';
@@ -32,6 +32,7 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { QueueService } from '../../infrastructure/queue/queue.service';
 import { AuditService } from '../audit/audit.service';
 import { EntitlementsService } from '../billing/entitlements.service';
+import { DomainEventsService } from '../events/domain-events.service';
 import { INVITATION_INCLUDE, toInvitation } from './organizations.mappers';
 
 type Tx = Prisma.TransactionClient | PrismaClient;
@@ -93,6 +94,7 @@ export class InvitationsService {
     private readonly queue: QueueService,
     private readonly entitlements: EntitlementsService,
     config: AppConfig,
+    @Optional() private readonly events?: DomainEventsService,
   ) {
     this.ttlMs = config.get('invitationTtlMs');
   }
@@ -342,6 +344,12 @@ export class InvitationsService {
       metadata: { email: user.email, roleKey: invitation.role.key },
       request: meta,
     });
+    await this.events?.emit(
+      invitation.organizationId,
+      'member.joined',
+      { userId: user.id, email: user.email, roleKey: invitation.role.key, invitationId: invitation.id },
+      { actorUserId: user.id, requestId: meta.requestId },
+    );
     await this.queue.enqueue(QueueName.NOTIFICATIONS, {
       organizationId: invitation.organizationId,
       idempotencyKey: `notif-member-joined-${invitation.id}`,

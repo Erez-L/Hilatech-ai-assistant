@@ -56,7 +56,12 @@ export type {
 export { messageText, text } from './providers/types';
 export { AnthropicProvider, toAnthropicMessages, stripSchemaMeta } from './providers/anthropic';
 export { OpenAiProvider, toOpenAiMessages } from './providers/openai';
-export { MockProvider, type MockProviderOptions, type MockTurn } from './providers/mock';
+export {
+  MockProvider,
+  mockEmbedding,
+  type MockProviderOptions,
+  type MockTurn,
+} from './providers/mock';
 export { createProvider, requiresApiKey, type CreateProviderOptions } from './providers/factory';
 export {
   DEFAULT_CONTEXT_WINDOW,
@@ -85,6 +90,7 @@ export { crmTools } from './tools/builtin/crm';
 export {
   createKnowledgeSearchTool,
   timeNowTool,
+  type KnowledgeSearchPassage,
   type KnowledgeSearcher,
 } from './tools/builtin/utility';
 
@@ -157,3 +163,25 @@ export {
 } from './knowledge/embedding-service';
 export { PgVectorStore, type VectorSearchParams } from './knowledge/pgvector-store';
 export { PgVectorKnowledgeSearcher } from './knowledge/searcher';
+export {
+  DocumentExtractionError,
+  MAX_EXTRACTED_CHARS,
+  csvToText,
+  extractText,
+  htmlToText,
+  jsonToText,
+  parseCsv,
+  type ExtractInput,
+  type ExtractedDocument,
+  type ExtractionErrorCode,
+  type PdfTextExtractor,
+} from './knowledge/extract';
+export {
+  DocumentIngestError,
+  DocumentIngestor,
+  refreshKnowledgeBaseCounts,
+  type DocumentIngestorDeps,
+  type IngestRequest,
+  type IngestResult,
+  type ObjectReader,
+} from './knowledge/ingest';

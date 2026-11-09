@@ -164,18 +164,16 @@ export class MockProvider implements AiProvider {
     };
   }
 
-  /** Deterministic pseudo-embeddings (hash-based); 64 dimensions unless `dimensions` is requested. */
+  /**
+   * Deterministic pseudo-embeddings for tests and local development. Bag-of-words feature hashing:
+   * every lowercase word (and word bigram, at half weight) is hashed (FNV-1a) to a signed bucket, then the
+   * vector is L2-normalised. Texts that share vocabulary therefore have a high cosine similarity and
+   * unrelated texts a low one, so retrieval can be verified end to end without a real model. 64
+   * dimensions unless `dimensions` is requested (the knowledge pipeline asks for 1536).
+   */
   async embed(request: EmbedRequest): Promise<EmbedResult> {
     const dims = request.dimensions ?? 64;
-    const embeddings = request.input.map((textValue) => {
-      const vector = new Array<number>(dims).fill(0);
-      for (let i = 0; i < textValue.length; i += 1) {
-        const code = textValue.charCodeAt(i);
-        vector[(code + i) % dims] = (vector[(code + i) % dims] ?? 0) + ((code % 13) - 6) / 10;
-      }
-      const norm = Math.sqrt(vector.reduce((s, v) => s + v * v, 0)) || 1;
-      return vector.map((v) => v / norm);
-    });
+    const embeddings = request.input.map((textValue) => mockEmbedding(textValue, dims));
     return {
       embeddings,
       usage: { inputTokens: request.input.reduce((s, t) => s + estimateTokens(t), 0) },
@@ -187,4 +185,46 @@ export class MockProvider implements AiProvider {
   async healthCheck(): Promise<HealthResult> {
     return { ok: true, latencyMs: this.latencyMs, error: null };
   }
+}
+
+const MOCK_STOP_WORDS = new Set(
+  (
+    'a an the is are was were be been of to in on at by for from with and or but not no it its this that these those ' +
+    'what which who whom how do does did can could should would will we you your our i my me us they them their ' +
+    'את של על עם או אם זה זו הוא היא הם הן אני אנחנו מה איך'
+  ).split(' '),
+);
+
+function fnv1a(value: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash >>> 0;
+}
+
+/** Exported for tests: the deterministic embedding the mock provider returns for one text. */
+export function mockEmbedding(text: string, dims: number): number[] {
+  const vector = new Array<number>(dims).fill(0);
+  const allWords = text.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+  // Drop stop words so shared filler ("the", "is") does not make unrelated texts look similar.
+  const content = allWords.filter((word) => !MOCK_STOP_WORDS.has(word));
+  const words = content.length > 0 ? content : allWords;
+  const add = (feature: string, weight: number) => {
+    const h = fnv1a(feature);
+    const index = h % dims;
+    vector[index] = (vector[index] ?? 0) + (((h >>> 16) & 1) === 0 ? weight : -weight);
+  };
+  words.forEach((word, i) => {
+    add(word, 1);
+    const next = words[i + 1];
+    if (next) add(`${word} ${next}`, 0.5);
+  });
+  if (words.length === 0) {
+    // No word characters (punctuation, empty): fall back to character hashing so the vector is non-zero.
+    for (let i = 0; i < text.length; i += 1) add(`c${text.charCodeAt(i)}:${i % 7}`, 1);
+  }
+  const norm = Math.sqrt(vector.reduce((s, v) => s + v * v, 0)) || 1;
+  return vector.map((v) => v / norm);
 }

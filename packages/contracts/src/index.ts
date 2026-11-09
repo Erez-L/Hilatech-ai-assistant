@@ -8,5 +8,6 @@ export * from './analytics';
 export * from './ai';
 export * from './knowledge';
 export * from './automation';
+export * from './automation-rules';
 export * from './integrations';
 export * from './queues';

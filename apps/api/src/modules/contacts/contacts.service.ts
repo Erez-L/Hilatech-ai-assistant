@@ -8,7 +8,7 @@ import {
 } from '@hilatech/contracts';
 import { type Prisma } from '@hilatech/database';
 import { type TenantContext } from '@hilatech/types';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 
 import { AppException } from '../../common/errors/app.exception';
 import { type RequestMeta } from '../../common/request';
@@ -16,6 +16,7 @@ import { type PageResult, page, skipTake } from '../../common/utils/pagination';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CrmReferencesService } from '../crm/crm-references.service';
+import { DomainEventsService } from '../events/domain-events.service';
 import { USER_SUMMARY_SELECT, toContact, toUserSummary } from '../crm/crm.mappers';
 
 @Injectable()
@@ -24,6 +25,7 @@ export class ContactsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly refs: CrmReferencesService,
+    @Optional() private readonly events?: DomainEventsService,
   ) {}
 
   async list(tenant: TenantContext, query: ListContactsQuery): Promise<PageResult<ContactDto>> {
@@ -75,6 +77,19 @@ export class ContactsService {
       metadata: { email: contact.email, company: contact.company },
       request: meta,
     });
+    await this.events?.emit(
+      tenant.organizationId,
+      'contact.created',
+      {
+        contactId: contact.id,
+        firstName: contact.firstName,
+        lastName: contact.lastName,
+        email: contact.email,
+        company: contact.company,
+        ownerId: contact.ownerId,
+      },
+      { actorUserId: tenant.userId, requestId: meta.requestId },
+    );
     return toContact(contact);
   }
 

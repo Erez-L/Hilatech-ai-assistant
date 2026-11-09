@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import {
   AiNotConfiguredError,
   AiProviderError,
@@ -14,6 +14,7 @@ import type { Job } from 'bullmq';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { z } from 'zod';
 import { AiRuntime } from '../../ai/ai-runtime';
+import { DomainEventPublisher } from '../../automation/domain-event.publisher';
 import { isPlainObject, toAgentDefinition } from '../../ai/agent-definition.mapper';
 import { resolveUserPermissions } from '../../ai/user-permissions';
 import type { JobContext, JobOutcome, JobPayload, JobProcessor } from '../../queue/job-processor';
@@ -90,6 +91,7 @@ export class AiTasksProcessor implements JobProcessor<typeof QueueName.AI_TASKS>
   constructor(
     private readonly runtime: AiRuntime,
     @InjectPinoLogger(AiTasksProcessor.name) private readonly logger: PinoLogger,
+    @Optional() private readonly events?: DomainEventPublisher,
   ) {}
 
   async process(job: Job<Payload>, context: JobContext): Promise<JobOutcome> {
@@ -213,6 +215,22 @@ export class AiTasksProcessor implements JobProcessor<typeof QueueName.AI_TASKS>
         where: { id: execution.id },
         data: { error: [result.error, permissionNote].filter(Boolean).join(' ') },
       });
+    }
+
+    // Runs started by a workflow step do not publish events (a workflow reacting to its own agent run would loop).
+    if (execution.trigger !== 'automation') {
+      await this.events?.emit(
+        organizationId,
+        result.status === 'succeeded' ? 'agent.execution_completed' : 'agent.execution_failed',
+        {
+          executionId: execution.id,
+          agentId: agent.id,
+          status: result.status,
+          trigger: execution.trigger,
+          error: result.error,
+        },
+        { actorUserId: execution.triggeredByUserId },
+      );
     }
 
     this.logger.info(

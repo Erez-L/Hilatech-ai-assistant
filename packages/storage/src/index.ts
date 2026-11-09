@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { createReadStream } from 'node:fs';
+import { createReadStream, existsSync } from 'node:fs';
 import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Readable } from 'node:stream';
@@ -254,10 +254,27 @@ export interface StorageConfig {
   s3?: S3DriverOptions;
 }
 
+/**
+ * Resolve the local storage directory. Relative paths are anchored at the monorepo root (the directory
+ * holding `pnpm-workspace.yaml`) so the API and the workers — which run from different working
+ * directories — always share the same files. Falls back to the current directory outside a workspace.
+ */
+export function resolveLocalStoragePath(configured: string, cwd = process.cwd()): string {
+  if (path.isAbsolute(configured)) return path.resolve(configured);
+  let dir = path.resolve(cwd);
+  for (let i = 0; i < 8; i += 1) {
+    if (existsSync(path.join(dir, 'pnpm-workspace.yaml'))) return path.resolve(dir, configured);
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return path.resolve(cwd, configured);
+}
+
 export function createStorageDriver(config: StorageConfig): StorageDriver {
   if (config.driver === 's3') {
     if (!config.s3) throw new Error('STORAGE_DRIVER=s3 requires S3 settings');
     return new S3StorageDriver(config.s3);
   }
-  return new LocalStorageDriver(config.localPath ?? './uploads');
+  return new LocalStorageDriver(resolveLocalStoragePath(config.localPath ?? './uploads'));
 }

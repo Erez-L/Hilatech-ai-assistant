@@ -4,7 +4,8 @@
  * BullMQ prefix. The root `.env` is still loaded by ConfigModule for anything not set here.
  */
 import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 
 function readRootEnv(): Record<string, string> {
   const file = resolve(__dirname, '..', '..', '..', '.env');
@@ -46,3 +47,14 @@ process.env.EMAIL_DRIVER = 'log';
 process.env.WORKERS_HEALTH_PORT = '0';
 process.env.WORKER_CONCURRENCY = '2';
 process.env.APP_URL = 'http://localhost:3000';
+
+// Knowledge pipeline tests: the deterministic mock provider embeds, files live in a throw-away directory.
+process.env.AI_ALLOW_MOCK_PROVIDER = 'true';
+process.env.STORAGE_DRIVER = 'local';
+process.env.STORAGE_LOCAL_PATH = join(tmpdir(), 'hilatech-workers-int-uploads');
+
+// Automation: tick() is driven by the tests, so the every-minute scheduler stays off; the credentials
+// key lets the delivery processor decrypt webhook signing secrets (test-only value).
+process.env.AUTOMATION_SCHEDULER_ENABLED = 'false';
+process.env.CREDENTIALS_ENCRYPTION_KEY =
+  process.env.CREDENTIALS_ENCRYPTION_KEY ?? Buffer.alloc(32, 7).toString('base64');

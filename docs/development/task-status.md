@@ -100,3 +100,19 @@ Verified locally with the **mock provider only**. No live Anthropic/OpenAI/Bedro
 | Cost | Cost shown only when `AI_PRICING_JSON` is configured; otherwise "No pricing configured" | Verified | `usage-summary` tests |
 | Live providers | Anthropic / OpenAI adapters against real APIs | Not live-tested | needs API keys |
 | Known gaps | `PATCH /agents/:id` cannot reset provider/model to null; agents list has no `lastExecution`; thread search is client-side; thread summary has no integration test | Partial | see API/web hand-off notes |
+
+## Priority 4 — knowledge base, automation, integrations (backend, 2026-11-09)
+
+Backend only; the web screens for these modules are not built yet. Mock provider only for embeddings and agent steps.
+
+| Area | Item | Status | Evidence |
+| ---- | ---- | ------ | -------- |
+| Knowledge | Bases, document upload/validation, worker extract→chunk→embed→pgvector, `/knowledge/search`, `knowledge.search` tool | Verified (mock embeddings) | `knowledge.int-spec`, `document-processing.int-spec` |
+| Knowledge | Cross-tenant isolation | Verified | `knowledge-cross-tenant.int-spec` |
+| Knowledge | OCR for scanned PDFs; checksum dedupe; billing summary for documents/storage | Not implemented | — |
+| Automation | Workflows CRUD, validation, manual run, runner (delay/condition/http/agent steps), cron scheduler | Verified (scheduler tick logic only; the minute scheduler is not exercised in tests) | `automation.int-spec` (API + workers) |
+| Automation | No `create_task` step (no Task model in schema) | Not implemented | — |
+| Webhooks | Inbound (HMAC/secret, rate limited) and outbound (signed, retries, SSRF guard) | Verified | `automation.int-spec`, `ssrf.test` |
+| Integrations | Generic REST and n8n, encrypted credentials | Verified locally; not tested against a real n8n | — |
+| Integrations | Email, WhatsApp, CRM | Catalogue only, shown as unconfigured; nothing simulated | — |
+| Cross-app | API and workers were not run together for a document upload → search round trip | Not verified end to end | — |

@@ -32,45 +32,11 @@ export abstract class NotImplementedProcessor<Q extends QueueName> implements Jo
 }
 
 @Injectable()
-export class DocumentProcessingProcessor extends NotImplementedProcessor<
-  typeof QueueName.DOCUMENT_PROCESSING
-> {
-  readonly queue = QueueName.DOCUMENT_PROCESSING;
-  protected readonly plannedWork =
-    'extract text, chunk the document and enqueue embeddings (Knowledge priority)';
-  constructor(@InjectPinoLogger(DocumentProcessingProcessor.name) logger: PinoLogger) {
-    super(logger);
-  }
-}
-
-@Injectable()
 export class EmbeddingsProcessor extends NotImplementedProcessor<typeof QueueName.EMBEDDINGS> {
   readonly queue = QueueName.EMBEDDINGS;
   protected readonly plannedWork =
     'compute embeddings for document chunks via the AiProvider (Knowledge priority)';
   constructor(@InjectPinoLogger(EmbeddingsProcessor.name) logger: PinoLogger) {
-    super(logger);
-  }
-}
-
-@Injectable()
-export class AutomationProcessor extends NotImplementedProcessor<typeof QueueName.AUTOMATION> {
-  readonly queue = QueueName.AUTOMATION;
-  protected readonly plannedWork =
-    'run workflow executions and n8n hand-offs (Automation priority)';
-  constructor(@InjectPinoLogger(AutomationProcessor.name) logger: PinoLogger) {
-    super(logger);
-  }
-}
-
-@Injectable()
-export class WebhookDeliveryProcessor extends NotImplementedProcessor<
-  typeof QueueName.WEBHOOK_DELIVERY
-> {
-  readonly queue = QueueName.WEBHOOK_DELIVERY;
-  protected readonly plannedWork =
-    'signed HTTP delivery to organization webhook endpoints with per-endpoint retry policy (Automation priority)';
-  constructor(@InjectPinoLogger(WebhookDeliveryProcessor.name) logger: PinoLogger) {
     super(logger);
   }
 }

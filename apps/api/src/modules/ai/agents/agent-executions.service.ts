@@ -10,7 +10,7 @@ import {
 } from '@hilatech/contracts';
 import { type Prisma } from '@hilatech/database';
 import { type TenantContext } from '@hilatech/types';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
 
 import { AppException } from '../../../common/errors/app.exception';
@@ -20,6 +20,7 @@ import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { QueueService } from '../../../infrastructure/queue/queue.service';
 import { AuditService } from '../../audit/audit.service';
 import { EntitlementsService } from '../../billing/entitlements.service';
+import { DomainEventsService } from '../../events/domain-events.service';
 import { withEngineErrors } from '../core/ai-errors';
 import { AiRunnersService } from '../core/ai-runners.service';
 import { CancellationService } from '../core/cancellation.service';
@@ -51,6 +52,7 @@ export class AgentExecutionsService {
     private readonly cancellation: CancellationService,
     private readonly resolver: ProviderResolver,
     private readonly logger: Logger,
+    @Optional() private readonly events?: DomainEventsService,
   ) {}
 
   /**
@@ -117,7 +119,20 @@ export class AgentExecutionsService {
         organizationName: await this.organizationName(tenant.organizationId),
       });
       await this.cancellation.clear(execution.id);
-      return { mode: 'sync', execution: await this.detail(tenant, execution.id) };
+      const detail = await this.detail(tenant, execution.id);
+      await this.events?.emit(
+        tenant.organizationId,
+        detail.status === 'succeeded' ? 'agent.execution_completed' : 'agent.execution_failed',
+        {
+          executionId: detail.id,
+          agentId: agent.id,
+          status: detail.status,
+          trigger: 'manual',
+          error: detail.error ?? null,
+        },
+        { actorUserId: tenant.userId, requestId: meta.requestId },
+      );
+      return { mode: 'sync', execution: detail };
     }
 
     await this.queue.enqueue(QueueName.AI_TASKS, {

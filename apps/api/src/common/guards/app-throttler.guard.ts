@@ -11,7 +11,7 @@ import {
 } from '@nestjs/throttler';
 
 import { AppConfig } from '../../config/app-config.service';
-import { AUTH_THROTTLE_KEY } from '../decorators/auth-throttle.decorator';
+import { AUTH_THROTTLE_KEY, WEBHOOK_THROTTLE_KEY } from '../decorators/auth-throttle.decorator';
 import { AppException } from '../errors/app.exception';
 
 /**
@@ -21,6 +21,7 @@ import { AppException } from '../errors/app.exception';
 @Injectable()
 export class AppThrottlerGuard extends ThrottlerGuard {
   private readonly authLimit: number;
+  private readonly webhookLimit: number;
 
   constructor(
     @Inject(getOptionsToken()) options: ThrottlerModuleOptions,
@@ -30,6 +31,7 @@ export class AppThrottlerGuard extends ThrottlerGuard {
   ) {
     super(options, storage, reflector);
     this.authLimit = config.get('AUTH_RATE_LIMIT_MAX');
+    this.webhookLimit = config.get('WEBHOOK_RATE_LIMIT_MAX');
   }
 
   protected override async handleRequest(requestProps: ThrottlerRequest): Promise<boolean> {
@@ -41,6 +43,16 @@ export class AppThrottlerGuard extends ThrottlerGuard {
       return super.handleRequest({
         ...requestProps,
         limit: Math.min(requestProps.limit, this.authLimit),
+      });
+    }
+    const isWebhookRoute = this.reflector.getAllAndOverride<boolean>(WEBHOOK_THROTTLE_KEY, [
+      requestProps.context.getHandler(),
+      requestProps.context.getClass(),
+    ]);
+    if (isWebhookRoute) {
+      return super.handleRequest({
+        ...requestProps,
+        limit: Math.min(requestProps.limit, this.webhookLimit),
       });
     }
     return super.handleRequest(requestProps);

@@ -133,6 +133,7 @@ export class AgentRunner {
         userId: request.userId,
         agentId: request.agent.id,
         executionId: request.executionId,
+        knowledgeBaseIds: request.agent.knowledgeBaseIds,
         prisma: this.deps.prisma,
         logger: log,
         signal: controller.signal,

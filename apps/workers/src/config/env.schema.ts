@@ -69,13 +69,51 @@ export const envSchema = z
     AI_ALLOW_MOCK_PROVIDER: z.preprocess(emptyToUndefined, booleanFromEnv.default(false)),
     /** Optional pricing table (JSON array) for cost estimates; invalid JSON is logged and ignored. */
     AI_PRICING_JSON: z.preprocess(emptyToUndefined, z.string().optional()),
+    // --- Automation (workflows, outbound webhooks) --------------------------------------------------
+    /**
+     * Comma-separated hostnames allowed to resolve to private addresses for admin-configured outbound
+     * targets (e.g. an in-cluster n8n). Everything else must resolve to public addresses (SSRF guard).
+     */
+    OUTBOUND_ALLOWED_HOSTS: z.preprocess(
+      (v) => (typeof v === 'string' ? v : ''),
+      z.string().transform((s) =>
+        s
+          .split(',')
+          .map((h) => h.trim().toLowerCase())
+          .filter(Boolean),
+      ),
+    ),
+    /** Register the every-minute `schedule_tick` job (disable in tests / secondary deployments). */
+    AUTOMATION_SCHEDULER_ENABLED: z.preprocess(emptyToUndefined, booleanFromEnv.default(true)),
+    /** Timeout of one outbound webhook delivery request. */
+    WEBHOOK_DELIVERY_TIMEOUT_MS: z.preprocess(
+      emptyToUndefined,
+      z.coerce.number().int().min(1000).max(60_000).default(10_000),
+    ),
     /** Per-tool-call timeout inside agent executions. */
     AI_TOOL_TIMEOUT_MS: z.preprocess(
       emptyToUndefined,
       z.coerce.number().int().min(1000).max(300_000).default(15_000),
     ),
+
+    // --- Object storage (document-processing reads the files the API stored) ------------------------
+    STORAGE_DRIVER: z.preprocess(emptyToUndefined, z.enum(['local', 's3']).default('local')),
+    /** Relative paths are resolved against the monorepo root so API and workers share the directory. */
+    STORAGE_LOCAL_PATH: z.preprocess(emptyToUndefined, z.string().default('./uploads')),
+    S3_BUCKET: z.preprocess(emptyToUndefined, z.string().optional()),
+    S3_REGION: z.preprocess(emptyToUndefined, z.string().optional()),
+    S3_ENDPOINT: z.preprocess(emptyToUndefined, z.string().optional()),
+    S3_ACCESS_KEY_ID: z.preprocess(emptyToUndefined, z.string().optional()),
+    S3_SECRET_ACCESS_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   })
   .superRefine((env, ctx) => {
+    if (env.STORAGE_DRIVER === 's3' && !env.S3_BUCKET) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['S3_BUCKET'],
+        message: 'S3_BUCKET is required when STORAGE_DRIVER=s3',
+      });
+    }
     if (env.EMAIL_DRIVER === 'smtp') {
       if (!env.SMTP_HOST) {
         ctx.addIssue({

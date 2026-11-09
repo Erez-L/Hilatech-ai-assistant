@@ -13,7 +13,7 @@ import {
 import { type Conversation, type Prisma } from '@hilatech/database';
 import { truncate } from '@hilatech/shared';
 import { type TenantContext } from '@hilatech/types';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
 
 import { AppException } from '../../common/errors/app.exception';
@@ -23,6 +23,7 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { QueueService } from '../../infrastructure/queue/queue.service';
 import { AuditService } from '../audit/audit.service';
 import { CrmReferencesService } from '../crm/crm-references.service';
+import { DomainEventsService } from '../events/domain-events.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ConversationRules } from './conversation.rules';
 import {
@@ -47,6 +48,7 @@ export class ConversationsService {
     private readonly notifications: NotificationsService,
     private readonly queue: QueueService,
     private readonly logger: Logger,
+    @Optional() private readonly events?: DomainEventsService,
   ) {}
 
   // ---------------------------------------------------------------------------------------------
@@ -139,6 +141,7 @@ export class ConversationsService {
     if (conversation.assigneeId) {
       await this.notifyAssigned(tenant, conversation, conversation.assigneeId, meta);
     }
+    await this.emitEvent(tenant, meta, 'conversation.created', conversationEventPayload(conversation));
     return toConversationWithRelations(conversation);
   }
 
@@ -193,6 +196,18 @@ export class ConversationsService {
     if (data.assigneeId && typeof data.assigneeId === 'string') {
       await this.notifyAssigned(tenant, updated, data.assigneeId, meta);
     }
+    if (data.assigneeId !== undefined) {
+      await this.emitEvent(tenant, meta, 'conversation.assigned', {
+        ...conversationEventPayload(updated),
+        previousAssigneeId: existing.assigneeId,
+      });
+    }
+    if (data.status === 'resolved') {
+      await this.emitEvent(tenant, meta, 'conversation.resolved', {
+        ...conversationEventPayload(updated),
+        previousStatus: existing.status,
+      });
+    }
     return toConversationWithRelations(updated);
   }
 
@@ -221,6 +236,10 @@ export class ConversationsService {
       request: meta,
     });
     if (dto.assigneeId) await this.notifyAssigned(tenant, updated, dto.assigneeId, meta);
+    await this.emitEvent(tenant, meta, 'conversation.assigned', {
+      ...conversationEventPayload(updated),
+      previousAssigneeId: existing.assigneeId,
+    });
     return toConversationWithRelations(updated);
   }
 
@@ -296,6 +315,18 @@ export class ConversationsService {
       });
     }
     await this.scheduleSummary(tenant, conversation.id, conversation.messageCount + 1, meta);
+    if (dto.role === 'customer') {
+      await this.emitEvent(tenant, meta, 'conversation.message_received', {
+        conversationId: conversation.id,
+        messageId: message.id,
+        role: dto.role,
+        channel: conversation.channel,
+        assigneeId: conversation.assigneeId,
+        contactId: conversation.contactId,
+        leadId: conversation.leadId,
+        preview: truncate(dto.content, 500),
+      });
+    }
     return toMessage(message);
   }
 
@@ -340,6 +371,22 @@ export class ConversationsService {
   // ---------------------------------------------------------------------------------------------
   // Internals
   // ---------------------------------------------------------------------------------------------
+
+  private async emitEvent(
+    tenant: TenantContext,
+    meta: RequestMeta,
+    event:
+      | 'conversation.created'
+      | 'conversation.message_received'
+      | 'conversation.assigned'
+      | 'conversation.resolved',
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    await this.events?.emit(tenant.organizationId, event, payload, {
+      actorUserId: tenant.userId,
+      requestId: meta.requestId,
+    });
+  }
 
   private async requireConversation(tenant: TenantContext, id: string) {
     const conversation = await this.prisma.client.conversation.findFirst({
@@ -395,4 +442,19 @@ function orderBy(query: ListConversationsQuery): Prisma.ConversationOrderByWithR
     return { lastMessageAt: { sort: query.sortOrder, nulls: 'last' } };
   }
   return { [query.sortBy]: query.sortOrder };
+}
+
+/** Domain-event payload for a conversation (ids and scalar facts only). */
+export function conversationEventPayload(
+  c: Pick<Conversation, 'id' | 'channel' | 'status' | 'subject' | 'assigneeId' | 'contactId' | 'leadId'>,
+): Record<string, unknown> {
+  return {
+    conversationId: c.id,
+    channel: c.channel,
+    status: c.status,
+    subject: c.subject,
+    assigneeId: c.assigneeId,
+    contactId: c.contactId,
+    leadId: c.leadId,
+  };
 }

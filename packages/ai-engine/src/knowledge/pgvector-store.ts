@@ -89,6 +89,22 @@ export class PgVectorStore {
       .slice(0, params.limit);
   }
 
+  /**
+   * Knowledge bases of the organization (optionally only `ids`) with the embedding configuration their
+   * vectors were produced with — a query must be embedded with the same provider/model to be comparable.
+   */
+  async embeddingTargets(
+    organizationId: string,
+    ids?: string[],
+  ): Promise<
+    Array<{ id: string; embeddingProviderConfigId: string | null; embeddingModel: string | null }>
+  > {
+    return this.prisma.knowledgeBase.findMany({
+      where: { organizationId, ...(ids && ids.length > 0 ? { id: { in: ids } } : {}) },
+      select: { id: true, embeddingProviderConfigId: true, embeddingModel: true },
+    });
+  }
+
   /** Count chunks with embeddings for a document (processing progress). */
   async embeddedCount(organizationId: string, documentId: string): Promise<number> {
     const rows = await this.prisma.$queryRaw<Array<{ count: bigint }>>`

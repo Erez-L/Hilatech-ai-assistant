@@ -1,3 +1,6 @@
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 /**
  * Jest `setupFiles`: runs in every test worker BEFORE the app (and Nest's ConfigModule) loads.
  * Forces the integration database/redis and quiet, deterministic settings.
@@ -35,7 +38,7 @@ process.env.NODE_ENV = 'test';
 process.env.DATABASE_URL = databaseUrl;
 process.env.REDIS_URL = testRedisUrl();
 process.env.BULLMQ_PREFIX = process.env.TEST_BULLMQ_PREFIX ?? 'bull-test';
-process.env.LOG_LEVEL = 'silent';
+process.env.LOG_LEVEL = process.env.TEST_LOG_LEVEL ?? 'silent';
 process.env.EMAIL_DRIVER = 'log';
 process.env.SWAGGER_ENABLED = 'false';
 process.env.RATE_LIMIT_MAX = process.env.TEST_RATE_LIMIT_MAX ?? '100000';
@@ -51,3 +54,8 @@ process.env.CREDENTIALS_ENCRYPTION_KEY ??= Buffer.from('integration-test-encrypt
   'base64',
 );
 process.env.AI_PRICING_JSON ??= '';
+// Knowledge: uploads go to a throw-away directory (shared with the workers' integration tests via the same
+// absolute path) and are capped at 1 MB so the size-limit test stays small.
+process.env.STORAGE_DRIVER = 'local';
+process.env.STORAGE_LOCAL_PATH ??= join(tmpdir(), 'hilatech-api-int-uploads');
+process.env.MAX_UPLOAD_MB = '1';
