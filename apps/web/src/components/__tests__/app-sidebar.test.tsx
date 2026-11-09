@@ -52,9 +52,9 @@ describe('AppSidebar', () => {
     });
     renderSidebar();
     expect(screen.getByRole('link', { name: /Team/ })).toHaveAttribute('aria-current', 'page');
-    // CRM areas are live; AI areas still carry the "Soon" marker.
+    // CRM and AI platform areas are live; Knowledge etc. still carry the "Soon" marker.
     expect(screen.getByRole('link', { name: /Leads/ })).not.toHaveTextContent('Soon');
-    expect(screen.getByRole('link', { name: /Agents/ })).toHaveTextContent('Soon');
+    expect(screen.getByRole('link', { name: /Agents/ })).not.toHaveTextContent('Soon');
     expect(screen.queryByRole('link', { name: /Roles/ })).toBeNull();
     expect(screen.queryByRole('link', { name: /Audit log/ })).toBeNull();
     expect(screen.getByRole('button', { name: /Organization: Acme/ })).toBeInTheDocument();

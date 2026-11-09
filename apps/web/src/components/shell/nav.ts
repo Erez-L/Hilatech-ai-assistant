@@ -68,14 +68,12 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Assistant',
         icon: Sparkles,
         permission: Permission.AI_ASSISTANT_USE,
-        upcoming: true,
       },
       {
         href: '/agents',
         label: 'Agents',
         icon: Bot,
         permission: Permission.AGENTS_READ,
-        upcoming: true,
       },
       {
         href: '/knowledge',

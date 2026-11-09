@@ -152,6 +152,10 @@ export type { MeterProps } from './components/progress';
 export { Pagination } from './components/pagination';
 export type { PaginationProps } from './components/pagination';
 export { LogoMark, Wordmark } from './components/logo';
+export { CodeBlock } from './components/code-block';
+export type { CodeBlockProps } from './components/code-block';
+export { JsonViewer } from './components/json-viewer';
+export type { JsonViewerProps } from './components/json-viewer';
 
 // Charts
 export { BarChart } from './charts/bar-chart';

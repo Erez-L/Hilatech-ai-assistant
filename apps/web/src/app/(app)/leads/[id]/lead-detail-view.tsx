@@ -12,6 +12,7 @@ import {
   Contact as ContactIcon,
   MoreHorizontal,
   Repeat,
+  Sparkles,
   Target,
   Trash2,
 } from 'lucide-react';
@@ -115,6 +116,7 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
   const canAssign = useCan(Permission.LEADS_ASSIGN);
   const canDelete = useCan(Permission.LEADS_DELETE);
   const canReadContacts = useCan(Permission.CONTACTS_READ);
+  const canAskAssistant = useCan(Permission.AI_ASSISTANT_USE);
 
   const update = useUpdateLead();
   const assign = useAssignLead();
@@ -198,6 +200,13 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
                 )
               }
             />
+            {canAskAssistant ? (
+              <Button asChild variant="secondary" leadingIcon={<Sparkles aria-hidden />}>
+                <Link href={`/assistant?leadId=${encodeURIComponent(lead.id)}`}>
+                  Ask the assistant
+                </Link>
+              </Button>
+            ) : null}
             {canUpdate ? (
               <Button
                 variant={lead.convertedAt ? 'secondary' : 'primary'}

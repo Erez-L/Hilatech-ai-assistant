@@ -80,7 +80,7 @@ test.describe('crm journey', () => {
     // --- Note ---------------------------------------------------------------------------------
     await page.getByRole('textbox', { name: 'New note' }).fill(noteText);
     await page.getByRole('button', { name: 'Add note' }).click();
-    await expect(page.getByText(noteText)).toBeVisible();
+    await expect(page.getByText(noteText).first()).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'New note' })).toHaveValue('');
 
     // --- Convert (link the existing contact, mark as won) --------------------------------------

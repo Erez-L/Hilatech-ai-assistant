@@ -125,6 +125,11 @@ export interface ApiClient {
     query?: QueryParams,
     options?: Omit<RequestOptions, 'method' | 'body' | 'query'>,
   ): Promise<ApiListResult<T>>;
+  /**
+   * Authenticated fetch that returns the raw successful `Response` (for streaming bodies). Shares the
+   * token, organization header and one-shot refresh/retry logic with `request`; non-2xx → ApiError.
+   */
+  fetchRaw(path: string, options?: RequestOptions): Promise<Response>;
   /** POST /auth/refresh using the httpOnly cookie. Deduplicates concurrent calls. Returns null when the session is gone. */
   refresh(): Promise<AuthResponse | null>;
 }
@@ -239,7 +244,7 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
     return refreshPromise;
   };
 
-  const request = async <T>(path: string, options: RequestOptions = {}): Promise<ApiSuccess<T>> => {
+  const fetchRaw = async (path: string, options: RequestOptions = {}): Promise<Response> => {
     const {
       method = 'GET',
       body,
@@ -304,6 +309,11 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
     }
 
     if (!res.ok) throw await toApiError(res);
+    return res;
+  };
+
+  const request = async <T>(path: string, options: RequestOptions = {}): Promise<ApiSuccess<T>> => {
+    const res = await fetchRaw(path, options);
     if (res.status === 204 || res.headers.get('content-length') === '0') {
       return { data: undefined as T };
     }
@@ -343,7 +353,7 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
     };
   };
 
-  return { request, refresh, get, post, put, patch, delete: del, list };
+  return { request, fetchRaw, refresh, get, post, put, patch, delete: del, list };
 }
 
 /** Application-wide client wired to the session store. */

@@ -57,4 +57,31 @@ export const keys = {
     ['org', orgId, 'conversations', 'detail', id] as const,
   messages: (orgId: string | null, conversationId: string) =>
     ['org', orgId, 'conversations', 'detail', conversationId, 'messages'] as const,
+
+  // AI platform
+  aiRoot: (orgId: string | null) => ['org', orgId, 'ai'] as const,
+  aiProviders: (orgId: string | null) => ['org', orgId, 'ai', 'providers'] as const,
+  aiModels: (orgId: string | null, provider?: string) =>
+    ['org', orgId, 'ai', 'models', provider ?? 'all'] as const,
+  aiUsage: (orgId: string | null, range?: object) =>
+    ['org', orgId, 'ai', 'usage', range ?? {}] as const,
+  aiPrompts: (orgId: string | null) => ['org', orgId, 'ai', 'prompts'] as const,
+  aiTools: (orgId: string | null) => ['org', orgId, 'ai', 'tools'] as const,
+
+  // Assistant
+  assistantRoot: (orgId: string | null) => ['org', orgId, 'assistant'] as const,
+  assistantThreads: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'assistant', 'threads', params ?? {}] as const,
+  assistantMessages: (orgId: string | null, threadId: string) =>
+    ['org', orgId, 'assistant', 'thread', threadId, 'messages'] as const,
+
+  // Agents
+  agentsRoot: (orgId: string | null) => ['org', orgId, 'agents'] as const,
+  agents: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'agents', 'list', params ?? {}] as const,
+  agent: (orgId: string | null, id: string) => ['org', orgId, 'agents', 'detail', id] as const,
+  executions: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'agents', 'executions', 'list', params ?? {}] as const,
+  execution: (orgId: string | null, id: string) =>
+    ['org', orgId, 'agents', 'executions', 'detail', id] as const,
 };

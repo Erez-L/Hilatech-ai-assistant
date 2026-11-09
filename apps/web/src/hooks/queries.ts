@@ -9,6 +9,22 @@ import {
 } from '@tanstack/react-query';
 import { toast } from '@hilatech/ui';
 import type {
+  Agent,
+  AgentExecution,
+  AgentExecutionStatus,
+  AiProviderConfig,
+  AiProviderKind,
+  AssistantThread,
+  CreateAgentRequest,
+  CreateAiProviderConfigRequest,
+  CreatePromptTemplateRequest,
+  ExecuteAgentRequest,
+  RenderPromptTemplateRequest,
+  UpdateAgentRequest,
+  UpdateAiProviderConfigRequest,
+  UpdateAssistantThreadRequest,
+  UpdatePromptTemplateRequest,
+  CreateAssistantThreadRequest,
   ConversationWithRelations,
   ConvertLeadRequest,
   CreateContactRequest,
@@ -36,6 +52,11 @@ import type {
   UpdateRoleRequest,
 } from '@hilatech/contracts';
 import {
+  agentsApi,
+  aiApi,
+  assistantApi,
+  type ListAgentExecutionsParams,
+  type ListAgentsParams,
   analyticsApi,
   auditApi,
   authApi,
@@ -827,6 +848,317 @@ export function useSendMessage(conversationId: string) {
       void qc.invalidateQueries({ queryKey: keys.messages(orgId, conversationId) });
       // Posting updates lastMessage/messageCount and may reopen a resolved conversation.
       void qc.invalidateQueries({ queryKey: keys.conversationsRoot(orgId) });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// AI platform — providers, usage, prompts, tools
+// ---------------------------------------------------------------------------
+
+export function useAiProviders(options?: { enabled?: boolean }) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.aiProviders(orgId),
+    queryFn: aiApi.providers,
+    enabled: !!orgId && (options?.enabled ?? true),
+  });
+}
+
+export function useAiModels(provider?: AiProviderKind | null, options?: { enabled?: boolean }) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.aiModels(orgId, provider ?? undefined),
+    queryFn: () => aiApi.models(provider ?? undefined),
+    enabled: !!orgId && (options?.enabled ?? true),
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+export function useCreateAiProvider() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (body: CreateAiProviderConfigRequest) => aiApi.createProvider(body),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.aiProviders(orgId) }),
+  });
+}
+
+export function useUpdateAiProvider() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateAiProviderConfigRequest }) =>
+      aiApi.updateProvider(id, body),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.aiProviders(orgId) }),
+  });
+}
+
+export function useDeleteAiProvider() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (id: string) => aiApi.removeProvider(id),
+    onSuccess: (_v, id) => {
+      qc.setQueryData<AiProviderConfig[]>(keys.aiProviders(orgId), (prev) =>
+        prev?.filter((p) => p.id !== id),
+      );
+      void qc.invalidateQueries({ queryKey: keys.aiProviders(orgId) });
+    },
+  });
+}
+
+export function useCheckAiProvider() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (id: string) => aiApi.checkProvider(id),
+    onSettled: () => void qc.invalidateQueries({ queryKey: keys.aiProviders(orgId) }),
+  });
+}
+
+export function useAiUsageSummary(range: { from?: string; to?: string }) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.aiUsage(orgId, range),
+    queryFn: () => aiApi.usageSummary(range),
+    enabled: !!orgId,
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useAiPrompts() {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.aiPrompts(orgId),
+    queryFn: () => aiApi.prompts({ page: 1, pageSize: 100 }),
+    enabled: !!orgId,
+  });
+}
+
+export function useSavePrompt() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (input: {
+      id?: string;
+      create?: CreatePromptTemplateRequest;
+      update?: UpdatePromptTemplateRequest;
+    }) =>
+      input.id
+        ? aiApi.updatePrompt(input.id, input.update ?? {})
+        : aiApi.createPrompt(input.create as CreatePromptTemplateRequest),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.aiPrompts(orgId) }),
+  });
+}
+
+export function useDeletePrompt() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (id: string) => aiApi.removePrompt(id),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.aiPrompts(orgId) }),
+  });
+}
+
+export function useRenderPrompt() {
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: RenderPromptTemplateRequest }) =>
+      aiApi.renderPrompt(id, body),
+  });
+}
+
+export function useAiTools(options?: { enabled?: boolean }) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.aiTools(orgId),
+    queryFn: aiApi.tools,
+    enabled: !!orgId && (options?.enabled ?? true),
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Assistant
+// ---------------------------------------------------------------------------
+
+export function useAssistantThreads(params: { page?: number; pageSize?: number } = {}) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.assistantThreads(orgId, params),
+    queryFn: () => assistantApi.threads(params),
+    enabled: !!orgId,
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useAssistantMessages(threadId: string | null) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.assistantMessages(orgId, threadId ?? ''),
+    queryFn: () => assistantApi.messages(threadId as string, { page: 1, pageSize: 100 }),
+    enabled: !!orgId && !!threadId,
+  });
+}
+
+export function useCreateAssistantThread() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (body: CreateAssistantThreadRequest = {}) => assistantApi.createThread(body),
+    onSuccess: () =>
+      void qc.invalidateQueries({ queryKey: [...keys.assistantRoot(orgId), 'threads'] }),
+  });
+}
+
+export function useUpdateAssistantThread() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateAssistantThreadRequest }) =>
+      assistantApi.updateThread(id, body),
+    onSuccess: (thread: AssistantThread) => {
+      qc.setQueriesData<{ data: AssistantThread[]; meta: unknown }>(
+        { queryKey: [...keys.assistantRoot(orgId), 'threads'] },
+        (prev) =>
+          prev ? { ...prev, data: prev.data.map((t) => (t.id === thread.id ? thread : t)) } : prev,
+      );
+      void qc.invalidateQueries({ queryKey: [...keys.assistantRoot(orgId), 'threads'] });
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
+export function useDeleteAssistantThread() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (id: string) => assistantApi.removeThread(id),
+    onSuccess: (_v, id) => {
+      qc.removeQueries({ queryKey: keys.assistantMessages(orgId, id) });
+      void qc.invalidateQueries({ queryKey: [...keys.assistantRoot(orgId), 'threads'] });
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Agents & executions
+// ---------------------------------------------------------------------------
+
+export const EXECUTION_POLL_MS = 2000;
+const TERMINAL_STATUSES: readonly AgentExecutionStatus[] = [
+  'succeeded',
+  'failed',
+  'timed_out',
+  'cancelled',
+];
+export function isTerminalExecution(status: AgentExecutionStatus): boolean {
+  return TERMINAL_STATUSES.includes(status);
+}
+
+export function useAgents(params: ListAgentsParams = {}, options?: { enabled?: boolean }) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.agents(orgId, params),
+    queryFn: () => agentsApi.list(params),
+    enabled: !!orgId && (options?.enabled ?? true),
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useAgent(id: string | null) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.agent(orgId, id ?? ''),
+    queryFn: () => agentsApi.get(id as string),
+    enabled: !!orgId && !!id,
+  });
+}
+
+export function useCreateAgent() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (body: CreateAgentRequest) => agentsApi.create(body),
+    onSuccess: (agent) => {
+      qc.setQueryData(keys.agent(orgId, agent.id), agent);
+      void qc.invalidateQueries({ queryKey: keys.agentsRoot(orgId) });
+    },
+  });
+}
+
+export function useUpdateAgent() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateAgentRequest }) =>
+      agentsApi.update(id, body),
+    onSuccess: (agent: Agent) => {
+      qc.setQueryData(keys.agent(orgId, agent.id), agent);
+      void qc.invalidateQueries({ queryKey: keys.agentsRoot(orgId) });
+    },
+  });
+}
+
+export function useDeleteAgent() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (id: string) => agentsApi.remove(id),
+    onSuccess: (_v, id) => {
+      qc.removeQueries({ queryKey: keys.agent(orgId, id) });
+      void qc.invalidateQueries({ queryKey: keys.agentsRoot(orgId) });
+    },
+  });
+}
+
+export function useExecuteAgent() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: ExecuteAgentRequest }) =>
+      agentsApi.execute(id, body),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.agentsRoot(orgId) }),
+  });
+}
+
+export function useAgentExecutions(
+  params: ListAgentExecutionsParams,
+  options?: { refetchInterval?: number | false },
+) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.executions(orgId, params),
+    queryFn: () => agentsApi.executions(params),
+    enabled: !!orgId,
+    placeholderData: (prev) => prev,
+    refetchInterval: options?.refetchInterval ?? false,
+  });
+}
+
+/** Execution detail; refetches every 2 s until the execution reaches a terminal status. */
+export function useAgentExecution(id: string | null) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.execution(orgId, id ?? ''),
+    queryFn: () => agentsApi.execution(id as string),
+    enabled: !!orgId && !!id,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status && isTerminalExecution(status) ? false : EXECUTION_POLL_MS;
+    },
+  });
+}
+
+export function useCancelExecution() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (id: string) => agentsApi.cancelExecution(id),
+    onSuccess: (_e: AgentExecution, id) => {
+      void qc.invalidateQueries({ queryKey: keys.execution(orgId, id) });
+      void qc.invalidateQueries({ queryKey: [...keys.agentsRoot(orgId), 'executions'] });
     },
   });
 }

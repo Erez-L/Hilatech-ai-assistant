@@ -14,3 +14,12 @@ export { notificationsApi, type ListNotificationsParams } from './notifications'
 export { contactsApi, type ListContactsParams } from './contacts';
 export { leadsApi, type ListLeadsParams, type ConvertLeadResponse } from './leads';
 export { conversationsApi, type ListConversationsParams } from './conversations';
+export { aiApi, type RenderedPrompt } from './ai';
+export { assistantApi } from './assistant';
+export {
+  agentsApi,
+  type ListAgentsParams,
+  type ListAgentExecutionsParams,
+  type ExecuteAgentResponse,
+} from './agents';
+export { createSseParser, parseAssistantEvent, streamSse, type RawSseEvent } from './sse';

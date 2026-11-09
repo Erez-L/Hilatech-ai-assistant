@@ -84,3 +84,19 @@ lint, build for api/web/ui; Playwright against the running stack: `critical-jour
 
 Known gaps carried forward: PATCH schemas cannot clear `value`/`contactId`/`ownerId` to null (contract change + API handling
 pending); `wonInPeriod`/`lostInPeriod` use `updatedAt` (no `closedAt` column); pipeline value sums across currencies.
+
+## Priority 3 — AI platform (2026-11-09)
+
+Verified locally with the **mock provider only**. No live Anthropic/OpenAI/Bedrock call has been made (no keys or network).
+
+| Area | Item | Status | Evidence |
+| ---- | ---- | ------ | -------- |
+| Engine | Providers, tool permission layer, agent runner (budgets, delegation, retries) | Verified (mock) | 42 unit tests |
+| API | AI providers (encrypted keys), usage, prompt templates, tool catalog | Verified | 151 unit / 182 integration tests |
+| API | Assistant threads with SSE streaming; agents CRUD, execute (sync/async), cancel | Verified (mock provider) | `assistant.int-spec`, `agents.int-spec` |
+| API | Cross-tenant isolation for AI resources | Verified | `security/ai-cross-tenant.int-spec` |
+| Workers | `ai-tasks` consumer: async executions, conversation summaries | Verified | 67 unit / 16 integration tests |
+| Web | Assistant, agents, executions, Settings → AI | Verified | 81 unit tests; `ai-journey` e2e |
+| Cost | Cost shown only when `AI_PRICING_JSON` is configured; otherwise "No pricing configured" | Verified | `usage-summary` tests |
+| Live providers | Anthropic / OpenAI adapters against real APIs | Not live-tested | needs API keys |
+| Known gaps | `PATCH /agents/:id` cannot reset provider/model to null; agents list has no `lastExecution`; thread search is client-side; thread summary has no integration test | Partial | see API/web hand-off notes |
