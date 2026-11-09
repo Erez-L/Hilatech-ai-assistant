@@ -52,6 +52,7 @@ export class ConversationsService {
       ...(query.channel ? { channel: query.channel } : {}),
       ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
       ...(query.contactId ? { contactId: query.contactId } : {}),
+      ...(query.leadId ? { leadId: query.leadId } : {}),
       ...(query.search ? { OR: searchClauses(query.search) } : {}),
     };
     const [rows, total] = await this.prisma.client.$transaction([

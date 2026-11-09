@@ -22,11 +22,17 @@ export class RedisService implements OnModuleDestroy {
     this.client.on('error', () => undefined);
   }
 
-  /** Round-trip check used by the readiness probe. Throws when Redis is unreachable. */
-  async ping(): Promise<string> {
+  /** The client connects lazily; callers issuing commands outside the readiness probe go through here. */
+  async ensureConnected(): Promise<Redis> {
     if (this.client.status === 'wait' || this.client.status === 'end') {
       await this.client.connect();
     }
+    return this.client;
+  }
+
+  /** Round-trip check used by the readiness probe. Throws when Redis is unreachable. */
+  async ping(): Promise<string> {
+    await this.ensureConnected();
     return this.client.ping();
   }
 

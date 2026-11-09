@@ -89,6 +89,7 @@ export class ProviderResolver {
       providerConfigId: config.id,
       model,
       contextWindow: contextWindowFor(config.provider, model),
+      embeddingModel: config.embeddingModel,
     };
   }
 

@@ -145,6 +145,12 @@ export type ConvertLeadRequest = z.infer<typeof convertLeadSchema>;
 export const assignLeadSchema = z.object({ assigneeId: idSchema.nullable() });
 export type AssignLeadRequest = z.infer<typeof assignLeadSchema>;
 
+export const convertLeadResultSchema = z.object({
+  lead: leadWithRelationsSchema,
+  contact: contactSchema,
+});
+export type ConvertLeadResult = z.infer<typeof convertLeadResultSchema>;
+
 export const createLeadSchema = z.object({
   title: z.string().trim().min(1).max(160),
   status: LeadStatus.default('new'),
@@ -191,6 +197,7 @@ export const leadNoteWithAuthorSchema = leadNoteSchema.extend({
 });
 export type LeadNoteWithAuthor = z.infer<typeof leadNoteWithAuthorSchema>;
 export const createLeadNoteSchema = z.object({ body: z.string().trim().min(1).max(5000) });
+export type CreateLeadNoteRequest = z.infer<typeof createLeadNoteSchema>;
 
 export const LeadActivityType = z.enum([
   'created',
@@ -308,6 +315,7 @@ export const listConversationsQuerySchema = paginationQuerySchema.extend({
   channel: ConversationChannel.optional(),
   assigneeId: idSchema.optional(),
   contactId: idSchema.optional(),
+  leadId: idSchema.optional(),
   sortBy: z.enum(['lastMessageAt', 'createdAt', 'updatedAt']).default('lastMessageAt'),
   sortOrder: sortOrderSchema.default('desc'),
 });

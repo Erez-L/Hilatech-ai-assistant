@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
+import { AiRuntimeModule } from '../ai/ai-runtime.module';
 import { WORKERS_ENV } from '../config/config.module';
 import type { WorkersEnv } from '../config/env.schema';
 import { PrismaModule } from '../prisma/prisma.module';
 import { JOB_PROCESSORS, type AnyJobProcessor } from '../queue/job-processor';
+import { AiTasksProcessor } from './ai-tasks/ai-tasks.processor';
 import { AnalyticsProcessor } from './analytics/analytics.processor';
 import {
   EMAIL_DRIVER,
@@ -13,7 +15,6 @@ import {
 import { EmailProcessor } from './email/email.processor';
 import { NotificationsProcessor } from './notifications/notifications.processor';
 import {
-  AiTasksProcessor,
   AutomationProcessor,
   DocumentProcessingProcessor,
   EmbeddingsProcessor,
@@ -32,7 +33,7 @@ const PROCESSOR_CLASSES = [
 ];
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AiRuntimeModule],
   providers: [
     LogEmailDriver,
     SmtpEmailDriver,

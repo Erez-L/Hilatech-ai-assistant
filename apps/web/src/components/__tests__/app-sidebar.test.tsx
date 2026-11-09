@@ -47,10 +47,14 @@ describe('AppSidebar', () => {
   });
 
   it('hides navigation the role cannot access and marks the current page', () => {
-    useSession.setState({ permissions: [Permission.MEMBERS_READ, Permission.LEADS_READ] });
+    useSession.setState({
+      permissions: [Permission.MEMBERS_READ, Permission.LEADS_READ, Permission.AGENTS_READ],
+    });
     renderSidebar();
     expect(screen.getByRole('link', { name: /Team/ })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('link', { name: /Leads/ })).toHaveTextContent('Soon');
+    // CRM areas are live; AI areas still carry the "Soon" marker.
+    expect(screen.getByRole('link', { name: /Leads/ })).not.toHaveTextContent('Soon');
+    expect(screen.getByRole('link', { name: /Agents/ })).toHaveTextContent('Soon');
     expect(screen.queryByRole('link', { name: /Roles/ })).toBeNull();
     expect(screen.queryByRole('link', { name: /Audit log/ })).toBeNull();
     expect(screen.getByRole('button', { name: /Organization: Acme/ })).toBeInTheDocument();

@@ -126,6 +126,11 @@ export type ListNotificationsQuery = z.infer<typeof listNotificationsQuerySchema
 export const unreadCountSchema = z.object({ unread: z.number().int().nonnegative() });
 export type UnreadCount = z.infer<typeof unreadCountSchema>;
 
+export const readAllNotificationsResultSchema = z.object({
+  updated: z.number().int().nonnegative(),
+});
+export type ReadAllNotificationsResult = z.infer<typeof readAllNotificationsResultSchema>;
+
 export const notificationPreferencesSchema = z.object({
   inApp: z.record(NotificationType, z.boolean()).optional(),
   email: z.record(NotificationType, z.boolean()).optional(),

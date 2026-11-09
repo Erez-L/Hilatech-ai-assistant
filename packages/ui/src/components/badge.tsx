@@ -50,10 +50,17 @@ const STATUS_TONES: Record<string, StatusTone> = {
   revoked: 'danger',
   expired: 'neutral',
   canceled: 'neutral',
-  lost: 'neutral',
   new: 'info',
   open: 'accent',
   closed: 'neutral',
+  // Lead pipeline
+  contacted: 'neutral',
+  qualified: 'accent',
+  proposal: 'warning',
+  lost: 'danger',
+  // Conversations
+  resolved: 'success',
+  archived: 'neutral',
 };
 
 export interface StatusBadgeProps extends Omit<BadgeProps, 'variant'> {

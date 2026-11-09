@@ -71,6 +71,26 @@ describe('env schema', () => {
     expect(env.isProduction).toBe(true);
   });
 
+  it('defaults the AI variables and never allows the mock provider in production', () => {
+    const dev = validateEnv({ ...minimal, AI_ALLOW_MOCK_PROVIDER: 'true' });
+    expect(dev.AI_ALLOW_MOCK_PROVIDER).toBe(true);
+    expect(dev.AI_TOOL_TIMEOUT_MS).toBe(15_000);
+    expect(dev.AI_PROVIDER_TIMEOUT_MS).toBe(60_000);
+    expect(dev.AI_PRICING_JSON).toBeUndefined();
+
+    const prod = validateEnv({
+      ...minimal,
+      NODE_ENV: 'production',
+      COOKIE_SECURE: 'true',
+      JWT_ACCESS_SECRET: 'x'.repeat(48),
+      JWT_REFRESH_SECRET: 'y'.repeat(48),
+      AI_ALLOW_MOCK_PROVIDER: 'true',
+      AI_PRICING_JSON: '[{"provider":"openai","model":"gpt-4o-mini","inputPerMillionUsd":0.15,"outputPerMillionUsd":0.6}]',
+    });
+    expect(prod.AI_ALLOW_MOCK_PROVIDER).toBe(false);
+    expect(prod.AI_PRICING_JSON).toContain('gpt-4o-mini');
+  });
+
   it('requires SMTP_HOST for the smtp driver and validates durations', () => {
     expect(() => validateEnv({ ...minimal, EMAIL_DRIVER: 'smtp' })).toThrow(/SMTP_HOST/);
     expect(() => validateEnv({ ...minimal, JWT_ACCESS_TTL: 'soon' })).toThrow(/duration/);

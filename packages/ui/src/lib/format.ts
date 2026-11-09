@@ -19,6 +19,32 @@ export function formatPercent(ratio: number, locale = 'en'): string {
   );
 }
 
+/**
+ * Currency formatting for pipeline values. Whole units when the amount is integral, two decimals
+ * otherwise; `compact` switches to 12.9K / 4.2M for stat tiles. Unknown currency codes fall back to
+ * a plain number followed by the code.
+ */
+export function formatCurrency(
+  value: number,
+  currency: string,
+  options: { compact?: boolean; locale?: string } = {},
+): string {
+  if (!Number.isFinite(value)) return '—';
+  const { compact = false, locale = 'en' } = options;
+  const whole = Number.isInteger(value);
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      notation: compact && Math.abs(value) >= 10_000 ? 'compact' : 'standard',
+      minimumFractionDigits: whole || compact ? 0 : 2,
+      maximumFractionDigits: compact ? 1 : 2,
+    }).format(value);
+  } catch {
+    return `${formatCompact(value, locale)} ${currency}`;
+  }
+}
+
 export function formatBytesFromMb(mb: number): string {
   if (mb >= 1024 * 1024) return `${(mb / (1024 * 1024)).toFixed(1)} TB`;
   if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;

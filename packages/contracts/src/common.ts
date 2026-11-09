@@ -45,6 +45,12 @@ export const ErrorCode = {
   ENTITLEMENT_EXCEEDED: 'ENTITLEMENT_EXCEEDED',
   PROVIDER_NOT_CONFIGURED: 'PROVIDER_NOT_CONFIGURED',
   PROVIDER_ERROR: 'PROVIDER_ERROR',
+  /** 409 — the organization has no usable AI provider configuration (or the selected one is disabled / has no key). */
+  AI_NOT_CONFIGURED: 'AI_NOT_CONFIGURED',
+  /** 502 — the upstream AI provider failed; `details.code` carries the normalised engine code (auth, rate_limited, …). */
+  AI_PROVIDER_ERROR: 'AI_PROVIDER_ERROR',
+  /** 422 — an assistant/agent run hit a configured or hard limit (steps, tokens, duration, delegations). */
+  AI_LIMIT_EXCEEDED: 'AI_LIMIT_EXCEEDED',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
 } as const;
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

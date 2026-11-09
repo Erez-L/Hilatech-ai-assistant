@@ -3,6 +3,7 @@ export { cn } from './lib/cn';
 export {
   formatBytesFromMb,
   formatCompact,
+  formatCurrency,
   formatNumber,
   formatPercent,
   initials,
@@ -11,8 +12,16 @@ export {
 // Primitives
 export { Button, IconButton, buttonVariants, iconButtonVariants } from './components/button';
 export type { ButtonProps, IconButtonProps } from './components/button';
-export { Input, Textarea, SearchInput, NativeSelect, inputClassName } from './components/input';
+export {
+  AutosizeTextarea,
+  Input,
+  Textarea,
+  SearchInput,
+  NativeSelect,
+  inputClassName,
+} from './components/input';
 export type {
+  AutosizeTextareaProps,
   InputProps,
   TextareaProps,
   SearchInputProps,
@@ -33,6 +42,14 @@ export {
   SelectValue,
 } from './components/select';
 export { Checkbox } from './components/checkbox';
+export { Combobox } from './components/combobox';
+export type { ComboboxItem, ComboboxProps } from './components/combobox';
+export { TagInput } from './components/tag-input';
+export type { TagInputProps } from './components/tag-input';
+export { SegmentedControl } from './components/segmented-control';
+export type { SegmentedControlProps, SegmentedOption } from './components/segmented-control';
+export { Timeline, TimelineItem } from './components/timeline';
+export type { TimelineItemProps, TimelineTone } from './components/timeline';
 export { Switch } from './components/switch';
 export {
   Card,
@@ -141,6 +158,8 @@ export { BarChart } from './charts/bar-chart';
 export type { BarChartProps } from './charts/bar-chart';
 export { LineChart } from './charts/line-chart';
 export type { LineChartProps } from './charts/line-chart';
+export { AreaChart } from './charts/area-chart';
+export type { AreaChartProps } from './charts/area-chart';
 export { DonutChart } from './charts/donut-chart';
 export type { DonutChartProps, DonutDatum } from './charts/donut-chart';
 export {

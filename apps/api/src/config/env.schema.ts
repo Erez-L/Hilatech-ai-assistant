@@ -141,6 +141,16 @@ export const envSchema = z
 
     // Secrets for later milestones (optional, validated for shape when present)
     CREDENTIALS_ENCRYPTION_KEY: optionalString(),
+
+    // AI platform (Priority 3)
+    /** Allow the deterministic in-process `mock` provider (never honoured in production). */
+    AI_ALLOW_MOCK_PROVIDER: boolVar(false),
+    /** Optional JSON pricing table (USD per 1M tokens); invalid content is logged and ignored. */
+    AI_PRICING_JSON: optionalString(),
+    /** Per-tool-call timeout inside assistant/agent runs. */
+    AI_TOOL_TIMEOUT_MS: intVar(15_000, 1_000),
+    /** Per-call timeout for upstream provider requests. */
+    AI_PROVIDER_TIMEOUT_MS: intVar(60_000, 1_000),
   })
   .superRefine((env, ctx) => {
     const isProd = env.NODE_ENV === 'production';
@@ -192,6 +202,8 @@ export const envSchema = z
   })
   .transform((env) => ({
     ...env,
+    // The mock provider is a development/test convenience; production never gets it, whatever the flag says.
+    AI_ALLOW_MOCK_PROVIDER: env.AI_ALLOW_MOCK_PROVIDER && env.NODE_ENV !== 'production',
     isProduction: env.NODE_ENV === 'production',
     isTest: env.NODE_ENV === 'test',
     swaggerEnabled: env.NODE_ENV !== 'production' || env.SWAGGER_ENABLED,

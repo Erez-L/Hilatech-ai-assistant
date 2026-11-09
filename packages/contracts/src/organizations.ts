@@ -60,7 +60,15 @@ export const organizationSettingsSchema = z
         defaultModel: z.string().max(100).optional(),
         assistantName: z.string().max(60).optional(),
         tone: z.enum(['professional', 'friendly', 'concise']).optional(),
+        /** Extra standing instructions for the assistant (treated as organization instructions, max 4000 chars). */
+        assistantInstructions: z.string().max(4000).optional(),
       })
+      .optional(),
+    /** ISO-4217 reporting currency for pipeline/won values on the dashboard. */
+    currency: z
+      .string()
+      .length(3)
+      .regex(/^[A-Z]{3}$/)
       .optional(),
   })
   .strict();

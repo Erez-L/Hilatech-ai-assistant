@@ -57,6 +57,56 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(fun
   );
 });
 
+export interface AutosizeTextareaProps extends TextareaProps {
+  minRows?: number;
+  maxRows?: number;
+}
+
+/** Textarea that grows with its content between minRows and maxRows (composers, note fields). */
+export const AutosizeTextarea = React.forwardRef<HTMLTextAreaElement, AutosizeTextareaProps>(
+  function AutosizeTextarea(
+    { minRows = 1, maxRows = 8, className, onChange, value, defaultValue, ...props },
+    ref,
+  ) {
+    const innerRef = React.useRef<HTMLTextAreaElement | null>(null);
+    React.useImperativeHandle(ref, () => innerRef.current as HTMLTextAreaElement);
+
+    const resize = React.useCallback(() => {
+      const el = innerRef.current;
+      if (!el) return;
+      const styles = window.getComputedStyle(el);
+      const lineHeight = parseFloat(styles.lineHeight) || 20;
+      const padding = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
+      const border = parseFloat(styles.borderTopWidth) + parseFloat(styles.borderBottomWidth);
+      el.style.height = 'auto';
+      const min = lineHeight * minRows + padding + border;
+      const max = lineHeight * maxRows + padding + border;
+      const next = Math.min(Math.max(el.scrollHeight + border, min), max);
+      el.style.height = `${next}px`;
+      el.style.overflowY = el.scrollHeight + border > max ? 'auto' : 'hidden';
+    }, [minRows, maxRows]);
+
+    React.useLayoutEffect(() => {
+      resize();
+    }, [resize, value]);
+
+    return (
+      <Textarea
+        ref={innerRef}
+        rows={minRows}
+        value={value}
+        defaultValue={defaultValue}
+        onChange={(event) => {
+          onChange?.(event);
+          resize();
+        }}
+        className={cn('resize-none', className)}
+        {...props}
+      />
+    );
+  },
+);
+
 export interface SearchInputProps extends Omit<InputProps, 'onChange' | 'value'> {
   value: string;
   onValueChange: (value: string) => void;

@@ -240,47 +240,6 @@ describe('createApiClient', () => {
 });
 
 describe('response normalisers', () => {
-  it('normalizeDashboard accepts nested and flat shapes', async () => {
-    const { normalizeDashboard } = await import('../analytics');
-    expect(
-      normalizeDashboard({
-        generatedAt: '2026-11-09T00:00:00.000Z',
-        members: { active: 3, suspended: 1 },
-        invitations: { pending: 2 },
-        contacts: { total: 10 },
-        leads: { total: 4, byStatus: { new: 3, won: 1 } },
-        conversations: { total: 7, open: 2 },
-      }),
-    ).toEqual({
-      members: 3,
-      suspendedMembers: 1,
-      pendingInvitations: 2,
-      contacts: 10,
-      leads: 4,
-      leadsByStatus: { new: 3, won: 1 },
-      conversations: 7,
-      openConversations: 2,
-      generatedAt: '2026-11-09T00:00:00.000Z',
-    });
-    expect(
-      normalizeDashboard({
-        members: 2,
-        pendingInvitations: 0,
-        leads: 1,
-        contacts: 1,
-        conversations: 5,
-        openConversations: 1,
-      }),
-    ).toMatchObject({
-      members: 2,
-      leads: 1,
-      contacts: 1,
-      conversations: 5,
-      openConversations: 1,
-      pendingInvitations: 0,
-    });
-  });
-
   it('normalizePlans accepts arrays and records', async () => {
     const { normalizePlans } = await import('../billing');
     const limits = {

@@ -41,6 +41,8 @@ export interface ResolvedModel {
   providerConfigId: string | null;
   model: string;
   contextWindow: number;
+  /** Embedding model configured on the provider config, if any. */
+  embeddingModel?: string | null;
 }
 
 export interface StepRecord {

@@ -224,7 +224,14 @@ export class OpenAiProvider implements AiProvider {
   async embed(request: EmbedRequest): Promise<EmbedResult> {
     try {
       const response = await this.client.embeddings.create(
-        { model: request.model, input: request.input, encoding_format: 'float' },
+        {
+          model: request.model,
+          input: request.input,
+          encoding_format: 'float',
+          ...(request.dimensions && /text-embedding-3/.test(request.model)
+            ? { dimensions: request.dimensions }
+            : {}),
+        },
         { signal: request.signal },
       );
       const embeddings = response.data.sort((a, b) => a.index - b.index).map((d) => d.embedding);

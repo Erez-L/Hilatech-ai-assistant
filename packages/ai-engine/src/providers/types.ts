@@ -119,6 +119,8 @@ export interface StructuredResult<T> {
 export interface EmbedRequest {
   model: string;
   input: string[];
+  /** Requested vector size (providers that support it, e.g. OpenAI text-embedding-3, shrink natively). */
+  dimensions?: number;
   signal?: AbortSignal;
 }
 

@@ -50,6 +50,30 @@ export const envSchema = z
       emptyToUndefined,
       z.coerce.number().int().min(1).max(600).default(30),
     ),
+
+    // --- AI engine (ai-tasks queue) -------------------------------------------------------------
+    /**
+     * Base64 32-byte key used to decrypt organization AI provider keys (shared with the API). Optional:
+     * without it only providers that need no key (mock) can run; others fail with AiNotConfiguredError.
+     */
+    CREDENTIALS_ENCRYPTION_KEY: z.preprocess(
+      emptyToUndefined,
+      z
+        .string()
+        .refine((v) => Buffer.from(v.trim(), 'base64').length === 32, {
+          message: 'CREDENTIALS_ENCRYPTION_KEY must be base64 of exactly 32 bytes',
+        })
+        .optional(),
+    ),
+    /** Allow the deterministic in-process mock provider (refused in production by the engine). */
+    AI_ALLOW_MOCK_PROVIDER: z.preprocess(emptyToUndefined, booleanFromEnv.default(false)),
+    /** Optional pricing table (JSON array) for cost estimates; invalid JSON is logged and ignored. */
+    AI_PRICING_JSON: z.preprocess(emptyToUndefined, z.string().optional()),
+    /** Per-tool-call timeout inside agent executions. */
+    AI_TOOL_TIMEOUT_MS: z.preprocess(
+      emptyToUndefined,
+      z.coerce.number().int().min(1000).max(300_000).default(15_000),
+    ),
   })
   .superRefine((env, ctx) => {
     if (env.EMAIL_DRIVER === 'smtp') {

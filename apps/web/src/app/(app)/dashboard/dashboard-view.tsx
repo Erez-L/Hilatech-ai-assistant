@@ -2,19 +2,24 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import {
   ArrowRight,
-  Contact,
+  Inbox,
   MailPlus,
   MessageSquare,
   ScrollText,
   Target,
+  Trophy,
+  UserRoundX,
   Users,
+  Wallet,
 } from 'lucide-react';
-import { Permission } from '@hilatech/contracts';
+import { Permission, type DashboardPeriod, type DashboardSummary } from '@hilatech/contracts';
 import {
+  AreaChart,
   Badge,
+  BarChart,
   Button,
   Card,
   CardContent,
@@ -24,16 +29,38 @@ import {
   EmptyState,
   Meter,
   PageHeader,
+  SegmentedControl,
   Skeleton,
   StatCard,
   formatCompact,
+  formatCurrency,
 } from '@hilatech/ui';
 import { useAuditLogs, useDashboard, useUsage } from '@/hooks/queries';
 import { useCan } from '@/hooks/use-can';
 import { useSession } from '@/stores/session';
 import { QueryState } from '@/components/common/query-state';
 import { auditTone, describeAuditAction } from '@/lib/audit-labels';
+import {
+  CONVERSATION_CHANNEL_LABELS,
+  LEAD_STATUSES,
+  LEAD_STATUS_LABELS,
+  shortDay,
+} from '@/lib/crm';
+import { ConversationStatusBadge, LeadStatusBadge } from '@/components/crm/badges';
+import { ChannelIcon } from '@/components/crm/channel-icon';
 import { USAGE_LABELS } from '@/lib/usage-labels';
+
+const PERIODS: { value: DashboardPeriod; label: string }[] = [
+  { value: '7d', label: '7 days' },
+  { value: '30d', label: '30 days' },
+  { value: '90d', label: '90 days' },
+];
+
+const PERIOD_WORDS: Record<DashboardPeriod, string> = {
+  '7d': 'last 7 days',
+  '30d': 'last 30 days',
+  '90d': 'last 90 days',
+};
 
 export function DashboardView() {
   const user = useSession((s) => s.user);
@@ -41,8 +68,12 @@ export function DashboardView() {
   const canInvite = useCan(Permission.MEMBERS_INVITE);
   const canAudit = useCan(Permission.AUDIT_READ);
   const canBilling = useCan(Permission.ORG_BILLING_MANAGE);
+  const canAnalytics = useCan(Permission.ANALYTICS_READ);
+  const canLeads = useCan(Permission.LEADS_READ);
+  const canConversations = useCan(Permission.CONVERSATIONS_READ);
 
-  const dashboard = useDashboard();
+  const [period, setPeriod] = React.useState<DashboardPeriod>('30d');
+  const dashboard = useDashboard(period, { enabled: canAnalytics });
   const usage = useUsage();
   const audit = useAuditLogs({ page: 1, pageSize: 8 });
 
@@ -55,72 +86,45 @@ export function DashboardView() {
         title={`${greeting}${user ? `, ${user.firstName}` : ''}`}
         description={org ? `Here’s where ${org.name} stands today.` : undefined}
         actions={
-          canInvite ? (
-            <Button asChild variant="secondary" leadingIcon={<MailPlus aria-hidden />}>
-              <Link href="/team?invite=1">Invite a teammate</Link>
-            </Button>
-          ) : undefined
+          <>
+            <SegmentedControl
+              aria-label="Period"
+              options={PERIODS}
+              value={period}
+              onValueChange={setPeriod}
+            />
+            {canInvite ? (
+              <Button asChild variant="secondary" leadingIcon={<MailPlus aria-hidden />}>
+                <Link href="/team?invite=1">Invite a teammate</Link>
+              </Button>
+            ) : null}
+          </>
         }
       />
 
-      {/* Stats */}
-      <section aria-labelledby="overview" className="flex flex-col gap-3">
-        <h2 id="overview" className="sr-only">
-          Overview
-        </h2>
+      {canAnalytics ? (
         <QueryState
           query={dashboard}
-          loading={
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <StatCard key={i} label={<Skeleton className="h-4 w-20" />} value={null} loading />
-              ))}
-            </div>
-          }
+          loading={<DashboardSkeleton />}
+          errorTitle="The overview couldn’t be loaded"
         >
           {(d) => (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <StatCard
-                label="Team members"
-                value={d.members}
-                icon={<Users />}
-                hint={[
-                  d.pendingInvitations > 0
-                    ? `${d.pendingInvitations} invitation${d.pendingInvitations === 1 ? '' : 's'} pending`
-                    : 'No pending invitations',
-                  d.suspendedMembers > 0 ? `${d.suspendedMembers} suspended` : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              />
-              <StatCard
-                label="Leads"
-                value={d.leads}
-                icon={<Target />}
-                hint={
-                  Object.keys(d.leadsByStatus).length > 0
-                    ? Object.entries(d.leadsByStatus)
-                        .map(([status, count]) => `${count} ${status.replace(/_/g, ' ')}`)
-                        .join(' · ')
-                    : 'Across all stages'
-                }
-              />
-              <StatCard
-                label="Contacts"
-                value={d.contacts}
-                icon={<Contact />}
-                hint="In your address book"
-              />
-              <StatCard
-                label="Open conversations"
-                value={d.openConversations}
-                icon={<MessageSquare />}
-                hint={`${formatCompact(d.conversations)} total`}
-              />
-            </div>
+            <DashboardBody
+              data={d}
+              period={period}
+              canLeads={canLeads}
+              canConversations={canConversations}
+              refreshing={dashboard.isFetching}
+            />
           )}
         </QueryState>
-      </section>
+      ) : (
+        <EmptyState
+          icon={<Target />}
+          title="Analytics are restricted"
+          description="Your role can’t view organization analytics. Ask an admin for the analytics permission."
+        />
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         {/* Recent activity */}
@@ -227,16 +231,16 @@ export function DashboardView() {
                   {(Object.keys(USAGE_LABELS) as (keyof typeof USAGE_LABELS)[]).map((metric) => {
                     const entry = u.metrics[metric];
                     if (!entry) return null;
-                    const { label, format } = USAGE_LABELS[metric];
+                    const { label, format: fmt } = USAGE_LABELS[metric];
                     return (
                       <li key={metric} className="flex flex-col gap-2">
                         <div className="flex items-baseline justify-between text-sm">
                           <span className="text-fg-muted">{label}</span>
                           <span className="font-medium tabular">
-                            {format(entry.used)}
+                            {fmt(entry.used)}
                             <span className="text-fg-subtle">
                               {' '}
-                              / {entry.limit == null ? 'unlimited' : format(entry.limit)}
+                              / {entry.limit == null ? 'unlimited' : fmt(entry.limit)}
                             </span>
                           </span>
                         </div>
@@ -249,6 +253,296 @@ export function DashboardView() {
             </QueryState>
           </CardContent>
         </Card>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+function DashboardSkeleton() {
+  return (
+    <div className="flex flex-col gap-6" aria-busy>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <StatCard key={i} label={<Skeleton className="h-4 w-20" />} value={null} loading />
+        ))}
+      </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Skeleton className="h-64 rounded-lg" />
+        <Skeleton className="h-64 rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+function DashboardBody({
+  data: d,
+  period,
+  canLeads,
+  canConversations,
+  refreshing,
+}: {
+  data: DashboardSummary;
+  period: DashboardPeriod;
+  canLeads: boolean;
+  canConversations: boolean;
+  refreshing: boolean;
+}) {
+  const words = PERIOD_WORDS[period];
+  const currency = d.leads.currency;
+
+  const series = React.useMemo(() => {
+    const byDate = new Map<string, { date: string; leads: number; conversations: number }>();
+    for (const p of d.series.leadsCreated)
+      byDate.set(p.date, { date: p.date, leads: p.count, conversations: 0 });
+    for (const p of d.series.conversationsCreated) {
+      const row = byDate.get(p.date) ?? { date: p.date, leads: 0, conversations: 0 };
+      row.conversations = p.count;
+      byDate.set(p.date, row);
+    }
+    return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+  }, [d.series]);
+
+  const byStatus = React.useMemo(
+    () =>
+      LEAD_STATUSES.map((status) => ({
+        status: LEAD_STATUS_LABELS[status],
+        leads: d.leads.byStatus[status] ?? 0,
+      })),
+    [d.leads.byStatus],
+  );
+
+  return (
+    <div className="flex flex-col gap-6" aria-busy={refreshing || undefined}>
+      {/* Stats */}
+      <section aria-labelledby="overview" className="flex flex-col gap-3">
+        <h2 id="overview" className="sr-only">
+          Overview
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <StatCard
+            label="Open leads"
+            value={d.leads.open}
+            icon={<Target />}
+            hint={`${formatCompact(d.leads.newInPeriod)} new in the ${words}`}
+          />
+          <StatCard
+            label="Pipeline value"
+            value={formatCurrency(d.leads.pipelineValue, currency, { compact: true })}
+            icon={<Wallet />}
+            hint={`Across ${formatCompact(d.leads.open)} open lead${d.leads.open === 1 ? '' : 's'}`}
+          />
+          <StatCard
+            label={`Won · ${words}`}
+            value={d.leads.wonInPeriod}
+            icon={<Trophy />}
+            hint={
+              d.leads.wonInPeriod > 0
+                ? `${formatCurrency(d.leads.wonValueInPeriod, currency, { compact: true })} closed · ${d.leads.lostInPeriod} lost`
+                : d.leads.lostInPeriod > 0
+                  ? `${d.leads.lostInPeriod} lost`
+                  : 'Nothing closed yet'
+            }
+          />
+          <StatCard
+            label="Open conversations"
+            value={d.conversations.open}
+            icon={<MessageSquare />}
+            hint={`${formatCompact(d.conversations.pending)} pending · ${formatCompact(d.conversations.newInPeriod)} new in the ${words}`}
+          />
+          <StatCard
+            label="Unassigned conversations"
+            value={d.conversations.unassigned}
+            icon={<UserRoundX />}
+            hint={
+              d.conversations.unassigned > 0 ? 'Waiting for an owner' : 'Everything has an owner'
+            }
+          />
+          <StatCard
+            label="Team members"
+            value={d.members.active}
+            icon={<Users />}
+            hint={[
+              d.invitations.pending > 0
+                ? `${d.invitations.pending} invitation${d.invitations.pending === 1 ? '' : 's'} pending`
+                : 'No pending invitations',
+              d.members.suspended > 0 ? `${d.members.suspended} suspended` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          />
+        </div>
+      </section>
+
+      {/* Trends */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="flex-row items-start justify-between">
+            <div className="flex flex-col gap-1">
+              <CardTitle>New leads</CardTitle>
+              <CardDescription>Per day over the {words}.</CardDescription>
+            </div>
+            <span className="text-2xl leading-none font-semibold tracking-tight tabular">
+              {formatCompact(d.leads.newInPeriod)}
+            </span>
+          </CardHeader>
+          <CardContent>
+            <AreaChart
+              data={series}
+              xKey="date"
+              series={[{ key: 'leads', label: 'Leads' }]}
+              height={180}
+              labelFormatter={shortDay}
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex-row items-start justify-between">
+            <div className="flex flex-col gap-1">
+              <CardTitle>New conversations</CardTitle>
+              <CardDescription>Per day over the {words}.</CardDescription>
+            </div>
+            <span className="text-2xl leading-none font-semibold tracking-tight tabular">
+              {formatCompact(d.conversations.newInPeriod)}
+            </span>
+          </CardHeader>
+          <CardContent>
+            <AreaChart
+              data={series}
+              xKey="date"
+              series={[
+                { key: 'conversations', label: 'Conversations', color: 'var(--color-chart-3)' },
+              ]}
+              height={180}
+              labelFormatter={shortDay}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Leads by stage</CardTitle>
+            <CardDescription>All leads, across every period.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {d.leads.total === 0 ? (
+              <EmptyState
+                compact
+                icon={<Target />}
+                title="No leads yet"
+                description="The pipeline fills in as leads are added."
+                action={
+                  canLeads ? (
+                    <Button asChild size="sm" variant="secondary">
+                      <Link href="/leads?new=1">New lead</Link>
+                    </Button>
+                  ) : undefined
+                }
+              />
+            ) : (
+              <BarChart
+                data={byStatus}
+                xKey="status"
+                series={[{ key: 'leads', label: 'Leads' }]}
+                height={220}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+          <Card>
+            <CardHeader className="flex-row items-start justify-between">
+              <div className="flex flex-col gap-1">
+                <CardTitle>Recent leads</CardTitle>
+                <CardDescription>Latest additions.</CardDescription>
+              </div>
+              {canLeads ? (
+                <Button asChild variant="ghost" size="sm" trailingIcon={<ArrowRight aria-hidden />}>
+                  <Link href="/leads">All leads</Link>
+                </Button>
+              ) : null}
+            </CardHeader>
+            <CardContent className="p-0">
+              {d.recentLeads.length === 0 ? (
+                <EmptyState compact icon={<Target />} title="No leads yet" />
+              ) : (
+                <ul className="divide-y divide-border">
+                  {d.recentLeads.map((lead) => (
+                    <li key={lead.id}>
+                      <Link
+                        href={`/leads/${lead.id}`}
+                        className="flex items-center gap-3 px-5 py-2.5 text-sm transition-colors hover:bg-surface-muted/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+                      >
+                        <span className="min-w-0 flex-1 truncate font-medium">{lead.title}</span>
+                        <LeadStatusBadge
+                          status={lead.status}
+                          className="px-1.5 py-0 text-[0.625rem] leading-4"
+                        />
+                        <span className="w-20 shrink-0 text-right text-xs text-fg-muted tabular">
+                          {lead.value != null
+                            ? formatCurrency(lead.value, lead.currency, { compact: true })
+                            : format(new Date(lead.createdAt), 'd MMM')}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex-row items-start justify-between">
+              <div className="flex flex-col gap-1">
+                <CardTitle>Recent conversations</CardTitle>
+                <CardDescription>Latest activity.</CardDescription>
+              </div>
+              {canConversations ? (
+                <Button asChild variant="ghost" size="sm" trailingIcon={<ArrowRight aria-hidden />}>
+                  <Link href="/conversations">Inbox</Link>
+                </Button>
+              ) : null}
+            </CardHeader>
+            <CardContent className="p-0">
+              {d.recentConversations.length === 0 ? (
+                <EmptyState compact icon={<Inbox />} title="No conversations yet" />
+              ) : (
+                <ul className="divide-y divide-border">
+                  {d.recentConversations.map((c) => (
+                    <li key={c.id}>
+                      <Link
+                        href={`/conversations?c=${c.id}`}
+                        className="flex items-center gap-3 px-5 py-2.5 text-sm transition-colors hover:bg-surface-muted/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+                      >
+                        <span
+                          className="flex size-6 shrink-0 items-center justify-center rounded-md bg-surface-muted text-fg-muted"
+                          title={CONVERSATION_CHANNEL_LABELS[c.channel]}
+                        >
+                          <ChannelIcon channel={c.channel} className="size-3.5" aria-hidden />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate font-medium">
+                          {c.subject || 'No subject'}
+                        </span>
+                        <ConversationStatusBadge
+                          status={c.status}
+                          className="px-1.5 py-0 text-[0.625rem] leading-4"
+                        />
+                        <span className="w-16 shrink-0 text-right text-xs text-fg-muted tabular">
+                          {c.lastMessageAt
+                            ? formatDistanceToNow(new Date(c.lastMessageAt), { addSuffix: false })
+                            : '—'}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

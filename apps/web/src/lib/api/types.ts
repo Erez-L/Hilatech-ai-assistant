@@ -24,19 +24,6 @@ export interface AuthSessionInfo {
   current: boolean;
 }
 
-/** Normalised view of GET /analytics/dashboard (see analytics.ts for the accepted raw shapes). */
-export interface DashboardSummary {
-  members: number;
-  suspendedMembers: number;
-  pendingInvitations: number;
-  leads: number;
-  leadsByStatus: Record<string, number>;
-  contacts: number;
-  conversations: number;
-  openConversations: number;
-  generatedAt: string | null;
-}
-
 /** PUT /users/me/preferences */
 export const userPreferencesSchema = z.object({
   theme: z.enum(['light', 'dark', 'system']),

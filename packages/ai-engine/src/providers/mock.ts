@@ -164,9 +164,9 @@ export class MockProvider implements AiProvider {
     };
   }
 
-  /** Deterministic pseudo-embeddings (hash-based) with 64 dimensions. */
+  /** Deterministic pseudo-embeddings (hash-based); 64 dimensions unless `dimensions` is requested. */
   async embed(request: EmbedRequest): Promise<EmbedResult> {
-    const dims = 64;
+    const dims = request.dimensions ?? 64;
     const embeddings = request.input.map((textValue) => {
       const vector = new Array<number>(dims).fill(0);
       for (let i = 0; i < textValue.length; i += 1) {

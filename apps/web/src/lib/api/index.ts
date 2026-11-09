@@ -10,4 +10,7 @@ export { usersApi } from './users';
 export { auditApi } from './audit';
 export { billingApi } from './billing';
 export { analyticsApi } from './analytics';
-export { notificationsApi } from './notifications';
+export { notificationsApi, type ListNotificationsParams } from './notifications';
+export { contactsApi, type ListContactsParams } from './contacts';
+export { leadsApi, type ListLeadsParams, type ConvertLeadResponse } from './leads';
+export { conversationsApi, type ListConversationsParams } from './conversations';

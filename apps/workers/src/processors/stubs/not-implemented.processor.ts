@@ -54,16 +54,6 @@ export class EmbeddingsProcessor extends NotImplementedProcessor<typeof QueueNam
 }
 
 @Injectable()
-export class AiTasksProcessor extends NotImplementedProcessor<typeof QueueName.AI_TASKS> {
-  readonly queue = QueueName.AI_TASKS;
-  protected readonly plannedWork =
-    'conversation summaries, agent executions and lead enrichment through the AI engine (AI priority)';
-  constructor(@InjectPinoLogger(AiTasksProcessor.name) logger: PinoLogger) {
-    super(logger);
-  }
-}
-
-@Injectable()
 export class AutomationProcessor extends NotImplementedProcessor<typeof QueueName.AUTOMATION> {
   readonly queue = QueueName.AUTOMATION;
   protected readonly plannedWork =

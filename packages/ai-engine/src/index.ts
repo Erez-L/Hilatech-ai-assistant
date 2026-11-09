@@ -145,3 +145,15 @@ export {
   type ProviderResolverOptions,
   type ResolveOptions,
 } from './persistence/provider-resolver';
+
+// Knowledge (Priority 4): chunking, embeddings, pgvector retrieval
+export { chunkText, normaliseText, type ChunkOptions, type TextChunk } from './knowledge/chunking';
+export {
+  EmbeddingService,
+  normaliseDimensions,
+  toVectorLiteral,
+  type EmbedTextsOptions,
+  type EmbedTextsResult,
+} from './knowledge/embedding-service';
+export { PgVectorStore, type VectorSearchParams } from './knowledge/pgvector-store';
+export { PgVectorKnowledgeSearcher } from './knowledge/searcher';

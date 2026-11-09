@@ -249,7 +249,9 @@ export const createWebhookEndpointSchema = z.object({
   isEnabled: z.boolean().default(true),
 });
 export type CreateWebhookEndpointRequest = z.infer<typeof createWebhookEndpointSchema>;
-export const updateWebhookEndpointSchema = createWebhookEndpointSchema.omit({ slug: true }).partial();
+export const updateWebhookEndpointSchema = createWebhookEndpointSchema
+  .omit({ slug: true })
+  .partial();
 export type UpdateWebhookEndpointRequest = z.infer<typeof updateWebhookEndpointSchema>;
 
 // ---------------------------------------------------------------------------
@@ -272,9 +274,13 @@ export const webhookWithSecretSchema = webhookSchema.extend({ secret: z.string()
 export type WebhookWithSecret = z.infer<typeof webhookWithSecretSchema>;
 
 export const createWebhookSchema = z.object({
-  url: z.string().trim().url().refine((u) => u.startsWith('https://') || u.startsWith('http://localhost'), {
-    message: 'Webhook URLs must use https (http allowed only for localhost)',
-  }),
+  url: z
+    .string()
+    .trim()
+    .url()
+    .refine((u) => u.startsWith('https://') || u.startsWith('http://localhost'), {
+      message: 'Webhook URLs must use https (http allowed only for localhost)',
+    }),
   description: z.string().trim().max(500).optional(),
   events: z.array(DomainEvent).min(1).max(ALL_DOMAIN_EVENTS.length),
   isEnabled: z.boolean().default(true),

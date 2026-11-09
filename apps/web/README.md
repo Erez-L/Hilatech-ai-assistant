@@ -23,12 +23,13 @@ src/app
   (marketing)/            landing page
   (auth)/                 login, register (?invite=token), forgot/reset password, verify-email, invite
   (onboarding)/onboarding create the first (or another) organization
-  (app)/                  everything behind AuthGate + AppShell (dashboard, team, roles, audit, settings/*, placeholders)
+  (app)/                  everything behind AuthGate + AppShell (dashboard, leads, contacts, conversations, team, roles, audit, settings/*, placeholders)
 src/lib/api               client.ts (ApiError, refresh dedup + retry), typed resource modules, query keys, local types
 src/hooks                 react-query hooks (queries.ts), useCan()
 src/stores                zustand: session (access token in memory, active organization id in localStorage), preferences
-src/components            auth gate, app shell (sidebar, top bar, org switcher, user menu, notifications), shared states
-e2e/                      Playwright critical journey
+src/components            auth gate, app shell (sidebar, top bar, org switcher, user menu, notifications), shared states, crm/ (pickers, assignee menu, badges)
+src/lib/crm.ts            CRM labels, tones, name helpers, activity descriptions
+e2e/                      Playwright critical journey + CRM journey
 ```
 
 ### Session model
@@ -49,9 +50,24 @@ e2e/                      Playwright critical journey
 
 Every data view renders loading skeletons, an empty state, an error state with retry (`QueryState`),
 and the success view. Mutations show toasts; member/invitation/role mutations patch the cache
-optimistically where the result is unambiguous. Placeholder areas (leads, contacts, conversations,
-assistant, agents, knowledge, automations, integrations, analytics) render a single shared
-`UpcomingFeature` empty state — never static mock data.
+optimistically where the result is unambiguous (marking notifications read is optimistic with
+rollback). Placeholder areas (assistant, agents, knowledge, automations, integrations, analytics)
+render a single shared `UpcomingFeature` empty state — never static mock data.
+
+### CRM screens (Priority 2)
+
+- `/leads` and `/leads/[id]`: filterable table, inline stage pipeline (`lost` asks for a reason),
+  editable details, assign menu (`POST /leads/:id/assign`; members may only assign themselves),
+  convert dialog (`POST /leads/:id/convert` with exactly one of `contactId` / `contact`), notes,
+  activity timeline and linked conversations.
+- `/contacts` and `/contacts/[id]`: table with search/tag/owner filters, editable details, related
+  leads (`/leads?contactId=`) and conversations (`/conversations?contactId=`).
+- `/conversations`: inbox; the selected thread is `?c=<id>` so it is linkable (`/conversations/[id]`
+  redirects there). Messages are fetched newest-first in pages of 50 and polled every 15 s; the
+  composer sends on Enter (Shift+Enter for a newline) and can log a customer message.
+- Notifications: bell badge from `GET /notifications/unread-count`, unread list, mark-read /
+  read-all; per-type in-app/email switches on Settings → Your profile (`/notifications/preferences`).
+- Dashboard: `GET /analytics/dashboard?period=7d|30d|90d` (`DashboardSummary` from contracts).
 
 ## Visual direction
 
@@ -83,7 +99,6 @@ Shapes the UI consumes that are not yet in `@hilatech/contracts` are declared in
 
 - `GET /permissions` → `{ key, group, description }[]`
 - `GET /auth/sessions` → `{ familyId, userAgent, ipAddress, createdAt, lastUsedAt, current }[]`
-- `GET /analytics/dashboard` → `{ members, pendingInvitations, leads, contacts, conversations, openConversations }`
 - `PUT /users/me/preferences` body `{ theme: 'light'|'dark'|'system', locale: 'en'|'he', notifications: { email, inApp } }`
   (the full object is always sent). There is no read endpoint for preferences, so the last known
   values are mirrored in `localStorage` (`usePreferences`).
@@ -99,6 +114,13 @@ Other assumptions the UI makes about the API:
 - `DELETE /members/me` lets a non-owner leave the organization.
 - `GET /invitations/preview?token=` is public and returns `status` so expired/revoked links render a
   clear message; `POST /invitations/accept` requires a signed-in user and returns the new `Member`.
-- `GET /notifications?unread=true` may 404 until a later milestone; the bell renders an empty state.
+- `GET /conversations` is also sent `leadId=<id>` (lead detail page) although
+  `listConversationsQuerySchema` does not declare it yet; the API should accept it.
+- `GET /leads` has no tags endpoint, so the leads tag filter is a free-text field (with a datalist
+  built from the current page); contacts use `GET /contacts/tags`.
+- `updateLeadSchema` cannot clear `value` or unlink `contactId` (no `null`), so the details form
+  leaves those untouched when emptied.
+- `POST /notifications/read-all` returns `{ updated }`; `POST /notifications/:id/read` may return
+  the notification or nothing — both are accepted.
 - Validation errors are `400 VALIDATION_ERROR` with zod issues (`[{ path: string[], message }]`, or
   `{ issues }` / zod `flatten()` output) in `details`; they are mapped onto form fields.

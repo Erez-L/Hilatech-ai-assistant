@@ -49,6 +49,7 @@ import type { Theme } from '@/lib/theme';
 import { useThemePreference } from '@/components/shell/theme-toggle';
 import { QueryState } from '@/components/common/query-state';
 import { SettingsTabs } from '@/components/settings/settings-tabs';
+import { NotificationPreferencesCard } from '@/components/settings/notification-preferences-card';
 import { PasswordInput } from '@/components/auth/password-input';
 
 export function ProfileSettingsView() {
@@ -60,6 +61,7 @@ export function ProfileSettingsView() {
       </PageHeader>
       {user ? <ProfileForm user={user} /> : null}
       <PreferencesCard />
+      <NotificationPreferencesCard />
       <PasswordCard />
       <SessionsCard />
     </div>

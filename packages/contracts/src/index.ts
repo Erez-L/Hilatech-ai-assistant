@@ -6,4 +6,7 @@ export * from './crm';
 export * from './platform';
 export * from './analytics';
 export * from './ai';
+export * from './knowledge';
+export * from './automation';
+export * from './integrations';
 export * from './queues';

@@ -164,6 +164,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
       );
     }
 
+    // A streaming handler (SSE) may have flushed its headers already; the envelope cannot be sent any
+    // more, so the stream is just terminated (the handler itself emits an `error` event when it can).
+    if (res.headersSent) {
+      if (!res.writableEnded) res.end();
+      return;
+    }
     if (requestId && !res.getHeader(REQUEST_ID_HEADER)) res.setHeader(REQUEST_ID_HEADER, requestId);
     res.status(status).json(body);
   }

@@ -18,7 +18,43 @@ export const keys = {
   subscription: (orgId: string | null) => ['org', orgId, 'billing', 'subscription'] as const,
   usage: (orgId: string | null) => ['org', orgId, 'billing', 'usage'] as const,
   plans: () => ['billing', 'plans'] as const,
-  dashboard: (orgId: string | null) => ['org', orgId, 'analytics', 'dashboard'] as const,
-  notifications: (orgId: string | null, unread?: boolean) =>
-    ['org', orgId, 'notifications', { unread }] as const,
+  dashboard: (orgId: string | null, period?: string) =>
+    period
+      ? (['org', orgId, 'analytics', 'dashboard', period] as const)
+      : (['org', orgId, 'analytics', 'dashboard'] as const),
+
+  // Notifications
+  notificationsRoot: (orgId: string | null) => ['org', orgId, 'notifications'] as const,
+  notifications: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'notifications', 'list', params ?? {}] as const,
+  notificationsUnreadCount: (orgId: string | null) =>
+    ['org', orgId, 'notifications', 'unread-count'] as const,
+  notificationPreferences: (orgId: string | null) =>
+    ['org', orgId, 'notifications', 'preferences'] as const,
+
+  // CRM — contacts
+  contactsRoot: (orgId: string | null) => ['org', orgId, 'contacts'] as const,
+  contacts: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'contacts', 'list', params ?? {}] as const,
+  contact: (orgId: string | null, id: string) => ['org', orgId, 'contacts', 'detail', id] as const,
+  contactTags: (orgId: string | null) => ['org', orgId, 'contacts', 'tags'] as const,
+
+  // CRM — leads
+  leadsRoot: (orgId: string | null) => ['org', orgId, 'leads'] as const,
+  leads: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'leads', 'list', params ?? {}] as const,
+  lead: (orgId: string | null, id: string) => ['org', orgId, 'leads', 'detail', id] as const,
+  leadNotes: (orgId: string | null, id: string, params?: object) =>
+    ['org', orgId, 'leads', 'detail', id, 'notes', params ?? {}] as const,
+  leadActivities: (orgId: string | null, id: string, params?: object) =>
+    ['org', orgId, 'leads', 'detail', id, 'activities', params ?? {}] as const,
+
+  // CRM — conversations
+  conversationsRoot: (orgId: string | null) => ['org', orgId, 'conversations'] as const,
+  conversations: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'conversations', 'list', params ?? {}] as const,
+  conversation: (orgId: string | null, id: string) =>
+    ['org', orgId, 'conversations', 'detail', id] as const,
+  messages: (orgId: string | null, conversationId: string) =>
+    ['org', orgId, 'conversations', 'detail', conversationId, 'messages'] as const,
 };

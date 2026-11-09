@@ -1,32 +1,62 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseQueryOptions,
+} from '@tanstack/react-query';
+import { toast } from '@hilatech/ui';
 import type {
+  ConversationWithRelations,
+  ConvertLeadRequest,
+  CreateContactRequest,
+  CreateConversationRequest,
   CreateInvitationRequest,
+  CreateLeadRequest,
+  CreateMessageRequest,
   CreateRoleRequest,
+  DashboardPeriod,
   Invitation,
+  LeadWithRelations,
+  ListAuditLogsQuery,
   Member,
+  Notification,
+  NotificationPreferences,
   OrganizationSettings,
+  PaginationQuery,
   Role,
+  UnreadCount,
+  UpdateContactRequest,
+  UpdateConversationRequest,
+  UpdateLeadRequest,
   UpdateMemberRequest,
   UpdateOrganizationRequest,
   UpdateRoleRequest,
-  ListAuditLogsQuery,
 } from '@hilatech/contracts';
 import {
   analyticsApi,
   auditApi,
   authApi,
   billingApi,
+  contactsApi,
+  conversationsApi,
+  getErrorMessage,
   invitationsApi,
   isApiError,
   keys,
+  leadsApi,
   membersApi,
   notificationsApi,
   organizationsApi,
   rolesApi,
   usersApi,
+  type ListContactsParams,
+  type ListConversationsParams,
+  type ListLeadsParams,
   type ListMembersParams,
+  type ListNotificationsParams,
   type UpdateProfileRequest,
   type UserPreferences,
 } from '@/lib/api';
@@ -331,33 +361,83 @@ export function usePlans() {
   return useQuery({ queryKey: keys.plans(), queryFn: billingApi.plans, staleTime: 60 * 60 * 1000 });
 }
 
-export function useDashboard() {
+export function useDashboard(period: DashboardPeriod = '30d', options?: { enabled?: boolean }) {
   const orgId = useActiveOrganizationId();
   return useQuery({
-    queryKey: keys.dashboard(orgId),
-    queryFn: analyticsApi.dashboard,
-    enabled: !!orgId,
+    queryKey: keys.dashboard(orgId, period),
+    queryFn: () => analyticsApi.dashboard(period),
+    enabled: !!orgId && (options?.enabled ?? true),
+    placeholderData: (prev) => prev,
   });
 }
 
-export function useNotifications(unread = true) {
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+export function useNotifications(params: ListNotificationsParams = { unread: true }) {
   const orgId = useActiveOrganizationId();
   return useQuery({
-    queryKey: keys.notifications(orgId, unread),
-    queryFn: () => notificationsApi.list(unread),
+    queryKey: keys.notifications(orgId, params),
+    queryFn: () => notificationsApi.list(params),
     enabled: !!orgId,
-    // The endpoint may not exist until a later milestone: treat 404 as "no notifications".
-    retry: (count, error) => !(isApiError(error) && error.isNotFound) && count < 1,
     refetchInterval: 60_000,
   });
 }
 
+export function useUnreadNotificationCount() {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.notificationsUnreadCount(orgId),
+    queryFn: notificationsApi.unreadCount,
+    enabled: !!orgId,
+    refetchInterval: 60_000,
+    select: (d) => d.unread,
+  });
+}
+
+type NotificationPage = { data: Notification[]; meta: { total: number } };
+
+/** Marks one notification read. Optimistic: it leaves unread lists and the badge count drops at once. */
 export function useMarkNotificationRead() {
   const qc = useQueryClient();
   const orgId = useActiveOrganizationId();
   return useMutation({
     mutationFn: (id: string) => notificationsApi.markRead(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['org', orgId, 'notifications'] }),
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: keys.notificationsRoot(orgId) });
+      const lists = qc.getQueriesData<NotificationPage>({
+        queryKey: [...keys.notificationsRoot(orgId), 'list'],
+      });
+      const count = qc.getQueryData<UnreadCount>(keys.notificationsUnreadCount(orgId));
+      let wasUnread = false;
+      for (const [key, page] of lists) {
+        if (!page) continue;
+        const target = page.data.find((n) => n.id === id);
+        if (!target || target.readAt) continue;
+        wasUnread = true;
+        const unreadOnly = (key[4] as { unread?: boolean } | undefined)?.unread === true;
+        qc.setQueryData<NotificationPage>(key, {
+          ...page,
+          data: unreadOnly
+            ? page.data.filter((n) => n.id !== id)
+            : page.data.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n)),
+          meta: unreadOnly ? { ...page.meta, total: Math.max(0, page.meta.total - 1) } : page.meta,
+        });
+      }
+      if (count && wasUnread) {
+        qc.setQueryData<UnreadCount>(keys.notificationsUnreadCount(orgId), {
+          unread: Math.max(0, count.unread - 1),
+        });
+      }
+      return { lists, count };
+    },
+    onError: (error, _id, ctx) => {
+      for (const [key, page] of ctx?.lists ?? []) qc.setQueryData(key, page);
+      if (ctx?.count) qc.setQueryData(keys.notificationsUnreadCount(orgId), ctx.count);
+      toast.error(getErrorMessage(error));
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.notificationsRoot(orgId) }),
   });
 }
 
@@ -366,6 +446,387 @@ export function useMarkAllNotificationsRead() {
   const orgId = useActiveOrganizationId();
   return useMutation({
     mutationFn: notificationsApi.markAllRead,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['org', orgId, 'notifications'] }),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: keys.notificationsRoot(orgId) });
+      const lists = qc.getQueriesData<NotificationPage>({
+        queryKey: [...keys.notificationsRoot(orgId), 'list'],
+      });
+      const count = qc.getQueryData<UnreadCount>(keys.notificationsUnreadCount(orgId));
+      const now = new Date().toISOString();
+      for (const [key, page] of lists) {
+        if (!page) continue;
+        const unreadOnly = (key[4] as { unread?: boolean } | undefined)?.unread === true;
+        qc.setQueryData<NotificationPage>(key, {
+          ...page,
+          data: unreadOnly ? [] : page.data.map((n) => (n.readAt ? n : { ...n, readAt: now })),
+          meta: unreadOnly ? { ...page.meta, total: 0 } : page.meta,
+        });
+      }
+      qc.setQueryData<UnreadCount>(keys.notificationsUnreadCount(orgId), { unread: 0 });
+      return { lists, count };
+    },
+    onError: (error, _v, ctx) => {
+      for (const [key, page] of ctx?.lists ?? []) qc.setQueryData(key, page);
+      if (ctx?.count) qc.setQueryData(keys.notificationsUnreadCount(orgId), ctx.count);
+      toast.error(getErrorMessage(error));
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.notificationsRoot(orgId) }),
+  });
+}
+
+export function useNotificationPreferences() {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.notificationPreferences(orgId),
+    queryFn: notificationsApi.preferences,
+    enabled: !!orgId,
+  });
+}
+
+export function useUpdateNotificationPreferences() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (body: NotificationPreferences) => notificationsApi.updatePreferences(body),
+    onSuccess: (prefs) => qc.setQueryData(keys.notificationPreferences(orgId), prefs),
+    onError: (error) => toast.error(getErrorMessage(error)),
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.notificationPreferences(orgId) }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// CRM — contacts
+// ---------------------------------------------------------------------------
+
+export function useContacts(params: ListContactsParams, options?: { enabled?: boolean }) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.contacts(orgId, params),
+    queryFn: () => contactsApi.list(params),
+    enabled: !!orgId && (options?.enabled ?? true),
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useContact(id: string | null) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.contact(orgId, id ?? ''),
+    queryFn: () => contactsApi.get(id as string),
+    enabled: !!orgId && !!id,
+  });
+}
+
+export function useContactTags() {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.contactTags(orgId),
+    queryFn: contactsApi.tags,
+    enabled: !!orgId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCreateContact() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (body: CreateContactRequest) => contactsApi.create(body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.contactsRoot(orgId) });
+      void qc.invalidateQueries({ queryKey: keys.dashboard(orgId) });
+    },
+  });
+}
+
+export function useUpdateContact() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateContactRequest }) =>
+      contactsApi.update(id, body),
+    onSuccess: (contact) => {
+      qc.setQueryData(keys.contact(orgId, contact.id), contact);
+      void qc.invalidateQueries({ queryKey: keys.contactsRoot(orgId) });
+      // Leads and conversations embed contact summaries.
+      void qc.invalidateQueries({ queryKey: keys.leadsRoot(orgId) });
+      void qc.invalidateQueries({ queryKey: keys.conversationsRoot(orgId) });
+    },
+  });
+}
+
+export function useDeleteContact() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (id: string) => contactsApi.remove(id),
+    onSuccess: (_void, id) => {
+      qc.removeQueries({ queryKey: keys.contact(orgId, id) });
+      void qc.invalidateQueries({ queryKey: keys.contactsRoot(orgId) });
+      void qc.invalidateQueries({ queryKey: keys.leadsRoot(orgId) });
+      void qc.invalidateQueries({ queryKey: keys.conversationsRoot(orgId) });
+      void qc.invalidateQueries({ queryKey: keys.dashboard(orgId) });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// CRM — leads
+// ---------------------------------------------------------------------------
+
+export function useLeads(params: ListLeadsParams, options?: { enabled?: boolean }) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.leads(orgId, params),
+    queryFn: () => leadsApi.list(params),
+    enabled: !!orgId && (options?.enabled ?? true),
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useLead(id: string | null) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.lead(orgId, id ?? ''),
+    queryFn: () => leadsApi.get(id as string),
+    enabled: !!orgId && !!id,
+  });
+}
+
+function useLeadCacheSync() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return (lead: LeadWithRelations) => {
+    qc.setQueryData(keys.lead(orgId, lead.id), lead);
+    qc.setQueriesData<{ data: LeadWithRelations[]; meta: unknown }>(
+      { queryKey: [...keys.leadsRoot(orgId), 'list'] },
+      (prev) =>
+        prev ? { ...prev, data: prev.data.map((l) => (l.id === lead.id ? lead : l)) } : prev,
+    );
+    void qc.invalidateQueries({ queryKey: keys.leadsRoot(orgId) });
+    void qc.invalidateQueries({ queryKey: keys.dashboard(orgId) });
+  };
+}
+
+export function useCreateLead() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (body: CreateLeadRequest) => leadsApi.create(body),
+    onSuccess: (lead) => {
+      qc.setQueryData(keys.lead(orgId, lead.id), lead);
+      void qc.invalidateQueries({ queryKey: keys.leadsRoot(orgId) });
+      void qc.invalidateQueries({ queryKey: keys.dashboard(orgId) });
+      if (lead.contactId)
+        void qc.invalidateQueries({ queryKey: keys.contact(orgId, lead.contactId) });
+    },
+  });
+}
+
+export function useUpdateLead() {
+  const sync = useLeadCacheSync();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateLeadRequest }) =>
+      leadsApi.update(id, body),
+    onSuccess: sync,
+  });
+}
+
+export function useAssignLead() {
+  const sync = useLeadCacheSync();
+  return useMutation({
+    mutationFn: ({ id, assigneeId }: { id: string; assigneeId: string | null }) =>
+      leadsApi.assign(id, { assigneeId }),
+    onSuccess: sync,
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
+export function useConvertLead() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  const sync = useLeadCacheSync();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: ConvertLeadRequest }) =>
+      leadsApi.convert(id, body),
+    onSuccess: ({ lead, contact }) => {
+      sync(lead);
+      void qc.invalidateQueries({ queryKey: keys.contactsRoot(orgId) });
+      void qc.invalidateQueries({ queryKey: keys.contact(orgId, contact.id) });
+      void qc.invalidateQueries({ queryKey: keys.leadActivities(orgId, lead.id) });
+    },
+  });
+}
+
+export function useDeleteLead() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (id: string) => leadsApi.remove(id),
+    onSuccess: (_void, id) => {
+      qc.removeQueries({ queryKey: keys.lead(orgId, id) });
+      void qc.invalidateQueries({ queryKey: keys.leadsRoot(orgId) });
+      void qc.invalidateQueries({ queryKey: keys.contactsRoot(orgId) });
+      void qc.invalidateQueries({ queryKey: keys.dashboard(orgId) });
+    },
+  });
+}
+
+export function useLeadNotes(leadId: string | null, params: Partial<PaginationQuery> = {}) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.leadNotes(orgId, leadId ?? '', params),
+    queryFn: () => leadsApi.notes(leadId as string, params),
+    enabled: !!orgId && !!leadId,
+  });
+}
+
+export function useAddLeadNote(leadId: string) {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (body: string) => leadsApi.addNote(leadId, { body }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.leadNotes(orgId, leadId) });
+      void qc.invalidateQueries({ queryKey: keys.leadActivities(orgId, leadId) });
+    },
+  });
+}
+
+export function useDeleteLeadNote(leadId: string) {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (noteId: string) => leadsApi.removeNote(leadId, noteId),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.leadNotes(orgId, leadId) }),
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
+export function useLeadActivities(leadId: string | null, params: Partial<PaginationQuery> = {}) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.leadActivities(orgId, leadId ?? '', params),
+    queryFn: () => leadsApi.activities(leadId as string, params),
+    enabled: !!orgId && !!leadId,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// CRM — conversations
+// ---------------------------------------------------------------------------
+
+export function useConversations(
+  params: ListConversationsParams,
+  options?: { enabled?: boolean; refetchInterval?: number | false },
+) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.conversations(orgId, params),
+    queryFn: () => conversationsApi.list(params),
+    enabled: !!orgId && (options?.enabled ?? true),
+    placeholderData: (prev) => prev,
+    refetchInterval: options?.refetchInterval ?? false,
+  });
+}
+
+export function useConversation(id: string | null) {
+  const orgId = useActiveOrganizationId();
+  return useQuery({
+    queryKey: keys.conversation(orgId, id ?? ''),
+    queryFn: () => conversationsApi.get(id as string),
+    enabled: !!orgId && !!id,
+  });
+}
+
+function useConversationCacheSync() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return (conversation: ConversationWithRelations) => {
+    qc.setQueryData(keys.conversation(orgId, conversation.id), conversation);
+    qc.setQueriesData<{ data: ConversationWithRelations[]; meta: unknown }>(
+      { queryKey: [...keys.conversationsRoot(orgId), 'list'] },
+      (prev) =>
+        prev
+          ? {
+              ...prev,
+              data: prev.data.map((c) => (c.id === conversation.id ? conversation : c)),
+            }
+          : prev,
+    );
+    void qc.invalidateQueries({ queryKey: keys.conversationsRoot(orgId) });
+    void qc.invalidateQueries({ queryKey: keys.dashboard(orgId) });
+  };
+}
+
+export function useCreateConversation() {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (body: CreateConversationRequest) => conversationsApi.create(body),
+    onSuccess: (conversation) => {
+      qc.setQueryData(keys.conversation(orgId, conversation.id), conversation);
+      void qc.invalidateQueries({ queryKey: keys.conversationsRoot(orgId) });
+      void qc.invalidateQueries({ queryKey: keys.dashboard(orgId) });
+      if (conversation.contactId)
+        void qc.invalidateQueries({ queryKey: keys.contact(orgId, conversation.contactId) });
+    },
+  });
+}
+
+export function useUpdateConversation() {
+  const sync = useConversationCacheSync();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateConversationRequest }) =>
+      conversationsApi.update(id, body),
+    onSuccess: sync,
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
+export function useAssignConversation() {
+  const sync = useConversationCacheSync();
+  return useMutation({
+    mutationFn: ({ id, assigneeId }: { id: string; assigneeId: string | null }) =>
+      conversationsApi.assign(id, { assigneeId }),
+    onSuccess: sync,
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
+export const MESSAGES_PAGE_SIZE = 50;
+
+/**
+ * Messages for a conversation, newest page first (sortOrder=desc) so the thread opens at the latest
+ * message; "Load earlier" fetches the next page. Callers flatten and reverse for display.
+ */
+export function useMessages(conversationId: string | null, options?: { refetchInterval?: number }) {
+  const orgId = useActiveOrganizationId();
+  return useInfiniteQuery({
+    queryKey: keys.messages(orgId, conversationId ?? ''),
+    queryFn: ({ pageParam }) =>
+      conversationsApi.messages(conversationId as string, {
+        page: pageParam,
+        pageSize: MESSAGES_PAGE_SIZE,
+        sortOrder: 'desc',
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (last) =>
+      last.meta.page < last.meta.totalPages ? last.meta.page + 1 : undefined,
+    enabled: !!orgId && !!conversationId,
+    refetchInterval: options?.refetchInterval ?? false,
+  });
+}
+
+export function useSendMessage(conversationId: string) {
+  const qc = useQueryClient();
+  const orgId = useActiveOrganizationId();
+  return useMutation({
+    mutationFn: (body: CreateMessageRequest) => conversationsApi.sendMessage(conversationId, body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.messages(orgId, conversationId) });
+      // Posting updates lastMessage/messageCount and may reopen a resolved conversation.
+      void qc.invalidateQueries({ queryKey: keys.conversationsRoot(orgId) });
+    },
   });
 }

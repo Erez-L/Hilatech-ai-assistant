@@ -1,5 +1,5 @@
 import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
-import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, Reflector } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 
@@ -84,8 +84,9 @@ import { UsersModule } from './modules/users/users.module';
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
     {
       provide: APP_INTERCEPTOR,
-      inject: [AppConfig],
-      useFactory: (config: AppConfig) => new TimeoutInterceptor(config.get('REQUEST_TIMEOUT_MS')),
+      inject: [AppConfig, Reflector],
+      useFactory: (config: AppConfig, reflector: Reflector) =>
+        new TimeoutInterceptor(config.get('REQUEST_TIMEOUT_MS'), reflector),
     },
   ],
 })

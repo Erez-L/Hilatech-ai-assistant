@@ -6,3 +6,4 @@ export * from './tenant.decorator';
 export * from './skip-transform.decorator';
 export * from './auth-throttle.decorator';
 export * from './req.decorator';
+export * from './request-timeout.decorator';
