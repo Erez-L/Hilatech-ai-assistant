@@ -103,7 +103,6 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Analytics',
         icon: BarChart3,
         permission: Permission.ANALYTICS_READ,
-        upcoming: true,
       },
     ],
   },

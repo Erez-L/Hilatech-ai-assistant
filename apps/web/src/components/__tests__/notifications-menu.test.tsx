@@ -102,6 +102,24 @@ describe('NotificationsMenu', () => {
     );
   });
 
+  it('renders budget_alert notifications with a visible level label and the billing link', async () => {
+    const budget = notification('cccccccc-cccc-4ccc-8ccc-cccccccccccc', {
+      type: 'system',
+      title: 'Your monthly AI token budget is used up',
+      body: 'Usage reached 100% for this month.',
+      link: '/settings/billing',
+      data: { kind: 'budget_alert', scope: 'budget_tokens', level: 'exceeded' },
+    });
+    list.mockResolvedValue(paginated([budget], 1));
+    unreadCount.mockResolvedValue({ unread: 1 });
+    renderWithProviders(<NotificationsMenu />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Notifications, 1 unread' }));
+    const item = await screen.findByRole('button', { name: /monthly AI token budget is used up/ });
+    expect(screen.getByTestId('notification-budget-badge')).toHaveTextContent('Budget used up');
+    await userEvent.click(item);
+    expect(push).toHaveBeenCalledWith('/settings/billing');
+  });
+
   it('renders nothing without the notifications permission', () => {
     seedSession([]);
     const { container } = renderWithProviders(<NotificationsMenu />);

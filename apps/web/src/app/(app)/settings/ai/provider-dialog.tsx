@@ -41,6 +41,7 @@ export const MOCK_PROVIDER_ENABLED =
 export const PROVIDER_LABELS: Record<AiProviderKind, string> = {
   anthropic: 'Anthropic',
   openai: 'OpenAI',
+  bedrock: 'Amazon Bedrock',
   mock: 'Mock (development)',
 };
 
@@ -55,6 +56,14 @@ export const providerFormSchema = z.object({
     .string()
     .trim()
     .refine((v) => v === '' || z.string().url().safeParse(v).success, 'Enter a valid URL'),
+  region: z
+    .string()
+    .trim()
+    .refine(
+      (v) => v === '' || /^[a-z]{2}(-[a-z]+)+-\d$/.test(v),
+      'Use an AWS region such as us-east-1',
+    )
+    .optional(),
   defaultModel: z.string().trim().min(1, 'Choose a default model').max(120),
   embeddingModel: z.string().trim().max(120),
   isDefault: z.boolean(),
@@ -74,8 +83,10 @@ export function buildProviderRequest(
 ): CreateAiProviderConfigRequest | UpdateAiProviderConfigRequest {
   const common = {
     name: values.name,
-    apiKey: values.apiKey || undefined,
-    baseUrl: values.baseUrl || undefined,
+    // Bedrock authenticates with the server's IAM identity: no key and no endpoint override are sent.
+    apiKey: values.provider === 'bedrock' ? undefined : values.apiKey || undefined,
+    baseUrl: values.provider === 'bedrock' ? undefined : values.baseUrl || undefined,
+    ...(values.provider === 'bedrock' && values.region ? { region: values.region } : {}),
     defaultModel: values.defaultModel,
     embeddingModel: values.embeddingModel || undefined,
     isDefault: values.isDefault,
@@ -134,6 +145,7 @@ function ProviderForm({
       name: provider?.name ?? '',
       apiKey: '',
       baseUrl: provider?.baseUrl ?? '',
+      region: provider?.region ?? '',
       defaultModel: provider?.defaultModel ?? '',
       embeddingModel: provider?.embeddingModel ?? '',
       isDefault: provider?.isDefault ?? !!first,
@@ -151,14 +163,22 @@ function ProviderForm({
     () =>
       (models.data ?? [])
         .filter((m) => !m.supportsEmbeddings)
-        .map((m) => ({ value: m.id, label: m.displayName, description: m.id })),
+        .map((m) => ({
+          value: m.id,
+          label: m.displayName,
+          description: m.availabilityNote ? `${m.id} - ${m.availabilityNote}` : m.id,
+        })),
     [models.data],
   );
   const embeddingModels: ComboboxItem[] = React.useMemo(
     () =>
       (models.data ?? [])
         .filter((m) => m.supportsEmbeddings)
-        .map((m) => ({ value: m.id, label: m.displayName, description: m.id })),
+        .map((m) => ({
+          value: m.id,
+          label: m.displayName,
+          description: m.availabilityNote ? `${m.id} - ${m.availabilityNote}` : m.id,
+        })),
     [models.data],
   );
 
@@ -173,12 +193,16 @@ function ProviderForm({
 
   const onSubmit = form.handleSubmit(async (values) => {
     setFormError(null);
-    if (!editing && values.provider !== 'mock' && !values.apiKey) {
+    if (!editing && values.provider !== 'mock' && values.provider !== 'bedrock' && !values.apiKey) {
       form.setError('apiKey', { type: 'required', message: 'An API key is required' });
       return;
     }
     try {
-      const body = buildProviderRequest(values, editing);
+      // The kind select is disabled while editing, so take the kind from the stored configuration.
+      const body = buildProviderRequest(
+        { ...values, provider: provider?.provider ?? values.provider },
+        editing,
+      );
       if (provider) {
         await update.mutateAsync({ id: provider.id, body: body as UpdateAiProviderConfigRequest });
         toast.success(`Provider “${values.name}” saved`);
@@ -193,7 +217,7 @@ function ProviderForm({
     }
   });
 
-  const needsKey = kind !== 'mock';
+  const needsKey = kind !== 'mock' && kind !== 'bedrock';
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex min-h-0 flex-col">
@@ -247,6 +271,22 @@ function ProviderForm({
               {...form.register('apiKey')}
             />
           </FormField>
+        ) : kind === 'bedrock' ? (
+          <>
+            <Alert tone="neutral">
+              Amazon Bedrock uses the server&apos;s AWS identity (IAM role or SSO profile) — no key
+              is stored. The server needs AI_BEDROCK_ENABLED=true and model access in the chosen
+              region. Model ids listed here are unverified; check them in your region.
+            </Alert>
+            <FormField
+              id="provider-region"
+              label="AWS region"
+              error={errors.region?.message}
+              description="Optional. Leave blank to use the server's AWS_REGION."
+            >
+              <Input placeholder="us-east-1" spellCheck={false} {...form.register('region')} />
+            </FormField>
+          </>
         ) : (
           <Alert tone="neutral">
             The mock provider answers deterministically without any key. It is for development and
@@ -276,14 +316,16 @@ function ProviderForm({
           />
         ) : null}
 
-        <FormField
-          id="provider-base-url"
-          label="Base URL"
-          error={errors.baseUrl?.message}
-          description="Optional. Only for proxies or compatible gateways."
-        >
-          <Input inputMode="url" placeholder="https://" {...form.register('baseUrl')} />
-        </FormField>
+        {kind !== 'bedrock' ? (
+          <FormField
+            id="provider-base-url"
+            label="Base URL"
+            error={errors.baseUrl?.message}
+            description="Optional. Only for proxies or compatible gateways."
+          >
+            <Input inputMode="url" placeholder="https://" {...form.register('baseUrl')} />
+          </FormField>
+        ) : null}
 
         <div className="grid gap-5 sm:grid-cols-2">
           <FormField
@@ -291,23 +333,45 @@ function ProviderForm({
             label="Default model"
             error={errors.defaultModel?.message}
             required
+            description={
+              kind === 'bedrock'
+                ? 'Type the exact model or inference-profile id enabled in your AWS region. Suggestions are unverified.'
+                : undefined
+            }
           >
-            <Controller
-              control={form.control}
-              name="defaultModel"
-              render={({ field }) => (
-                <Combobox
+            {kind === 'bedrock' ? (
+              <>
+                <Input
                   id="provider-default-model"
-                  items={chatModels}
-                  value={field.value || null}
-                  selectedLabel={field.value}
-                  loading={models.isPending}
-                  placeholder="Choose a model"
-                  searchPlaceholder="Search models"
-                  onValueChange={(v) => field.onChange(v ?? '')}
+                  list="bedrock-chat-models"
+                  spellCheck={false}
+                  placeholder="amazon.nova-micro-v1:0"
+                  {...form.register('defaultModel')}
                 />
-              )}
-            />
+                <datalist id="bedrock-chat-models">
+                  {chatModels.map((m) => (
+                    <option key={m.value} value={m.value} label={m.description} />
+                  ))}
+                </datalist>
+              </>
+            ) : (
+              <Controller
+                control={form.control}
+                name="defaultModel"
+                render={({ field }) => (
+                  <Combobox
+                    id="provider-default-model"
+                    items={chatModels}
+                    value={field.value || null}
+                    selectedLabel={field.value}
+                    loading={models.isPending}
+                    placeholder="Choose a model"
+                    searchPlaceholder="Search models"
+                    onValueChange={(v) => field.onChange(v ?? '')}
+                  />
+                )}
+              />
+            )}
           </FormField>
           <FormField
             id="provider-embedding-model"
@@ -315,24 +379,41 @@ function ProviderForm({
             error={errors.embeddingModel?.message}
             description="Optional. Used for knowledge search."
           >
-            <Controller
-              control={form.control}
-              name="embeddingModel"
-              render={({ field }) => (
-                <Combobox
+            {kind === 'bedrock' ? (
+              <>
+                <Input
                   id="provider-embedding-model"
-                  items={embeddingModels}
-                  value={field.value || null}
-                  selectedLabel={field.value}
-                  clearable
-                  loading={models.isPending}
-                  placeholder="None"
-                  searchPlaceholder="Search models"
-                  emptyMessage="No embedding models for this provider."
-                  onValueChange={(v) => field.onChange(v ?? '')}
+                  list="bedrock-embedding-models"
+                  spellCheck={false}
+                  placeholder="amazon.titan-embed-text-v2:0"
+                  {...form.register('embeddingModel')}
                 />
-              )}
-            />
+                <datalist id="bedrock-embedding-models">
+                  {embeddingModels.map((m) => (
+                    <option key={m.value} value={m.value} label={m.description} />
+                  ))}
+                </datalist>
+              </>
+            ) : (
+              <Controller
+                control={form.control}
+                name="embeddingModel"
+                render={({ field }) => (
+                  <Combobox
+                    id="provider-embedding-model"
+                    items={embeddingModels}
+                    value={field.value || null}
+                    selectedLabel={field.value}
+                    clearable
+                    loading={models.isPending}
+                    placeholder="None"
+                    searchPlaceholder="Search models"
+                    emptyMessage="No embedding models for this provider."
+                    onValueChange={(v) => field.onChange(v ?? '')}
+                  />
+                )}
+              />
+            )}
           </FormField>
         </div>
 

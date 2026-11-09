@@ -2,7 +2,13 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
   "globalEnv": ["NODE_ENV", "CI"],
-  "globalPassThroughEnv": ["DATABASE_URL", "REDIS_URL"],
+  "globalPassThroughEnv": [
+    "DATABASE_URL",
+    "REDIS_URL",
+    "AWS_PROFILE",
+    "AWS_REGION",
+    "AWS_DEFAULT_REGION"
+  ],
   "tasks": {
     "generate": {
       "cache": false,

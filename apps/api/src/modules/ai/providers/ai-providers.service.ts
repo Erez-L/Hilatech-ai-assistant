@@ -35,6 +35,10 @@ export class AiProvidersService {
     private readonly config: AppConfig,
   ) {}
 
+  get bedrockAllowed(): boolean {
+    return Boolean(this.config.get('AI_BEDROCK_ENABLED'));
+  }
+
   get mockAllowed(): boolean {
     return this.config.get('AI_ALLOW_MOCK_PROVIDER');
   }
@@ -84,7 +88,9 @@ export class AiProvidersService {
           name: dto.name,
           encryptedApiKey: secret?.encryptedApiKey ?? null,
           keyLast4: secret?.keyLast4 ?? null,
-          baseUrl: dto.baseUrl ?? null,
+          // Bedrock runs with the server's AWS identity: a tenant-supplied endpoint override is never honoured.
+          baseUrl: dto.provider === 'bedrock' ? null : (dto.baseUrl ?? null),
+          region: dto.provider === 'bedrock' ? (dto.region ?? null) : null,
           defaultModel: dto.defaultModel,
           embeddingModel: dto.embeddingModel ?? null,
           isDefault,
@@ -133,7 +139,19 @@ export class AiProvidersService {
       data.name = dto.name;
       changes.push('name');
     }
-    if (dto.baseUrl !== undefined && dto.baseUrl !== existing.baseUrl) {
+    if (
+      existing.provider === 'bedrock' &&
+      dto.region !== undefined &&
+      dto.region !== existing.region
+    ) {
+      data.region = dto.region;
+      changes.push('region');
+    }
+    if (
+      existing.provider !== 'bedrock' &&
+      dto.baseUrl !== undefined &&
+      dto.baseUrl !== existing.baseUrl
+    ) {
       data.baseUrl = dto.baseUrl;
       changes.push('baseUrl');
     }
@@ -248,7 +266,12 @@ export class AiProvidersService {
   /** Static model catalogue; mock models are hidden unless the mock provider is enabled. */
   listModels(provider?: AiProviderKind): AiModelInfo[] {
     if (provider === 'mock' && !this.mockAllowed) return [];
-    return listModels(provider).filter((m) => m.provider !== 'mock' || this.mockAllowed);
+    if (provider === 'bedrock' && !this.bedrockAllowed) return [];
+    return listModels(provider).filter(
+      (m) =>
+        (m.provider !== 'mock' || this.mockAllowed) &&
+        (m.provider !== 'bedrock' || this.bedrockAllowed),
+    );
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -264,6 +287,16 @@ export class AiProvidersService {
   }
 
   private assertProviderUsable(provider: AiProviderKind): void {
+    if (provider === 'bedrock' && !this.bedrockAllowed) {
+      throw AppException.validation('Amazon Bedrock is not enabled on this server', [
+        {
+          path: 'provider',
+          message:
+            'bedrock needs AI_BEDROCK_ENABLED=true and an AWS identity (IAM role / SSO profile) on the server',
+          code: 'custom',
+        },
+      ]);
+    }
     if (provider === 'mock' && !this.mockAllowed) {
       throw AppException.validation('The mock AI provider is not enabled on this server', [
         {

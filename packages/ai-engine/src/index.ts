@@ -55,6 +55,14 @@ export type {
 } from './providers/types';
 export { messageText, text } from './providers/types';
 export { AnthropicProvider, toAnthropicMessages, stripSchemaMeta } from './providers/anthropic';
+export {
+  BedrockProvider,
+  embeddingFamily,
+  fromConverseOutput,
+  toConverseInput,
+  toConverseMessages,
+  type BedrockSender,
+} from './providers/bedrock';
 export { OpenAiProvider, toOpenAiMessages } from './providers/openai';
 export {
   MockProvider,
@@ -64,6 +72,7 @@ export {
 } from './providers/mock';
 export { createProvider, requiresApiKey, type CreateProviderOptions } from './providers/factory';
 export {
+  BEDROCK_AVAILABILITY_NOTE,
   DEFAULT_CONTEXT_WINDOW,
   contextWindowFor,
   findModel,

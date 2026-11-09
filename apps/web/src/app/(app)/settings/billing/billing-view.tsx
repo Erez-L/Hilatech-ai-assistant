@@ -2,10 +2,9 @@
 
 import * as React from 'react';
 import { format } from 'date-fns';
-import { Check, CreditCard, Mail } from 'lucide-react';
+import { ArrowDown, Check, Mail } from 'lucide-react';
 import { Permission, type PlanKey, type PlanLimits, type Subscription } from '@hilatech/contracts';
 import {
-  Alert,
   Badge,
   Button,
   Card,
@@ -13,7 +12,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Meter,
   PageHeader,
   Skeleton,
   StatusBadge,
@@ -24,15 +22,17 @@ import {
   TableHeader,
   TableRow,
   cn,
-  formatBytesFromMb,
-  formatCompact,
   humanize,
 } from '@hilatech/ui';
-import { usePlans, useSubscription, useUsage } from '@/hooks/queries';
+import { usePlans, useSubscription } from '@/hooks/queries';
 import { QueryState } from '@/components/common/query-state';
 import { PermissionGate } from '@/components/common/permission-gate';
 import { SettingsTabs } from '@/components/settings/settings-tabs';
-import { USAGE_LABELS } from '@/lib/usage-labels';
+import { PLAN_LIMIT_ROWS } from '@/lib/billing';
+import { AlertsCard } from './alerts-card';
+import { BudgetCard } from './budget-card';
+import { EntitlementsCard } from './entitlements-card';
+import { UpgradeCard } from './upgrade-card';
 
 const PLAN_ORDER: PlanKey[] = ['free', 'starter', 'pro', 'enterprise'];
 const PLAN_BLURB: Record<PlanKey, string> = {
@@ -41,36 +41,23 @@ const PLAN_BLURB: Record<PlanKey, string> = {
   pro: 'Several teams, many agents, a large knowledge base.',
   enterprise: 'Custom limits, dedicated support and contractual commitments.',
 };
-const LIMIT_ROWS: { key: keyof PlanLimits; label: string; format: (n: number) => string }[] = [
-  { key: 'seats', label: 'Seats', format: formatCompact },
-  { key: 'aiTokensPerMonth', label: 'AI tokens / month', format: formatCompact },
-  { key: 'agents', label: 'Agents', format: formatCompact },
-  { key: 'knowledgeDocuments', label: 'Knowledge documents', format: formatCompact },
-  { key: 'storageMb', label: 'Storage', format: formatBytesFromMb },
-  { key: 'automations', label: 'Automations', format: formatCompact },
-];
+const LIMIT_ROWS = PLAN_LIMIT_ROWS;
 
 export function BillingView() {
   const subscription = useSubscription();
-  const usage = useUsage();
   const plans = usePlans();
 
   return (
-    <PermissionGate anyOf={[Permission.ORG_BILLING_MANAGE]}>
+    <PermissionGate anyOf={[Permission.ORG_READ, Permission.ORG_BILLING_MANAGE]}>
       <div className="flex flex-col gap-6">
         <PageHeader
           title="Settings"
-          description="Your plan, what it includes, and how much of it you’re using."
+          description="Your plan, what it includes, how much you use, and your AI budget."
         >
           <SettingsTabs />
         </PageHeader>
 
-        <Alert tone="neutral" title="Payments are not switched on yet">
-          Plans and limits are live; upgrading and invoicing will arrive with a payment provider in
-          a later milestone. To change plan today, contact sales.
-        </Alert>
-
-        <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+        <div className="grid items-start gap-6 lg:grid-cols-[1fr_1.2fr]">
           <QueryState
             query={subscription}
             loading={<PlanSkeleton />}
@@ -78,78 +65,16 @@ export function BillingView() {
           >
             {(sub) => <CurrentPlanCard subscription={sub} />}
           </QueryState>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Usage this period</CardTitle>
-              <CardDescription>
-                {usage.data
-                  ? `${format(new Date(usage.data.periodStart), 'd MMM')} – ${format(new Date(usage.data.periodEnd), 'd MMM yyyy')}`
-                  : 'Current billing period'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <QueryState
-                query={usage}
-                compact
-                loading={
-                  <div className="flex flex-col gap-5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="flex flex-col gap-2">
-                        <Skeleton className="h-4 w-40" />
-                        <Skeleton className="h-2 w-full" />
-                      </div>
-                    ))}
-                  </div>
-                }
-              >
-                {(u) => (
-                  <ul className="flex flex-col gap-5">
-                    {(Object.keys(USAGE_LABELS) as (keyof typeof USAGE_LABELS)[]).map((metric) => {
-                      const entry = u.metrics[metric];
-                      if (!entry) return null;
-                      const { label, format: fmt } = USAGE_LABELS[metric];
-                      const ratio = entry.limit ? entry.used / entry.limit : 0;
-                      return (
-                        <li key={metric} className="flex flex-col gap-2">
-                          <div className="flex items-baseline justify-between text-sm">
-                            <span className="text-fg-muted">{label}</span>
-                            <span className="font-medium tabular">
-                              {fmt(entry.used)}
-                              <span className="text-fg-subtle">
-                                {' '}
-                                / {entry.limit == null ? 'unlimited' : fmt(entry.limit)}
-                              </span>
-                              {entry.limit ? (
-                                <span
-                                  className={cn(
-                                    'ml-2 text-xs',
-                                    ratio >= 0.9
-                                      ? 'text-danger'
-                                      : ratio >= 0.75
-                                        ? 'text-warning'
-                                        : 'text-fg-subtle',
-                                  )}
-                                >
-                                  {Math.round(ratio * 100)}%
-                                </span>
-                              ) : null}
-                            </span>
-                          </div>
-                          <Meter label={label} value={entry.used} max={entry.limit} />
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </QueryState>
-            </CardContent>
-          </Card>
+          <EntitlementsCard />
         </div>
 
-        <Card>
+        <BudgetCard />
+        <UpgradeCard />
+        <AlertsCard />
+
+        <Card role="region" aria-labelledby="compare-title">
           <CardHeader>
-            <CardTitle>Compare plans</CardTitle>
+            <CardTitle id="compare-title">Compare plans</CardTitle>
             <CardDescription>
               Limits per organization. Enterprise limits are negotiated.
             </CardDescription>
@@ -225,13 +150,8 @@ function CurrentPlanCard({ subscription }: { subscription: Subscription }) {
               Contact sales
             </a>
           </Button>
-          <Button
-            variant="ghost"
-            disabled
-            leadingIcon={<CreditCard aria-hidden />}
-            title="Self-service upgrades arrive with a payment provider"
-          >
-            Upgrade (coming soon)
+          <Button asChild variant="ghost" leadingIcon={<ArrowDown aria-hidden />}>
+            <a href="#upgrade">See upgrade options</a>
           </Button>
         </div>
         {subscription.provider ? (

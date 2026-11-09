@@ -11,8 +11,11 @@ import {
 // Providers & configuration
 // ---------------------------------------------------------------------------
 
-/** `mock` is a deterministic in-process provider for tests and local development. It is refused in production. */
-export const AiProviderKind = z.enum(['anthropic', 'openai', 'mock']);
+/**
+ * `bedrock` is Amazon Bedrock (Converse API). It authenticates with the AWS default credential chain
+ * (IAM role / SSO profile) — no API key is stored for it.
+ * `mock` is a deterministic in-process provider for tests and local development. It is refused in production. */
+export const AiProviderKind = z.enum(['anthropic', 'openai', 'bedrock', 'mock']);
 export type AiProviderKind = z.infer<typeof AiProviderKind>;
 
 export const AiHealthStatus = z.enum(['unknown', 'ok', 'error']);
@@ -28,6 +31,8 @@ export const aiProviderConfigSchema = z
     keyLast4: z.string().nullable(),
     hasApiKey: z.boolean(),
     baseUrl: z.string().nullable(),
+    /** AWS region (bedrock only). Null falls back to the server's AWS_REGION / profile region. */
+    region: z.string().nullable().optional(),
     defaultModel: z.string(),
     embeddingModel: z.string().nullable(),
     isDefault: z.boolean(),
@@ -42,9 +47,15 @@ export type AiProviderConfig = z.infer<typeof aiProviderConfigSchema>;
 export const createAiProviderConfigSchema = z.object({
   provider: AiProviderKind,
   name: z.string().trim().min(1).max(80),
-  /** Write-only. Required for anthropic/openai; ignored for mock. */
+  /** Write-only. Required for anthropic/openai; not used for bedrock (IAM) or mock. */
   apiKey: z.string().trim().min(8).max(512).optional(),
   baseUrl: z.string().trim().url().optional(),
+  /** AWS region such as `us-east-1` (bedrock only; ignored by other providers). */
+  region: z
+    .string()
+    .trim()
+    .regex(/^[a-z]{2}(-[a-z]+)+-\d$/, 'Expected an AWS region such as us-east-1')
+    .optional(),
   defaultModel: z.string().trim().min(1).max(120),
   embeddingModel: z.string().trim().min(1).max(120).optional(),
   isDefault: z.boolean().default(false),
@@ -71,6 +82,8 @@ export const aiModelInfoSchema = z.object({
   supportsStreaming: z.boolean(),
   supportsStructuredOutput: z.boolean(),
   supportsEmbeddings: z.boolean(),
+  /** Set when the catalogue entry has not been verified against a live account (e.g. Bedrock regional availability). */
+  availabilityNote: z.string().optional(),
 });
 export type AiModelInfo = z.infer<typeof aiModelInfoSchema>;
 

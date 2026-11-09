@@ -167,6 +167,22 @@ export const envSchema = z
     // AI platform (Priority 3)
     /** Allow the deterministic in-process `mock` provider (never honoured in production). */
     AI_ALLOW_MOCK_PROVIDER: boolVar(false),
+    /**
+     * Allow organizations to add the `bedrock` provider. Bedrock calls are authenticated with the SERVER's AWS
+     * identity (IAM task role / SSO profile) and billed to the platform's AWS account, so this is off by default.
+     */
+    AI_BEDROCK_ENABLED: boolVar(false),
+    /** Informational: the AWS SDK itself reads AWS_REGION / AWS_PROFILE; this schema only validates the shape. */
+    AWS_REGION: z.preprocess(
+      (v) => {
+        const s = stripInlineComment(v);
+        return s === '' ? undefined : s;
+      },
+      z
+        .string()
+        .regex(/^[a-z]{2}(-[a-z]+)+-\d$/, 'AWS_REGION must look like us-east-1')
+        .optional(),
+    ),
     /** Optional JSON pricing table (USD per 1M tokens); invalid content is logged and ignored. */
     AI_PRICING_JSON: optionalString(),
     /** Per-tool-call timeout inside assistant/agent runs. */

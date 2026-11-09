@@ -26,6 +26,7 @@ export interface EmbedTextsResult {
 /** Default embedding model per provider kind when the config has none. */
 const DEFAULT_EMBEDDING_MODEL: Record<string, string> = {
   openai: 'text-embedding-3-small',
+  bedrock: 'amazon.titan-embed-text-v2:0',
   mock: 'mock-embedding',
 };
 

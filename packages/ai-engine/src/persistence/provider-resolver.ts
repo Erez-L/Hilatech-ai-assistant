@@ -98,10 +98,16 @@ export class ProviderResolver {
     kind: AiProviderKind,
     apiKey: string | undefined,
     baseUrl: string | null | undefined,
+    region?: string | null,
   ): AiProvider {
     return createProvider(
       kind,
-      { apiKey, baseUrl: baseUrl ?? undefined, timeoutMs: this.options.timeoutMs },
+      {
+        apiKey,
+        baseUrl: baseUrl ?? undefined,
+        region: region ?? undefined,
+        timeoutMs: this.options.timeoutMs,
+      },
       this.options.providerOptions,
     );
   }
@@ -122,7 +128,12 @@ export class ProviderResolver {
     }
     const adapter = createProvider(
       config.provider,
-      { apiKey, baseUrl: config.baseUrl ?? undefined, timeoutMs: this.options.timeoutMs },
+      {
+        apiKey,
+        baseUrl: config.baseUrl ?? undefined,
+        region: config.region ?? undefined,
+        timeoutMs: this.options.timeoutMs,
+      },
       this.options.providerOptions,
     );
     // Drop stale versions of the same config.

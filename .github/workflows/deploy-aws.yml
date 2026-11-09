@@ -1,0 +1,121 @@
+# AWS deployment STUB - DISABLED BY DEFAULT and NEVER RUN OR TESTED against a real account.
+#
+# To enable (all of these are deliberate, manual steps; see docs/operations/aws-setup-guide.md):
+#   1. Create the GitHub OIDC provider + a deploy role in AWS whose trust policy is restricted to this repo and
+#      to the `environment:<name>` subject (never `repo:org/repo:*`).
+#   2. Create GitHub Environments `aws-dev`, `aws-staging`, `aws-prod` with REQUIRED REVIEWERS (manual approval).
+#   3. Set repository/environment variables: AWS_DEPLOY_ENABLED=true, AWS_REGION, AWS_DEPLOY_ROLE_ARN,
+#      CERTIFICATE_ARN, DOMAIN_NAME, ALARM_EMAIL (and PUBLIC_API_URL / PUBLIC_APP_URL for the web image build).
+# No long-lived AWS keys are used or needed: the job assumes the role through OIDC.
+name: Deploy to AWS (manual, approval required)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [dev, staging, prod]
+        default: dev
+      confirm:
+        description: Type DEPLOY to confirm (this creates and bills AWS resources)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  id-token: write # OIDC token for aws-actions/configure-aws-credentials
+
+concurrency:
+  group: deploy-aws-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    if: ${{ vars.AWS_DEPLOY_ENABLED == 'true' && inputs.confirm == 'DEPLOY' }}
+    steps:
+      - run: echo "Deploying ${{ inputs.environment }} (approval is enforced by the aws-${{ inputs.environment }} GitHub Environment)"
+
+  deploy:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # The Environment's required reviewers provide the manual approval gate.
+    environment: aws-${{ inputs.environment }}
+    env:
+      ENV_NAME: ${{ inputs.environment }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      IMAGE_TAG: ${{ github.sha }}
+      CDK_DISABLE_VERSION_CHECK: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: gha-${{ github.run_id }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: infra/cdk/package-lock.json
+      - run: npm ci
+        working-directory: infra/cdk
+
+      # Foundation first: network, ECR repositories, data stores and secrets.
+      - name: Deploy foundation stacks
+        working-directory: infra/cdk
+        run: |
+          npx cdk deploy "HilaTech-${ENV_NAME}-Network" "HilaTech-${ENV_NAME}-Registry" "HilaTech-${ENV_NAME}-Data" \
+            -c env=${ENV_NAME} --require-approval never
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push images to ECR
+        run: |
+          REGISTRY="${{ steps.ecr.outputs.registry }}"
+          for svc in api workers web; do
+            EXTRA=""
+            if [ "$svc" = "web" ]; then
+              EXTRA="--build-arg NEXT_PUBLIC_API_URL=${{ vars.PUBLIC_API_URL }} --build-arg NEXT_PUBLIC_APP_URL=${{ vars.PUBLIC_APP_URL }}"
+            fi
+            docker buildx build --platform linux/amd64 --push $EXTRA \
+              -f infrastructure/docker/${svc}.Dockerfile \
+              -t "${REGISTRY}/hilatech-${ENV_NAME}/${svc}:${IMAGE_TAG}" .
+          done
+
+      - name: Deploy application and ops stacks
+        working-directory: infra/cdk
+        run: |
+          npx cdk deploy "HilaTech-${ENV_NAME}-App" "HilaTech-${ENV_NAME}-Ops" \
+            -c env=${ENV_NAME} -c imageTag=${IMAGE_TAG} \
+            -c certificateArn="${{ vars.CERTIFICATE_ARN }}" -c domainName="${{ vars.DOMAIN_NAME }}" \
+            -c alarmEmail="${{ vars.ALARM_EMAIL }}" --require-approval never --outputs-file cdk-outputs.json
+
+      - name: Run database migrations (one-off ECS task)
+        working-directory: infra/cdk
+        run: |
+          OUT=$(jq -r ".\"HilaTech-${ENV_NAME}-App\"" cdk-outputs.json)
+          CLUSTER=$(echo "$OUT" | jq -r .ClusterName)
+          TASKDEF=$(echo "$OUT" | jq -r .MigrateTaskDefinition)
+          SUBNETS=$(echo "$OUT" | jq -r .MigrateSubnets)
+          SG=$(echo "$OUT" | jq -r .MigrateSecurityGroup)
+          TASK_ARN=$(aws ecs run-task --cluster "$CLUSTER" --task-definition "$TASKDEF" --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SG],assignPublicIp=DISABLED}" \
+            --query 'tasks[0].taskArn' --output text)
+          aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$TASK_ARN"
+          EXIT=$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$TASK_ARN" \
+            --query 'tasks[0].containers[0].exitCode' --output text)
+          echo "migration exit code: $EXIT"
+          test "$EXIT" = "0"
+
+      - name: Smoke test
+        run: |
+          URL=$(jq -r ".\"HilaTech-${ENV_NAME}-App\".PublicUrl" infra/cdk/cdk-outputs.json)
+          curl --fail --retry 10 --retry-delay 15 --retry-all-errors "$URL/api/v1/health"

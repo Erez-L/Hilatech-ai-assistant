@@ -66,6 +66,42 @@ describe('buildProviderRequest', () => {
   });
 });
 
+describe('buildProviderRequest (bedrock)', () => {
+  it('sends the region and never an API key or endpoint override', () => {
+    const values = providerFormSchema.parse({
+      provider: 'bedrock',
+      name: 'AWS',
+      apiKey: 'should-not-be-sent',
+      baseUrl: 'https://evil.example.com',
+      region: 'eu-west-1',
+      defaultModel: 'amazon.nova-micro-v1:0',
+      embeddingModel: '',
+      isDefault: false,
+      isEnabled: true,
+      clearApiKey: false,
+    });
+    const body = buildProviderRequest(values, false);
+    expect(body).toMatchObject({ provider: 'bedrock', region: 'eu-west-1' });
+    expect(JSON.stringify(body)).not.toContain('apiKey');
+    expect(JSON.stringify(body)).not.toContain('baseUrl');
+  });
+  it('rejects a malformed region', () => {
+    const r = providerFormSchema.safeParse({
+      provider: 'bedrock',
+      name: 'AWS',
+      apiKey: '',
+      baseUrl: '',
+      region: 'not a region',
+      defaultModel: 'm',
+      embeddingModel: '',
+      isDefault: false,
+      isEnabled: true,
+      clearApiKey: false,
+    });
+    expect(r.success).toBe(false);
+  });
+});
+
 describe('ProviderDialog', () => {
   beforeEach(() => seedSession(['ai:config:read', 'ai:config:manage']));
   afterEach(() => vi.unstubAllGlobals());
@@ -115,5 +151,37 @@ describe('ProviderDialog', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add provider' }));
     expect(await screen.findByText('An API key is required')).toBeInTheDocument();
     expect(calls.some((c) => c.method === 'POST')).toBe(false);
+  });
+
+  it('bedrock: no key or base URL fields, free-text model ids, and the region is saved', async () => {
+    const bedrock: AiProviderConfig = {
+      ...PROVIDER,
+      provider: 'bedrock',
+      name: 'AWS',
+      hasApiKey: false,
+      keyLast4: null,
+      region: 'eu-west-1',
+      defaultModel: 'amazon.nova-micro-v1:0',
+    };
+    const { calls } = mockApi({
+      'GET /ai/models': () => MODELS,
+      [`PATCH /ai/providers/${bedrock.id}`]: () => bedrock,
+    });
+    renderWithProviders(<ProviderDialog open onOpenChange={() => {}} provider={bedrock} />);
+    const region = await screen.findByLabelText(/AWS region/);
+    expect(region).toHaveValue('eu-west-1');
+    expect(screen.queryByLabelText('API key')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Base URL/)).not.toBeInTheDocument();
+    const model = screen.getByLabelText(/^Default model/);
+    expect(model).toHaveValue('amazon.nova-micro-v1:0');
+
+    await userEvent.clear(region);
+    await userEvent.type(region, 'us-east-1');
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(calls.some((c) => c.method === 'PATCH')).toBe(true));
+    const sent = calls.find((c) => c.method === 'PATCH')!.body as Record<string, unknown>;
+    expect(sent).toMatchObject({ region: 'us-east-1', defaultModel: 'amazon.nova-micro-v1:0' });
+    expect(sent).not.toHaveProperty('apiKey');
+    expect(sent).not.toHaveProperty('baseUrl');
   });
 });

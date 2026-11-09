@@ -21,7 +21,7 @@ export interface StreamState {
   userContent: string | null;
   text: string;
   tools: StreamingTool[];
-  error: { code: string; message: string } | null;
+  error: { code: string; message: string; details?: unknown } | null;
 }
 
 const IDLE: StreamState = { status: 'idle', userContent: null, text: '', tools: [], error: null };
@@ -123,7 +123,7 @@ export function useAssistantStream(threadId: string | null) {
           ...s,
           status: 'error',
           error: isApiError(error)
-            ? { code: error.code, message: error.message }
+            ? { code: error.code, message: error.message, details: error.details }
             : { code: 'NETWORK_ERROR', message: 'The connection was interrupted. Try again.' },
         }));
       }

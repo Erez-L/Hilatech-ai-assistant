@@ -2,6 +2,7 @@ import type { AiProviderKind } from '@hilatech/contracts';
 
 import { AiProviderError } from '../errors';
 import { AnthropicProvider } from './anthropic';
+import { BedrockProvider } from './bedrock';
 import { MockProvider, type MockProviderOptions } from './mock';
 import { OpenAiProvider } from './openai';
 import type { AiProvider, ProviderCredentials } from './types';
@@ -25,6 +26,9 @@ export function createProvider(
       return new AnthropicProvider(credentials);
     case 'openai':
       return new OpenAiProvider(credentials);
+    case 'bedrock':
+      // Credentials come from the AWS default provider chain (IAM role / SSO profile); no API key.
+      return new BedrockProvider(credentials);
     case 'mock': {
       const env = options.nodeEnv ?? process.env.NODE_ENV ?? 'development';
       const allowed =
@@ -52,7 +56,7 @@ export function createProvider(
   }
 }
 
-/** Providers that need an API key to be usable. */
+/** Providers that need an API key to be usable. Bedrock uses IAM (AWS credential chain) instead. */
 export function requiresApiKey(kind: AiProviderKind): boolean {
-  return kind !== 'mock';
+  return kind !== 'mock' && kind !== 'bedrock';
 }

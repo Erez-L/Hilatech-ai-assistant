@@ -8,8 +8,13 @@ export { rolesApi } from './roles';
 export { invitationsApi } from './invitations';
 export { usersApi } from './users';
 export { auditApi } from './audit';
-export { billingApi } from './billing';
-export { analyticsApi } from './analytics';
+export { billingApi, normalizePlans } from './billing';
+export {
+  analyticsApi,
+  filenameFromDisposition,
+  type AnalyticsRangeParams,
+  type CsvDownload,
+} from './analytics';
 export { notificationsApi, type ListNotificationsParams } from './notifications';
 export { contactsApi, type ListContactsParams } from './contacts';
 export { leadsApi, type ListLeadsParams, type ConvertLeadResponse } from './leads';

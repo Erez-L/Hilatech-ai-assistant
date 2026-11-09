@@ -70,4 +70,50 @@ describe('RunAgentDialog', () => {
     await waitFor(() => expect(push).toHaveBeenCalled());
     expect(calls[0]!.body).toEqual({ input: { leadId: 'abc' }, mode: 'sync' });
   });
+
+  it('shows a budget message with a billing link on 402 BUDGET_EXCEEDED', async () => {
+    seedSession(['agents:read', 'agents:execute', 'organization:billing:manage']);
+    mockApi({
+      [`POST /agents/${AGENT.id}/execute`]: () =>
+        new Response(
+          JSON.stringify({
+            error: {
+              code: 'BUDGET_EXCEEDED',
+              message: 'The monthly AI token budget is used up (1000/1000).',
+              details: { scope: 'budget_tokens', reason: 'exhausted', used: 1000, budget: 1000 },
+            },
+          }),
+          { status: 402, headers: { 'Content-Type': 'application/json' } },
+        ),
+    });
+    renderWithProviders(<RunAgentDialog agent={AGENT} open onOpenChange={() => {}} />);
+    await userEvent.type(screen.getByRole('textbox', { name: /^Input/ }), 'Go');
+    await userEvent.click(screen.getByRole('button', { name: 'Run agent' }));
+    const alert = await screen.findByTestId('budget-exceeded');
+    expect(alert).toHaveTextContent('Monthly AI budget reached');
+    expect(alert).toHaveTextContent('token budget is used up');
+    expect(screen.getByRole('link', { name: /Review budget in Billing/ })).toHaveAttribute(
+      'href',
+      '/settings/billing',
+    );
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('tells members without billing access to ask an admin on 402', async () => {
+    seedSession(['agents:read', 'agents:execute']);
+    mockApi({
+      [`POST /agents/${AGENT.id}/execute`]: () =>
+        new Response(JSON.stringify({ error: { code: 'BUDGET_EXCEEDED', message: 'used up' } }), {
+          status: 402,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+    });
+    renderWithProviders(<RunAgentDialog agent={AGENT} open onOpenChange={() => {}} />);
+    await userEvent.type(screen.getByRole('textbox', { name: /^Input/ }), 'Go');
+    await userEvent.click(screen.getByRole('button', { name: 'Run agent' }));
+    expect(await screen.findByTestId('budget-exceeded')).toHaveTextContent(
+      /Ask an organization admin/,
+    );
+    expect(screen.queryByRole('link', { name: /Review budget/ })).toBeNull();
+  });
 });

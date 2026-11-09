@@ -48,9 +48,15 @@ describe('AppSidebar', () => {
 
   it('hides navigation the role cannot access and marks the current page', () => {
     useSession.setState({
-      permissions: [Permission.MEMBERS_READ, Permission.LEADS_READ, Permission.AGENTS_READ],
+      permissions: [
+        Permission.MEMBERS_READ,
+        Permission.LEADS_READ,
+        Permission.AGENTS_READ,
+        Permission.ANALYTICS_READ,
+      ],
     });
     renderSidebar();
+    expect(screen.getByRole('link', { name: /Analytics/ })).not.toHaveTextContent('Soon');
     expect(screen.getByRole('link', { name: /Team/ })).toHaveAttribute('aria-current', 'page');
     // CRM, AI platform, knowledge, automations and integrations are live (no "Soon" marker).
     expect(screen.getByRole('link', { name: /Leads/ })).not.toHaveTextContent('Soon');

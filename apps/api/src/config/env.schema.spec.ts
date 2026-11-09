@@ -92,6 +92,15 @@ describe('env schema', () => {
     expect(prod.AI_PRICING_JSON).toContain('gpt-4o-mini');
   });
 
+  it('keeps Bedrock off by default and validates AWS_REGION shape', () => {
+    expect(validateEnv(minimal).AI_BEDROCK_ENABLED).toBe(false);
+    const on = validateEnv({ ...minimal, AI_BEDROCK_ENABLED: 'true', AWS_REGION: 'eu-west-1' });
+    expect(on.AI_BEDROCK_ENABLED).toBe(true);
+    expect(on.AWS_REGION).toBe('eu-west-1');
+    expect(validateEnv({ ...minimal, AWS_REGION: '' }).AWS_REGION).toBeUndefined();
+    expect(() => validateEnv({ ...minimal, AWS_REGION: 'moon' })).toThrow(/AWS_REGION/);
+  });
+
   it('requires SMTP_HOST for the smtp driver and validates durations', () => {
     expect(() => validateEnv({ ...minimal, EMAIL_DRIVER: 'smtp' })).toThrow(/SMTP_HOST/);
     expect(() => validateEnv({ ...minimal, JWT_ACCESS_TTL: 'soon' })).toThrow(/duration/);

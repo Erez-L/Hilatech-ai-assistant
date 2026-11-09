@@ -18,6 +18,13 @@ export const keys = {
   subscription: (orgId: string | null) => ['org', orgId, 'billing', 'subscription'] as const,
   usage: (orgId: string | null) => ['org', orgId, 'billing', 'usage'] as const,
   plans: () => ['billing', 'plans'] as const,
+  entitlements: (orgId: string | null) => ['org', orgId, 'billing', 'entitlements'] as const,
+  upgradeOptions: (orgId: string | null) => ['org', orgId, 'billing', 'upgrade-options'] as const,
+  budget: (orgId: string | null) => ['org', orgId, 'billing', 'budget'] as const,
+  budgetAlerts: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'billing', 'alerts', params ?? {}] as const,
+  analyticsReport: (orgId: string | null, report: string, range?: object) =>
+    ['org', orgId, 'analytics', 'report', report, range ?? {}] as const,
   dashboard: (orgId: string | null, period?: string) =>
     period
       ? (['org', orgId, 'analytics', 'dashboard', period] as const)

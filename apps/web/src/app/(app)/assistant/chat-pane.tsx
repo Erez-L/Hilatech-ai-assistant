@@ -23,6 +23,8 @@ import { useAssistantStream, type StreamState } from '@/hooks/use-assistant-stre
 import { useCan } from '@/hooks/use-can';
 import { contactName } from '@/lib/crm';
 import { AiNotConfigured } from '@/components/ai/ai-not-configured';
+import { BudgetExceeded } from '@/components/ai/budget-exceeded';
+import { isBudgetExceededCode } from '@/lib/billing';
 import { Markdown } from '@/components/ai/markdown';
 import { ToolChip, outcomeFromResult, type ToolOutcome } from '@/components/ai/tool-chip';
 import { threadTitle } from './thread-list';
@@ -55,6 +57,7 @@ export function ChatPane({
   }, [tick]);
 
   const notConfigured = state.error?.code === 'AI_NOT_CONFIGURED';
+  const budgetExceeded = isBudgetExceededCode(state.error?.code);
 
   return (
     <section
@@ -117,6 +120,8 @@ export function ChatPane({
         <div className="border-t border-border px-4 py-3">
           {notConfigured ? (
             <AiNotConfigured compact />
+          ) : budgetExceeded ? (
+            <BudgetExceeded details={state.error.details} onDismiss={dismissError} />
           ) : (
             <Alert tone="danger" title="The assistant couldn’t answer">
               <div className="flex flex-wrap items-center gap-3">

@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.6.0",
+    "@aws-sdk/client-bedrock-runtime": "3.1165.0",
     "@hilatech/contracts": "workspace:*",
     "@hilatech/database": "workspace:*",
     "@hilatech/shared": "workspace:*",

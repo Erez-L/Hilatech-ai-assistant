@@ -124,3 +124,29 @@ API only validates, stores and enqueues; the workers run steps, persist `stepRes
 delays by re-enqueueing a `resume` job. Domain events are emitted by the API as `automation.event`
 jobs and fanned out by the workers to workflows and outbound webhooks, so emitting an event never
 slows a request and the core does not depend on n8n.
+
+## ADR-016 — Amazon Bedrock as a provider, not as the orchestrator (2026-11-10)
+
+Accepted. Bedrock is added as `AiProviderKind` `bedrock` (Converse/ConverseStream/InvokeModel through
+`@aws-sdk/client-bedrock-runtime`), authenticated only by the AWS default credential chain (task role in AWS, SSO
+profile locally) — no API key is stored. `AgentRunner` remains the only orchestrator; AgentCore Runtime/Gateway are
+documented as optional future backends behind an interface (`docs/architecture/agentcore-integration.md`).
+Because Bedrock calls use the _server's_ identity and bill the platform's AWS account, creating Bedrock provider
+configs is gated by `AI_BEDROCK_ENABLED` (default false) and a tenant-supplied endpoint override is ignored.
+`AiProviderConfig.region` (nullable) was added with an additive migration. Unit-tested against a mocked SDK client
+only; never exercised against live Bedrock.
+
+## ADR-017 — Keep pgvector; do not adopt Bedrock Knowledge Bases (2026-11-10)
+
+Accepted. Knowledge Bases would add Aurora PostgreSQL / OpenSearch / S3 Vectors (plain RDS PostgreSQL is not a
+listed store), a new tenant-isolation model, and AWS lock-in, without a capability we lack today. Embeddings still
+come from Bedrock (Titan/Cohere) through the provider adapter. Revisit if enterprise connectors (SharePoint,
+Confluence, Drive) with document-level ACLs become a requirement. Details: `docs/architecture/aws-capability-matrix.md`.
+
+## ADR-018 — AWS infrastructure as CDK v2 (TypeScript), standalone project (2026-11-10)
+
+Accepted. `infra/cdk` is a standalone npm project (not part of the pnpm workspace) so CDK's dependency tree and
+Node tooling do not affect the app builds. Stateful and stateless resources are in separate stacks; cdk-nag
+(AwsSolutions) is enforced in synth with reasoned acknowledgements. CI only synthesises and tests; deployment is a
+manual, approval-gated, OIDC-based workflow that is disabled by default. BullMQ stays on Redis (SQS migration path
+documented, not built).

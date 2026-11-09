@@ -115,6 +115,40 @@ describe('ChatPane', () => {
     expect(link).toHaveAttribute('href', '/settings/ai');
   });
 
+  it('explains a 402 BUDGET_EXCEEDED and links to billing', async () => {
+    seedSession(['ai:assistant:use', 'organization:billing:manage']);
+    mockApi({
+      'GET /assistant/threads': () => paginated([]),
+      [`GET /assistant/threads/${THREAD}/messages`]: () => paginated([]),
+      [`POST /assistant/threads/${THREAD}/messages`]: () =>
+        new Response(
+          JSON.stringify({
+            error: {
+              code: 'BUDGET_EXCEEDED',
+              message: 'This request would exceed the monthly AI token budget.',
+              details: { scope: 'budget_tokens', reason: 'would_exceed', used: 900, budget: 1000 },
+            },
+          }),
+          { status: 402, headers: { 'Content-Type': 'application/json' } },
+        ),
+    });
+    renderWithProviders(<ChatPane threadId={THREAD} context={{}} onBack={() => {}} />);
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Message the assistant' }),
+      'hi{Enter}',
+    );
+    const alert = await screen.findByTestId('budget-exceeded');
+    expect(alert).toHaveTextContent('Monthly AI budget reached');
+    expect(alert).toHaveTextContent('would go over');
+    expect(alert).toHaveTextContent('900 of 1,000');
+    expect(screen.getByRole('link', { name: /Review budget in Billing/ })).toHaveAttribute(
+      'href',
+      '/settings/billing',
+    );
+    // The generic "couldn't answer" alert is not shown in addition.
+    expect(screen.queryByText('The assistant couldn’t answer')).toBeNull();
+  });
+
   it('passes the page context with the message', async () => {
     seedSession(['ai:assistant:use']);
     const sse = controlledSse();

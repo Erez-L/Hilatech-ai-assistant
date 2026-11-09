@@ -1,0 +1,44 @@
+# Infrastructure validation: type-check, unit-test and `cdk synth` (with cdk-nag) for dev / staging / prod.
+# This workflow NEVER deploys and uses NO AWS credentials: synthesis runs with a placeholder account.
+name: Infra (validate only)
+
+on:
+  pull_request:
+    paths:
+      - 'infra/cdk/**'
+      - '.github/workflows/infra.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'infra/cdk/**'
+      - '.github/workflows/infra.yml'
+
+concurrency:
+  group: infra-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  cdk-validate:
+    name: CDK type-check, tests, synth + cdk-nag (dev, staging, prod)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: infra/cdk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: infra/cdk/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx vitest run
+      # Synthesises all three environments with cdk-nag enabled; fails on any unacknowledged finding.
+      - run: npm run validate
+        env:
+          CDK_DISABLE_VERSION_CHECK: '1'

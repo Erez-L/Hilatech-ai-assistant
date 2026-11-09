@@ -5,7 +5,7 @@ import type { TokenUsage } from '../providers/types';
 
 /** USD per 1M tokens. Supplied by configuration (`AI_PRICING_JSON`) — the engine ships no prices. */
 export const pricingEntrySchema = z.object({
-  provider: z.enum(['anthropic', 'openai', 'mock']),
+  provider: z.enum(['anthropic', 'openai', 'bedrock', 'mock']),
   model: z.string().min(1),
   inputPerMillionUsd: z.number().nonnegative(),
   outputPerMillionUsd: z.number().nonnegative(),

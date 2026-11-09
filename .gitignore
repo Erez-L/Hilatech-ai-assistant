@@ -35,3 +35,7 @@ test-results/
 # local data
 infrastructure/docker/data/
 uploads/
+
+# AWS CDK
+cdk.out/
+.cdk.staging/

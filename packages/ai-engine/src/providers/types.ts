@@ -154,6 +154,8 @@ export interface AiProvider {
 export interface ProviderCredentials {
   apiKey?: string;
   baseUrl?: string;
+  /** AWS region (bedrock). Omitted = the AWS SDK's own region chain (AWS_REGION, profile config). */
+  region?: string;
   /** Default request timeout in ms (per call). */
   timeoutMs?: number;
 }

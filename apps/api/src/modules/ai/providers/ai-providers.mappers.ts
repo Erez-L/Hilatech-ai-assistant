@@ -13,6 +13,7 @@ export function toAiProviderConfig(row: AiProviderConfig): AiProviderConfigDto {
     keyLast4: row.keyLast4,
     hasApiKey: Boolean(row.encryptedApiKey),
     baseUrl: row.baseUrl,
+    region: row.region,
     defaultModel: row.defaultModel,
     embeddingModel: row.embeddingModel,
     isDefault: row.isDefault,

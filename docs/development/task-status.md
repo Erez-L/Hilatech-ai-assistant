@@ -146,3 +146,16 @@ Backend only (web pages are built separately). One migration: `20261109183059_bu
 | Workers | Budget re-check before calling providers in queued runs / workflow agent steps | Not implemented (hard stop can be overshot) | — |
 | API | Payments | Not configured: `POST /billing/checkout` returns 501 | — |
 | API | Tasks/Deals analytics | Not modelled in schema; sales derived from leads | — |
+
+## Priority 5 web + AWS layer (2026-11-10)
+
+| Area | Item | Status | Evidence |
+| ---- | ---- | ------ | -------- |
+| Web | Analytics (5 tabs, CSV export), billing (entitlements, upgrade options, AI budget, alerts), 402 budget handling | Verified | 143 web unit tests; `analytics-billing-journey` e2e (6/6 e2e green) |
+| Web | Responsive/dark-mode visual checks, automated a11y audit | Not run | — |
+| AI | Bedrock provider adapter (Converse/stream/tools/embeddings) | Unit-tested against a **mocked SDK only**; no live Bedrock call | 28 tests in `bedrock.test.ts` |
+| AI | Bedrock model ids / regional availability | Unverified — check in your account's console | `aws-capability-matrix.md` |
+| AI | AgentCore Runtime/Gateway adapter | Not built (documented as an optional adapter; AgentRunner stays default) | `agentcore-integration.md` |
+| Infra | CDK stacks (network, registry, data, app, ops) for dev/staging/prod | `cdk synth` + cdk-nag + 37 template assertions pass; **never deployed** | `infra/cdk` |
+| Infra | Container images, ECS run, RDS pgvector, ElastiCache auth, GitHub OIDC deploy | Not verified live | `aws-setup-guide.md` |
+| Ops | Runbooks, backup/recovery, SLOs, cost model (formulas, no invented prices) | Documented, never exercised | `docs/operations/*` |

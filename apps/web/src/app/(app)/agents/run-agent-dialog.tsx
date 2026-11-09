@@ -22,6 +22,8 @@ import {
 import { getErrorMessage, isApiError } from '@/lib/api';
 import { useExecuteAgent } from '@/hooks/queries';
 import { AiNotConfigured } from '@/components/ai/ai-not-configured';
+import { BudgetExceeded } from '@/components/ai/budget-exceeded';
+import { isBudgetExceededError } from '@/lib/billing';
 
 type InputKind = 'text' | 'json';
 type Mode = 'async' | 'sync';
@@ -75,10 +77,12 @@ function RunForm({ agent, onClose }: { agent: Pick<Agent, 'id' | 'name'>; onClos
   const [fieldError, setFieldError] = React.useState<string | null>(null);
   const [notConfigured, setNotConfigured] = React.useState(false);
   const [formError, setFormError] = React.useState<string | null>(null);
+  const [budget, setBudget] = React.useState<{ details: unknown } | null>(null);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setFormError(null);
+    setBudget(null);
     const built = buildExecuteRequest(kind, raw, mode);
     if (!built.ok) {
       setFieldError(built.error);
@@ -91,7 +95,8 @@ function RunForm({ agent, onClose }: { agent: Pick<Agent, 'id' | 'name'>; onClos
       onClose();
       router.push(`/agents/executions/${execution.id}`);
     } catch (error) {
-      if (isApiError(error) && error.code === 'AI_NOT_CONFIGURED') setNotConfigured(true);
+      if (isBudgetExceededError(error) && isApiError(error)) setBudget({ details: error.details });
+      else if (isApiError(error) && error.code === 'AI_NOT_CONFIGURED') setNotConfigured(true);
       else setFormError(getErrorMessage(error));
     }
   };
@@ -106,6 +111,7 @@ function RunForm({ agent, onClose }: { agent: Pick<Agent, 'id' | 'name'>; onClos
       </DialogHeader>
       <DialogBody className="flex flex-col gap-5 pb-2">
         {notConfigured ? <AiNotConfigured compact /> : null}
+        {budget ? <BudgetExceeded details={budget.details} /> : null}
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
         <div className="flex items-center justify-between gap-3">
           <SegmentedControl

@@ -586,6 +586,7 @@ model Notification {
 enum AiProviderKind {
   anthropic
   openai
+  bedrock
   mock
 }
 
@@ -605,6 +606,8 @@ model AiProviderConfig {
   encryptedApiKey   String?
   keyLast4          String?        @db.VarChar(4)
   baseUrl           String?
+  /// AWS region (bedrock only). Null = use the server's AWS region chain.
+  region            String?        @db.VarChar(40)
   defaultModel      String         @db.VarChar(120)
   embeddingModel    String?        @db.VarChar(120)
   isDefault         Boolean        @default(false)

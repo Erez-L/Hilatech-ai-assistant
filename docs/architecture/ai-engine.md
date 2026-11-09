@@ -44,6 +44,18 @@ Adapters: `AnthropicProvider` (`@anthropic-ai/sdk`), `OpenAiProvider` (`openai`)
 (deterministic, scripted responses for tests; refused when `NODE_ENV=production`). Business code
 depends only on `AiProvider`; SDK imports exist solely inside the adapters.
 
+### Amazon Bedrock adapter (`bedrock`)
+
+`BedrockProvider` (`providers/bedrock.ts`) implements `AiProvider` with `ConverseCommand` / `ConverseStreamCommand`
+(system prompt, tool use, usage) and `InvokeModelCommand` for embeddings (Titan Text Embeddings V2 — one text per call,
+256/512/1024 dims; Cohere Embed v3 — up to 96 texts per call). Structured output is a forced tool call with one
+corrective retry (the same strategy as the Anthropic adapter). No API key: `requiresApiKey('bedrock')` is false and the
+AWS SDK default credential chain is used; the region comes from `AiProviderConfig.region`, else `AWS_REGION`/profile.
+The server must opt in with `AI_BEDROCK_ENABLED=true`. The model registry entries for Bedrock carry
+`availabilityNote: "unverified availability - check your region"`. Limitations: no reasoning-block replay, no
+images/documents, no prompt caching, no Guardrails, no Cohere v4. **Unit-tested with a mocked client; no live call
+has been made.** See `docs/architecture/aws-capability-matrix.md` and `agentcore-integration.md`.
+
 ## Configuration & credentials
 
 `AiProviderConfig` rows hold per-organization provider settings. API keys are encrypted with
