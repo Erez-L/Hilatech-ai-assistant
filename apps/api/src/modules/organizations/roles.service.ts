@@ -15,6 +15,7 @@ import { AppException } from '../../common/errors/app.exception';
 import { type RequestMeta } from '../../common/request';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { PrivilegeRules } from './member.rules';
 import { toRole } from './organizations.mappers';
 
 /**
@@ -120,6 +121,7 @@ export class RolesService {
   async create(tenant: TenantContext, dto: CreateRoleRequest, meta: RequestMeta): Promise<RoleDto> {
     RoleRules.assertNotSystemKey(dto.key);
     RoleRules.assertKnownPermissions(dto.permissions);
+    PrivilegeRules.assertNoEscalation(tenant.permissions, dto.permissions, 'create');
     const exists = await this.prisma.client.role.findUnique({
       where: { organizationId_key: { organizationId: tenant.organizationId, key: dto.key } },
       select: { id: true },
@@ -158,6 +160,9 @@ export class RolesService {
     RoleRules.assertRenameAllowed(role, dto);
     if (dto.permissions !== undefined) {
       RoleRules.assertKnownPermissions(dto.permissions);
+      // Neither grant permissions you lack, nor rewrite a role that is more powerful than you.
+      PrivilegeRules.assertNoEscalation(tenant.permissions, dto.permissions, 'grant');
+      PrivilegeRules.assertNoEscalation(tenant.permissions, role.permissions, 'modify');
       RoleRules.assertOwnerNotReduced(role, dto.permissions);
     }
 

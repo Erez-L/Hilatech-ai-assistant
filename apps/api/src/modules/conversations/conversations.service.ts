@@ -10,7 +10,7 @@ import {
   QueueName,
   type UpdateConversationRequest,
 } from '@hilatech/contracts';
-import { type Conversation, type Prisma } from '@hilatech/database';
+import { type Conversation, Prisma } from '@hilatech/database';
 import { truncate } from '@hilatech/shared';
 import { type TenantContext } from '@hilatech/types';
 import { Injectable, Optional } from '@nestjs/common';
@@ -31,6 +31,7 @@ import {
   MESSAGE_INCLUDE,
   toConversationWithRelations,
   toMessage,
+  type LastMessageRow,
 } from './conversations.mappers';
 
 /** Debounce window before the workers summarise a conversation after new messages. */
@@ -68,7 +69,7 @@ export class ConversationsService {
       ...(query.leadId ? { leadId: query.leadId } : {}),
       ...(query.search ? { OR: searchClauses(query.search) } : {}),
     };
-    const [rows, total] = await this.prisma.client.$transaction([
+    const [baseRows, total] = await this.prisma.client.$transaction([
       this.prisma.client.conversation.findMany({
         where,
         include: CONVERSATION_INCLUDE,
@@ -77,6 +78,7 @@ export class ConversationsService {
       }),
       this.prisma.client.conversation.count({ where }),
     ]);
+    const rows = await this.withLastMessage(baseRows);
     return page(rows.map(toConversationWithRelations), query, total);
   }
 
@@ -92,7 +94,7 @@ export class ConversationsService {
       ConversationRules.assertCanSetAssignee(tenant, dto.assigneeId, null);
     }
 
-    const conversation = await this.prisma.client.$transaction(async (tx) => {
+    const createdRow = await this.prisma.client.$transaction(async (tx) => {
       const created = await tx.conversation.create({
         data: {
           organizationId: tenant.organizationId,
@@ -123,6 +125,8 @@ export class ConversationsService {
         include: CONVERSATION_INCLUDE,
       });
     });
+    const [conversation] = await this.withLastMessage([createdRow]);
+    if (!conversation) throw AppException.notFound('Conversation');
 
     await this.audit.log({
       action: AuditAction.CONVERSATION_CREATED,
@@ -141,12 +145,17 @@ export class ConversationsService {
     if (conversation.assigneeId) {
       await this.notifyAssigned(tenant, conversation, conversation.assigneeId, meta);
     }
-    await this.emitEvent(tenant, meta, 'conversation.created', conversationEventPayload(conversation));
+    await this.emitEvent(
+      tenant,
+      meta,
+      'conversation.created',
+      conversationEventPayload(conversation),
+    );
     return toConversationWithRelations(conversation);
   }
 
   async get(tenant: TenantContext, id: string): Promise<ConversationWithRelations> {
-    return toConversationWithRelations(await this.requireConversation(tenant, id));
+    return toConversationWithRelations(await this.requireConversationWithLast(tenant, id));
   }
 
   async update(
@@ -155,7 +164,7 @@ export class ConversationsService {
     dto: UpdateConversationRequest,
     meta: RequestMeta,
   ): Promise<ConversationWithRelations> {
-    const existing = await this.requireConversation(tenant, id);
+    const existing = await this.requireConversationWithLast(tenant, id);
     if (dto.contactId) await this.refs.assertContact(tenant, dto.contactId, 'contactId');
     if (dto.leadId) await this.refs.assertLead(tenant, dto.leadId, 'leadId');
     if (dto.assigneeId !== undefined && dto.assigneeId !== existing.assigneeId) {
@@ -175,11 +184,13 @@ export class ConversationsService {
     if (dto.leadId !== undefined && dto.leadId !== existing.leadId) data.leadId = dto.leadId;
     if (Object.keys(data).length === 0) return toConversationWithRelations(existing);
 
-    const updated = await this.prisma.client.conversation.update({
-      where: { id: existing.id },
-      data,
-      include: CONVERSATION_INCLUDE,
-    });
+    const updated = await this.withLastMessageOne(
+      await this.prisma.client.conversation.update({
+        where: { id: existing.id },
+        data,
+        include: CONVERSATION_INCLUDE,
+      }),
+    );
     await this.audit.log({
       action: AuditAction.CONVERSATION_UPDATED,
       organizationId: tenant.organizationId,
@@ -217,15 +228,17 @@ export class ConversationsService {
     dto: AssignConversationRequest,
     meta: RequestMeta,
   ): Promise<ConversationWithRelations> {
-    const existing = await this.requireConversation(tenant, id);
+    const existing = await this.requireConversationWithLast(tenant, id);
     if (dto.assigneeId) await this.refs.assertActiveMember(tenant, dto.assigneeId, 'assigneeId');
     if (dto.assigneeId === existing.assigneeId) return toConversationWithRelations(existing);
 
-    const updated = await this.prisma.client.conversation.update({
-      where: { id: existing.id },
-      data: { assigneeId: dto.assigneeId },
-      include: CONVERSATION_INCLUDE,
-    });
+    const updated = await this.withLastMessageOne(
+      await this.prisma.client.conversation.update({
+        where: { id: existing.id },
+        data: { assigneeId: dto.assigneeId },
+        include: CONVERSATION_INCLUDE,
+      }),
+    );
     await this.audit.log({
       action: AuditAction.CONVERSATION_UPDATED,
       organizationId: tenant.organizationId,
@@ -397,6 +410,41 @@ export class ConversationsService {
     return conversation;
   }
 
+  /** `requireConversation` plus the latest message (only needed when the row is returned to the client). */
+  private async requireConversationWithLast(tenant: TenantContext, id: string) {
+    return this.withLastMessageOne(await this.requireConversation(tenant, id));
+  }
+
+  private async withLastMessageOne<T extends { id: string }>(row: T) {
+    const [withLast] = await this.withLastMessage([row]);
+    return withLast as T & { messages: LastMessageRow[] };
+  }
+
+  /**
+   * Attaches `messages: [latest]` to each row with ONE indexed lookup per conversation
+   * (`Message(conversationId, createdAt)`), independent of how many messages a conversation has.
+   */
+  private async withLastMessage<T extends { id: string }>(
+    rows: T[],
+  ): Promise<Array<T & { messages: LastMessageRow[] }>> {
+    if (rows.length === 0) return [];
+    const ids = Prisma.join(rows.map((r) => Prisma.sql`(${r.id}::uuid)`));
+    const latest = await this.prisma.client.$queryRaw<
+      Array<{ conversationId: string; role: LastMessageRow['role']; content: string }>
+    >`
+      SELECT m."conversationId", m."role"::text AS role, m."content"
+      FROM (VALUES ${ids}) AS c(id)
+      CROSS JOIN LATERAL (
+        SELECT "conversationId", "role", "content" FROM "Message"
+        WHERE "conversationId" = c.id ORDER BY "createdAt" DESC LIMIT 1
+      ) m`;
+    const byConversation = new Map(latest.map((l) => [l.conversationId, l]));
+    return rows.map((row) => {
+      const l = byConversation.get(row.id);
+      return { ...row, messages: l ? [{ role: l.role, content: l.content }] : [] };
+    });
+  }
+
   private async notifyAssigned(
     tenant: TenantContext,
     conversation: Pick<Conversation, 'id' | 'subject'>,
@@ -446,7 +494,10 @@ function orderBy(query: ListConversationsQuery): Prisma.ConversationOrderByWithR
 
 /** Domain-event payload for a conversation (ids and scalar facts only). */
 export function conversationEventPayload(
-  c: Pick<Conversation, 'id' | 'channel' | 'status' | 'subject' | 'assigneeId' | 'contactId' | 'leadId'>,
+  c: Pick<
+    Conversation,
+    'id' | 'channel' | 'status' | 'subject' | 'assigneeId' | 'contactId' | 'leadId'
+  >,
 ): Record<string, unknown> {
   return {
     conversationId: c.id,

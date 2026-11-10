@@ -74,7 +74,8 @@ export function buildContext(input: ContextBuildInput): ContextBuildResult {
 /** Wrap untrusted content (tool results, documents) so the model treats it as data. */
 export function dataBlock(source: string, content: string): string {
   const safeSource = source.replace(/[^a-zA-Z0-9_.:/-]/g, '_').slice(0, 80);
-  const safeContent = content.replace(/<\/data>/gi, '</data_>');
+  // Neutralise every closing-tag variant (`</data >`, `</ DATA\n>`, ...) so content cannot break out of its block.
+  const safeContent = content.replace(/<\s*\/\s*data\b[^>]*>/gi, '</data_>');
   return `<data source="${safeSource}">\n${safeContent}\n</data>`;
 }
 

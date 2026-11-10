@@ -28,3 +28,8 @@ instrumentation)_.
 - A single-AZ database (dev/staging) cannot meet #1 at 99.5% through an AZ failure; **prod is Multi-AZ**.
 - SLO targets for AI providers are bounded by the provider's own availability and by account quotas
   (throttling returns `rate_limited`, which the orchestrator retries within budget).
+
+## Capacity and load-test evidence
+
+Measured throughput/latency on a small shared VM (mock AI provider only) and a clearly labelled 50,000 DAU capacity
+model are in [load-test-results.md](load-test-results.md). Those numbers are not SLO evidence for production.

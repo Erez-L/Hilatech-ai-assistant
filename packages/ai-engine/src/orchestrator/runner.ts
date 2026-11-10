@@ -373,10 +373,16 @@ export class AgentRunner {
         if (reason instanceof LimitExceededError) return finish('timed_out', null, reason.message);
         return finish('cancelled', null, reason instanceof Error ? reason.message : 'Cancelled');
       }
+      // The deadline timer may fire a millisecond before Date.now() reaches deadlineAt, so decide by the abort
+      // reason (set by that timer) as well as by the clock.
+      const abortedByDeadline =
+        controller.signal.aborted &&
+        controller.signal.reason instanceof LimitExceededError &&
+        controller.signal.reason.limit === 'duration';
       if (
         error instanceof AiProviderError &&
         error.code === 'timeout' &&
-        Date.now() >= budget.deadlineAt
+        (abortedByDeadline || Date.now() >= budget.deadlineAt)
       ) {
         return finish('timed_out', null, `Execution exceeded ${limits.maxDurationMs}ms`);
       }
@@ -517,9 +523,18 @@ export class AgentRunner {
         input: { task, context: context ?? null },
         triggeredByUserId: request.userId,
       });
+      // Least privilege: a delegate never writes unless the delegating agent may write too (a read-only agent
+      // must not be able to launder a write through a more privileged colleague after a prompt injection).
+      const childAgent: AgentDefinition = {
+        ...target,
+        permissions: {
+          ...target.permissions,
+          allowWrite: target.permissions.allowWrite && request.agent.permissions.allowWrite,
+        },
+      };
       const childResult = await this.run({
         executionId: child.id,
-        agent: target,
+        agent: childAgent,
         input: context
           ? `${task}\n\n${dataBlock('delegation-context', JSON.stringify(context, null, 2))}`
           : task,

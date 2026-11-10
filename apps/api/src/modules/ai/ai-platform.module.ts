@@ -1,3 +1,4 @@
+import { OutboundHttpModule } from '../../infrastructure/http/http.module';
 import { Module } from '@nestjs/common';
 
 import { BillingModule } from '../billing/billing.module';
@@ -12,7 +13,7 @@ import { AiUsageService } from './usage/ai-usage.service';
 
 /** `/ai/*`: provider configuration, models, usage, prompt templates and the tool catalogue. */
 @Module({
-  imports: [BillingModule],
+  imports: [BillingModule, OutboundHttpModule],
   controllers: [
     AiProvidersController,
     AiUsageController,

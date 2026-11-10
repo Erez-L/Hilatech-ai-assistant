@@ -198,6 +198,10 @@ describe('ConversationsService.postMessage', () => {
 
   it('assigning to another member notifies them; self-assignment does not', async () => {
     const { service, client, notifications } = build();
+    // the latest message is attached with one raw LATERAL lookup (covered by the integration tests)
+    (
+      service as unknown as { withLastMessage: (rows: object[]) => Promise<object[]> }
+    ).withLastMessage = async (rows) => rows.map((r) => ({ ...r, messages: [] }));
     client.conversation.findFirst.mockResolvedValue(conversationRow());
     client.conversation.update.mockResolvedValue(conversationRow({ assigneeId: 'u2' }));
     client.user.findUnique.mockResolvedValue({ firstName: 'Owen', lastName: 'Owner' });

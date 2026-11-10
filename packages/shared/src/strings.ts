@@ -22,3 +22,19 @@ export function withRandomSuffix(slug: string, length = 4): string {
 export function truncate(value: string, max: number): string {
   return value.length <= max ? value : `${value.slice(0, Math.max(0, max - 1))}…`;
 }
+
+/**
+ * True for an app-relative path that browsers resolve on the SAME origin. Rejects protocol-relative `//host`,
+ * backslash forms (`/\host` is normalised to `//host` by browsers), control characters (tabs/newlines are
+ * stripped by URL parsers: `/\t/host`) and anything that does not stay on the origin once parsed.
+ */
+export function isSafeAppPath(value: string): boolean {
+  if (!value.startsWith('/') || value.startsWith('//')) return false;
+  // eslint-disable-next-line no-control-regex
+  if (/[\\\u0000-\u001f\u007f]/.test(value)) return false;
+  try {
+    return new URL(value, 'http://app.invalid').origin === 'http://app.invalid';
+  } catch {
+    return false;
+  }
+}

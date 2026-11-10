@@ -37,6 +37,13 @@ export interface MockProviderOptions {
  * Deterministic in-process provider for tests and local development. It never leaves the process and
  * is refused by the factory in production. Default behaviour: echo the last user message, prefixed.
  */
+/**
+ * `requests` keeps the most recent calls for test assertions. It is capped because the provider instance is cached
+ * per organization config and lives as long as the process: unbounded, every request (with its whole message history)
+ * stayed reachable - a memory leak found by the load tests when running with AI_ALLOW_MOCK_PROVIDER.
+ */
+const MAX_RECORDED_REQUESTS = 200;
+
 export class MockProvider implements AiProvider {
   readonly kind = 'mock' as const;
   readonly requests: GenerateRequest[] = [];
@@ -57,6 +64,7 @@ export class MockProvider implements AiProvider {
 
   private async nextTurn(request: GenerateRequest): Promise<MockTurn> {
     this.requests.push(request);
+    if (this.requests.length > MAX_RECORDED_REQUESTS) this.requests.shift();
     this.onRequest?.(request);
     if (this.latencyMs > 0) {
       await new Promise<void>((resolve, reject) => {

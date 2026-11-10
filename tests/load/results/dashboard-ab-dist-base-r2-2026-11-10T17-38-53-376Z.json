@@ -1,0 +1,103 @@
+{
+ "env": {
+  "cpus": 2,
+  "memGb": 7.8,
+  "node": "v22.23.4",
+  "base": "http://localhost:4150",
+  "tag": "ab-dist-base-r2"
+ },
+ "results": [
+  {
+   "scenario": "_idle_baseline",
+   "sys": {
+    "apiCpuAvg": 1,
+    "apiCpuMax": 5,
+    "workersCpuAvg": 0.6,
+    "pgCpuAvg": 0.2,
+    "redisCpuAvg": 0.2,
+    "genCpuAvg": 1.1,
+    "machineCpuAvg": 1.7,
+    "apiRssMaxMb": 331,
+    "workersRssMaxMb": 274,
+    "pgConnsMax": 1,
+    "pgActiveMax": 0,
+    "pgIdleTxMax": 0,
+    "load1Max": 2.1
+   }
+  },
+  {
+   "scenario": "dashboard",
+   "vus": 5,
+   "durationS": 10,
+   "requests": 653,
+   "success": 653,
+   "rps": 65.3,
+   "errorRate": 0,
+   "statuses": {
+    "200": 653
+   },
+   "p50": 74.9,
+   "p95": 114.5,
+   "p99": 140.1,
+   "max": 154.4,
+   "mean": 76.7,
+   "setupSeconds": 0.2,
+   "cpuMsPerReq": {
+    "api": 5.9,
+    "postgres": 20.39
+   },
+   "sys": {
+    "apiCpuAvg": 38.5,
+    "apiCpuMax": 47.8,
+    "workersCpuAvg": 1.4,
+    "pgCpuAvg": 133.1,
+    "redisCpuAvg": 0.2,
+    "genCpuAvg": 3.6,
+    "machineCpuAvg": 92,
+    "apiRssMaxMb": 494,
+    "workersRssMaxMb": 271,
+    "pgConnsMax": 11,
+    "pgActiveMax": 2,
+    "pgIdleTxMax": 0,
+    "load1Max": 2.96
+   }
+  },
+  {
+   "scenario": "dashboard",
+   "vus": 25,
+   "durationS": 10,
+   "requests": 507,
+   "success": 507,
+   "rps": 50.7,
+   "errorRate": 0,
+   "statuses": {
+    "200": 507
+   },
+   "p50": 488.7,
+   "p95": 570.8,
+   "p99": 611.5,
+   "max": 696.5,
+   "mean": 491.1,
+   "setupSeconds": 0.4,
+   "cpuMsPerReq": {
+    "api": 6.47,
+    "postgres": 29.52
+   },
+   "sys": {
+    "apiCpuAvg": 32.8,
+    "apiCpuMax": 35.5,
+    "workersCpuAvg": 0,
+    "pgCpuAvg": 149.6,
+    "redisCpuAvg": 0.1,
+    "genCpuAvg": 3,
+    "machineCpuAvg": 94.3,
+    "apiRssMaxMb": 619,
+    "workersRssMaxMb": 242,
+    "pgConnsMax": 10,
+    "pgActiveMax": 5,
+    "pgIdleTxMax": 0,
+    "load1Max": 3.67
+   }
+  }
+ ]
+}

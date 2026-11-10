@@ -1,7 +1,13 @@
 import { type AiProviderKind, type AiUsageSummary } from '@hilatech/contracts';
 
-/** One `AiRequestLog` row reduced to what the summary needs (Decimal already converted). */
+/**
+ * One `AiRequestLog` row - or a pre-aggregated group of rows sharing provider/model/agent/status - reduced to what the
+ * summary needs (Decimal already converted). For a group, `requests` is its size, the token fields are its sums and
+ * `estimatedCostUsd` is its total cost, or null when any request in the group has no price.
+ */
 export interface UsageRow {
+  /** How many requests this row stands for (default 1). */
+  requests?: number;
   provider: AiProviderKind;
   model: string;
   agentId: string | null;
@@ -43,6 +49,7 @@ export function buildUsageSummary(input: UsageSummaryInput): AiUsageSummary {
   let inputTokens = 0;
   let outputTokens = 0;
   let errorCount = 0;
+  let requestCount = 0;
 
   const byModel = new Map<
     string,
@@ -61,9 +68,11 @@ export function buildUsageSummary(input: UsageSummaryInput): AiUsageSummary {
   >();
 
   for (const row of input.rows) {
+    const n = row.requests ?? 1;
+    requestCount += n;
     inputTokens += row.inputTokens;
     outputTokens += row.outputTokens;
-    if (row.status !== 'success') errorCount += 1;
+    if (row.status !== 'success') errorCount += n;
     addCost(totalCost, row);
 
     const modelKey = `${row.provider}:${row.model}`;
@@ -79,7 +88,7 @@ export function buildUsageSummary(input: UsageSummaryInput): AiUsageSummary {
       };
       byModel.set(modelKey, model);
     }
-    model.requests += 1;
+    model.requests += n;
     model.inputTokens += row.inputTokens;
     model.outputTokens += row.outputTokens;
     addCost(model.cost, row);
@@ -89,17 +98,17 @@ export function buildUsageSummary(input: UsageSummaryInput): AiUsageSummary {
       agent = { agentId: row.agentId, requests: 0, totalTokens: 0 };
       byAgent.set(row.agentId, agent);
     }
-    agent.requests += 1;
+    agent.requests += n;
     agent.totalTokens += row.inputTokens + row.outputTokens;
   }
 
   return {
     period: { from: input.period.from.toISOString(), to: input.period.to.toISOString() },
-    requests: input.rows.length,
+    requests: requestCount,
     inputTokens,
     outputTokens,
     totalTokens: inputTokens + outputTokens,
-    estimatedCostUsd: input.rows.length === 0 ? 0 : finishCost(totalCost),
+    estimatedCostUsd: requestCount === 0 ? 0 : finishCost(totalCost),
     errorCount,
     byModel: [...byModel.values()]
       .map((m) => ({

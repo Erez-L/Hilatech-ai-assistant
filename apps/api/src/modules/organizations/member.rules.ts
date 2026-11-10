@@ -55,3 +55,28 @@ export const MemberRules = {
     }
   },
 };
+
+/**
+ * No privilege escalation through delegated administration: a member can only hand out, create or manage roles
+ * whose permissions they hold themselves. (Owners hold every permission, so they are never restricted.)
+ */
+export const PrivilegeRules = {
+  excess(actorPermissions: readonly string[], rolePermissions: readonly string[]): string[] {
+    const held = new Set(actorPermissions);
+    return [...new Set(rolePermissions)].filter((p) => !held.has(p));
+  },
+
+  assertNoEscalation(
+    actorPermissions: readonly string[],
+    rolePermissions: readonly string[],
+    what: string,
+  ): void {
+    const excess = PrivilegeRules.excess(actorPermissions, rolePermissions);
+    if (excess.length > 0) {
+      throw AppException.forbidden(
+        `You cannot ${what} a role with permissions you do not hold yourself`,
+        { permissions: excess },
+      );
+    }
+  },
+};

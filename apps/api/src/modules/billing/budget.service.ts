@@ -110,7 +110,11 @@ export class BudgetService {
       warnThresholdPct: dto.warnThresholdPct ?? current.warnThresholdPct,
       hardStopEnabled: dto.hardStopEnabled ?? current.hardStopEnabled,
     };
-    if (next.hardStopEnabled && next.monthlyTokenBudget === null && next.monthlyCostBudgetUsd === null) {
+    if (
+      next.hardStopEnabled &&
+      next.monthlyTokenBudget === null &&
+      next.monthlyCostBudgetUsd === null
+    ) {
       throw AppException.validation('Hard stop needs a token or cost budget to enforce', [
         {
           path: 'hardStopEnabled',
@@ -120,8 +124,7 @@ export class BudgetService {
       ]);
     }
     const data = {
-      monthlyTokenBudget:
-        next.monthlyTokenBudget === null ? null : BigInt(next.monthlyTokenBudget),
+      monthlyTokenBudget: next.monthlyTokenBudget === null ? null : BigInt(next.monthlyTokenBudget),
       monthlyCostBudgetUsd: next.monthlyCostBudgetUsd,
       warnThresholdPct: next.warnThresholdPct,
       hardStopEnabled: next.hardStopEnabled,
@@ -145,11 +148,16 @@ export class BudgetService {
     return this.evaluate(tenant.organizationId);
   }
 
-  /** Current-month status of both budgets (read-only). */
-  async status(organizationId: string, now = new Date()): Promise<BudgetStatus> {
+  /**
+   * Current-month status of both budgets (read-only). `detail = false` is for internal threshold checks: the
+   * per-request cost / priced-request aggregates over the month's `AiRequestLog` rows are skipped unless a cost
+   * budget is actually enforceable (they cost O(requests this month) and are only displayed, never needed to decide).
+   */
+  async status(organizationId: string, now = new Date(), detail = true): Promise<BudgetStatus> {
     const settings = await this.getSettings(organizationId);
     const { start, end } = monthPeriod(now);
-    const usage = await this.monthUsage(organizationId, now);
+    const withCost = detail || (settings.monthlyCostBudgetUsd !== null && this.pricingConfigured);
+    const usage = await this.monthUsage(organizationId, now, withCost);
 
     const tokenLevel = budgetLevel(
       usage.tokensUsed,
@@ -199,8 +207,8 @@ export class BudgetService {
   }
 
   /** `status` plus raising the alerts that are due (warning / exceeded), exactly once per month and scope. */
-  async evaluate(organizationId: string, now = new Date()): Promise<BudgetStatus> {
-    const status = await this.status(organizationId, now);
+  async evaluate(organizationId: string, now = new Date(), detail = true): Promise<BudgetStatus> {
+    const status = await this.status(organizationId, now, detail);
     await this.raiseAlerts(organizationId, status, now).catch((error: unknown) => {
       this.logger.error({ err: error, organizationId }, 'failed to evaluate budget alerts');
     });
@@ -222,7 +230,11 @@ export class BudgetService {
     const settings = await this.getSettings(organizationId);
     if (!settings.hardStopEnabled) return NO_RESERVATION;
 
-    const usage = await this.monthUsage(organizationId);
+    const usage = await this.monthUsage(
+      organizationId,
+      new Date(),
+      settings.monthlyCostBudgetUsd !== null && this.pricingConfigured,
+    );
     const caps = admissionCaps(settings, usage);
     if (caps.tokens === null && caps.costMicroUsd === null) return NO_RESERVATION;
 
@@ -288,7 +300,7 @@ export class BudgetService {
    */
   async reconcile(organizationId: string): Promise<void> {
     try {
-      await this.evaluate(organizationId);
+      await this.evaluate(organizationId, new Date(), false);
     } catch (error) {
       this.logger.error({ err: error, organizationId }, 'budget reconcile failed');
     }
@@ -314,7 +326,11 @@ export class BudgetService {
     return page(rows.map(toBudgetAlert), query, total);
   }
 
-  private async raiseAlerts(organizationId: string, status: BudgetStatus, now: Date): Promise<void> {
+  private async raiseAlerts(
+    organizationId: string,
+    status: BudgetStatus,
+    now: Date,
+  ): Promise<void> {
     const warn = status.settings.warnThresholdPct;
     const planLimits = await this.entitlements.getLimits(organizationId);
     const candidates: AlertCandidate[] = [
@@ -383,8 +399,16 @@ export class BudgetService {
   // Usage helpers
   // ---------------------------------------------------------------------------------------------
 
-  private async monthUsage(organizationId: string, now = new Date()): Promise<MonthUsage> {
+  private async monthUsage(
+    organizationId: string,
+    now = new Date(),
+    withCost = true,
+  ): Promise<MonthUsage> {
     const { start, end } = monthPeriod(now);
+    if (!withCost) {
+      const tokensUsed = await this.entitlements.usageThisPeriod(organizationId, 'ai_tokens', now);
+      return { tokensUsed, costUsedUsd: null, pricedRequests: 0, unpricedRequests: 0 };
+    }
     const [tokensUsed, priced, unpriced] = await Promise.all([
       this.entitlements.usageThisPeriod(organizationId, 'ai_tokens', now),
       this.prisma.client.aiRequestLog.aggregate({
@@ -407,7 +431,9 @@ export class BudgetService {
     ]);
     return {
       tokensUsed,
-      costUsedUsd: this.pricingConfigured ? (decimalToNumber(priced._sum.estimatedCostUsd) ?? 0) : null,
+      costUsedUsd: this.pricingConfigured
+        ? (decimalToNumber(priced._sum.estimatedCostUsd) ?? 0)
+        : null,
       pricedRequests: priced._count._all,
       unpricedRequests: unpriced,
     };

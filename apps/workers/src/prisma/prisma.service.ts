@@ -17,7 +17,10 @@ export class PrismaService implements OnModuleInit, OnApplicationShutdown {
     @Inject(WORKERS_ENV) env: WorkersEnv,
     @InjectPinoLogger(PrismaService.name) private readonly logger: PinoLogger,
   ) {
-    this.client = createPrismaClient({ connectionString: env.DATABASE_URL, maxConnections: 10 });
+    this.client = createPrismaClient({
+      connectionString: env.DATABASE_URL,
+      maxConnections: env.DB_POOL_MAX,
+    });
   }
 
   async onModuleInit(): Promise<void> {

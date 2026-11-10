@@ -20,22 +20,25 @@ import {
 /** Length of the `lastMessage.content` preview embedded in conversation listings. */
 export const LAST_MESSAGE_PREVIEW_LENGTH = 200;
 
+/**
+ * Relations loaded with every conversation. The latest message is deliberately NOT a nested `messages` include with
+ * `take: 1`: Prisma's default relation strategy issues `WHERE conversationId IN (...) ORDER BY createdAt DESC` with no
+ * LIMIT and trims per parent in memory, i.e. it reads every message of every conversation on the page. The service
+ * attaches the latest message with one indexed LATERAL lookup instead (`ConversationsService.withLastMessage`).
+ */
 export const CONVERSATION_INCLUDE = {
   contact: { select: CONTACT_SUMMARY_SELECT },
   lead: { select: { id: true, title: true, status: true } },
   assignee: { select: USER_SUMMARY_SELECT },
-  messages: {
-    orderBy: { createdAt: 'desc' },
-    take: 1,
-    select: { role: true, content: true },
-  },
 } as const satisfies Prisma.ConversationInclude;
+
+export type LastMessageRow = Pick<Message, 'role' | 'content'>;
 
 export type ConversationRow = Conversation & {
   contact: ContactSummaryRow | null;
   lead: Pick<Lead, 'id' | 'title' | 'status'> | null;
   assignee: UserSummaryRow | null;
-  messages: Array<Pick<Message, 'role' | 'content'>>;
+  messages: LastMessageRow[];
 };
 
 export function toConversation(row: Conversation): ConversationDto {

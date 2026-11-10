@@ -14,6 +14,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   constructor(config: AppConfig) {
     this.client = createPrismaClient({
       connectionString: config.get('DATABASE_URL'),
+      maxConnections: config.get('DB_POOL_MAX'),
       log: config.isProduction ? ['warn', 'error'] : ['warn', 'error'],
     });
   }

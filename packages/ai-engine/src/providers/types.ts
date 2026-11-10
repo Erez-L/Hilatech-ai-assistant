@@ -158,4 +158,6 @@ export interface ProviderCredentials {
   region?: string;
   /** Default request timeout in ms (per call). */
   timeoutMs?: number;
+  /** `fetch` used by SDK-based providers (the resolver injects an SSRF-guarded one for custom `baseUrl`s). */
+  fetch?: typeof fetch;
 }

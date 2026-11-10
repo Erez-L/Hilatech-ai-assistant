@@ -33,6 +33,7 @@ import { QueueService } from '../../infrastructure/queue/queue.service';
 import { AuditService } from '../audit/audit.service';
 import { EntitlementsService } from '../billing/entitlements.service';
 import { DomainEventsService } from '../events/domain-events.service';
+import { PrivilegeRules } from './member.rules';
 import { INVITATION_INCLUDE, toInvitation } from './organizations.mappers';
 
 type Tx = Prisma.TransactionClient | PrismaClient;
@@ -138,6 +139,7 @@ export class InvitationsService {
     if (role.key === SystemRole.OWNER && tenant.roleKey !== SystemRole.OWNER) {
       throw AppException.forbidden('Only an owner can invite another owner');
     }
+    PrivilegeRules.assertNoEscalation(tenant.permissions, role.permissions, 'invite someone into');
 
     const existingMember = await this.prisma.client.organizationMember.findFirst({
       where: { organizationId: tenant.organizationId, user: { email: dto.email } },

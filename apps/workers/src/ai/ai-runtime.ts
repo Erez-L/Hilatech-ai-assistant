@@ -22,6 +22,7 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { WORKERS_ENV } from '../config/config.module';
 import type { WorkersEnv } from '../config/env.schema';
 import { PrismaService } from '../prisma/prisma.service';
+import { outboundPolicyFor } from '../automation/outbound-policy';
 import { toAgentDefinition } from './agent-definition.mapper';
 import { toEngineLogger } from './engine-logger';
 import { RedisCancellationSignal } from './redis-cancellation.signal';
@@ -46,12 +47,18 @@ export type AiRuntimeEnv = Pick<
   | 'AI_ALLOW_MOCK_PROVIDER'
   | 'AI_PRICING_JSON'
   | 'AI_TOOL_TIMEOUT_MS'
->;
+> &
+  Partial<Pick<WorkersEnv, 'OUTBOUND_ALLOWED_HOSTS'>>;
 
 /** Builds the production `ProviderResolver` from the validated environment. */
 export function createProviderResolver(prisma: PrismaService, env: AiRuntimeEnv): ProviderResolver {
   return new ProviderResolver(prisma.client, {
     encryptionKey: env.CREDENTIALS_ENCRYPTION_KEY,
+    // Tenant-supplied provider endpoints obey the same SSRF policy as webhooks and workflow HTTP steps.
+    outboundPolicy: outboundPolicyFor({
+      NODE_ENV: env.NODE_ENV,
+      OUTBOUND_ALLOWED_HOSTS: env.OUTBOUND_ALLOWED_HOSTS ?? [],
+    }),
     providerOptions: { nodeEnv: env.NODE_ENV, allowMock: env.AI_ALLOW_MOCK_PROVIDER },
   });
 }

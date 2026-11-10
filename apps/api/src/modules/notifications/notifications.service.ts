@@ -6,7 +6,7 @@ import {
   type UnreadCount,
 } from '@hilatech/contracts';
 import { type Notification, type Prisma } from '@hilatech/database';
-import { truncate } from '@hilatech/shared';
+import { isSafeAppPath, truncate } from '@hilatech/shared';
 import { type Principal, type TenantContext } from '@hilatech/types';
 import { Injectable } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
@@ -80,6 +80,8 @@ export class NotificationsService {
     });
     if (!user) return null;
 
+    // Links are app-relative by contract; never persist or email anything that could leave the origin.
+    const link = input.link && isSafeAppPath(input.link) ? input.link : null;
     const prefs = NotificationRules.preferencesFrom(user.preferences);
     let created: Notification | null = null;
     if (NotificationRules.inAppEnabled(prefs, input.type)) {
@@ -90,7 +92,7 @@ export class NotificationsService {
           type: input.type,
           title: truncate(input.title, 200),
           body: input.body ?? null,
-          link: input.link ?? null,
+          link,
           data: (input.data ?? {}) as Prisma.InputJsonObject,
         },
       });
@@ -105,7 +107,7 @@ export class NotificationsService {
           subject: truncate(input.title, 200),
           heading: truncate(input.title, 200),
           body: input.body ?? input.title,
-          ...(input.link ? { ctaLabel: 'Open', ctaUrl: input.link } : {}),
+          ...(link ? { ctaLabel: 'Open', ctaUrl: link } : {}),
         },
         {
           idempotencyKey: `notif-email-${key}`,

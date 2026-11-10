@@ -12,7 +12,7 @@ import { type RequestMeta } from '../../common/request';
 import { type PageResult, page, skipTake } from '../../common/utils/pagination';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { MemberRules, type MemberRuleContext } from './member.rules';
+import { MemberRules, PrivilegeRules, type MemberRuleContext } from './member.rules';
 import { MEMBER_INCLUDE, toMember } from './organizations.mappers';
 
 @Injectable()
@@ -43,13 +43,14 @@ export class MembersService {
     meta: RequestMeta,
   ): Promise<MemberDto> {
     const member = await this.requireMember(tenant, memberId);
+    await this.assertOutranks(tenant, member);
     const ctx = await this.ruleContext(tenant, member);
     const data: { roleId?: string; status?: 'active' | 'suspended' } = {};
 
     if (dto.roleId !== undefined && dto.roleId !== member.roleId) {
       const newRole = await this.prisma.client.role.findFirst({
         where: { id: dto.roleId, organizationId: tenant.organizationId },
-        select: { id: true, key: true },
+        select: { id: true, key: true, permissions: true },
       });
       if (!newRole) {
         throw AppException.validation('Role not found in this organization', [
@@ -57,6 +58,7 @@ export class MembersService {
         ]);
       }
       MemberRules.assertCanAssignRole(ctx, MemberRules.isOwnerKey(newRole.key));
+      PrivilegeRules.assertNoEscalation(tenant.permissions, newRole.permissions, 'assign');
       data.roleId = newRole.id;
     }
 
@@ -90,6 +92,7 @@ export class MembersService {
 
   async remove(tenant: TenantContext, memberId: string, meta: RequestMeta): Promise<void> {
     const member = await this.requireMember(tenant, memberId);
+    await this.assertOutranks(tenant, member);
     const ctx = await this.ruleContext(tenant, member);
     MemberRules.assertCanRemove(ctx);
 
@@ -130,6 +133,19 @@ export class MembersService {
     });
     if (!member) throw AppException.notFound('Member');
     return member;
+  }
+
+  /** A member cannot change or remove someone whose role carries permissions the actor lacks (self excluded). */
+  private async assertOutranks(
+    tenant: TenantContext,
+    member: { userId: string; roleId: string },
+  ): Promise<void> {
+    if (member.userId === tenant.userId) return;
+    const role = await this.prisma.client.role.findUnique({
+      where: { id: member.roleId },
+      select: { permissions: true },
+    });
+    PrivilegeRules.assertNoEscalation(tenant.permissions, role?.permissions ?? [], 'manage a member holding');
   }
 
   private async ruleContext(

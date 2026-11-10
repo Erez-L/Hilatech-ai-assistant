@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { randomBytes as rb } from 'node:crypto';
 import { SecretBox, generateOpaqueToken, sha256, safeEqual } from '../crypto';
-import { slugify, withRandomSuffix } from '../strings';
+import { isSafeAppPath, slugify, withRandomSuffix } from '../strings';
 import { parseDuration, monthPeriod } from '../time';
 import { redactSensitive } from '../redaction';
 
@@ -72,5 +72,25 @@ describe('SecretBox', () => {
   });
   it('exposes only the last characters', () => {
     expect(SecretBox.last('sk-abcdef1234')).toBe('1234');
+  });
+});
+
+describe('SEC-05: isSafeAppPath', () => {
+  it('accepts same-origin app paths', () => {
+    for (const p of ['/', '/leads/1', '/leads?x=1#y', '/settings/billing'])
+      expect(isSafeAppPath(p)).toBe(true);
+  });
+  it('rejects anything a browser could resolve to another origin', () => {
+    for (const p of [
+      '//evil.example',
+      '/\\evil.example',
+      '/\t/evil.example',
+      '/\n/evil.example',
+      'https://evil.example',
+      'javascript:alert(1)',
+      'evil.example',
+      '',
+    ])
+      expect(isSafeAppPath(p)).toBe(false);
   });
 });

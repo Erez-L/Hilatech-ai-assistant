@@ -39,3 +39,7 @@ uploads/
 # AWS CDK
 cdk.out/
 .cdk.staging/
+
+# redis local dumps (contain queued job payloads: invitation/reset tokens, emails)
+dump.rdb
+*.rdb

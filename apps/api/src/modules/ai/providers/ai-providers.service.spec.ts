@@ -41,6 +41,7 @@ function build(bedrockEnabled: boolean) {
     audit as never,
     resolver as never,
     config as never,
+    { policy: {} } as never,
   );
   return { service, created };
 }

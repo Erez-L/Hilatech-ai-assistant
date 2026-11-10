@@ -59,7 +59,7 @@ shared mental model for everyone (human or agent) working in the repository.
 - Roles are per organization with system roles (`owner`, `admin`, `member`) created automatically;
   permissions are string keys from `@hilatech/contracts` (`resource:action`).
 - Future stronger isolation (schema-per-tenant, RLS) can be added behind the same `TenantContext`
-  abstraction without touching controllers.
+  abstraction without touching controllers. Today isolation is application-enforced only; see [tenant-isolation.md](./tenant-isolation.md) for the mechanisms, tests and known limits.
 
 ## Background processing
 
@@ -71,7 +71,7 @@ tenant boundary, use exponential backoff and keep failed jobs for inspection.
 ## AI engine (Priority 3)
 
 Business services depend on an `AiProvider` interface (generate, stream, structured output, tool
-calling, embeddings, usage). Adapters for Anthropic and OpenAI implement it; a registry selects the
+calling, embeddings, usage). Adapters for Anthropic, OpenAI, Amazon Bedrock and a mock provider implement it; a registry selects the
 provider from organization configuration. Credentials are encrypted at rest and never returned to
 clients. Agents run through an orchestration engine with hard limits (steps, duration, tokens,
 delegation depth) and a permission layer in front of every tool call.

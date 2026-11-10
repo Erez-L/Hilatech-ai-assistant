@@ -44,6 +44,7 @@ export class OpenAiProvider implements AiProvider {
       new OpenAI({
         apiKey: credentials.apiKey,
         baseURL: credentials.baseUrl,
+        ...(credentials.fetch ? { fetch: credentials.fetch } : {}),
         timeout: credentials.timeoutMs ?? DEFAULT_TIMEOUT_MS,
         maxRetries: 0,
       });

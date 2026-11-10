@@ -99,6 +99,11 @@ export const envSchema = z
       (v) => stripInlineComment(v) || 'bull',
       z.string().regex(/^[A-Za-z0-9_-]+$/),
     ),
+    /**
+     * Max PostgreSQL connections in THIS process's pool (default 10). Total connections = tasks x pool size, so size it
+     * against the database's `max_connections` (or RDS Proxy) - see docs/operations/load-test-results.md.
+     */
+    DB_POOL_MAX: intVar(10, 1),
 
     // Auth
     JWT_ACCESS_SECRET: z.preprocess(

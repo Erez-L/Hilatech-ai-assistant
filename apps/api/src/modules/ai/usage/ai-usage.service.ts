@@ -30,29 +30,30 @@ export class AiUsageService {
   /** Aggregates `AiRequestLog` for the period (default: the current UTC month) plus the plan limit. */
   async summary(tenant: TenantContext, query: UsageSummaryQuery): Promise<AiUsageSummary> {
     const period = resolvePeriod(query);
-    const rows = await this.prisma.client.aiRequestLog.findMany({
+    // Aggregated in the database: the previous implementation loaded every request log row of the period into
+    // memory (O(requests) per call, with a caller-chosen period). Groups are tiny: models x agents x statuses.
+    const groups = await this.prisma.client.aiRequestLog.groupBy({
+      by: ['provider', 'model', 'agentId', 'status'],
       where: {
         organizationId: tenant.organizationId,
         createdAt: { gte: period.from, lt: period.to },
       },
-      select: {
-        provider: true,
-        model: true,
-        agentId: true,
-        status: true,
-        inputTokens: true,
-        outputTokens: true,
-        estimatedCostUsd: true,
-      },
+      _count: { _all: true, estimatedCostUsd: true },
+      _sum: { inputTokens: true, outputTokens: true, estimatedCostUsd: true },
     });
-    const usageRows: UsageRow[] = rows.map((r) => ({
-      provider: r.provider,
-      model: r.model,
-      agentId: r.agentId,
-      status: r.status,
-      inputTokens: r.inputTokens,
-      outputTokens: r.outputTokens,
-      estimatedCostUsd: decimalToNumber(r.estimatedCostUsd),
+    const usageRows: UsageRow[] = groups.map((g) => ({
+      requests: g._count._all,
+      provider: g.provider,
+      model: g.model,
+      agentId: g.agentId,
+      status: g.status,
+      inputTokens: g._sum.inputTokens ?? 0,
+      outputTokens: g._sum.outputTokens ?? 0,
+      // A group is "priced" only when every request in it has a price (ADR-012: never a guess).
+      estimatedCostUsd:
+        g._count.estimatedCostUsd < g._count._all
+          ? null
+          : (decimalToNumber(g._sum.estimatedCostUsd) ?? 0),
     }));
 
     const agentIds = [...new Set(usageRows.map((r) => r.agentId).filter((v): v is string => !!v))];

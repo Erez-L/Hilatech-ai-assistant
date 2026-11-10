@@ -16,6 +16,8 @@ import { Global, Module } from '@nestjs/common';
 import { Logger, PinoLogger } from 'nestjs-pino';
 
 import { AppConfig } from '../../../config/app-config.service';
+import { OutboundHttpModule } from '../../../infrastructure/http/http.module';
+import { OutboundPolicyService } from '../../../infrastructure/http/outbound-policy.service';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { AiRunnersService } from './ai-runners.service';
 import { CancellationService } from './cancellation.service';
@@ -28,6 +30,7 @@ import { ENGINE_LOGGER, createEngineLogger } from './engine-logger';
  */
 @Global()
 @Module({
+  imports: [OutboundHttpModule],
   providers: [
     CancellationService,
     {
@@ -37,9 +40,10 @@ import { ENGINE_LOGGER, createEngineLogger } from './engine-logger';
     },
     {
       provide: ProviderResolver,
-      inject: [PrismaService, AppConfig],
-      useFactory: (prisma: PrismaService, config: AppConfig) =>
+      inject: [PrismaService, AppConfig, OutboundPolicyService],
+      useFactory: (prisma: PrismaService, config: AppConfig, outbound: OutboundPolicyService) =>
         new ProviderResolver(prisma.client, {
+          outboundPolicy: outbound.policy,
           encryptionKey: config.get('CREDENTIALS_ENCRYPTION_KEY'),
           providerOptions: {
             nodeEnv: config.get('NODE_ENV'),

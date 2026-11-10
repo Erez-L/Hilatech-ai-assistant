@@ -48,6 +48,7 @@ export class AnthropicProvider implements AiProvider {
       new Anthropic({
         apiKey: credentials.apiKey,
         baseURL: credentials.baseUrl,
+        ...(credentials.fetch ? { fetch: credentials.fetch } : {}),
         timeout: credentials.timeoutMs ?? DEFAULT_TIMEOUT_MS,
         maxRetries: 0, // retries are handled by the orchestrator with its own budget
       });

@@ -83,4 +83,36 @@ describe('buildUsageSummary', () => {
       byAgent: [],
     });
   });
+
+  it('treats a pre-aggregated row as `requests` requests and gives the same result as the expanded rows', () => {
+    const agentNames = new Map([['a1', 'Researcher']]);
+    const expanded = buildUsageSummary({
+      period,
+      limit,
+      agentNames,
+      rows: [
+        row({ agentId: 'a1', status: 'error' }),
+        row({ agentId: 'a1', status: 'error' }),
+        row({ agentId: 'a1', status: 'error' }),
+      ],
+    });
+    const grouped = buildUsageSummary({
+      period,
+      limit,
+      agentNames,
+      rows: [
+        row({
+          requests: 3,
+          agentId: 'a1',
+          status: 'error',
+          inputTokens: 300,
+          outputTokens: 150,
+          estimatedCostUsd: 0.003,
+        }),
+      ],
+    });
+    expect(grouped).toEqual(expanded);
+    expect(grouped.requests).toBe(3);
+    expect(grouped.errorCount).toBe(3);
+  });
 });

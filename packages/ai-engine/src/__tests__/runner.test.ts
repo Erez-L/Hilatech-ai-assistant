@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@hilatech/database';
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
 import { AiProviderError } from '../errors';
 import { AgentRunner } from '../orchestrator/runner';
@@ -82,6 +83,7 @@ function setup(
     latencyMs?: number;
     pricing?: PricingTable;
     sharedProvider?: MockProvider;
+    registry?: ToolRegistry;
   } = {},
 ) {
   const provider =
@@ -91,7 +93,7 @@ function setup(
   const deps: RunnerDeps = {
     prisma: {} as PrismaClient,
     logger: noopLogger,
-    registry: new ToolRegistry().register(timeNowTool),
+    registry: options.registry ?? new ToolRegistry().register(timeNowTool),
     store,
     usage,
     resolveModel: async (a) => ({
@@ -324,6 +326,45 @@ describe('AgentRunner', () => {
         'delegation_cycle',
         'delegation_not_allowed',
       ]);
+    });
+
+    it('SEC-07: a read-only agent cannot launder a write through a write-enabled delegate', async () => {
+      let writes = 0;
+      const registry = new ToolRegistry().register(timeNowTool).register({
+        key: 'test.write',
+        name: 'Test write',
+        description: 'writes something',
+        category: 'test',
+        riskLevel: 'write',
+        requiredPermission: null,
+        input: z.object({}),
+        execute: async () => {
+          writes += 1;
+          return { ok: true, summary: 'written' };
+        },
+      });
+      const provider = new MockProvider({
+        script: [
+          { toolCalls: [{ name: 'agents__delegate', input: { agentId: childId, task: 'write it' } }] },
+          { toolCalls: [{ name: 'test__write', input: {} }] }, // child tries the write tool
+          { text: 'child done' },
+          { text: 'parent done' },
+        ],
+      });
+      const parent = agent({
+        id: parentId,
+        permissions: { allowWrite: false, allowDelegation: true, delegateTo: [] },
+      });
+      const child = agent({
+        id: childId,
+        tools: ['test.write'],
+        permissions: { allowWrite: true, allowDelegation: false, delegateTo: [] },
+      });
+      const { runner, store } = setup([], { agents: [parent, child], sharedProvider: provider, registry });
+      await runner.run({ ...delegator, agent: parent, input: 'x' });
+      expect(writes).toBe(0);
+      const toolStep = store.steps.get('child-1')?.find((s) => s.type === 'tool_call');
+      expect(toolStep?.error).toBe('write_not_allowed');
     });
 
     it('denies delegation when the triggering user lacks agents:execute', async () => {

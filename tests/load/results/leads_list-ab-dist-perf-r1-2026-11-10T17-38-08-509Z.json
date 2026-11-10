@@ -1,0 +1,66 @@
+{
+ "env": {
+  "cpus": 2,
+  "memGb": 7.8,
+  "node": "v22.23.4",
+  "base": "http://localhost:4150",
+  "tag": "ab-dist-perf-r1"
+ },
+ "results": [
+  {
+   "scenario": "_idle_baseline",
+   "sys": {
+    "apiCpuAvg": 0,
+    "apiCpuMax": 0,
+    "workersCpuAvg": 0,
+    "pgCpuAvg": 0,
+    "redisCpuAvg": 0,
+    "genCpuAvg": 1.1,
+    "machineCpuAvg": 1,
+    "apiRssMaxMb": 709,
+    "workersRssMaxMb": 245,
+    "pgConnsMax": 10,
+    "pgActiveMax": 0,
+    "pgIdleTxMax": 0,
+    "load1Max": 2.63
+   }
+  },
+  {
+   "scenario": "leads_list",
+   "vus": 25,
+   "durationS": 10,
+   "requests": 1722,
+   "success": 1722,
+   "rps": 172.2,
+   "errorRate": 0,
+   "statuses": {
+    "200": 1722
+   },
+   "p50": 141.3,
+   "p95": 192.9,
+   "p99": 267.1,
+   "max": 323.7,
+   "mean": 145.8,
+   "setupSeconds": 0.5,
+   "cpuMsPerReq": {
+    "api": 3.8,
+    "postgres": 5.35
+   },
+   "sys": {
+    "apiCpuAvg": 65.4,
+    "apiCpuMax": 71.7,
+    "workersCpuAvg": 0.1,
+    "pgCpuAvg": 92.1,
+    "redisCpuAvg": 0.1,
+    "genCpuAvg": 7.3,
+    "machineCpuAvg": 84.1,
+    "apiRssMaxMb": 739,
+    "workersRssMaxMb": 245,
+    "pgConnsMax": 10,
+    "pgActiveMax": 3,
+    "pgIdleTxMax": 6,
+    "load1Max": 2.43
+   }
+  }
+ ]
+}

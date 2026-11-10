@@ -14,6 +14,7 @@ import {
   SecretBox,
   SsrfError,
   buildN8nHeaders,
+  isSafeAppPath,
   joinUrl,
   safeRequest,
   truncate,
@@ -166,7 +167,7 @@ export class StepHandlerFactory {
     if (!title.trim()) throw new StepError('Notification title rendered empty');
     const body = step.body ? runtime.render(step.body) : null;
     let link = step.link ? runtime.render(step.link) : null;
-    if (link && !link.startsWith('/')) link = null; // app-relative links only
+    if (link && !isSafeAppPath(link)) link = null; // same-origin app-relative links only (no //host, no /\host)
 
     const users = await db.user.findMany({
       where: { id: { in: userIds }, isActive: true },

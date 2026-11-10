@@ -21,6 +21,11 @@ export const envSchema = z
 
     REDIS_URL: z.string().url({ message: 'REDIS_URL must be a redis:// or rediss:// URL' }),
     DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+    /** Max PostgreSQL connections in this process's pool (default 10). Total = tasks x pool size. */
+    DB_POOL_MAX: z.preprocess(
+      emptyToUndefined,
+      z.coerce.number().int().min(1).max(200).default(10),
+    ),
 
     APP_URL: z.string().url().default('http://localhost:3000'),
 

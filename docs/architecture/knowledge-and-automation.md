@@ -73,7 +73,8 @@ workers: schedule_tick (every minute) ─► due cron workflows ─► WorkflowE
 
 `Integration` rows hold `kind`, non-secret `config` (validated per kind by `integrationConfigSchema`)
 and `encryptedSecrets` (SecretBox, organization-bound). `POST /integrations/:id/test` runs a
-kind-specific connectivity check (SMTP handshake, HTTP reachability, n8n health) and stores
-`status`/`lastError`. Live delivery support in this release: `rest`, `n8n`, `email` (SMTP via the
-workers' email driver) — `whatsapp` and `crm` are configuration + validation only (`liveSupport:
-'planned'`), never pretending to send.
+kind-specific connectivity check (HTTP reachability, n8n health) and stores
+`status`/`lastError`. Live support in this release: `rest` and `n8n` only (`liveSupport: 'full'`).
+`email`, `whatsapp` and `crm` are configuration + validation only (`liveSupport: 'planned'`): secrets can be stored,
+nothing is sent and no connectivity test can pass, so they never pretend to work. (System email — invitations, password
+reset — is separate and uses the workers' `EMAIL_DRIVER` `log`/`smtp`; it is not an integration row.)

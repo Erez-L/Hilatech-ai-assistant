@@ -25,14 +25,14 @@ import {
 } from '@/hooks/queries';
 import { useCan } from '@/hooks/use-can';
 import { budgetAlertInfo } from '@/lib/billing';
+import { isSafeAppPath } from '@/lib/navigation';
 
 const PAGE_SIZE = 20;
 
 /** Only same-origin paths are followed from notification links. */
 function safeLink(link: string | null): string | null {
   if (!link) return null;
-  if (link.startsWith('/') && !link.startsWith('//')) return link;
-  return null;
+  return isSafeAppPath(link) ? link : null;
 }
 
 export function NotificationsMenu() {

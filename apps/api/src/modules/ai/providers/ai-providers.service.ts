@@ -16,12 +16,14 @@ import {
   type UpdateAiProviderConfigRequest,
 } from '@hilatech/contracts';
 import { type AiProviderConfig, type Prisma } from '@hilatech/database';
+import { SsrfError, resolveSafeTarget } from '@hilatech/shared';
 import { type TenantContext } from '@hilatech/types';
 import { Injectable } from '@nestjs/common';
 
 import { AppException } from '../../../common/errors/app.exception';
 import { type RequestMeta } from '../../../common/request';
 import { AppConfig } from '../../../config/app-config.service';
+import { OutboundPolicyService } from '../../../infrastructure/http/outbound-policy.service';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { toAiProviderConfig } from './ai-providers.mappers';
@@ -33,6 +35,7 @@ export class AiProvidersService {
     private readonly audit: AuditService,
     private readonly resolver: ProviderResolver,
     private readonly config: AppConfig,
+    private readonly outbound: OutboundPolicyService,
   ) {}
 
   get bedrockAllowed(): boolean {
@@ -72,6 +75,7 @@ export class AiProvidersService {
       ]);
     }
     await this.assertNameFree(tenant, dto.name);
+    if (dto.provider !== 'bedrock' && dto.baseUrl) await this.assertEndpointAllowed(dto.baseUrl);
 
     const secret = needsKey && dto.apiKey ? this.encrypt(tenant, dto.apiKey) : null;
     const created = await this.prisma.client.$transaction(async (tx) => {
@@ -152,6 +156,7 @@ export class AiProvidersService {
       dto.baseUrl !== undefined &&
       dto.baseUrl !== existing.baseUrl
     ) {
+      await this.assertEndpointAllowed(dto.baseUrl);
       data.baseUrl = dto.baseUrl;
       changes.push('baseUrl');
     }
@@ -305,6 +310,23 @@ export class AiProvidersService {
           code: 'custom',
         },
       ]);
+    }
+  }
+
+  /**
+   * `baseUrl` makes the server call an address the tenant chose (SSRF): it must satisfy the outbound policy
+   * (https, public addresses only; loopback/http only outside production). Re-checked on every request.
+   */
+  private async assertEndpointAllowed(url: string): Promise<void> {
+    try {
+      await resolveSafeTarget(url, this.outbound.policy);
+    } catch (error) {
+      if (error instanceof SsrfError) {
+        throw AppException.validation(`Invalid endpoint: ${error.message}`, [
+          { path: 'baseUrl', message: error.message, code: 'custom' },
+        ]);
+      }
+      throw error;
     }
   }
 

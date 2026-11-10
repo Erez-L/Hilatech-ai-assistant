@@ -1,6 +1,6 @@
 import type { AiProviderKind } from '@hilatech/contracts';
 import type { AiProviderConfig, PrismaClient } from '@hilatech/database';
-import { SecretBox } from '@hilatech/shared';
+import { SecretBox, SsrfError, createGuardedFetch, assertSafeUrlShape, type OutboundPolicy } from '@hilatech/shared';
 
 import { AiNotConfiguredError } from '../errors';
 import type { AgentDefinition, ResolvedModel } from '../orchestrator/types';
@@ -14,6 +14,11 @@ export interface ProviderResolverOptions {
   providerOptions?: CreateProviderOptions;
   /** Per-call provider timeout. */
   timeoutMs?: number;
+  /**
+   * SSRF policy for tenant-supplied `baseUrl`s (OpenAI/Anthropic-compatible endpoints). Defaults to the strict
+   * policy (public https only). Pass `allowLocalhost` in development for local model servers.
+   */
+  outboundPolicy?: OutboundPolicy;
 }
 
 export interface ResolveOptions {
@@ -102,14 +107,43 @@ export class ProviderResolver {
   ): AiProvider {
     return createProvider(
       kind,
-      {
-        apiKey,
-        baseUrl: baseUrl ?? undefined,
-        region: region ?? undefined,
-        timeoutMs: this.options.timeoutMs,
-      },
+      this.credentialsFor(kind, apiKey, baseUrl, region ?? undefined),
       this.options.providerOptions,
     );
+  }
+
+  /**
+   * Credentials for an adapter. A tenant-supplied `baseUrl` is a server-side request target: it is checked
+   * against the SSRF policy now and every request goes through a guarded `fetch`. Bedrock never honours a
+   * stored endpoint override (it runs with the server's AWS identity).
+   */
+  private credentialsFor(
+    kind: AiProviderKind,
+    apiKey: string | undefined,
+    baseUrl: string | null | undefined,
+    region: string | undefined,
+  ) {
+    const policy = this.options.outboundPolicy ?? {};
+    const effectiveBase = kind === 'bedrock' || kind === 'mock' ? undefined : (baseUrl ?? undefined);
+    if (effectiveBase) {
+      try {
+        assertSafeUrlShape(effectiveBase, policy);
+      } catch (error) {
+        if (error instanceof SsrfError) {
+          throw new AiNotConfiguredError(
+            `The provider endpoint is not allowed by the outbound policy: ${error.message}`,
+          );
+        }
+        throw error;
+      }
+    }
+    return {
+      apiKey,
+      baseUrl: effectiveBase,
+      region,
+      timeoutMs: this.options.timeoutMs,
+      ...(effectiveBase ? { fetch: createGuardedFetch(policy) } : {}),
+    };
   }
 
   private adapterFor(config: AiProviderConfig): AiProvider {
@@ -128,12 +162,7 @@ export class ProviderResolver {
     }
     const adapter = createProvider(
       config.provider,
-      {
-        apiKey,
-        baseUrl: config.baseUrl ?? undefined,
-        region: config.region ?? undefined,
-        timeoutMs: this.options.timeoutMs,
-      },
+      this.credentialsFor(config.provider, apiKey, config.baseUrl, config.region ?? undefined),
       this.options.providerOptions,
     );
     // Drop stale versions of the same config.

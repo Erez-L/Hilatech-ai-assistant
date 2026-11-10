@@ -343,3 +343,26 @@ export async function safeRequest(rawUrl: string, options: SafeRequestOptions = 
     req.end();
   });
 }
+
+// ---------------------------------------------------------------------------------------------
+// Guarded fetch (for SDKs that accept a `fetch` implementation)
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Wraps `fetch` so every request first passes the SSRF policy (scheme, literal and DNS-resolved addresses)
+ * and redirects are never followed (a public host must not be able to bounce the request to a private one).
+ * Used for tenant-configurable endpoints reached through third-party SDKs (OpenAI/Anthropic `baseURL`).
+ * Residual risk: the SDK re-resolves the hostname when it connects, so a DNS-rebinding attacker with a
+ * very low TTL could still win the race; `safeRequest` (DNS-pinned) is used wherever the body is ours.
+ */
+export function createGuardedFetch(
+  policy: OutboundPolicy = {},
+  base: typeof fetch = (...args) => fetch(...args),
+): typeof fetch {
+  return async (input, init) => {
+    const raw =
+      typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url;
+    await resolveSafeTarget(raw, policy);
+    return base(input, { ...init, redirect: 'manual' });
+  };
+}

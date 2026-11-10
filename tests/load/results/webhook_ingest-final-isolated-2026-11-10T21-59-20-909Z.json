@@ -1,0 +1,121 @@
+{
+ "env": {
+  "cpus": 2,
+  "memGb": 7.8,
+  "node": "v22.23.4",
+  "base": "http://localhost:4150",
+  "tag": "final-isolated"
+ },
+ "results": [
+  {
+   "scenario": "_idle_baseline",
+   "sys": {
+    "apiCpuAvg": 0.2,
+    "apiCpuMax": 1,
+    "workersCpuAvg": 0,
+    "pgCpuAvg": 0,
+    "redisCpuAvg": 0.4,
+    "genCpuAvg": 1.2,
+    "machineCpuAvg": 1.6,
+    "apiRssMaxMb": 478,
+    "workersRssMaxMb": 329,
+    "pgConnsMax": 18,
+    "pgActiveMax": 0,
+    "pgIdleTxMax": 0,
+    "load1Max": 0.99
+   }
+  },
+  {
+   "scenario": "webhook_ingest",
+   "mode": "burst+drain",
+   "jobs": 2000,
+   "concurrency": 20,
+   "enqueue": {
+    "ok": 2000,
+    "bad": 0,
+    "seconds": 9.6,
+    "rps": 209.1,
+    "p50": 94.7,
+    "p95": 129.4,
+    "p99": 150.6
+   },
+   "queueDepthPeak": 1254,
+   "queueDepthAtEndOfEnqueue": 1269,
+   "initialDepth": 0,
+   "drained": true,
+   "secondsToDrainAfterEnqueue": 10.5,
+   "totalSeconds": 20.1,
+   "processedThroughputPerSec": 99.7,
+   "byStatus": [
+    {
+     "status": "succeeded",
+     "n": 2000,
+     "queuedToFinishedMs": {
+      "p50": 7088,
+      "p95": 10000,
+      "p99": 10262,
+      "max": 10355
+     },
+     "runMsP50": 33
+    }
+   ],
+   "depthSeries": [
+    [
+     0,
+     0
+    ],
+    [
+     2,
+     266
+    ],
+    [
+     4.1,
+     553
+    ],
+    [
+     6.1,
+     818
+    ],
+    [
+     8.2,
+     1081
+    ],
+    [
+     10.2,
+     1189
+    ],
+    [
+     12.2,
+     947
+    ],
+    [
+     14.3,
+     700
+    ],
+    [
+     16.3,
+     442
+    ],
+    [
+     18.3,
+     195
+    ]
+   ],
+   "sys": {
+    "apiCpuAvg": 23.9,
+    "apiCpuMax": 59.8,
+    "workersCpuAvg": 46.4,
+    "pgCpuAvg": 84.9,
+    "redisCpuAvg": 4,
+    "genCpuAvg": 3.8,
+    "machineCpuAvg": 85.2,
+    "apiRssMaxMb": 600,
+    "workersRssMaxMb": 383,
+    "pgConnsMax": 19,
+    "pgActiveMax": 6,
+    "pgIdleTxMax": 0,
+    "load1Max": 1.62
+   }
+  }
+ ]
+}

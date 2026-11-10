@@ -23,6 +23,7 @@ import {
   type CreateAssistantThreadRequest,
   ErrorCode,
   type ListAssistantMessagesQuery,
+  Permission,
   type PaginationQuery,
   type SendAssistantMessageRequest,
   type UpdateAssistantThreadRequest,
@@ -482,7 +483,15 @@ export class AssistantService {
     if (!context) return [];
     const blocks: string[] = [];
     const orgId = tenant.organizationId;
+    // Context records are read on the user's behalf: they need the same read permission as the REST endpoints
+    // (otherwise an assistant-only role could pull any lead/contact/conversation into the prompt).
+    const requireRead = (permission: Permission): void => {
+      if (!tenant.permissions.includes(permission)) {
+        throw AppException.forbidden('Missing required permission', { required: [permission] });
+      }
+    };
     if (context.leadId) {
+      requireRead(Permission.LEADS_READ);
       const lead = await this.prisma.client.lead.findFirst({
         where: { id: context.leadId, organizationId: orgId, deletedAt: null },
         include: {
@@ -495,6 +504,7 @@ export class AssistantService {
       blocks.push(dataBlock('lead', serialise(lead)));
     }
     if (context.contactId) {
+      requireRead(Permission.CONTACTS_READ);
       const contact = await this.prisma.client.contact.findFirst({
         where: { id: context.contactId, organizationId: orgId, deletedAt: null },
       });
@@ -502,6 +512,7 @@ export class AssistantService {
       blocks.push(dataBlock('contact', serialise(contact)));
     }
     if (context.conversationId) {
+      requireRead(Permission.CONVERSATIONS_READ);
       const conversation = await this.prisma.client.conversation.findFirst({
         where: { id: context.conversationId, organizationId: orgId },
         include: {

@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net';
 import { describe, expect, it } from 'vitest';
 import {
   SsrfError,
+  createGuardedFetch,
   assertSafeUrlShape,
   isPrivateAddress,
   resolveSafeTarget,
@@ -164,5 +165,24 @@ describe('safeRequest', () => {
       server.closeAllConnections?.();
       server.close();
     }
+  });
+});
+
+describe('SEC-01: createGuardedFetch', () => {
+  it('blocks private targets before any network call and never follows redirects', async () => {
+    const calls: Array<{ url: string; redirect?: string }> = [];
+    const base = (async (input: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: String(input), redirect: init?.redirect });
+      return new Response('ok');
+    }) as typeof fetch;
+    const guarded = createGuardedFetch(
+      { resolve: async (host) => (host === 'rebind.example' ? ['10.0.0.7'] : ['93.184.216.34']) },
+      base,
+    );
+    await expect(guarded('http://169.254.169.254/latest/meta-data')).rejects.toBeInstanceOf(SsrfError);
+    await expect(guarded('https://rebind.example/v1')).rejects.toBeInstanceOf(SsrfError);
+    expect(calls).toHaveLength(0);
+    await guarded('https://api.example.com/v1/chat');
+    expect(calls).toEqual([{ url: 'https://api.example.com/v1/chat', redirect: 'manual' }]);
   });
 });

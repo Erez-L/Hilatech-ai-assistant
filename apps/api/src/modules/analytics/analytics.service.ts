@@ -21,10 +21,40 @@ import {
 } from './analytics.period';
 
 const RECENT_LIMIT = 5;
-const OPEN_CONVERSATION_STATUSES: ConversationStatus[] = ['open', 'pending'];
 const CLOSED_LEAD_STATUSES: LeadStatus[] = ['won', 'lost'];
 
 type SeriesRow = { date: string; count: number };
+
+interface LeadStatRow {
+  status: LeadStatus;
+  source: LeadSource;
+  count: number;
+  newInPeriod: number;
+  updatedInPeriod: number;
+  valueTotal: number;
+  valueUpdatedInPeriod: number;
+}
+interface ConversationStatRow {
+  status: ConversationStatus;
+  channel: ConversationChannel;
+  count: number;
+  unassignedOpen: number;
+  newInPeriod: number;
+}
+
+/** Adds `count` to the row for `key` (rows are keyed by one enum value; callers pass several rows per key). */
+function accumulate<K extends string>(
+  rows: Array<{ key: K; count: number }>,
+  key: K,
+  count: number,
+): void {
+  const existing = rows.find((r) => r.key === key);
+  if (existing) existing.count += count;
+  else rows.push({ key, count });
+}
+
+/** Money columns are numeric(14,2): summing per-group floats and rounding to cents is exact at this scale. */
+const roundMoney = (n: number): number => Math.round(n * 100) / 100;
 
 /**
  * Dashboard summary: every number is computed live from the organization's rows (never cached
@@ -37,70 +67,36 @@ export class AnalyticsService {
   async dashboard(tenant: TenantContext, query: DashboardQuery): Promise<DashboardSummary> {
     const organizationId = tenant.organizationId;
     const period = resolvePeriod(query.period);
-    const inPeriod = { gte: period.from, lte: period.to };
     const db = this.prisma.client;
     const liveLeads = { organizationId, deletedAt: null } as const;
-    const liveContacts = { organizationId, deletedAt: null } as const;
 
+    // Three consolidated scans (leads / conversations / contacts) replace what used to be 15 separate
+    // count/groupBy/aggregate statements, so a dashboard view costs ~10 queries instead of 21 and each
+    // large table is read once. Results are identical (see tests/load/dashboard-diff.mjs).
     const [
       organization,
-      activeMembers,
-      suspendedMembers,
+      memberStatusRows,
       pendingInvitations,
-      contactsTotal,
-      contactsNew,
-      leadsByStatus,
-      leadsBySource,
-      leadsNew,
-      leadsWon,
-      leadsLost,
-      pipeline,
-      wonValue,
-      conversationsByStatus,
-      conversationsByChannel,
-      conversationsUnassigned,
-      conversationsNew,
+      contactStats,
+      leadRows,
+      conversationRows,
       leadSeries,
       conversationSeries,
       recentLeads,
       recentConversations,
     ] = await Promise.all([
       db.organization.findUnique({ where: { id: organizationId }, select: { settings: true } }),
-      db.organizationMember.count({ where: { organizationId, status: 'active' } }),
-      db.organizationMember.count({ where: { organizationId, status: 'suspended' } }),
+      db.organizationMember.groupBy({
+        by: ['status'],
+        where: { organizationId, status: { in: ['active', 'suspended'] } },
+        _count: { _all: true },
+      }),
       db.invitation.count({
         where: { organizationId, status: 'pending', expiresAt: { gt: period.to } },
       }),
-      db.contact.count({ where: liveContacts }),
-      db.contact.count({ where: { ...liveContacts, createdAt: inPeriod } }),
-      db.lead.groupBy({ by: ['status'], where: liveLeads, _count: { _all: true } }),
-      db.lead.groupBy({ by: ['source'], where: liveLeads, _count: { _all: true } }),
-      db.lead.count({ where: { ...liveLeads, createdAt: inPeriod } }),
-      // The schema has no closedAt; a won/lost lead's last update is when it was closed.
-      db.lead.count({ where: { ...liveLeads, status: 'won', updatedAt: inPeriod } }),
-      db.lead.count({ where: { ...liveLeads, status: 'lost', updatedAt: inPeriod } }),
-      db.lead.aggregate({
-        where: { ...liveLeads, status: { notIn: CLOSED_LEAD_STATUSES } },
-        _sum: { value: true },
-      }),
-      db.lead.aggregate({
-        where: { ...liveLeads, status: 'won', updatedAt: inPeriod },
-        _sum: { value: true },
-      }),
-      db.conversation.groupBy({
-        by: ['status'],
-        where: { organizationId },
-        _count: { _all: true },
-      }),
-      db.conversation.groupBy({
-        by: ['channel'],
-        where: { organizationId },
-        _count: { _all: true },
-      }),
-      db.conversation.count({
-        where: { organizationId, assigneeId: null, status: { in: OPEN_CONVERSATION_STATUSES } },
-      }),
-      db.conversation.count({ where: { organizationId, createdAt: inPeriod } }),
+      this.contactStats(organizationId, period),
+      this.leadStats(organizationId, period),
+      this.conversationStats(organizationId, period),
       this.dailySeries('Lead', organizationId, period, true),
       this.dailySeries('Conversation', organizationId, period, false),
       db.lead.findMany({
@@ -124,22 +120,47 @@ export class AnalyticsService {
       }),
     ]);
 
-    const byStatus = countsByKey(
-      LeadStatus.options,
-      leadsByStatus.map((r) => ({ key: r.status, count: r._count._all })),
-    );
-    const bySource = countsByKey(
-      LeadSource.options,
-      leadsBySource.map((r) => ({ key: r.source, count: r._count._all })),
-    );
-    const conversationStatus = countsByKey(
-      ConversationStatus.options,
-      conversationsByStatus.map((r) => ({ key: r.status, count: r._count._all })),
-    );
-    const conversationChannel = countsByKey(
-      ConversationChannel.options,
-      conversationsByChannel.map((r) => ({ key: r.channel, count: r._count._all })),
-    );
+    const activeMembers = memberStatusRows.find((r) => r.status === 'active')?._count._all ?? 0;
+    const suspendedMembers =
+      memberStatusRows.find((r) => r.status === 'suspended')?._count._all ?? 0;
+    const contactsTotal = contactStats.total;
+    const contactsNew = contactStats.newInPeriod;
+
+    const leadsByStatus: Array<{ key: LeadStatus; count: number }> = [];
+    const leadsBySource: Array<{ key: LeadSource; count: number }> = [];
+    let leadsNew = 0;
+    let leadsWon = 0;
+    let leadsLost = 0;
+    let pipelineValue = 0;
+    let wonValue = 0;
+    for (const row of leadRows) {
+      accumulate(leadsByStatus, row.status, row.count);
+      accumulate(leadsBySource, row.source, row.count);
+      leadsNew += row.newInPeriod;
+      // The schema has no closedAt; a won/lost lead's last update is when it was closed.
+      if (row.status === 'won') {
+        leadsWon += row.updatedInPeriod;
+        wonValue += row.valueUpdatedInPeriod;
+      }
+      if (row.status === 'lost') leadsLost += row.updatedInPeriod;
+      if (!CLOSED_LEAD_STATUSES.includes(row.status)) pipelineValue += row.valueTotal;
+    }
+
+    const conversationsByStatus: Array<{ key: ConversationStatus; count: number }> = [];
+    const conversationsByChannel: Array<{ key: ConversationChannel; count: number }> = [];
+    let conversationsUnassigned = 0;
+    let conversationsNew = 0;
+    for (const row of conversationRows) {
+      accumulate(conversationsByStatus, row.status, row.count);
+      accumulate(conversationsByChannel, row.channel, row.count);
+      conversationsUnassigned += row.unassignedOpen;
+      conversationsNew += row.newInPeriod;
+    }
+
+    const byStatus = countsByKey(LeadStatus.options, leadsByStatus);
+    const bySource = countsByKey(LeadSource.options, leadsBySource);
+    const conversationStatus = countsByKey(ConversationStatus.options, conversationsByStatus);
+    const conversationChannel = countsByKey(ConversationChannel.options, conversationsByChannel);
     const leadsTotal = Object.values(byStatus).reduce((sum, n) => sum + n, 0);
     const conversationsTotal = Object.values(conversationStatus).reduce((sum, n) => sum + n, 0);
 
@@ -157,8 +178,8 @@ export class AnalyticsService {
         lostInPeriod: leadsLost,
         byStatus,
         bySource,
-        pipelineValue: decimalToNumber(pipeline._sum.value) ?? 0,
-        wonValueInPeriod: decimalToNumber(wonValue._sum.value) ?? 0,
+        pipelineValue: roundMoney(pipelineValue),
+        wonValueInPeriod: roundMoney(wonValue),
         currency: reportingCurrency(organization?.settings),
       },
       conversations: {
@@ -190,6 +211,58 @@ export class AnalyticsService {
         lastMessageAt: isoOrNull(c.lastMessageAt),
       })),
     };
+  }
+
+  /** One scan of the organization's live leads: counts and sums per (status, source), period filters via FILTER. */
+  private async leadStats(organizationId: string, period: ResolvedPeriod): Promise<LeadStatRow[]> {
+    const rows = await this.prisma.client.$queryRaw<
+      Array<
+        Omit<LeadStatRow, 'valueTotal' | 'valueUpdatedInPeriod'> & {
+          valueTotal: string;
+          valueUpdatedInPeriod: string;
+        }
+      >
+    >`
+      SELECT "status"::text AS status, "source"::text AS source,
+             COUNT(*)::int AS count,
+             (COUNT(*) FILTER (WHERE "createdAt" >= ${period.from} AND "createdAt" <= ${period.to}))::int AS "newInPeriod",
+             (COUNT(*) FILTER (WHERE "updatedAt" >= ${period.from} AND "updatedAt" <= ${period.to}))::int AS "updatedInPeriod",
+             COALESCE(SUM("value"), 0)::text AS "valueTotal",
+             COALESCE(SUM("value") FILTER (WHERE "updatedAt" >= ${period.from} AND "updatedAt" <= ${period.to}), 0)::text AS "valueUpdatedInPeriod"
+      FROM "Lead"
+      WHERE "organizationId" = ${organizationId}::uuid AND "deletedAt" IS NULL
+      GROUP BY "status", "source"`;
+    return rows.map((r) => ({
+      ...r,
+      valueTotal: Number(r.valueTotal),
+      valueUpdatedInPeriod: Number(r.valueUpdatedInPeriod),
+    }));
+  }
+
+  private async conversationStats(
+    organizationId: string,
+    period: ResolvedPeriod,
+  ): Promise<ConversationStatRow[]> {
+    return this.prisma.client.$queryRaw<ConversationStatRow[]>`
+      SELECT "status"::text AS status, "channel"::text AS channel,
+             COUNT(*)::int AS count,
+             (COUNT(*) FILTER (WHERE "assigneeId" IS NULL AND "status" IN ('open', 'pending')))::int AS "unassignedOpen",
+             (COUNT(*) FILTER (WHERE "createdAt" >= ${period.from} AND "createdAt" <= ${period.to}))::int AS "newInPeriod"
+      FROM "Conversation"
+      WHERE "organizationId" = ${organizationId}::uuid
+      GROUP BY "status", "channel"`;
+  }
+
+  private async contactStats(
+    organizationId: string,
+    period: ResolvedPeriod,
+  ): Promise<{ total: number; newInPeriod: number }> {
+    const rows = await this.prisma.client.$queryRaw<Array<{ total: number; newInPeriod: number }>>`
+      SELECT COUNT(*)::int AS total,
+             (COUNT(*) FILTER (WHERE "createdAt" >= ${period.from} AND "createdAt" <= ${period.to}))::int AS "newInPeriod"
+      FROM "Contact"
+      WHERE "organizationId" = ${organizationId}::uuid AND "deletedAt" IS NULL`;
+    return rows[0] ?? { total: 0, newInPeriod: 0 };
   }
 
   /**
