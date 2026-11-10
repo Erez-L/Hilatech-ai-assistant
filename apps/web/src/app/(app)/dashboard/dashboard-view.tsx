@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { format, formatDistanceToNow } from 'date-fns';
 import {
   ArrowRight,
   Inbox,
@@ -32,8 +31,6 @@ import {
   SegmentedControl,
   Skeleton,
   StatCard,
-  formatCompact,
-  formatCurrency,
 } from '@hilatech/ui';
 import { useAuditLogs, useDashboard, useUsage } from '@/hooks/queries';
 import { useCan } from '@/hooks/use-can';
@@ -49,20 +46,24 @@ import {
 import { ConversationStatusBadge, LeadStatusBadge } from '@/components/crm/badges';
 import { ChannelIcon } from '@/components/crm/channel-icon';
 import { USAGE_LABELS } from '@/lib/usage-labels';
+import { useT, useFormat } from '@/i18n/provider';
+import { msg, type Msg } from '@/i18n/msg';
 
-const PERIODS: { value: DashboardPeriod; label: string }[] = [
-  { value: '7d', label: '7 days' },
-  { value: '30d', label: '30 days' },
-  { value: '90d', label: '90 days' },
+const PERIODS: { value: DashboardPeriod; label: Msg }[] = [
+  { value: '7d', label: msg('dashboard.n7Days') },
+  { value: '30d', label: msg('dashboard.n30Days') },
+  { value: '90d', label: msg('dashboard.n90Days') },
 ];
 
-const PERIOD_WORDS: Record<DashboardPeriod, string> = {
-  '7d': 'last 7 days',
-  '30d': 'last 30 days',
-  '90d': 'last 90 days',
+const PERIOD_WORDS: Record<DashboardPeriod, Msg> = {
+  '7d': msg('dashboard.periodWords7d'),
+  '30d': msg('dashboard.periodWords30d'),
+  '90d': msg('dashboard.periodWords90d'),
 };
 
 export function DashboardView() {
+  const fmt = useFormat();
+  const t = useT();
   const user = useSession((s) => s.user);
   const org = useSession((s) => s.activeOrganization);
   const canInvite = useCan(Permission.MEMBERS_INVITE);
@@ -78,24 +79,32 @@ export function DashboardView() {
   const audit = useAuditLogs({ page: 1, pageSize: 8 });
 
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const greeting = t(
+    hour < 12
+      ? 'dashboard.greetingMorning'
+      : hour < 18
+        ? 'dashboard.greetingAfternoon'
+        : 'dashboard.greetingEvening',
+  );
 
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        title={`${greeting}${user ? `, ${user.firstName}` : ''}`}
-        description={org ? `Here’s where ${org.name} stands today.` : undefined}
+        title={
+          user ? t('dashboard.greetingWithName', { greeting, name: user.firstName }) : greeting
+        }
+        description={org ? t('dashboard.hereSWhereStandsToday', { name: org.name }) : undefined}
         actions={
           <>
             <SegmentedControl
-              aria-label="Period"
-              options={PERIODS}
+              aria-label={t('dashboard.period')}
+              options={PERIODS.map((o) => ({ ...o, label: t(o.label) }))}
               value={period}
               onValueChange={setPeriod}
             />
             {canInvite ? (
               <Button asChild variant="secondary" leadingIcon={<MailPlus aria-hidden />}>
-                <Link href="/team?invite=1">Invite a teammate</Link>
+                <Link href="/team?invite=1">{t('common.inviteATeammate')}</Link>
               </Button>
             ) : null}
           </>
@@ -106,7 +115,7 @@ export function DashboardView() {
         <QueryState
           query={dashboard}
           loading={<DashboardSkeleton />}
-          errorTitle="The overview couldn’t be loaded"
+          errorTitle={t('dashboard.theOverviewCouldnTBe')}
         >
           {(d) => (
             <DashboardBody
@@ -121,8 +130,8 @@ export function DashboardView() {
       ) : (
         <EmptyState
           icon={<Target />}
-          title="Analytics are restricted"
-          description="Your role can’t view organization analytics. Ask an admin for the analytics permission."
+          title={t('dashboard.analyticsAreRestricted')}
+          description={t('dashboard.yourRoleCanTView')}
         />
       )}
 
@@ -131,12 +140,12 @@ export function DashboardView() {
         <Card>
           <CardHeader className="flex-row items-start justify-between">
             <div className="flex flex-col gap-1">
-              <CardTitle>Recent activity</CardTitle>
-              <CardDescription>What happened in this organization lately.</CardDescription>
+              <CardTitle>{t('dashboard.recentActivity')}</CardTitle>
+              <CardDescription>{t('dashboard.whatHappenedInThisOrganization')}</CardDescription>
             </div>
             {canAudit ? (
               <Button asChild variant="ghost" size="sm" trailingIcon={<ArrowRight aria-hidden />}>
-                <Link href="/audit">Audit log</Link>
+                <Link href="/audit">{t('common.auditLog')}</Link>
               </Button>
             ) : null}
           </CardHeader>
@@ -151,7 +160,7 @@ export function DashboardView() {
                       <li key={i} className="flex items-center gap-3 px-5 py-3">
                         <Skeleton className="size-2 rounded-full" />
                         <Skeleton className="h-4 w-48" />
-                        <Skeleton className="ml-auto h-3 w-16" />
+                        <Skeleton className="ms-auto h-3 w-16" />
                       </li>
                     ))}
                   </ul>
@@ -161,8 +170,8 @@ export function DashboardView() {
                   <EmptyState
                     compact
                     icon={<ScrollText />}
-                    title="No activity yet"
-                    description="Actions like invitations, role changes and sign-ins will show up here."
+                    title={t('dashboard.noActivityYet')}
+                    description={t('dashboard.actionsLikeInvitationsRoleChanges')}
                   />
                 }
               >
@@ -174,13 +183,13 @@ export function DashboardView() {
                           {log.action.split('.')[0]}
                         </Badge>
                         <span className="min-w-0 flex-1 truncate">
-                          {describeAuditAction(log.action)}
+                          {describeAuditAction(log.action, t)}
                         </span>
                         <time
                           dateTime={log.createdAt}
                           className="shrink-0 text-xs text-fg-subtle tabular"
                         >
-                          {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
+                          {fmt.relative(new Date(log.createdAt))}
                         </time>
                       </li>
                     ))}
@@ -191,8 +200,8 @@ export function DashboardView() {
               <EmptyState
                 compact
                 icon={<ScrollText />}
-                title="Activity is restricted"
-                description="Your role can’t view the audit log."
+                title={t('dashboard.activityIsRestricted')}
+                description={t('dashboard.yourRoleCanTView2')}
               />
             )}
           </CardContent>
@@ -202,12 +211,12 @@ export function DashboardView() {
         <Card>
           <CardHeader className="flex-row items-start justify-between">
             <div className="flex flex-col gap-1">
-              <CardTitle>Usage this period</CardTitle>
-              <CardDescription>Against your current plan limits.</CardDescription>
+              <CardTitle>{t('dashboard.usageThisPeriod')}</CardTitle>
+              <CardDescription>{t('dashboard.againstYourCurrentPlanLimits')}</CardDescription>
             </div>
             {canBilling ? (
               <Button asChild variant="ghost" size="sm" trailingIcon={<ArrowRight aria-hidden />}>
-                <Link href="/settings/billing">Billing</Link>
+                <Link href="/settings/billing">{t('dashboard.billing')}</Link>
               </Button>
             ) : null}
           </CardHeader>
@@ -231,20 +240,25 @@ export function DashboardView() {
                   {(Object.keys(USAGE_LABELS) as (keyof typeof USAGE_LABELS)[]).map((metric) => {
                     const entry = u.metrics[metric];
                     if (!entry) return null;
-                    const { label, format: fmt } = USAGE_LABELS[metric];
+                    const { label, unit } = USAGE_LABELS[metric];
+                    const fmtUsage = (n: number) =>
+                      unit === 'mb' ? fmt.bytesFromMb(n) : fmt.compact(n);
                     return (
                       <li key={metric} className="flex flex-col gap-2">
                         <div className="flex items-baseline justify-between text-sm">
-                          <span className="text-fg-muted">{label}</span>
+                          <span className="text-fg-muted">{t(label)}</span>
                           <span className="font-medium tabular">
-                            {fmt(entry.used)}
+                            {fmtUsage(entry.used)}
                             <span className="text-fg-subtle">
                               {' '}
-                              / {entry.limit == null ? 'unlimited' : fmt(entry.limit)}
+                              /{' '}
+                              {entry.limit == null
+                                ? t('dashboard.unlimited')
+                                : fmtUsage(entry.limit)}
                             </span>
                           </span>
                         </div>
-                        <Meter label={label} value={entry.used} max={entry.limit} size="sm" />
+                        <Meter label={t(label)} value={entry.used} max={entry.limit} size="sm" />
                       </li>
                     );
                   })}
@@ -289,7 +303,9 @@ function DashboardBody({
   canConversations: boolean;
   refreshing: boolean;
 }) {
-  const words = PERIOD_WORDS[period];
+  const fmt = useFormat();
+  const t = useT();
+  const words = t(PERIOD_WORDS[period]);
   const currency = d.leads.currency;
 
   const series = React.useMemo(() => {
@@ -318,56 +334,72 @@ function DashboardBody({
       {/* Stats */}
       <section aria-labelledby="overview" className="flex flex-col gap-3">
         <h2 id="overview" className="sr-only">
-          Overview
+          {t('dashboard.overview')}
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <StatCard
-            label="Open leads"
+            label={t('dashboard.openLeads')}
             value={d.leads.open}
             icon={<Target />}
-            hint={`${formatCompact(d.leads.newInPeriod)} new in the ${words}`}
+            hint={t('dashboard.newInThe', {
+              formatCompact: fmt.compact(d.leads.newInPeriod),
+              words,
+            })}
           />
           <StatCard
-            label="Pipeline value"
-            value={formatCurrency(d.leads.pipelineValue, currency, { compact: true })}
+            label={t('dashboard.pipelineValue')}
+            value={fmt.currency(d.leads.pipelineValue, currency, { compact: true })}
             icon={<Wallet />}
-            hint={`Across ${formatCompact(d.leads.open)} open lead${d.leads.open === 1 ? '' : 's'}`}
+            hint={t('dashboard.acrossOpenLeads', { count: d.leads.open })}
           />
           <StatCard
-            label={`Won · ${words}`}
+            label={t('dashboard.won', { words })}
             value={d.leads.wonInPeriod}
             icon={<Trophy />}
             hint={
               d.leads.wonInPeriod > 0
-                ? `${formatCurrency(d.leads.wonValueInPeriod, currency, { compact: true })} closed · ${d.leads.lostInPeriod} lost`
+                ? t('dashboard.closedLost', {
+                    formatCurrency: fmt.currency(d.leads.wonValueInPeriod, currency, {
+                      compact: true,
+                    }),
+                    lostInPeriod: d.leads.lostInPeriod,
+                  })
                 : d.leads.lostInPeriod > 0
-                  ? `${d.leads.lostInPeriod} lost`
-                  : 'Nothing closed yet'
+                  ? t('dashboard.lost', { lostInPeriod: d.leads.lostInPeriod })
+                  : t('dashboard.nothingClosedYet')
             }
           />
           <StatCard
-            label="Open conversations"
+            label={t('dashboard.openConversations')}
             value={d.conversations.open}
             icon={<MessageSquare />}
-            hint={`${formatCompact(d.conversations.pending)} pending · ${formatCompact(d.conversations.newInPeriod)} new in the ${words}`}
+            hint={t('dashboard.pendingNewInThe', {
+              formatCompact: fmt.compact(d.conversations.pending),
+              formatCompact2: fmt.compact(d.conversations.newInPeriod),
+              words,
+            })}
           />
           <StatCard
-            label="Unassigned conversations"
+            label={t('dashboard.unassignedConversations')}
             value={d.conversations.unassigned}
             icon={<UserRoundX />}
             hint={
-              d.conversations.unassigned > 0 ? 'Waiting for an owner' : 'Everything has an owner'
+              d.conversations.unassigned > 0
+                ? t('dashboard.waitingForAnOwner')
+                : t('dashboard.everythingHasAnOwner')
             }
           />
           <StatCard
-            label="Team members"
+            label={t('dashboard.teamMembers')}
             value={d.members.active}
             icon={<Users />}
             hint={[
               d.invitations.pending > 0
-                ? `${d.invitations.pending} invitation${d.invitations.pending === 1 ? '' : 's'} pending`
-                : 'No pending invitations',
-              d.members.suspended > 0 ? `${d.members.suspended} suspended` : null,
+                ? t('dashboard.invitationsPending', { count: d.invitations.pending })
+                : t('dashboard.noPendingInvitations'),
+              d.members.suspended > 0
+                ? t('dashboard.suspendedCount', { count: d.members.suspended })
+                : null,
             ]
               .filter(Boolean)
               .join(' · ')}
@@ -380,31 +412,31 @@ function DashboardBody({
         <Card>
           <CardHeader className="flex-row items-start justify-between">
             <div className="flex flex-col gap-1">
-              <CardTitle>New leads</CardTitle>
-              <CardDescription>Per day over the {words}.</CardDescription>
+              <CardTitle>{t('dashboard.newLeads')}</CardTitle>
+              <CardDescription>{t('dashboard.perDayOverThe', { words })}</CardDescription>
             </div>
             <span className="text-2xl leading-none font-semibold tracking-tight tabular">
-              {formatCompact(d.leads.newInPeriod)}
+              {fmt.compact(d.leads.newInPeriod)}
             </span>
           </CardHeader>
           <CardContent>
             <AreaChart
               data={series}
               xKey="date"
-              series={[{ key: 'leads', label: 'Leads' }]}
+              series={[{ key: 'leads', label: t('common.leads') }]}
               height={180}
-              labelFormatter={shortDay}
+              labelFormatter={(label) => shortDay(label, fmt)}
             />
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex-row items-start justify-between">
             <div className="flex flex-col gap-1">
-              <CardTitle>New conversations</CardTitle>
-              <CardDescription>Per day over the {words}.</CardDescription>
+              <CardTitle>{t('dashboard.newConversations')}</CardTitle>
+              <CardDescription>{t('dashboard.perDayOverThe', { words })}</CardDescription>
             </div>
             <span className="text-2xl leading-none font-semibold tracking-tight tabular">
-              {formatCompact(d.conversations.newInPeriod)}
+              {fmt.compact(d.conversations.newInPeriod)}
             </span>
           </CardHeader>
           <CardContent>
@@ -412,10 +444,14 @@ function DashboardBody({
               data={series}
               xKey="date"
               series={[
-                { key: 'conversations', label: 'Conversations', color: 'var(--color-chart-3)' },
+                {
+                  key: 'conversations',
+                  label: t('common.conversations'),
+                  color: 'var(--color-chart-3)',
+                },
               ]}
               height={180}
-              labelFormatter={shortDay}
+              labelFormatter={(label) => shortDay(label, fmt)}
             />
           </CardContent>
         </Card>
@@ -424,20 +460,20 @@ function DashboardBody({
       <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Leads by stage</CardTitle>
-            <CardDescription>All leads, across every period.</CardDescription>
+            <CardTitle>{t('dashboard.leadsByStage')}</CardTitle>
+            <CardDescription>{t('dashboard.allLeadsAcrossEveryPeriod')}</CardDescription>
           </CardHeader>
           <CardContent>
             {d.leads.total === 0 ? (
               <EmptyState
                 compact
                 icon={<Target />}
-                title="No leads yet"
-                description="The pipeline fills in as leads are added."
+                title={t('common.noLeadsYet')}
+                description={t('dashboard.thePipelineFillsInAs')}
                 action={
                   canLeads ? (
                     <Button asChild size="sm" variant="secondary">
-                      <Link href="/leads?new=1">New lead</Link>
+                      <Link href="/leads?new=1">{t('common.newLead')}</Link>
                     </Button>
                   ) : undefined
                 }
@@ -446,7 +482,7 @@ function DashboardBody({
               <BarChart
                 data={byStatus}
                 xKey="status"
-                series={[{ key: 'leads', label: 'Leads' }]}
+                series={[{ key: 'leads', label: t('common.leads') }]}
                 height={220}
               />
             )}
@@ -457,18 +493,18 @@ function DashboardBody({
           <Card>
             <CardHeader className="flex-row items-start justify-between">
               <div className="flex flex-col gap-1">
-                <CardTitle>Recent leads</CardTitle>
-                <CardDescription>Latest additions.</CardDescription>
+                <CardTitle>{t('dashboard.recentLeads')}</CardTitle>
+                <CardDescription>{t('dashboard.latestAdditions')}</CardDescription>
               </div>
               {canLeads ? (
                 <Button asChild variant="ghost" size="sm" trailingIcon={<ArrowRight aria-hidden />}>
-                  <Link href="/leads">All leads</Link>
+                  <Link href="/leads">{t('common.allLeads')}</Link>
                 </Button>
               ) : null}
             </CardHeader>
             <CardContent className="p-0">
               {d.recentLeads.length === 0 ? (
-                <EmptyState compact icon={<Target />} title="No leads yet" />
+                <EmptyState compact icon={<Target />} title={t('common.noLeadsYet')} />
               ) : (
                 <ul className="divide-y divide-border">
                   {d.recentLeads.map((lead) => (
@@ -482,10 +518,10 @@ function DashboardBody({
                           status={lead.status}
                           className="px-1.5 py-0 text-[0.625rem] leading-4"
                         />
-                        <span className="w-20 shrink-0 text-right text-xs text-fg-muted tabular">
+                        <span className="w-20 shrink-0 text-end text-xs text-fg-muted tabular">
                           {lead.value != null
-                            ? formatCurrency(lead.value, lead.currency, { compact: true })
-                            : format(new Date(lead.createdAt), 'd MMM')}
+                            ? fmt.currency(lead.value, lead.currency, { compact: true })
+                            : fmt.dayMonth(new Date(lead.createdAt))}
                         </span>
                       </Link>
                     </li>
@@ -497,18 +533,18 @@ function DashboardBody({
           <Card>
             <CardHeader className="flex-row items-start justify-between">
               <div className="flex flex-col gap-1">
-                <CardTitle>Recent conversations</CardTitle>
-                <CardDescription>Latest activity.</CardDescription>
+                <CardTitle>{t('dashboard.recentConversations')}</CardTitle>
+                <CardDescription>{t('dashboard.latestActivity')}</CardDescription>
               </div>
               {canConversations ? (
                 <Button asChild variant="ghost" size="sm" trailingIcon={<ArrowRight aria-hidden />}>
-                  <Link href="/conversations">Inbox</Link>
+                  <Link href="/conversations">{t('dashboard.inbox')}</Link>
                 </Button>
               ) : null}
             </CardHeader>
             <CardContent className="p-0">
               {d.recentConversations.length === 0 ? (
-                <EmptyState compact icon={<Inbox />} title="No conversations yet" />
+                <EmptyState compact icon={<Inbox />} title={t('common.noConversationsYet')} />
               ) : (
                 <ul className="divide-y divide-border">
                   {d.recentConversations.map((c) => (
@@ -519,21 +555,19 @@ function DashboardBody({
                       >
                         <span
                           className="flex size-6 shrink-0 items-center justify-center rounded-md bg-surface-muted text-fg-muted"
-                          title={CONVERSATION_CHANNEL_LABELS[c.channel]}
+                          title={t(CONVERSATION_CHANNEL_LABELS[c.channel])}
                         >
                           <ChannelIcon channel={c.channel} className="size-3.5" aria-hidden />
                         </span>
                         <span className="min-w-0 flex-1 truncate font-medium">
-                          {c.subject || 'No subject'}
+                          {c.subject || t('common.noSubject')}
                         </span>
                         <ConversationStatusBadge
                           status={c.status}
                           className="px-1.5 py-0 text-[0.625rem] leading-4"
                         />
-                        <span className="w-16 shrink-0 text-right text-xs text-fg-muted tabular">
-                          {c.lastMessageAt
-                            ? formatDistanceToNow(new Date(c.lastMessageAt), { addSuffix: false })
-                            : '—'}
+                        <span className="w-16 shrink-0 text-end text-xs text-fg-muted tabular">
+                          {c.lastMessageAt ? fmt.relative(new Date(c.lastMessageAt)) : '—'}
                         </span>
                       </Link>
                     </li>

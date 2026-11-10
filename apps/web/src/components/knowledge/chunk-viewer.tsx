@@ -16,6 +16,7 @@ import {
 } from '@hilatech/ui';
 import { useDocumentChunks } from '@/hooks/knowledge';
 import { QueryState } from '@/components/common/query-state';
+import { useT } from '@/i18n/provider';
 
 /** Lists the extracted text chunks of a document, in order. */
 export function ChunkViewer({
@@ -25,22 +26,21 @@ export function ChunkViewer({
   document: Pick<Document, 'id' | 'title' | 'chunkCount'>;
   onClose: () => void;
 }) {
+  const t = useT();
   const [page, setPage] = React.useState(1);
   const chunks = useDocumentChunks(doc.id, { page });
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent size="xl">
         <DialogHeader>
-          <DialogTitle>Chunks — {doc.title}</DialogTitle>
-          <DialogDescription>
-            The text the search index is built from. Each chunk is embedded separately.
-          </DialogDescription>
+          <DialogTitle>{t('knowledge.chunks3', { title: doc.title })}</DialogTitle>
+          <DialogDescription>{t('knowledge.theTextTheSearchIndex')}</DialogDescription>
         </DialogHeader>
         <DialogBody className="flex flex-col gap-3">
           <QueryState
             query={chunks}
             compact
-            errorTitle="Chunks couldn’t be loaded"
+            errorTitle={t('knowledge.chunksCouldnTBeLoaded')}
             loading={
               <div className="flex flex-col gap-2" aria-busy="true">
                 <Skeleton className="h-16" />
@@ -51,20 +51,22 @@ export function ChunkViewer({
             empty={
               <EmptyState
                 compact
-                title="No chunks yet"
-                description="Chunks appear once the document has been processed."
+                title={t('knowledge.noChunksYet')}
+                description={t('knowledge.chunksAppearOnceTheDocument')}
               />
             }
           >
             {(r) => (
               <>
-                <ol aria-label="Chunks" className="flex flex-col gap-2">
+                <ol aria-label={t('knowledge.chunks2')} className="flex flex-col gap-2">
                   {r.data.map((chunk) => (
                     <li key={chunk.id} className="rounded-md border border-border bg-surface p-3">
                       <div className="mb-1.5 flex items-center gap-2">
-                        <Badge variant="outline">Chunk {chunk.index + 1}</Badge>
+                        <Badge variant="outline">
+                          {t('knowledge.chunk2', { value: chunk.index + 1 })}
+                        </Badge>
                         <span className="text-xs text-fg-muted tabular">
-                          {chunk.tokenCount} tokens
+                          {t('knowledge.tokens', { tokenCount: chunk.tokenCount })}
                         </span>
                       </div>
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{chunk.content}</p>

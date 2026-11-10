@@ -33,13 +33,16 @@ import { useAgents, useAiModels, useAiProviders, useAiTools } from '@/hooks/quer
 import { useCan } from '@/hooks/use-can';
 import { extractIssues } from '@/lib/forms/server-errors';
 import { ToolsPicker } from '@/components/ai/tools-picker';
+import { useT, useFormat } from '@/i18n/provider';
+import type { MessageKey } from '@/i18n/messages';
+import { vm } from '@/i18n/validation';
 
 // ---------------------------------------------------------------------------
 // Form-side schema: browser strings in, contract-valid request out.
 // ---------------------------------------------------------------------------
 
 function numberField(opts: {
-  label: string;
+  label: MessageKey;
   min: number;
   max: number;
   integer?: boolean;
@@ -53,21 +56,31 @@ function numberField(opts: {
     .transform((raw, ctx): number | '' => {
       if (raw === '') {
         if (optional) return '';
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Enter ${label.toLowerCase()}` });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: vm('validation.enterField', { label }),
+        });
         return z.NEVER;
       }
       const n = Number(raw);
       if (!Number.isFinite(n) || (integer && !Number.isInteger(n))) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: integer ? 'Enter a whole number' : 'Enter a number',
+          message: vm(integer ? 'validation.wholeNumber' : 'validation.number'),
         });
         return z.NEVER;
       }
       if (n < min || n > max) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `${label} must be between ${min.toLocaleString('en')} and ${max.toLocaleString('en')}${unit}`,
+          message: vm(
+            unit === ' seconds'
+              ? 'validation.rangeFieldSeconds'
+              : unit === ' ms'
+                ? 'validation.rangeFieldMs'
+                : 'validation.rangeField',
+            { label, min, max },
+          ),
         });
         return z.NEVER;
       }
@@ -86,14 +99,14 @@ export const agentFormSchema = z.object({
   providerConfigId: z.string(),
   model: z.string().trim().max(120, 'Keep the model name under 120 characters'),
   temperature: numberField({
-    label: 'Temperature',
+    label: 'agents.temperature',
     min: 0,
     max: 2,
     integer: false,
     optional: true,
   }),
   maxOutputTokens: numberField({
-    label: 'Max output tokens',
+    label: 'agents.maxOutputTokens',
     min: 16,
     max: 64_000,
     optional: true,
@@ -102,21 +115,25 @@ export const agentFormSchema = z.object({
   allowWrite: z.boolean(),
   allowDelegation: z.boolean(),
   delegateTo: z.array(z.string()),
-  maxSteps: numberField({ label: 'Max steps', min: 1, max: AGENT_HARD_LIMITS.maxSteps }),
+  maxSteps: numberField({ label: 'agents.maxSteps', min: 1, max: AGENT_HARD_LIMITS.maxSteps }),
   maxDurationSec: numberField({
-    label: 'Max duration',
+    label: 'agents.maxDuration',
     min: 1,
     max: AGENT_HARD_LIMITS.maxDurationMs / 1000,
     unit: ' seconds',
   }),
-  maxTokens: numberField({ label: 'Max tokens', min: 1000, max: AGENT_HARD_LIMITS.maxTokens }),
+  maxTokens: numberField({
+    label: 'agents.maxTokens',
+    min: 1000,
+    max: AGENT_HARD_LIMITS.maxTokens,
+  }),
   maxDelegations: numberField({
-    label: 'Max delegations',
+    label: 'agents.maxDelegations',
     min: 0,
     max: AGENT_HARD_LIMITS.maxDelegationsPerExecution,
   }),
-  retryMaxAttempts: numberField({ label: 'Attempts', min: 1, max: 5 }),
-  retryBackoffMs: numberField({ label: 'Backoff', min: 0, max: 60_000, unit: ' ms' }),
+  retryMaxAttempts: numberField({ label: 'agents.attempts', min: 1, max: 5 }),
+  retryBackoffMs: numberField({ label: 'agents.backoff', min: 0, max: 60_000, unit: ' ms' }),
   isEnabled: z.boolean(),
 });
 export type AgentFormInput = z.input<typeof agentFormSchema>;
@@ -191,6 +208,7 @@ export function applyAgentServerErrors(
 ): boolean {
   if (!isApiError(error)) return false;
   if (error.code === 'CONFLICT' && /name/i.test(error.message)) {
+    // i18n-ignore: form field name, not UI text
     setError('name', { type: 'server', message: error.message });
     return true;
   }
@@ -224,6 +242,8 @@ export function AgentFormFields({
   agentId?: string;
   disabled?: boolean;
 }) {
+  const fmt = useFormat();
+  const t = useT();
   const errors = form.formState.errors;
   const canReadConfig = useCan(Permission.AI_CONFIG_READ);
   const providers = useAiProviders({ enabled: canReadConfig });
@@ -242,26 +262,30 @@ export function AgentFormFields({
     <fieldset disabled={disabled} className="flex min-w-0 flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Basics</CardTitle>
-          <CardDescription>What the agent is for and how it should behave.</CardDescription>
+          <CardTitle>{t('agents.basics')}</CardTitle>
+          <CardDescription>{t('agents.whatTheAgentIsFor')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
-          <FormField id="agent-name" label="Name" required error={errors.name?.message}>
-            <Input placeholder="Lead follow-up assistant" {...form.register('name')} />
+          <FormField id="agent-name" label={t('common.name')} required error={errors.name?.message}>
+            <Input placeholder={t('agents.leadFollowUpAssistant')} {...form.register('name')} />
           </FormField>
-          <FormField id="agent-description" label="Description" error={errors.description?.message}>
+          <FormField
+            id="agent-description"
+            label={t('common.description')}
+            error={errors.description?.message}
+          >
             <Textarea
               rows={2}
-              placeholder="Short summary for your team"
+              placeholder={t('agents.shortSummaryForYourTeam')}
               {...form.register('description')}
             />
           </FormField>
           <FormField
             id="agent-instructions"
-            label="Instructions"
+            label={t('agents.instructions')}
             required
             error={errors.instructions?.message}
-            description="The system prompt: goals, tone, rules and when to use each tool."
+            description={t('agents.theSystemPromptGoalsTone')}
           >
             <Textarea rows={10} className="font-mono text-xs" {...form.register('instructions')} />
           </FormField>
@@ -274,12 +298,13 @@ export function AgentFormFields({
                   id="agent-enabled"
                   checked={field.value}
                   onCheckedChange={field.onChange}
-                  aria-label="Enabled"
+                  aria-label={t('common.enabled')}
                 />
               )}
             />
             <label htmlFor="agent-enabled" className="text-sm">
-              Enabled <span className="text-fg-muted">— disabled agents cannot be run.</span>
+              {t('common.enabled')}{' '}
+              <span className="text-fg-muted">{t('agents.disabledAgentsCannotBeRun')}</span>
             </label>
           </div>
         </CardContent>
@@ -287,21 +312,19 @@ export function AgentFormFields({
 
       <Card>
         <CardHeader>
-          <CardTitle>Model</CardTitle>
-          <CardDescription>
-            Leave the provider empty to use the organization default.
-          </CardDescription>
+          <CardTitle>{t('common.model')}</CardTitle>
+          <CardDescription>{t('agents.leaveTheProviderEmptyTo')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           <div className="grid gap-5 sm:grid-cols-2">
             {canReadConfig ? (
               <FormField
                 id="agent-provider"
-                label="Provider configuration"
+                label={t('agents.providerConfiguration')}
                 error={errors.providerConfigId?.message}
               >
                 <NativeSelect {...form.register('providerConfigId')}>
-                  <option value="">Organization default</option>
+                  <option value="">{t('common.organizationDefault')}</option>
                   {providerList.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.provider})
@@ -312,13 +335,13 @@ export function AgentFormFields({
             ) : null}
             <FormField
               id="agent-model"
-              label="Model"
+              label={t('common.model')}
               error={errors.model?.message}
-              description="Pick a known model or type any model id."
+              description={t('agents.pickAKnownModelOr')}
             >
               <Input
                 list="agent-models"
-                placeholder="Provider default"
+                placeholder={t('agents.providerDefault')}
                 {...form.register('model')}
               />
             </FormField>
@@ -333,21 +356,25 @@ export function AgentFormFields({
           <div className="grid gap-5 sm:grid-cols-2">
             <FormField
               id="agent-temperature"
-              label="Temperature"
+              label={t('agents.temperature')}
               error={errors.temperature?.message}
-              description="0 – 2. Empty uses the model default."
+              description={t('agents.n02EmptyUsesThe')}
             >
-              <Input inputMode="decimal" placeholder="Default" {...form.register('temperature')} />
+              <Input
+                inputMode="decimal"
+                placeholder={t('common.default')}
+                {...form.register('temperature')}
+              />
             </FormField>
             <FormField
               id="agent-max-output"
-              label="Max output tokens"
+              label={t('agents.maxOutputTokens')}
               error={errors.maxOutputTokens?.message}
-              description="Per model call. Empty uses the model default."
+              description={t('agents.perModelCallEmptyUses')}
             >
               <Input
                 inputMode="numeric"
-                placeholder="Default"
+                placeholder={t('common.default')}
                 {...form.register('maxOutputTokens')}
               />
             </FormField>
@@ -357,10 +384,8 @@ export function AgentFormFields({
 
       <Card>
         <CardHeader>
-          <CardTitle>Tools</CardTitle>
-          <CardDescription>
-            The agent can only call the tools you select, and only with permissions it holds.
-          </CardDescription>
+          <CardTitle>{t('agents.tools')}</CardTitle>
+          <CardDescription>{t('agents.theAgentCanOnlyCall')}</CardDescription>
         </CardHeader>
         <CardContent>
           {tools.isPending ? (
@@ -369,9 +394,7 @@ export function AgentFormFields({
               <Skeleton className="h-14 w-full" />
             </div>
           ) : tools.isError ? (
-            <Alert tone="danger">
-              The tool catalogue could not be loaded. Reload the page to retry.
-            </Alert>
+            <Alert tone="danger">{t('agents.theToolCatalogueCouldNot')}</Alert>
           ) : (
             <Controller
               control={form.control}
@@ -397,10 +420,8 @@ export function AgentFormFields({
 
       <Card>
         <CardHeader>
-          <CardTitle>Permissions</CardTitle>
-          <CardDescription>
-            Dangerous tools never run autonomously, whatever is selected here.
-          </CardDescription>
+          <CardTitle>{t('common.permissions')}</CardTitle>
+          <CardDescription>{t('agents.dangerousToolsNeverRunAutonomously')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <Controller
@@ -410,8 +431,8 @@ export function AgentFormFields({
               <FormField
                 id="agent-allow-write"
                 inline
-                label="Allow write actions"
-                description="Lets the agent call tools that create or change records."
+                label={t('agents.allowWriteActions')}
+                description={t('agents.letsTheAgentCallTools')}
               >
                 <Checkbox
                   id="agent-allow-write"
@@ -428,8 +449,8 @@ export function AgentFormFields({
               <FormField
                 id="agent-allow-delegation"
                 inline
-                label="Allow delegation"
-                description="Lets the agent hand sub-tasks to other agents."
+                label={t('agents.allowDelegation')}
+                description={t('agents.letsTheAgentHandSub')}
               >
                 <Checkbox
                   id="agent-allow-delegation"
@@ -448,13 +469,11 @@ export function AgentFormFields({
                 return (
                   <fieldset className="flex flex-col gap-1.5 rounded-md border border-border p-3">
                     <legend className="px-1 text-xs font-medium text-fg-muted">
-                      Agents it may delegate to
+                      {t('agents.agentsItMayDelegateTo')}
                     </legend>
-                    <p className="text-xs text-fg-subtle">
-                      Select none to allow any enabled agent in the organization.
-                    </p>
+                    <p className="text-xs text-fg-subtle">{t('agents.selectNoneToAllowAny')}</p>
                     {candidates.length === 0 ? (
-                      <p className="text-sm text-fg-muted">There are no other agents yet.</p>
+                      <p className="text-sm text-fg-muted">{t('agents.thereAreNoOtherAgents')}</p>
                     ) : (
                       candidates.map((a) => (
                         <div key={a.id} className="flex items-center gap-2.5">
@@ -485,16 +504,14 @@ export function AgentFormFields({
 
       <Card>
         <CardHeader>
-          <CardTitle>Limits &amp; retries</CardTitle>
-          <CardDescription>
-            Every run stops at these limits. The platform ceilings are the maximum allowed values.
-          </CardDescription>
+          <CardTitle>{t('agents.limitsRetries')}</CardTitle>
+          <CardDescription>{t('agents.everyRunStopsAtThese')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           <div className="grid gap-5 sm:grid-cols-2">
             <FormField
               id="agent-max-steps"
-              label="Max steps"
+              label={t('agents.maxSteps')}
               error={errors.maxSteps?.message}
               description={`1 – ${AGENT_HARD_LIMITS.maxSteps}`}
             >
@@ -502,7 +519,7 @@ export function AgentFormFields({
             </FormField>
             <FormField
               id="agent-max-duration"
-              label="Max duration (seconds)"
+              label={t('agents.maxDurationSeconds')}
               error={errors.maxDurationSec?.message}
               description={`1 – ${AGENT_HARD_LIMITS.maxDurationMs / 1000}`}
             >
@@ -510,15 +527,15 @@ export function AgentFormFields({
             </FormField>
             <FormField
               id="agent-max-tokens"
-              label="Max tokens per run"
+              label={t('agents.maxTokensPerRun')}
               error={errors.maxTokens?.message}
-              description={`1,000 – ${AGENT_HARD_LIMITS.maxTokens.toLocaleString('en')}`}
+              description={`1,000 – ${fmt.number(AGENT_HARD_LIMITS.maxTokens)}`}
             >
               <Input inputMode="numeric" className="tabular" {...form.register('maxTokens')} />
             </FormField>
             <FormField
               id="agent-max-delegations"
-              label="Max delegations"
+              label={t('agents.maxDelegations')}
               error={errors.maxDelegations?.message}
               description={`0 – ${AGENT_HARD_LIMITS.maxDelegationsPerExecution}`}
             >
@@ -528,9 +545,9 @@ export function AgentFormFields({
           <div className="grid gap-5 sm:grid-cols-2">
             <FormField
               id="agent-retry-attempts"
-              label="Retry attempts"
+              label={t('agents.retryAttempts')}
               error={errors.retryMaxAttempts?.message}
-              description="1 – 5, for retryable provider errors"
+              description={t('agents.n15ForRetryableProvider')}
             >
               <Input
                 inputMode="numeric"
@@ -540,7 +557,7 @@ export function AgentFormFields({
             </FormField>
             <FormField
               id="agent-retry-backoff"
-              label="Retry backoff (ms)"
+              label={t('agents.retryBackoffMs')}
               error={errors.retryBackoffMs?.message}
               description="0 – 60,000"
             >

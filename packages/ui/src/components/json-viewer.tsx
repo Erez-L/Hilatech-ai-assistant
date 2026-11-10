@@ -4,6 +4,7 @@ import * as React from 'react';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { CodeBlock } from './code-block';
+import { useUiStrings } from '../lib/ui-strings';
 
 export interface JsonViewerProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
   /** Any JSON-serialisable value (objects, arrays, strings, numbers, booleans, null). */
@@ -68,12 +69,13 @@ const primitiveClass: Record<Kind, string> = {
 export function JsonViewer({
   value,
   defaultExpandedDepth = 1,
-  emptyLabel = 'Empty',
+  emptyLabel,
   allowRaw = true,
   maxHeight,
   className,
   ...props
 }: JsonViewerProps) {
+  const ui = useUiStrings();
   const [raw, setRaw] = React.useState(false);
   const kind = kindOf(value);
   const isContainer = kind === 'object' || kind === 'array';
@@ -91,7 +93,7 @@ export function JsonViewer({
   if (empty) {
     return (
       <div className={cn('text-sm text-fg-subtle', className)} {...props}>
-        {emptyLabel}
+        {emptyLabel ?? ui.empty}
       </div>
     );
   }
@@ -106,7 +108,7 @@ export function JsonViewer({
             onClick={() => setRaw((v) => !v)}
             className="rounded-xs px-1.5 py-0.5 text-2xs text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
           >
-            {raw ? 'Tree' : 'Raw'}
+            {raw ? ui.tree : ui.raw}
           </button>
         </div>
       ) : null}
@@ -148,6 +150,7 @@ function JsonNode({
   defaultExpandedDepth: number;
   isIndex: boolean;
 }) {
+  const ui = useUiStrings();
   const kind = kindOf(value);
   const isContainer = kind === 'object' || kind === 'array';
   const children = isContainer ? entriesOf(value) : [];
@@ -159,13 +162,13 @@ function JsonNode({
       role="treeitem"
       aria-expanded={expandable ? open : undefined}
       className="flex flex-col"
-      style={{ paddingLeft: depth > 1 ? 12 : 0 }}
+      style={{ paddingInlineStart: depth > 1 ? 12 : 0 }}
     >
       <div className="flex min-w-0 items-start gap-1 leading-6">
         {expandable ? (
           <button
             type="button"
-            aria-label={open ? `Collapse ${name}` : `Expand ${name}`}
+            aria-label={open ? ui.collapse(name) : ui.expand(name)}
             onClick={() => setOpen((v) => !v)}
             className="mt-1.5 flex size-3.5 shrink-0 items-center justify-center rounded-xs text-fg-subtle hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
           >
@@ -199,7 +202,7 @@ function JsonNode({
               isIndex={kind === 'array'}
             />
           ))}
-          <li aria-hidden className="pl-[1.125rem] leading-6 text-fg-subtle">
+          <li aria-hidden className="ps-[1.125rem] leading-6 text-fg-subtle">
             {kind === 'array' ? ']' : '}'}
           </li>
         </ul>

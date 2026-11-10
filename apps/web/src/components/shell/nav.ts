@@ -17,10 +17,12 @@ import {
   Workflow,
 } from 'lucide-react';
 import { Permission } from '@hilatech/contracts';
+import { msg, type Msg } from '@/i18n/msg';
+import type { T } from '@/i18n/provider';
 
 export interface NavItem {
   href: string;
-  label: string;
+  label: Msg;
   icon: LucideIcon;
   /** Permission required to see the item (hidden otherwise). */
   permission?: string;
@@ -29,98 +31,108 @@ export interface NavItem {
 }
 
 export interface NavSection {
-  label?: string;
+  label?: Msg;
   items: NavItem[];
 }
 
 export const NAV_SECTIONS: NavSection[] = [
   {
-    items: [{ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }],
+    items: [{ href: '/dashboard', label: msg('shell.dashboard'), icon: LayoutDashboard }],
   },
   {
-    label: 'Customers',
+    label: msg('shell.customers'),
     items: [
       {
         href: '/leads',
-        label: 'Leads',
+        label: msg('shell.leads'),
         icon: Target,
         permission: Permission.LEADS_READ,
       },
       {
         href: '/contacts',
-        label: 'Contacts',
+        label: msg('shell.contacts'),
         icon: Contact,
         permission: Permission.CONTACTS_READ,
       },
       {
         href: '/conversations',
-        label: 'Conversations',
+        label: msg('shell.conversations'),
         icon: MessageSquare,
         permission: Permission.CONVERSATIONS_READ,
       },
     ],
   },
   {
-    label: 'AI',
+    label: msg('common.ai'),
     items: [
       {
         href: '/assistant',
-        label: 'Assistant',
+        label: msg('shell.assistant'),
         icon: Sparkles,
         permission: Permission.AI_ASSISTANT_USE,
       },
       {
         href: '/agents',
-        label: 'Agents',
+        label: msg('shell.agents'),
         icon: Bot,
         permission: Permission.AGENTS_READ,
       },
       {
         href: '/knowledge',
-        label: 'Knowledge',
+        label: msg('shell.knowledge'),
         icon: BookOpen,
         permission: Permission.KNOWLEDGE_READ,
       },
     ],
   },
   {
-    label: 'Operations',
+    label: msg('shell.operations'),
     items: [
       {
         href: '/automations',
-        label: 'Automations',
+        label: msg('shell.automations'),
         icon: Workflow,
         permission: Permission.AUTOMATIONS_READ,
       },
       {
         href: '/integrations',
-        label: 'Integrations',
+        label: msg('shell.integrations'),
         icon: Plug,
         permission: Permission.INTEGRATIONS_READ,
       },
       {
         href: '/analytics',
-        label: 'Analytics',
+        label: msg('shell.analytics'),
         icon: BarChart3,
         permission: Permission.ANALYTICS_READ,
       },
     ],
   },
   {
-    label: 'Organization',
+    label: msg('common.organization'),
     items: [
-      { href: '/team', label: 'Team', icon: Users, permission: Permission.MEMBERS_READ },
-      { href: '/roles', label: 'Roles', icon: Shield, permission: Permission.ROLES_READ },
-      { href: '/audit', label: 'Audit log', icon: ScrollText, permission: Permission.AUDIT_READ },
+      { href: '/team', label: msg('shell.team'), icon: Users, permission: Permission.MEMBERS_READ },
+      {
+        href: '/roles',
+        label: msg('shell.roles'),
+        icon: Shield,
+        permission: Permission.ROLES_READ,
+      },
+      {
+        href: '/audit',
+        label: msg('shell.auditLog'),
+        icon: ScrollText,
+        permission: Permission.AUDIT_READ,
+      },
       {
         href: '/settings/organization',
-        label: 'Settings',
+        label: msg('shell.settings'),
         icon: Building2,
         permission: Permission.ORG_READ,
       },
       {
         href: '/settings/billing',
-        label: 'Billing',
+        label: msg('common.billing'),
         icon: CreditCard,
         permission: Permission.ORG_BILLING_MANAGE,
       },
@@ -129,11 +141,11 @@ export const NAV_SECTIONS: NavSection[] = [
 ];
 
 /** Page titles for the top bar, keyed by the first path segment(s). */
-export function pageTitleFor(pathname: string): string {
+export function pageTitleFor(pathname: string, t: T): string {
   const all = NAV_SECTIONS.flatMap((s) => s.items);
   const match = all.find((i) => pathname === i.href || pathname.startsWith(`${i.href}/`));
-  if (match) return match.label;
-  if (pathname.startsWith('/settings/profile')) return 'Your profile';
-  if (pathname.startsWith('/settings')) return 'Settings';
-  return 'HilaTech';
+  if (match) return t(match.label);
+  if (pathname.startsWith('/settings/profile')) return t('shell.yourProfile');
+  if (pathname.startsWith('/settings')) return t('nav.settings');
+  return t('app.productNameShort');
 }

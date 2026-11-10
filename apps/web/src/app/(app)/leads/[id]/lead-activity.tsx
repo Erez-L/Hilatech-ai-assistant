@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { format, formatDistanceToNow } from 'date-fns';
 import {
   ArrowRightLeft,
   Coins,
@@ -27,6 +26,7 @@ import {
 import { useLeadActivities } from '@/hooks/queries';
 import { describeLeadActivity } from '@/lib/crm';
 import { QueryState } from '@/components/common/query-state';
+import { useT, useFormat } from '@/i18n/provider';
 
 const ICONS: Record<LeadActivityWithActor['type'], React.ReactNode> = {
   created: <Sparkles aria-hidden />,
@@ -40,12 +40,14 @@ const ICONS: Record<LeadActivityWithActor['type'], React.ReactNode> = {
 };
 
 export function LeadActivity({ leadId }: { leadId: string }) {
+  const fmt = useFormat();
+  const t = useT();
   const activities = useLeadActivities(leadId, { page: 1, pageSize: 50 });
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Activity</CardTitle>
-        <CardDescription>Everything that happened to this lead, newest first.</CardDescription>
+        <CardTitle>{t('leads.activity')}</CardTitle>
+        <CardDescription>{t('leads.everythingThatHappenedToThis')}</CardDescription>
       </CardHeader>
       <CardContent>
         <QueryState
@@ -69,15 +71,15 @@ export function LeadActivity({ leadId }: { leadId: string }) {
             <EmptyState
               compact
               icon={<History />}
-              title="No activity recorded"
-              description="Stage changes, assignments and notes will be listed here."
+              title={t('leads.noActivityRecorded')}
+              description={t('leads.stageChangesAssignmentsAndNotes')}
             />
           }
         >
           {(r) => (
-            <Timeline aria-label="Lead activity">
+            <Timeline aria-label={t('leads.leadActivity')}>
               {r.data.map((activity) => {
-                const d = describeLeadActivity(activity);
+                const d = describeLeadActivity(activity, t, fmt);
                 return (
                   <TimelineItem
                     key={activity.id}
@@ -88,9 +90,9 @@ export function LeadActivity({ leadId }: { leadId: string }) {
                     meta={
                       <time
                         dateTime={activity.createdAt}
-                        title={format(new Date(activity.createdAt), 'PPpp')}
+                        title={fmt.dateTime(new Date(activity.createdAt), 'long')}
                       >
-                        {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
+                        {fmt.relative(new Date(activity.createdAt))}
                       </time>
                     }
                   />

@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@hilatech/ui';
 import type { AuthUser, OrganizationSummary } from '@hilatech/contracts';
 import { useSession } from '@/stores/session';
+import { I18nProvider } from '@/i18n/provider';
+import type { Locale } from '@/i18n/config';
 
 export const TEST_USER: AuthUser = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -46,13 +48,15 @@ export function makeQueryClient() {
 
 export function renderWithProviders(
   ui: React.ReactElement,
-  options: RenderOptions & { queryClient?: QueryClient } = {},
+  options: RenderOptions & { queryClient?: QueryClient; locale?: Locale } = {},
 ) {
-  const { queryClient = makeQueryClient(), ...rest } = options;
+  const { queryClient = makeQueryClient(), locale = 'en', ...rest } = options;
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>{children}</TooltipProvider>
-    </QueryClientProvider>
+    <I18nProvider locale={locale}>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>{children}</TooltipProvider>
+      </QueryClientProvider>
+    </I18nProvider>
   );
   return { queryClient, ...render(ui, { wrapper: Wrapper, ...rest }) };
 }

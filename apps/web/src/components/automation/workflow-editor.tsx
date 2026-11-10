@@ -1,4 +1,5 @@
 'use client';
+import { vm } from '@/i18n/validation';
 
 import * as React from 'react';
 import Link from 'next/link';
@@ -69,6 +70,7 @@ import {
 import { RunWorkflowDialog } from './run-workflow-dialog';
 import { StepFields } from './step-forms';
 import { StepFlow } from './step-flow';
+import { useT } from '@/i18n/provider';
 
 export interface EditorStep {
   /** Stable React key; independent of the editable step id. */
@@ -114,7 +116,7 @@ export function buildSteps(editorSteps: EditorStep[]): {
       problems.push({
         stepId: step.id,
         path: `steps[${index}].payload`,
-        message: 'Payload must be a valid JSON object',
+        message: vm('automation.payloadMustBeAValid'),
       });
       return step;
     }
@@ -143,6 +145,7 @@ export function WorkflowEditor({
   workflow?: Workflow;
   initial?: EditorInitial;
 }) {
+  const t = useT();
   const router = useRouter();
   const canManage = useCan(Permission.AUTOMATIONS_MANAGE);
   const create = useCreateWorkflow();
@@ -303,11 +306,11 @@ export function WorkflowEditor({
     if (built.problems.length > 0) {
       setIssues(built.problems);
       setValidated('invalid');
-      toast.error('Fix the highlighted problems first');
+      toast.error(t('automation.fixTheHighlightedProblemsFirst'));
       return;
     }
     if (built.steps.length === 0) {
-      setFormError('Add at least one step.');
+      setFormError(t('automation.addAtLeastOneStep'));
       return;
     }
     const body = {
@@ -320,10 +323,10 @@ export function WorkflowEditor({
       if (workflow) {
         await update.mutateAsync({ id: workflow.id, body });
         setIssues([]);
-        toast.success(`Workflow “${body.name}” saved`);
+        toast.success(t('automation.workflowSaved', { name: body.name }));
       } else {
         const created = await create.mutateAsync({ ...body, isEnabled: enableOnSave });
-        toast.success(`Workflow “${created.name}” created`);
+        toast.success(t('common.workflowCreated', { name: created.name }));
         router.replace(`/automations/${created.id}`);
       }
     } catch (error) {
@@ -331,7 +334,7 @@ export function WorkflowEditor({
       if (found.length > 0) {
         setIssues(found);
         setValidated('invalid');
-        setFormError('The workflow has problems that must be fixed first.');
+        setFormError(t('automation.theWorkflowHasProblemsThat'));
       } else {
         setFormError(getErrorMessage(error));
       }
@@ -344,13 +347,13 @@ export function WorkflowEditor({
     try {
       const next = !workflow.isEnabled;
       await setEnabled.mutateAsync({ id: workflow.id, enabled: next });
-      toast.success(`Workflow ${next ? 'enabled' : 'disabled'}`);
+      toast.success(t(next ? 'automation.workflowEnabled' : 'automation.workflowDisabled'));
     } catch (error) {
       const found = issuesFromError(error, stepIds);
       if (found.length > 0) {
         setIssues(found);
         setValidated('invalid');
-        setFormError('The workflow can’t be enabled until these problems are fixed.');
+        setFormError(t('automation.theWorkflowCanTBe'));
       } else {
         setFormError(getErrorMessage(error));
       }
@@ -364,15 +367,20 @@ export function WorkflowEditor({
   }));
 
   return (
-    <form onSubmit={save} noValidate className="flex flex-col gap-6" aria-label="Workflow editor">
+    <form
+      onSubmit={save}
+      noValidate
+      className="flex flex-col gap-6"
+      aria-label={t('automation.workflowEditor')}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Button asChild variant="ghost" size="sm" leadingIcon={<ArrowLeft aria-hidden />}>
-          <Link href="/automations">All workflows</Link>
+          <Link href="/automations">{t('common.allWorkflows')}</Link>
         </Button>
         <div className="flex flex-wrap items-center gap-2">
           {workflow ? (
             <Badge variant={workflow.isEnabled ? 'success' : 'neutral'} dot>
-              {workflow.isEnabled ? 'Enabled' : 'Disabled'}
+              {workflow.isEnabled ? t('common.enabled') : t('common.disabled')}
             </Badge>
           ) : null}
           <Button
@@ -383,7 +391,7 @@ export function WorkflowEditor({
             disabled={busy}
             onClick={() => void doValidate()}
           >
-            Validate
+            {t('automation.validate')}
           </Button>
           {canManage ? (
             <Button
@@ -391,7 +399,7 @@ export function WorkflowEditor({
               leadingIcon={<Save aria-hidden />}
               loading={create.isPending || update.isPending}
             >
-              {workflow ? 'Save changes' : 'Create workflow'}
+              {workflow ? t('common.saveChanges') : t('common.createWorkflow')}
             </Button>
           ) : null}
           {canManage && workflow ? (
@@ -403,7 +411,9 @@ export function WorkflowEditor({
               disabled={busy}
               onClick={() => void toggleEnabled()}
             >
-              {workflow.isEnabled ? 'Disable workflow' : 'Enable workflow'}
+              {workflow.isEnabled
+                ? t('automation.disableWorkflow')
+                : t('automation.enableWorkflow')}
             </Button>
           ) : null}
           {canManage && workflow ? (
@@ -412,34 +422,34 @@ export function WorkflowEditor({
               variant="secondary"
               leadingIcon={<Play aria-hidden />}
               disabled={!workflow.isEnabled || busy}
-              title={workflow.isEnabled ? undefined : 'Enable the workflow to run it'}
+              title={workflow.isEnabled ? undefined : t('common.enableTheWorkflowToRun')}
               onClick={() => setRunning(true)}
             >
-              Run now
+              {t('automation.runNow')}
             </Button>
           ) : null}
         </div>
       </div>
 
-      {!canManage ? <Alert tone="info">You can view this workflow but not change it.</Alert> : null}
+      {!canManage ? <Alert tone="info">{t('automation.youCanViewThisWorkflow')}</Alert> : null}
       {formError ? <Alert tone="danger">{formError}</Alert> : null}
 
       {validated ? (
-        <div role="status" aria-label="Validation result">
+        <div role="status" aria-label={t('automation.validationResult')}>
           {validated === 'valid' ? (
             <Alert tone="success">
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="size-4" aria-hidden />
-                The workflow is valid.
+                {t('automation.theWorkflowIsValid')}
               </span>
             </Alert>
           ) : (
             <Alert tone="danger">
               <div className="flex flex-col gap-1.5">
                 <p className="font-medium">
-                  {issues.length} {issues.length === 1 ? 'problem' : 'problems'} found
+                  {t('automation.problemsFound', { count: issues.length })}
                 </p>
-                <ul aria-label="Validation issues" className="flex flex-col gap-1">
+                <ul aria-label={t('automation.validationIssues')} className="flex flex-col gap-1">
                   {issues.map((issue, i) => {
                     const idx =
                       parseIssuePath(issue.path).index ??
@@ -476,10 +486,10 @@ export function WorkflowEditor({
           <div className="flex min-w-0 flex-col gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Details</CardTitle>
+                <CardTitle>{t('common.details')}</CardTitle>
               </CardHeader>
               <CardContent className="grid gap-4">
-                <FormField id="wf-name" label="Name" required error={nameError}>
+                <FormField id="wf-name" label={t('common.name')} required error={nameError}>
                   <Input
                     value={name}
                     maxLength={120}
@@ -487,10 +497,10 @@ export function WorkflowEditor({
                       setName(e.target.value);
                       setNameError(null);
                     }}
-                    placeholder="Notify on new lead"
+                    placeholder={t('automation.notifyOnNewLead')}
                   />
                 </FormField>
-                <FormField id="wf-description" label="Description">
+                <FormField id="wf-description" label={t('common.description')}>
                   <Textarea
                     rows={2}
                     value={description}
@@ -502,8 +512,8 @@ export function WorkflowEditor({
                   <FormField
                     id="wf-enable-on-save"
                     inline
-                    label="Enable right after creating"
-                    description="An enabled workflow is validated first. Leave off to validate and enable later."
+                    label={t('automation.enableRightAfterCreating')}
+                    description={t('automation.anEnabledWorkflowIsValidated')}
                   >
                     <Switch checked={enableOnSave} onCheckedChange={setEnableOnSave} />
                   </FormField>
@@ -513,8 +523,8 @@ export function WorkflowEditor({
 
             <Card>
               <CardHeader>
-                <CardTitle>Trigger</CardTitle>
-                <CardDescription>What starts this workflow.</CardDescription>
+                <CardTitle>{t('common.trigger')}</CardTitle>
+                <CardDescription>{t('automation.whatStartsThisWorkflow')}</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4">
                 {globalIssues.length > 0 ? (
@@ -528,20 +538,20 @@ export function WorkflowEditor({
                     </ul>
                   </Alert>
                 ) : null}
-                <FormField id="wf-trigger-type" label="Trigger type">
+                <FormField id="wf-trigger-type" label={t('automation.triggerType')}>
                   <NativeSelect
                     value={trigger.type}
                     onChange={(e) => changeTrigger(e.target.value as TriggerType)}
                   >
-                    {(Object.keys(TRIGGER_LABELS) as TriggerType[]).map((t) => (
-                      <option key={t} value={t}>
-                        {TRIGGER_LABELS[t]}
+                    {(Object.keys(TRIGGER_LABELS) as TriggerType[]).map((kind) => (
+                      <option key={kind} value={kind}>
+                        {t(TRIGGER_LABELS[kind])}
                       </option>
                     ))}
                   </NativeSelect>
                 </FormField>
                 {trigger.type === 'event' ? (
-                  <FormField id="wf-trigger-event" label="Event">
+                  <FormField id="wf-trigger-event" label={t('common.event')}>
                     <NativeSelect
                       value={trigger.event}
                       onChange={(e) => {
@@ -551,7 +561,7 @@ export function WorkflowEditor({
                     >
                       {ALL_DOMAIN_EVENTS.map((ev) => (
                         <option key={ev} value={ev}>
-                          {eventLabel(ev)} ({ev})
+                          {eventLabel(ev, t)} ({ev})
                         </option>
                       ))}
                     </NativeSelect>
@@ -560,8 +570,8 @@ export function WorkflowEditor({
                 {trigger.type === 'schedule' ? (
                   <FormField
                     id="wf-trigger-cron"
-                    label="Cron expression"
-                    description="Five fields: minute hour day-of-month month day-of-week, in the organization’s time zone."
+                    label={t('automation.cronExpression')}
+                    description={t('automation.fiveFieldsMinuteHourDay')}
                   >
                     <Input
                       className="font-mono"
@@ -575,16 +585,16 @@ export function WorkflowEditor({
                 ) : null}
                 {trigger.type === 'webhook' ? (
                   <p className="text-sm text-fg-muted">
-                    Bind an inbound webhook endpoint to this workflow under{' '}
+                    {t('automation.bindAnInboundWebhookEndpoint')}{' '}
                     <Link href="/automations/webhooks" className="underline underline-offset-2">
-                      Automations → Webhooks
+                      {t('automation.automationsWebhooks')}
                     </Link>
                     .
                   </p>
                 ) : null}
                 {trigger.type === 'manual' ? (
                   <p className="text-sm text-fg-muted">
-                    Runs only when someone starts it with “Run now”.
+                    {t('automation.runsOnlyWhenSomeoneStarts')}
                   </p>
                 ) : null}
               </CardContent>
@@ -592,16 +602,16 @@ export function WorkflowEditor({
 
             <section aria-labelledby="steps-heading" className="flex flex-col gap-3">
               <h2 id="steps-heading" className="text-base font-semibold">
-                Steps
+                {t('common.steps')}
               </h2>
               {steps.length === 0 ? (
                 <EmptyState
                   compact
-                  title="No steps yet"
-                  description="Add the first step below. Steps run in order from top to bottom."
+                  title={t('automation.noStepsYet')}
+                  description={t('automation.addTheFirstStepBelow')}
                 />
               ) : (
-                <ol aria-label="Steps" className="flex flex-col gap-3">
+                <ol aria-label={t('common.steps')} className="flex flex-col gap-3">
                   {steps.map((s, index) => {
                     const meta = STEP_META[s.step.type];
                     const Icon = meta.icon;
@@ -628,7 +638,7 @@ export function WorkflowEditor({
                                 return next;
                               })
                             }
-                            className="flex min-w-0 flex-1 items-center gap-2 rounded-sm text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                            className="flex min-w-0 flex-1 items-center gap-2 rounded-sm text-start focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                           >
                             {open ? (
                               <ChevronDown className="size-4 shrink-0 text-fg-muted" aria-hidden />
@@ -637,7 +647,7 @@ export function WorkflowEditor({
                             )}
                             <Icon className="size-4 shrink-0 text-fg-muted" aria-hidden />
                             <span className="tabular text-sm text-fg-subtle">{index + 1}.</span>
-                            <span className="truncate text-sm font-medium">{meta.label}</span>
+                            <span className="truncate text-sm font-medium">{t(meta.label)}</span>
                             <span className="truncate font-mono text-xs text-fg-muted">
                               {s.step.id}
                             </span>
@@ -646,7 +656,7 @@ export function WorkflowEditor({
                           <IconButton
                             size="sm"
                             type="button"
-                            label={`Move step ${s.step.id} up`}
+                            label={t('automation.moveStepUp', { id: s.step.id })}
                             disabled={index === 0}
                             onClick={() => move(index, -1)}
                           >
@@ -655,7 +665,7 @@ export function WorkflowEditor({
                           <IconButton
                             size="sm"
                             type="button"
-                            label={`Move step ${s.step.id} down`}
+                            label={t('automation.moveStepDown', { id: s.step.id })}
                             disabled={index === steps.length - 1}
                             onClick={() => move(index, 1)}
                           >
@@ -664,7 +674,7 @@ export function WorkflowEditor({
                           <IconButton
                             size="sm"
                             type="button"
-                            label={`Remove step ${s.step.id}`}
+                            label={t('automation.removeStep', { id: s.step.id })}
                             onClick={() => remove(s.key)}
                           >
                             <Trash2 aria-hidden />
@@ -694,8 +704,8 @@ export function WorkflowEditor({
                             ) : null}
                             <FormField
                               id={`step-${s.key}-id`}
-                              label="Step id"
-                              description="Referenced by conditions and {{ steps.<id>… }} templates."
+                              label={t('automation.stepId')}
+                              description={t('automation.referencedByConditionsAndTemplates')}
                               error={errors.id}
                             >
                               <Input
@@ -731,14 +741,18 @@ export function WorkflowEditor({
 
               {canManage ? (
                 <div className="flex flex-wrap items-end gap-2">
-                  <FormField id="wf-new-step-type" label="Step type" className="min-w-56">
+                  <FormField
+                    id="wf-new-step-type"
+                    label={t('automation.stepType')}
+                    className="min-w-56"
+                  >
                     <NativeSelect
                       value={newType}
                       onChange={(e) => setNewType(e.target.value as StepType)}
                     >
-                      {STEP_TYPES.map((t) => (
-                        <option key={t} value={t}>
-                          {STEP_META[t].label}
+                      {STEP_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {t(STEP_META[type].label)}
                         </option>
                       ))}
                     </NativeSelect>
@@ -749,26 +763,28 @@ export function WorkflowEditor({
                     leadingIcon={<Plus aria-hidden />}
                     onClick={add}
                   >
-                    Add step
+                    {t('automation.addStep')}
                   </Button>
                 </div>
               ) : null}
             </section>
           </div>
 
-          <aside aria-label="Flow preview" className="min-w-0 lg:sticky lg:top-20 lg:self-start">
+          <aside
+            aria-label={t('automation.flowPreview')}
+            className="min-w-0 lg:sticky lg:top-20 lg:self-start"
+          >
             <Card>
               <CardHeader>
-                <CardTitle>Flow</CardTitle>
-                <CardDescription>
-                  Steps run top to bottom. Select one to jump to its settings.
-                </CardDescription>
+                <CardTitle>{t('automation.flow')}</CardTitle>
+                <CardDescription>{t('automation.stepsRunTopToBottom')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <StepFlow trigger={trigger} steps={flowSteps} onSelect={focusStep} />
                 {steps.length === 0 ? (
                   <p className="mt-3 flex items-center gap-1.5 text-xs text-fg-muted">
-                    <CircleAlert className="size-3.5" aria-hidden /> No steps to show yet.
+                    <CircleAlert className="size-3.5" aria-hidden />{' '}
+                    {t('automation.noStepsToShowYet')}
                   </p>
                 ) : null}
               </CardContent>

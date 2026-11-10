@@ -3,7 +3,6 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { format, formatDistanceToNow } from 'date-fns';
 import { ArrowLeft, FilterX, History } from 'lucide-react';
 import { Permission, type AgentExecutionStatus } from '@hilatech/contracts';
 import {
@@ -36,10 +35,14 @@ import {
 } from '@/lib/ai';
 import { PermissionGate } from '@/components/common/permission-gate';
 import { ExecutionStatusBadge } from '@/components/ai/badges';
+import { useT, useFormat } from '@/i18n/provider';
+import { tm } from '@/i18n/msg';
 
 const PAGE_SIZE = 20;
 
 export function ExecutionsView() {
+  const fmt = useFormat();
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [page, setPage] = React.useState(1);
@@ -75,16 +78,16 @@ export function ExecutionsView() {
           breadcrumb={
             <Link href="/agents" className="inline-flex items-center gap-1 hover:text-fg">
               <ArrowLeft className="size-3.5" aria-hidden />
-              Agents
+              {t('agents.agents')}
             </Link>
           }
-          title="Agent runs"
-          description="Every execution, with status, cost and a step-by-step record."
+          title={t('agents.agentRuns')}
+          description={t('agents.everyExecutionWithStatusCost')}
         />
         <Card>
           <CardContent className="grid gap-4 py-4 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_auto_auto] xl:items-end">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="exec-agent">Agent</Label>
+              <Label htmlFor="exec-agent">{t('common.agent')}</Label>
               <NativeSelect
                 id="exec-agent"
                 value={agentId}
@@ -93,7 +96,7 @@ export function ExecutionsView() {
                   setPage(1);
                 }}
               >
-                <option value="">All agents</option>
+                <option value="">{t('agents.allAgents')}</option>
                 {(agents.data?.data ?? []).map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.name}
@@ -102,7 +105,7 @@ export function ExecutionsView() {
               </NativeSelect>
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="exec-status">Status</Label>
+              <Label htmlFor="exec-status">{t('common.status')}</Label>
               <NativeSelect
                 id="exec-status"
                 value={status}
@@ -111,10 +114,10 @@ export function ExecutionsView() {
                   setPage(1);
                 }}
               >
-                <option value="">All statuses</option>
+                <option value="">{t('common.allStatuses')}</option>
                 {EXECUTION_STATUSES.map((s) => (
                   <option key={s} value={s}>
-                    {EXECUTION_STATUS_LABELS[s]}
+                    {t(EXECUTION_STATUS_LABELS[s])}
                   </option>
                 ))}
               </NativeSelect>
@@ -129,7 +132,7 @@ export function ExecutionsView() {
                 }}
               />
               <Label htmlFor="exec-root-only" className="font-normal">
-                Top-level runs only
+                {t('agents.topLevelRunsOnly')}
               </Label>
             </div>
             <Button
@@ -138,7 +141,7 @@ export function ExecutionsView() {
               disabled={!hasFilters}
               leadingIcon={<FilterX aria-hidden />}
             >
-              Clear
+              {t('common.clear')}
             </Button>
           </CardContent>
         </Card>
@@ -148,13 +151,13 @@ export function ExecutionsView() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Agent</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Trigger</TableHead>
-                  <TableHead>Started</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead className="text-right">Tokens</TableHead>
-                  <TableHead className="text-right">Cost</TableHead>
+                  <TableHead>{t('common.agent')}</TableHead>
+                  <TableHead>{t('common.status')}</TableHead>
+                  <TableHead>{t('common.trigger')}</TableHead>
+                  <TableHead>{t('common.started')}</TableHead>
+                  <TableHead>{t('common.duration')}</TableHead>
+                  <TableHead className="text-end">{t('common.tokens')}</TableHead>
+                  <TableHead className="text-end">{t('common.cost')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -169,7 +172,7 @@ export function ExecutionsView() {
                         size="sm"
                         onClick={() => void executions.refetch()}
                       >
-                        Try again
+                        {t('common.tryAgain')}
                       </Button>
                     </div>
                   </TableEmptyRow>
@@ -178,16 +181,16 @@ export function ExecutionsView() {
                     <EmptyState
                       compact
                       icon={<History />}
-                      title={hasFilters ? 'No runs match these filters' : 'No runs yet'}
+                      title={
+                        hasFilters ? t('agents.noRunsMatchTheseFilters') : t('agents.noRunsYet')
+                      }
                       description={
-                        hasFilters
-                          ? 'Try different filters.'
-                          : 'Run an agent from the Agents page and it will appear here.'
+                        hasFilters ? t('common.tryDifferentFilters') : t('agents.runAnAgentFromThe')
                       }
                       action={
                         hasFilters ? (
                           <Button size="sm" variant="secondary" onClick={reset}>
-                            Clear filters
+                            {t('common.clearFilters')}
                           </Button>
                         ) : undefined
                       }
@@ -208,31 +211,29 @@ export function ExecutionsView() {
                           href={`/agents/executions/${e.id}`}
                           className="font-medium hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                         >
-                          {e.agent?.name ?? 'Deleted agent'}
+                          {e.agent?.name ?? t('common.deletedAgent')}
                         </Link>
                       </TableCell>
                       <TableCell>
                         <ExecutionStatusBadge status={e.status} />
                       </TableCell>
                       <TableCell className="text-fg-muted">
-                        {TRIGGER_LABELS[e.trigger] ?? e.trigger}
+                        {tm(t, TRIGGER_LABELS[e.trigger] ?? e.trigger)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-fg-muted tabular">
                         <time
                           dateTime={e.startedAt ?? e.createdAt}
-                          title={format(new Date(e.startedAt ?? e.createdAt), 'PPpp')}
+                          title={fmt.dateTime(new Date(e.startedAt ?? e.createdAt), 'long')}
                         >
-                          {formatDistanceToNow(new Date(e.startedAt ?? e.createdAt), {
-                            addSuffix: true,
-                          })}
+                          {fmt.relative(new Date(e.startedAt ?? e.createdAt))}
                         </time>
                       </TableCell>
-                      <TableCell className="tabular">{formatDuration(e.durationMs)}</TableCell>
-                      <TableCell className="text-right tabular">
-                        {(e.inputTokens + e.outputTokens).toLocaleString('en')}
+                      <TableCell className="tabular">{formatDuration(e.durationMs, fmt)}</TableCell>
+                      <TableCell className="text-end tabular">
+                        {fmt.number(e.inputTokens + e.outputTokens)}
                       </TableCell>
-                      <TableCell className="text-right tabular">
-                        {formatUsd(e.estimatedCostUsd)}
+                      <TableCell className="text-end tabular">
+                        {formatUsd(e.estimatedCostUsd, fmt)}
                       </TableCell>
                     </TableRow>
                   ))

@@ -4,6 +4,7 @@ import * as React from 'react';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { ErrorState } from '@hilatech/ui';
 import { getErrorMessage, isApiError } from '@/lib/api';
+import { useT } from '@/i18n/provider';
 
 export interface QueryStateProps<T> {
   query: UseQueryResult<T>;
@@ -28,6 +29,7 @@ export function QueryState<T>({
   compact,
   errorTitle,
 }: QueryStateProps<T>) {
+  const t = useT();
   if (query.isPending) return <>{loading}</>;
   if (query.isError) {
     const err = query.error;
@@ -36,7 +38,9 @@ export function QueryState<T>({
       <ErrorState
         compact={compact}
         title={
-          forbidden ? 'You don’t have access to this' : (errorTitle ?? 'This couldn’t be loaded')
+          forbidden
+            ? t('common.youDonTHaveAccess2')
+            : (errorTitle ?? t('common.thisCouldnTBeLoaded'))
         }
         message={getErrorMessage(err)}
         requestId={isApiError(err) ? err.requestId : undefined}

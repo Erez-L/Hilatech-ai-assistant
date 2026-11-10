@@ -7,6 +7,7 @@ import {
   Send,
   StickyNote,
   UserCog,
+  ListTodo,
   Variable,
   Workflow as WorkflowIcon,
   type LucideIcon,
@@ -20,6 +21,9 @@ import type {
 import type { StatusTone } from '@hilatech/ui';
 import { extractIssues } from '@/lib/forms/server-errors';
 import { isApiError } from '@/lib/api/client';
+import { msg, type Msg } from '@/i18n/msg';
+import type { T } from '@/i18n/provider';
+import { en, type MessageKey } from '@/i18n/messages';
 
 /** Mirrors the API's template placeholder: resource ids the user must choose before activation. */
 export const PLACEHOLDER_ID = '00000000-0000-0000-0000-000000000000';
@@ -27,55 +31,79 @@ export const PLACEHOLDER_ID = '00000000-0000-0000-0000-000000000000';
 export type StepType = WorkflowStep['type'];
 export type TriggerType = WorkflowTrigger['type'];
 
-export const STEP_META: Record<StepType, { label: string; description: string; icon: LucideIcon }> =
-  {
-    agent_run: { label: 'Run an agent', description: 'Hand a task to an AI agent', icon: Bot },
-    send_notification: {
-      label: 'Send a notification',
-      description: 'In-app notification to a user, role or assignee',
-      icon: Bell,
-    },
-    http_request: { label: 'HTTP request', description: 'Call an external API', icon: Globe },
-    update_lead: {
-      label: 'Update a lead',
-      description: 'Change status, assignee or tags',
-      icon: UserCog,
-    },
-    create_lead_note: {
-      label: 'Add a lead note',
-      description: 'Record a note on a lead',
-      icon: StickyNote,
-    },
-    delay: { label: 'Wait', description: 'Pause before the next step', icon: Clock },
-    condition: { label: 'Condition', description: 'Branch on a value', icon: GitBranch },
-    n8n_trigger: { label: 'Trigger n8n', description: 'Call an n8n webhook', icon: WorkflowIcon },
-    outbound_webhook: {
-      label: 'Send outbound webhook',
-      description: 'Emit an event to subscribers',
-      icon: Send,
-    },
-    set_variable: {
-      label: 'Set variable',
-      description: 'Store a value for later steps',
-      icon: Variable,
-    },
-  };
+export const STEP_META: Record<StepType, { label: Msg; description: Msg; icon: LucideIcon }> = {
+  agent_run: {
+    label: msg('automations.step.agent_run'),
+    description: msg('automations.step.agent_run.description'),
+    icon: Bot,
+  },
+  send_notification: {
+    label: msg('automations.step.send_notification'),
+    description: msg('automations.step.send_notification.description'),
+    icon: Bell,
+  },
+  http_request: {
+    label: msg('automations.step.http_request'),
+    description: msg('automations.step.http_request.description'),
+    icon: Globe,
+  },
+  update_lead: {
+    label: msg('automations.step.update_lead'),
+    description: msg('automations.step.update_lead.description'),
+    icon: UserCog,
+  },
+  create_lead_note: {
+    label: msg('automations.step.create_lead_note'),
+    description: msg('automations.step.create_lead_note.description'),
+    icon: StickyNote,
+  },
+  delay: {
+    label: msg('automations.step.delay'),
+    description: msg('automations.step.delay.description'),
+    icon: Clock,
+  },
+  condition: {
+    label: msg('automations.step.condition'),
+    description: msg('automations.step.condition.description'),
+    icon: GitBranch,
+  },
+  n8n_trigger: {
+    label: msg('automations.step.n8n_trigger'),
+    description: msg('automations.step.n8n_trigger.description'),
+    icon: WorkflowIcon,
+  },
+  outbound_webhook: {
+    label: msg('automations.step.outbound_webhook'),
+    description: msg('automations.step.outbound_webhook.description'),
+    icon: Send,
+  },
+  create_task: {
+    label: msg('automations.step.create_task'),
+    description: msg('automations.step.create_task.description'),
+    icon: ListTodo,
+  },
+  set_variable: {
+    label: msg('automations.step.set_variable'),
+    description: msg('automations.step.set_variable.description'),
+    icon: Variable,
+  },
+};
 
 export const STEP_TYPES = Object.keys(STEP_META) as StepType[];
 
-export const TRIGGER_LABELS: Record<TriggerType, string> = {
-  manual: 'Manual',
-  event: 'Event',
-  schedule: 'Schedule',
-  webhook: 'Inbound webhook',
+export const TRIGGER_LABELS: Record<TriggerType, Msg> = {
+  manual: msg('automations.trigger.manual'),
+  event: msg('automations.trigger.event'),
+  schedule: msg('automations.trigger.schedule'),
+  webhook: msg('automations.trigger.webhook'),
 };
 
-export const RUN_STATUS_LABELS: Record<WorkflowRunStatus, string> = {
-  queued: 'Queued',
-  running: 'Running',
-  succeeded: 'Succeeded',
-  failed: 'Failed',
-  cancelled: 'Cancelled',
+export const RUN_STATUS_LABELS: Record<WorkflowRunStatus, Msg> = {
+  queued: msg('automations.runStatus.queued'),
+  running: msg('automations.runStatus.running'),
+  succeeded: msg('automations.runStatus.succeeded'),
+  failed: msg('automations.runStatus.failed'),
+  cancelled: msg('automations.runStatus.cancelled'),
 };
 
 export const RUN_STATUS_TONES: Record<WorkflowRunStatus, StatusTone> = {
@@ -87,63 +115,67 @@ export const RUN_STATUS_TONES: Record<WorkflowRunStatus, StatusTone> = {
 };
 
 export const CONDITION_OPERATORS = [
-  { value: 'eq', label: 'equals' },
-  { value: 'neq', label: 'does not equal' },
-  { value: 'contains', label: 'contains' },
-  { value: 'gt', label: 'is greater than' },
-  { value: 'lt', label: 'is less than' },
-  { value: 'exists', label: 'exists' },
+  { value: 'eq', label: msg('automations.operator.eq') },
+  { value: 'neq', label: msg('automations.operator.neq') },
+  { value: 'contains', label: msg('automations.operator.contains') },
+  { value: 'gt', label: msg('automations.operator.gt') },
+  { value: 'lt', label: msg('automations.operator.lt') },
+  { value: 'exists', label: msg('automations.operator.exists') },
 ] as const;
 
 /** Event name → readable label (`lead.status_changed` → "Lead status changed"). */
-export function eventLabel(event: string): string {
+export function eventLabel(event: string, t?: T): string {
+  const key = `automations.event.${event}` as MessageKey;
+  if (t && key in en) return t(key);
   const text = event.replace(/[._]+/g, ' ');
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-export function triggerSummary(trigger: WorkflowTrigger): string {
+export function triggerSummary(trigger: WorkflowTrigger, t: T): string {
   switch (trigger.type) {
     case 'manual':
-      return 'Manual';
+      return t(TRIGGER_LABELS.manual);
     case 'event':
-      return `On ${eventLabel(trigger.event as DomainEvent).toLowerCase()}`;
+      return t('automations.onEvent', { event: eventLabel(trigger.event as DomainEvent, t) });
     case 'schedule':
-      return `Schedule ${trigger.cron}`;
+      return t('automations.scheduleCron', { cron: trigger.cron });
     case 'webhook':
-      return 'Inbound webhook';
+      return t(TRIGGER_LABELS.webhook);
   }
 }
 
-export function stepSummary(step: WorkflowStep): string {
+export function stepSummary(step: WorkflowStep, t: T): string {
   switch (step.type) {
     case 'agent_run':
-      return step.input ? truncate(step.input) : 'No input yet';
+      return step.input ? truncate(step.input) : t('automations.noInputYet');
     case 'send_notification':
-      return step.title ? truncate(step.title) : 'No title yet';
+      return step.title ? truncate(step.title) : t('automations.noTitleYet');
     case 'http_request':
       return `${step.method} ${step.url || '…'}`;
     case 'update_lead':
       return (
         [
-          step.status && `status → ${step.status}`,
-          step.assigneeId && 'reassign',
-          step.addTags.length > 0 && `+${step.addTags.length} tags`,
+          step.status && t('automations.summaryStatus', { status: step.status }),
+          step.assigneeId && t('automations.summaryReassign'),
+          step.addTags.length > 0 && t('automations.summaryTags', { count: step.addTags.length }),
         ]
           .filter(Boolean)
-          .join(', ') || 'No changes yet'
+          .join(', ') || t('automations.noChangesYet')
       );
     case 'create_lead_note':
-      return step.body ? truncate(step.body) : 'No note yet';
+      return step.body ? truncate(step.body) : t('automations.noNoteYet');
     case 'delay':
-      return `Wait ${step.seconds}s`;
+      return t('automations.summaryWait', { seconds: step.seconds });
     case 'condition':
       return `${truncate(step.left || '…')} ${step.operator}${step.right ? ` ${truncate(step.right)}` : ''}`;
     case 'n8n_trigger':
-      return step.webhook || 'No webhook yet';
+      return step.webhook || t('automations.noWebhookYet');
     case 'outbound_webhook':
-      return step.event || 'No event yet';
+      return step.event || t('automations.noEventYet');
     case 'set_variable':
-      return step.name ? `vars.${step.name}` : 'No name yet';
+      return step.name ? `vars.${step.name}` : t('automations.noNameYet');
+    case 'create_task':
+      return step.title ? truncate(step.title) : t('automations.noTitleYet');
   }
 }
 
@@ -172,6 +204,8 @@ export function newStep(type: StepType, id: string): WorkflowStep {
       return { id, type, webhook: '', payload: {} };
     case 'outbound_webhook':
       return { id, type, event: '', payload: {} };
+    case 'create_task':
+      return { id, type, title: '', priority: 'medium' };
     case 'set_variable':
       return { id, type, name: '', value: '' };
   }
@@ -194,7 +228,7 @@ export interface Placeholder {
 }
 
 /** Template fields still holding the placeholder id (must be chosen by the user before saving). */
-export function findPlaceholders(steps: readonly WorkflowStep[]): Placeholder[] {
+export function findPlaceholders(steps: readonly WorkflowStep[], t: T): Placeholder[] {
   const out: Placeholder[] = [];
   for (const step of steps) {
     if (step.type === 'agent_run' && step.agentId === PLACEHOLDER_ID) {
@@ -202,7 +236,7 @@ export function findPlaceholders(steps: readonly WorkflowStep[]): Placeholder[] 
         key: `${step.id}.agentId`,
         stepId: step.id,
         kind: 'agent',
-        label: `Agent for step “${step.id}”`,
+        label: t('automations.agentForStep', { id: step.id }),
       });
     }
     if (
@@ -214,7 +248,7 @@ export function findPlaceholders(steps: readonly WorkflowStep[]): Placeholder[] 
         key: `${step.id}.userId`,
         stepId: step.id,
         kind: 'user',
-        label: `User to notify in step “${step.id}”`,
+        label: t('automations.userToNotify', { id: step.id }),
       });
     }
   }

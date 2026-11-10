@@ -43,8 +43,10 @@ import { DeliveriesDialog } from './deliveries-dialog';
 import { SecretDialog } from './secret-dialog';
 import { WebhookDialog } from './webhook-dialog';
 import { eventLabel } from '@/lib/automation';
+import { useT } from '@/i18n/provider';
 
 export function OutboundWebhooks() {
+  const t = useT();
   const canManage = useCan(Permission.AUTOMATIONS_MANAGE);
   const webhooks = useWebhooks();
   const remove = useDeleteWebhook();
@@ -66,30 +68,28 @@ export function OutboundWebhooks() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 id="outbound-heading" className="text-base font-semibold">
-            Outbound webhooks
+            {t('automation.outboundWebhooks')}
           </h2>
-          <p className="text-sm text-fg-muted">
-            Send signed events from HilaTech to your own systems.
-          </p>
+          <p className="text-sm text-fg-muted">{t('automation.sendSignedEventsFromHilatech')}</p>
         </div>
         {canManage ? (
           <Button leadingIcon={<Plus aria-hidden />} onClick={() => setCreating(true)}>
-            New webhook
+            {t('automation.newWebhook')}
           </Button>
         ) : null}
       </div>
 
       <Card>
         <CardContent className="p-0">
-          <Table aria-label="Outbound webhooks">
+          <Table aria-label={t('automation.outboundWebhooks')}>
             <TableHeader>
               <TableRow>
-                <TableHead>Endpoint</TableHead>
-                <TableHead>Events</TableHead>
-                <TableHead>Secret</TableHead>
-                <TableHead>Enabled</TableHead>
-                <TableHead className="text-right">
-                  <span className="sr-only">Actions</span>
+                <TableHead>{t('automation.endpoint')}</TableHead>
+                <TableHead>{t('automation.events')}</TableHead>
+                <TableHead>{t('automation.secret')}</TableHead>
+                <TableHead>{t('common.enabled')}</TableHead>
+                <TableHead className="text-end">
+                  <span className="sr-only">{t('common.actions')}</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -101,7 +101,7 @@ export function OutboundWebhooks() {
                   <div className="flex flex-col items-center gap-2">
                     <span>{getErrorMessage(webhooks.error)}</span>
                     <Button variant="secondary" size="sm" onClick={() => void webhooks.refetch()}>
-                      Try again
+                      {t('common.tryAgain')}
                     </Button>
                   </div>
                 </TableEmptyRow>
@@ -110,8 +110,8 @@ export function OutboundWebhooks() {
                   <EmptyState
                     compact
                     icon={<WebhookIcon />}
-                    title="No outbound webhooks yet"
-                    description="Create one to receive events such as new leads or finished documents."
+                    title={t('automation.noOutboundWebhooksYet')}
+                    description={t('automation.createOneToReceiveEvents')}
                     action={
                       canManage ? (
                         <Button
@@ -119,7 +119,7 @@ export function OutboundWebhooks() {
                           leadingIcon={<Plus aria-hidden />}
                           onClick={() => setCreating(true)}
                         >
-                          New webhook
+                          {t('automation.newWebhook')}
                         </Button>
                       ) : undefined
                     }
@@ -146,7 +146,7 @@ export function OutboundWebhooks() {
       {creating ? (
         <WebhookDialog
           onClose={() => setCreating(false)}
-          onCreated={(created) => showSecret('Webhook created', created)}
+          onCreated={(created) => showSecret(t('automation.webhookCreated'), created)}
         />
       ) : null}
       {editing ? <WebhookDialog webhook={editing} onClose={() => setEditing(null)} /> : null}
@@ -155,30 +155,32 @@ export function OutboundWebhooks() {
         <SecretDialog
           title={reveal.title}
           secret={reveal.secret}
-          description="Use this secret to verify the x-hilatech-signature header on every delivery."
+          description={t('automation.useThisSecretToVerify')}
           onClose={() => setReveal(null)}
         >
           <p className="text-xs text-fg-muted">
-            Deliveries carry{' '}
-            <code className="font-mono">x-hilatech-signature: sha256=&lt;hmac&gt;</code>,{' '}
-            <code className="font-mono">x-hilatech-timestamp</code> and{' '}
-            <code className="font-mono">x-hilatech-event</code> headers.
+            {t('automation.deliveriesCarry')}{' '}
+            <code className="font-mono">{t('automation.xHilatechSignatureSha256Hmac')}</code>,{' '}
+            <code className="font-mono">{t('automation.xHilatechTimestamp')}</code>{' '}
+            {t('automation.and')}{' '}
+            <code className="font-mono">{t('automation.xHilatechEvent')}</code>{' '}
+            {t('automation.headers')}
           </p>
         </SecretDialog>
       ) : null}
       <ConfirmDialog
         open={!!rotating}
         onOpenChange={(open) => !open && setRotating(null)}
-        title="Rotate the signing secret?"
-        description="A new secret is generated and shown once. The old secret stops working immediately."
-        confirmLabel="Rotate secret"
+        title={t('automation.rotateTheSigningSecret')}
+        description={t('automation.aNewSecretIsGenerated2')}
+        confirmLabel={t('automation.rotateSecret')}
         loading={rotate.isPending}
         onConfirm={async () => {
           if (!rotating) return;
           try {
             const updated = await rotate.mutateAsync(rotating.id);
             setRotating(null);
-            showSecret('New signing secret', updated);
+            showSecret(t('automation.newSigningSecret'), updated);
           } catch (e) {
             toast.error(getErrorMessage(e));
           }
@@ -187,18 +189,18 @@ export function OutboundWebhooks() {
       <ConfirmDialog
         open={!!deleting}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title="Delete this webhook?"
+        title={t('automation.deleteThisWebhook')}
         description={
-          deleting ? `${deleting.url} and its delivery history will be removed.` : undefined
+          deleting ? t('automation.andItsDeliveryHistoryWill', { url: deleting.url }) : undefined
         }
-        confirmLabel="Delete webhook"
+        confirmLabel={t('automation.deleteWebhook')}
         tone="danger"
         loading={remove.isPending}
         onConfirm={async () => {
           if (!deleting) return;
           try {
             await remove.mutateAsync(deleting.id);
-            toast.success('Webhook deleted');
+            toast.success(t('automation.webhookDeleted'));
             setDeleting(null);
           } catch (e) {
             toast.error(getErrorMessage(e));
@@ -224,6 +226,7 @@ function OutboundRow({
   onRotate: () => void;
   onDelete: () => void;
 }) {
+  const t = useT();
   const update = useUpdateWebhook();
   const test = useTestWebhook();
   return (
@@ -239,12 +242,14 @@ function OutboundRow({
       <TableCell>
         <div className="flex max-w-xs flex-wrap gap-1">
           {webhook.events.slice(0, 3).map((ev) => (
-            <Badge key={ev} variant="outline" title={eventLabel(ev)}>
+            <Badge key={ev} variant="outline" title={eventLabel(ev, t)}>
               {ev}
             </Badge>
           ))}
           {webhook.events.length > 3 ? (
-            <Badge variant="neutral">+{webhook.events.length - 3} more</Badge>
+            <Badge variant="neutral">
+              {t('automation.more', { value: webhook.events.length - 3 })}
+            </Badge>
           ) : null}
         </div>
       </TableCell>
@@ -255,12 +260,18 @@ function OutboundRow({
         <Switch
           checked={webhook.isEnabled}
           disabled={!canManage || update.isPending}
-          aria-label={`${webhook.isEnabled ? 'Disable' : 'Enable'} webhook ${webhook.url}`}
+          aria-label={t(
+            webhook.isEnabled ? 'automation.disableWebhook' : 'automation.enableWebhook',
+            { url: webhook.url },
+          )}
           onCheckedChange={(isEnabled) =>
             update.mutate(
               { id: webhook.id, body: { isEnabled } },
               {
-                onSuccess: () => toast.success(`Webhook ${isEnabled ? 'enabled' : 'disabled'}`),
+                onSuccess: () =>
+                  toast.success(
+                    t(isEnabled ? 'automation.webhookEnabled' : 'automation.webhookDisabled'),
+                  ),
                 onError: (e) => toast.error(getErrorMessage(e)),
               },
             )
@@ -269,19 +280,23 @@ function OutboundRow({
       </TableCell>
       <TableCell>
         <div className="flex justify-end gap-1">
-          <IconButton size="sm" label={`Deliveries for ${webhook.url}`} onClick={onLog}>
+          <IconButton
+            size="sm"
+            label={t('automation.deliveriesFor', { url: webhook.url })}
+            onClick={onLog}
+          >
             <History aria-hidden />
           </IconButton>
           {canManage ? (
             <>
               <IconButton
                 size="sm"
-                label={`Send test delivery to ${webhook.url}`}
+                label={t('automation.sendTestDeliveryTo', { url: webhook.url })}
                 disabled={test.isPending}
                 onClick={() =>
                   test.mutate(webhook.id, {
                     onSuccess: () => {
-                      toast.success('Test delivery queued');
+                      toast.success(t('automation.testDeliveryQueued'));
                       onLog();
                     },
                     onError: (e) => toast.error(getErrorMessage(e)),
@@ -290,13 +305,25 @@ function OutboundRow({
               >
                 <Send aria-hidden />
               </IconButton>
-              <IconButton size="sm" label={`Rotate secret for ${webhook.url}`} onClick={onRotate}>
+              <IconButton
+                size="sm"
+                label={t('automation.rotateSecretFor2', { url: webhook.url })}
+                onClick={onRotate}
+              >
                 <KeyRound aria-hidden />
               </IconButton>
-              <IconButton size="sm" label={`Edit webhook ${webhook.url}`} onClick={onEdit}>
+              <IconButton
+                size="sm"
+                label={t('automation.editWebhook', { url: webhook.url })}
+                onClick={onEdit}
+              >
                 <Pencil aria-hidden />
               </IconButton>
-              <IconButton size="sm" label={`Delete webhook ${webhook.url}`} onClick={onDelete}>
+              <IconButton
+                size="sm"
+                label={t('automation.deleteWebhook2', { url: webhook.url })}
+                onClick={onDelete}
+              >
                 <Trash2 aria-hidden />
               </IconButton>
             </>

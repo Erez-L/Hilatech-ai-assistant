@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Check, Copy } from 'lucide-react';
 import { cn } from '../lib/cn';
+import { useUiStrings } from '../lib/ui-strings';
 
 export interface CodeBlockProps extends Omit<React.HTMLAttributes<HTMLPreElement>, 'children'> {
   /** Raw code — rendered as text, never as HTML. */
@@ -29,6 +30,7 @@ export function CodeBlock({
   className,
   ...props
 }: CodeBlockProps) {
+  const ui = useUiStrings();
   const [copied, setCopied] = React.useState(false);
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -66,7 +68,7 @@ export function CodeBlock({
             <button
               type="button"
               onClick={() => void copy()}
-              aria-label={copied ? 'Copied' : 'Copy code'}
+              aria-label={copied ? ui.copied : ui.copyCode}
               className="inline-flex h-5 items-center gap-1 rounded-xs px-1.5 text-2xs text-fg-muted transition-colors hover:bg-surface hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
             >
               {copied ? (
@@ -74,7 +76,7 @@ export function CodeBlock({
               ) : (
                 <Copy className="size-3" aria-hidden />
               )}
-              <span aria-live="polite">{copied ? 'Copied' : 'Copy'}</span>
+              <span aria-live="polite">{copied ? ui.copied : ui.copy}</span>
             </button>
           ) : null}
         </div>

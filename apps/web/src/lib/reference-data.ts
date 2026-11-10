@@ -1,3 +1,6 @@
+import { msg } from '@/i18n/msg';
+
+/** Values are stored as-is (English) by the API; show them with `enumLabel(t, 'industry', value)`. */
 export const INDUSTRIES = [
   'Professional services',
   'Healthcare & clinics',
@@ -45,12 +48,15 @@ export const COMMON_TIMEZONES = [
 ];
 
 export const DAYS = [
-  { key: 'sun', label: 'Sunday' },
-  { key: 'mon', label: 'Monday' },
-  { key: 'tue', label: 'Tuesday' },
-  { key: 'wed', label: 'Wednesday' },
-  { key: 'thu', label: 'Thursday' },
-  { key: 'fri', label: 'Friday' },
-  { key: 'sat', label: 'Saturday' },
+  { key: 'sun', label: msg('days.sun') },
+  { key: 'mon', label: msg('days.mon') },
+  { key: 'tue', label: msg('days.tue') },
+  { key: 'wed', label: msg('days.wed') },
+  { key: 'thu', label: msg('days.thu') },
+  { key: 'fri', label: msg('days.fri') },
+  { key: 'sat', label: msg('days.sat') },
 ] as const;
 export type DayKey = (typeof DAYS)[number]['key'];
+
+/** Currencies offered for the organization's reporting currency (any ISO-4217 code is still accepted by the API). */
+export const COMMON_CURRENCIES = ['ILS', 'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'CHF', 'JPY'] as const;

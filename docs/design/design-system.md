@@ -89,8 +89,9 @@ comment; no validation artefact is stored in the repository.
 
 ## Known gaps
 
-- No RTL support: no logical-property audit, no `dir` switching, `<html lang="en">` is fixed. Hebrew UI is not
-  implemented (a `locale` value is stored but unused).
+- Hebrew/RTL is implemented (see `docs/development/i18n.md`), but only verified with automated tests, e2e and
+  screenshot review of key pages; there is no visual-regression suite, so new screens need an RTL check by hand.
+  Remaining i18n gaps (server-generated English text, no Hebrew email/AI prompts) are listed in `i18n.md`.
 - No Storybook or visual-regression suite; no automated accessibility audit; dark-mode contrast and responsive layouts were
   **not** visually verified (`task-status.md`).
 - No tokens for spacing or z-index beyond Tailwind defaults; no documented density modes.

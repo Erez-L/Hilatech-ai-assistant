@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { format, isSameDay, isToday, isYesterday } from 'date-fns';
+import { isSameDay, isToday, isYesterday } from 'date-fns';
 import {
   Archive,
   ArrowLeft,
@@ -54,6 +54,8 @@ import { AssigneeMenu } from '@/components/crm/assignee-menu';
 import { ChannelBadge, ConversationStatusBadge } from '@/components/crm/badges';
 import { LinkRecordsDialog } from './link-records-dialog';
 import { MessageComposer } from './message-composer';
+import { useT, useFormat, type T } from '@/i18n/provider';
+import type { Formatter } from '@/i18n/format';
 
 export function ConversationThread({
   conversationId,
@@ -62,13 +64,17 @@ export function ConversationThread({
   conversationId: string;
   onBack?: () => void;
 }) {
+  const t = useT();
   const conversation = useConversation(conversationId);
   return (
-    <section aria-label="Conversation" className="flex min-h-0 min-w-0 flex-1 flex-col bg-surface">
+    <section
+      aria-label={t('conversations.conversation')}
+      className="flex min-h-0 min-w-0 flex-1 flex-col bg-surface"
+    >
       <QueryState
         query={conversation}
         loading={<ThreadSkeleton onBack={onBack} />}
-        errorTitle="This conversation couldn’t be loaded"
+        errorTitle={t('conversations.thisConversationCouldnTBe')}
       >
         {(data) => <ThreadBody conversation={data} onBack={onBack} />}
       </QueryState>
@@ -77,11 +83,12 @@ export function ConversationThread({
 }
 
 function ThreadSkeleton({ onBack }: { onBack?: () => void }) {
+  const t = useT();
   return (
     <div className="flex h-full flex-col" aria-busy>
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         {onBack ? (
-          <IconButton label="Back to list" className="lg:hidden" onClick={onBack}>
+          <IconButton label={t('conversations.backToList')} className="lg:hidden" onClick={onBack}>
             <ArrowLeft aria-hidden />
           </IconButton>
         ) : null}
@@ -92,7 +99,7 @@ function ThreadSkeleton({ onBack }: { onBack?: () => void }) {
       </div>
       <div className="flex flex-1 flex-col gap-4 p-5">
         <Skeleton className="h-12 w-2/3 rounded-xl" />
-        <Skeleton className="ml-auto h-12 w-1/2 rounded-xl" />
+        <Skeleton className="ms-auto h-12 w-1/2 rounded-xl" />
         <Skeleton className="h-16 w-3/5 rounded-xl" />
       </div>
     </div>
@@ -108,6 +115,7 @@ function ThreadBody({
   conversation: ConversationWithRelations;
   onBack?: () => void;
 }) {
+  const t = useT();
   const canUpdate = useCan(Permission.CONVERSATIONS_UPDATE);
   const canAssign = useCan(Permission.CONVERSATIONS_ASSIGN);
   const canReadContacts = useCan(Permission.CONTACTS_READ);
@@ -126,7 +134,11 @@ function ThreadBody({
       { id: conversation.id, body: { status } },
       {
         onSuccess: () =>
-          toast.success(`Conversation ${CONVERSATION_STATUS_LABELS[status].toLowerCase()}`),
+          toast.success(
+            t('conversations.conversation2', {
+              name: t(CONVERSATION_STATUS_LABELS[status]).toLowerCase(),
+            }),
+          ),
       },
     );
   };
@@ -134,15 +146,19 @@ function ThreadBody({
   const title =
     conversation.subject ||
     (conversation.contact
-      ? `Conversation with ${contactName(conversation.contact)}`
-      : 'No subject');
+      ? t('conversations.conversationWith', { name: contactName(conversation.contact) })
+      : t('conversations.noSubject'));
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           {onBack ? (
-            <IconButton label="Back to list" className="lg:hidden" onClick={onBack}>
+            <IconButton
+              label={t('conversations.backToList')}
+              className="lg:hidden"
+              onClick={onBack}
+            >
               <ArrowLeft aria-hidden />
             </IconButton>
           ) : null}
@@ -162,7 +178,7 @@ function ThreadBody({
                   <span className="truncate">{contactName(conversation.contact)}</span>
                 )
               ) : (
-                <span className="text-fg-subtle">No contact</span>
+                <span className="text-fg-subtle">{t('conversations.noContact')}</span>
               )}
               {conversation.lead ? (
                 canReadLeads ? (
@@ -170,10 +186,12 @@ function ThreadBody({
                     href={`/leads/${conversation.lead.id}`}
                     className="truncate hover:text-fg hover:underline"
                   >
-                    Lead: {conversation.lead.title}
+                    {t('conversations.lead', { title: conversation.lead.title })}
                   </Link>
                 ) : (
-                  <span className="truncate">Lead: {conversation.lead.title}</span>
+                  <span className="truncate">
+                    {t('conversations.lead', { title: conversation.lead.title })}
+                  </span>
                 )
               ) : null}
             </div>
@@ -192,7 +210,9 @@ function ThreadBody({
                 {
                   onSuccess: (c) =>
                     toast.success(
-                      c.assignee ? `Assigned to ${fullName(c.assignee)}` : 'Assignee removed',
+                      c.assignee
+                        ? t('conversations.assignedTo', { name: fullName(c.assignee) })
+                        : t('conversations.assigneeRemoved'),
                     ),
                 },
               )
@@ -200,7 +220,7 @@ function ThreadBody({
           />
           {canUpdate ? (
             <NativeSelect
-              aria-label="Status"
+              aria-label={t('common.status')}
               value={conversation.status}
               disabled={update.isPending}
               onChange={(e) => setStatus(e.target.value as ConversationStatus)}
@@ -208,7 +228,7 @@ function ThreadBody({
             >
               {CONVERSATION_STATUSES.map((s) => (
                 <option key={s} value={s}>
-                  {CONVERSATION_STATUS_LABELS[s]}
+                  {t(CONVERSATION_STATUS_LABELS[s])}
                 </option>
               ))}
             </NativeSelect>
@@ -218,25 +238,25 @@ function ThreadBody({
           {canUpdate ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <IconButton label="More actions" variant="secondary">
+                <IconButton label={t('common.moreActions')} variant="secondary">
                   <MoreHorizontal aria-hidden />
                 </IconButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem onSelect={() => setLinkOpen(true)}>
                   <Link2 aria-hidden />
-                  Link contact or lead
+                  {t('conversations.linkContactOrLead')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {archived ? (
                   <DropdownMenuItem onSelect={() => setStatus('open')}>
                     <RotateCcw aria-hidden />
-                    Reopen conversation
+                    {t('conversations.reopenConversation')}
                   </DropdownMenuItem>
                 ) : (
                   <DropdownMenuItem onSelect={() => setStatus('archived')}>
                     <Archive aria-hidden />
-                    Archive conversation
+                    {t('conversations.archiveConversation')}
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -249,9 +269,9 @@ function ThreadBody({
 
       {archived ? (
         <div className="border-t border-border px-4 py-3">
-          <Alert tone="neutral" title="This conversation is archived">
+          <Alert tone="neutral" title={t('conversations.thisConversationIsArchived')}>
             <div className="flex flex-wrap items-center gap-3">
-              <span>Reopen it to reply or log messages.</span>
+              <span>{t('conversations.reopenItToReplyOr')}</span>
               {canUpdate ? (
                 <Button
                   size="sm"
@@ -259,7 +279,7 @@ function ThreadBody({
                   loading={update.isPending}
                   onClick={() => setStatus('open')}
                 >
-                  Reopen
+                  {t('conversations.reopen')}
                 </Button>
               ) : null}
             </div>
@@ -268,14 +288,14 @@ function ThreadBody({
       ) : canUpdate ? (
         <MessageComposer
           sending={send.isPending}
-          hint={resolved ? 'This conversation is resolved — replying reopens it.' : undefined}
+          hint={resolved ? t('conversations.thisConversationIsResolvedReplying') : undefined}
           onSend={async ({ content, role }) => {
             try {
               await send.mutateAsync({ role, content, metadata: {} });
             } catch (error) {
               toast.error(
                 isApiError(error) && error.status === 409
-                  ? 'This conversation is archived. Reopen it to reply.'
+                  ? t('conversations.archivedReopenToReply')
                   : getErrorMessage(error),
               );
               throw error;
@@ -284,7 +304,7 @@ function ThreadBody({
         />
       ) : (
         <p className="border-t border-border px-4 py-3 text-center text-xs text-fg-muted">
-          Your role can read this conversation but not reply.
+          {t('conversations.yourRoleCanReadThis')}
         </p>
       )}
 
@@ -332,13 +352,15 @@ function groupMessages(messages: MessageWithAuthor[]): MessageGroup[] {
   return groups;
 }
 
-function dayLabel(date: Date): string {
-  if (isToday(date)) return 'Today';
-  if (isYesterday(date)) return 'Yesterday';
-  return format(date, 'EEEE, d MMMM yyyy');
+function dayLabel(date: Date, t: T, fmt: Formatter): string {
+  if (isToday(date)) return t('conversations.today');
+  if (isYesterday(date)) return t('conversations.yesterday');
+  return fmt.dateWithWeekday(date);
 }
 
 function MessageList({ conversationId }: { conversationId: string }) {
+  const t = useT();
+  const fmt = useFormat();
   const messages = useMessages(conversationId, { refetchInterval: 15_000 });
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const stickToBottom = React.useRef(true);
@@ -380,19 +402,19 @@ function MessageList({ conversationId }: { conversationId: string }) {
       className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-bg/40 px-4 py-4 scrollbar-thin"
       role="log"
       aria-live="polite"
-      aria-label="Messages"
+      aria-label={t('common.messages')}
     >
       {messages.isPending ? (
         <div className="flex flex-col gap-4" aria-busy>
           <Skeleton className="h-12 w-2/3 rounded-xl" />
-          <Skeleton className="ml-auto h-12 w-1/2 rounded-xl" />
+          <Skeleton className="ms-auto h-12 w-1/2 rounded-xl" />
           <Skeleton className="h-16 w-3/5 rounded-xl" />
         </div>
       ) : messages.isError ? (
         <div className="m-auto flex flex-col items-center gap-2 text-center text-sm text-fg-muted">
           <span>{getErrorMessage(messages.error)}</span>
           <Button size="sm" variant="secondary" onClick={() => void messages.refetch()}>
-            Try again
+            {t('common.tryAgain')}
           </Button>
         </div>
       ) : ordered.length === 0 ? (
@@ -400,8 +422,8 @@ function MessageList({ conversationId }: { conversationId: string }) {
           <EmptyState
             compact
             icon={<MessageSquare />}
-            title="No messages yet"
-            description="Send the first reply or log what the customer said."
+            title={t('conversations.noMessagesYet')}
+            description={t('conversations.sendTheFirstReplyOr')}
           />
         </div>
       ) : (
@@ -414,7 +436,7 @@ function MessageList({ conversationId }: { conversationId: string }) {
                 loading={messages.isFetchingNextPage}
                 onClick={() => void loadEarlier()}
               >
-                Load earlier messages
+                {t('conversations.loadEarlierMessages')}
               </Button>
             </li>
           ) : null}
@@ -427,11 +449,11 @@ function MessageList({ conversationId }: { conversationId: string }) {
               <React.Fragment key={group.key}>
                 {showDay ? (
                   <li
-                    className="flex items-center gap-3 py-1 text-2xs font-medium tracking-wide text-fg-subtle uppercase"
-                    aria-label={dayLabel(new Date(first.createdAt))}
+                    className="flex items-center gap-3 py-1 text-2xs font-medium tracking-wide rtl:tracking-normal text-fg-subtle uppercase"
+                    aria-label={dayLabel(new Date(first.createdAt), t, fmt)}
                   >
                     <span className="h-px flex-1 bg-border" aria-hidden />
-                    {dayLabel(new Date(first.createdAt))}
+                    {dayLabel(new Date(first.createdAt), t, fmt)}
                     <span className="h-px flex-1 bg-border" aria-hidden />
                   </li>
                 ) : null}
@@ -446,9 +468,11 @@ function MessageList({ conversationId }: { conversationId: string }) {
 }
 
 function MessageGroupItem({ group }: { group: MessageGroup }) {
+  const t = useT();
+  const fmt = useFormat();
   const { role, author, messages } = group;
   const first = messages[0]!;
-  const time = format(new Date(first.createdAt), 'HH:mm');
+  const time = fmt.time(new Date(first.createdAt));
 
   if (role === 'system') {
     return (
@@ -456,8 +480,8 @@ function MessageGroupItem({ group }: { group: MessageGroup }) {
         {messages.map((m) => (
           <p key={m.id} className="max-w-md text-xs text-fg-subtle">
             {m.content}
-            <time dateTime={m.createdAt} className="ml-2 tabular">
-              {format(new Date(m.createdAt), 'HH:mm')}
+            <time dateTime={m.createdAt} className="ms-2 tabular">
+              {fmt.time(new Date(m.createdAt))}
             </time>
           </p>
         ))}
@@ -468,20 +492,20 @@ function MessageGroupItem({ group }: { group: MessageGroup }) {
   const mine = role === 'agent';
   const name =
     role === 'assistant'
-      ? 'Assistant'
+      ? t('conversations.authorAssistant')
       : role === 'customer'
         ? author
-          ? `${fullName(author)} (logged)`
-          : 'Customer'
+          ? t('conversations.authorCustomerLogged', { name: fullName(author) })
+          : t('conversations.authorCustomer')
         : author
           ? fullName(author)
-          : 'Team';
+          : t('conversations.authorTeam');
 
   return (
     <li
       className={cn(
         'flex max-w-[85%] gap-2.5 sm:max-w-[75%]',
-        mine ? 'ml-auto flex-row-reverse' : 'mr-auto',
+        mine ? 'ms-auto flex-row-reverse' : 'me-auto',
       )}
     >
       {role === 'assistant' ? (
@@ -512,10 +536,10 @@ function MessageGroupItem({ group }: { group: MessageGroup }) {
             className={cn(
               'rounded-xl px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words shadow-xs',
               mine
-                ? 'rounded-tr-sm bg-accent-soft text-accent-soft-fg'
+                ? 'rounded-se-sm bg-accent-soft text-accent-soft-fg'
                 : role === 'assistant'
-                  ? 'rounded-tl-sm border border-info/20 bg-surface text-fg'
-                  : 'rounded-tl-sm border border-border bg-surface text-fg',
+                  ? 'rounded-ss-sm border border-info/20 bg-surface text-fg'
+                  : 'rounded-ss-sm border border-border bg-surface text-fg',
             )}
           >
             {m.content}

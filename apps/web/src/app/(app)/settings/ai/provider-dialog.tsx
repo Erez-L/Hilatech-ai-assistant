@@ -33,6 +33,7 @@ import {
 import { getErrorMessage } from '@/lib/api';
 import { useAiModels, useCreateAiProvider, useUpdateAiProvider } from '@/hooks/queries';
 import { applyServerErrors } from '@/lib/forms/server-errors';
+import { useT } from '@/i18n/provider';
 
 /** The deterministic mock provider is for development; production builds hide it unless opted in. */
 export const MOCK_PROVIDER_ENABLED =
@@ -132,6 +133,7 @@ function ProviderForm({
   first?: boolean;
   onDone: () => void;
 }) {
+  const t = useT();
   const editing = !!provider;
   const create = useCreateAiProvider();
   const update = useUpdateAiProvider();
@@ -194,7 +196,7 @@ function ProviderForm({
   const onSubmit = form.handleSubmit(async (values) => {
     setFormError(null);
     if (!editing && values.provider !== 'mock' && values.provider !== 'bedrock' && !values.apiKey) {
-      form.setError('apiKey', { type: 'required', message: 'An API key is required' });
+      form.setError('apiKey', { type: 'required', message: t('settings.anApiKeyIsRequired') });
       return;
     }
     try {
@@ -205,10 +207,10 @@ function ProviderForm({
       );
       if (provider) {
         await update.mutateAsync({ id: provider.id, body: body as UpdateAiProviderConfigRequest });
-        toast.success(`Provider “${values.name}” saved`);
+        toast.success(t('settings.providerSaved', { name: values.name }));
       } else {
         await create.mutateAsync(body as CreateAiProviderConfigRequest);
-        toast.success(`Provider “${values.name}” added`);
+        toast.success(t('settings.providerAdded', { name: values.name }));
       }
       onDone();
     } catch (error) {
@@ -222,15 +224,20 @@ function ProviderForm({
   return (
     <form onSubmit={onSubmit} noValidate className="flex min-h-0 flex-col">
       <DialogHeader>
-        <DialogTitle>{editing ? `Edit ${provider.name}` : 'Add an AI provider'}</DialogTitle>
-        <DialogDescription>
-          Keys are encrypted and never shown again — only the last four characters.
-        </DialogDescription>
+        <DialogTitle>
+          {editing ? t('common.edit2', { name: provider.name }) : t('settings.addAnAiProvider')}
+        </DialogTitle>
+        <DialogDescription>{t('settings.keysAreEncryptedAndNever')}</DialogDescription>
       </DialogHeader>
       <DialogBody className="flex flex-col gap-5 pb-2">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
         <div className="grid gap-5 sm:grid-cols-2">
-          <FormField id="provider-kind" label="Provider" error={errors.provider?.message} required>
+          <FormField
+            id="provider-kind"
+            label={t('settings.provider')}
+            error={errors.provider?.message}
+            required
+          >
             <NativeSelect disabled={editing} {...form.register('provider')}>
               {AiProviderKind.options
                 .filter(
@@ -243,55 +250,57 @@ function ProviderForm({
                 ))}
             </NativeSelect>
           </FormField>
-          <FormField id="provider-name" label="Name" error={errors.name?.message} required>
-            <Input placeholder="Production" autoFocus {...form.register('name')} />
+          <FormField
+            id="provider-name"
+            label={t('common.name')}
+            error={errors.name?.message}
+            required
+          >
+            <Input placeholder={t('settings.production')} autoFocus {...form.register('name')} />
           </FormField>
         </div>
 
         {needsKey ? (
           <FormField
             id="provider-key"
-            label="API key"
+            label={t('settings.apiKey')}
             error={errors.apiKey?.message}
             required={!editing}
             description={
               editing
                 ? provider?.hasApiKey
-                  ? `Stored key ••••${provider.keyLast4 ?? ''}. Leave blank to keep it.`
-                  : 'No key is stored. Enter one to make this provider usable.'
-                : 'Paste the secret key from your provider’s console.'
+                  ? t('settings.storedKeyLeaveBlank', { last4: provider.keyLast4 ?? '' })
+                  : t('settings.noKeyIsStoredEnter')
+                : t('settings.pasteTheSecretKeyFrom')
             }
           >
             <Input
               type="password"
               autoComplete="off"
               spellCheck={false}
-              placeholder={editing && provider?.hasApiKey ? '••••••••••••' : 'sk-…'}
+              placeholder={editing && provider?.hasApiKey ? '••••••••••••' : t('settings.sk')}
               disabled={clearApiKey}
               {...form.register('apiKey')}
             />
           </FormField>
         ) : kind === 'bedrock' ? (
           <>
-            <Alert tone="neutral">
-              Amazon Bedrock uses the server&apos;s AWS identity (IAM role or SSO profile) — no key
-              is stored. The server needs AI_BEDROCK_ENABLED=true and model access in the chosen
-              region. Model ids listed here are unverified; check them in your region.
-            </Alert>
+            <Alert tone="neutral">{t('settings.amazonBedrockUsesTheServer')}</Alert>
             <FormField
               id="provider-region"
-              label="AWS region"
+              label={t('settings.awsRegion')}
               error={errors.region?.message}
-              description="Optional. Leave blank to use the server's AWS_REGION."
+              description={t('settings.optionalLeaveBlankToUse')}
             >
-              <Input placeholder="us-east-1" spellCheck={false} {...form.register('region')} />
+              <Input
+                placeholder={t('settings.usEast1')}
+                spellCheck={false}
+                {...form.register('region')}
+              />
             </FormField>
           </>
         ) : (
-          <Alert tone="neutral">
-            The mock provider answers deterministically without any key. It is for development and
-            tests only.
-          </Alert>
+          <Alert tone="neutral">{t('settings.theMockProviderAnswersDeterministically')}</Alert>
         )}
         {editing && provider?.hasApiKey && needsKey ? (
           <Controller
@@ -301,8 +310,8 @@ function ProviderForm({
               <FormField
                 id="provider-clear-key"
                 inline
-                label="Remove the stored key"
-                description="The provider stays unusable until you add a new key."
+                label={t('settings.removeTheStoredKey')}
+                description={t('settings.theProviderStaysUnusableUntil')}
               >
                 <input
                   id="provider-clear-key"
@@ -319,25 +328,25 @@ function ProviderForm({
         {kind !== 'bedrock' ? (
           <FormField
             id="provider-base-url"
-            label="Base URL"
+            label={t('common.baseUrl')}
             error={errors.baseUrl?.message}
-            description="Optional. Only for proxies or compatible gateways."
+            description={t('settings.optionalOnlyForProxiesOr')}
           >
-            <Input inputMode="url" placeholder="https://" {...form.register('baseUrl')} />
+            <Input
+              inputMode="url"
+              placeholder={t('settings.https')}
+              {...form.register('baseUrl')}
+            />
           </FormField>
         ) : null}
 
         <div className="grid gap-5 sm:grid-cols-2">
           <FormField
             id="provider-default-model"
-            label="Default model"
+            label={t('settings.defaultModel')}
             error={errors.defaultModel?.message}
             required
-            description={
-              kind === 'bedrock'
-                ? 'Type the exact model or inference-profile id enabled in your AWS region. Suggestions are unverified.'
-                : undefined
-            }
+            description={kind === 'bedrock' ? t('settings.typeTheExactModelOr') : undefined}
           >
             {kind === 'bedrock' ? (
               <>
@@ -345,7 +354,7 @@ function ProviderForm({
                   id="provider-default-model"
                   list="bedrock-chat-models"
                   spellCheck={false}
-                  placeholder="amazon.nova-micro-v1:0"
+                  placeholder={t('settings.amazonNovaMicroV10')}
                   {...form.register('defaultModel')}
                 />
                 <datalist id="bedrock-chat-models">
@@ -365,8 +374,8 @@ function ProviderForm({
                     value={field.value || null}
                     selectedLabel={field.value}
                     loading={models.isPending}
-                    placeholder="Choose a model"
-                    searchPlaceholder="Search models"
+                    placeholder={t('settings.chooseAModel')}
+                    searchPlaceholder={t('settings.searchModels')}
                     onValueChange={(v) => field.onChange(v ?? '')}
                   />
                 )}
@@ -375,9 +384,9 @@ function ProviderForm({
           </FormField>
           <FormField
             id="provider-embedding-model"
-            label="Embedding model"
+            label={t('settings.embeddingModel')}
             error={errors.embeddingModel?.message}
-            description="Optional. Used for knowledge search."
+            description={t('settings.optionalUsedForKnowledgeSearch')}
           >
             {kind === 'bedrock' ? (
               <>
@@ -385,7 +394,7 @@ function ProviderForm({
                   id="provider-embedding-model"
                   list="bedrock-embedding-models"
                   spellCheck={false}
-                  placeholder="amazon.titan-embed-text-v2:0"
+                  placeholder={t('settings.amazonTitanEmbedTextV2')}
                   {...form.register('embeddingModel')}
                 />
                 <datalist id="bedrock-embedding-models">
@@ -406,9 +415,9 @@ function ProviderForm({
                     selectedLabel={field.value}
                     clearable
                     loading={models.isPending}
-                    placeholder="None"
-                    searchPlaceholder="Search models"
-                    emptyMessage="No embedding models for this provider."
+                    placeholder={t('common.none')}
+                    searchPlaceholder={t('settings.searchModels')}
+                    emptyMessage={t('settings.noEmbeddingModelsForThis')}
                     onValueChange={(v) => field.onChange(v ?? '')}
                   />
                 )}
@@ -427,10 +436,10 @@ function ProviderForm({
                   id="provider-default"
                   checked={field.value}
                   onCheckedChange={field.onChange}
-                  aria-label="Use as the default provider"
+                  aria-label={t('settings.useAsTheDefaultProvider')}
                 />
                 <label htmlFor="provider-default" className="text-sm">
-                  Use as the default provider
+                  {t('settings.useAsTheDefaultProvider')}
                 </label>
               </div>
             )}
@@ -444,10 +453,10 @@ function ProviderForm({
                   id="provider-enabled"
                   checked={field.value}
                   onCheckedChange={field.onChange}
-                  aria-label="Enabled"
+                  aria-label={t('common.enabled')}
                 />
                 <label htmlFor="provider-enabled" className="text-sm">
-                  Enabled
+                  {t('common.enabled')}
                 </label>
               </div>
             )}
@@ -456,10 +465,10 @@ function ProviderForm({
       </DialogBody>
       <DialogFooter>
         <Button variant="secondary" onClick={onDone}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" loading={form.formState.isSubmitting}>
-          {editing ? 'Save changes' : 'Add provider'}
+          {editing ? t('common.saveChanges') : t('settings.addProvider')}
         </Button>
       </DialogFooter>
     </form>

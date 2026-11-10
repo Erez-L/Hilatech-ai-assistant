@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { ErrorState } from '@hilatech/ui';
+import { useT } from '@/i18n/provider';
 
 export default function GlobalError({
   error,
@@ -10,6 +11,7 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useT();
   React.useEffect(() => {
     console.error(error);
   }, [error]);
@@ -17,11 +19,11 @@ export default function GlobalError({
     <div className="flex min-h-dvh items-center justify-center bg-bg p-6">
       <ErrorState
         className="w-full max-w-md"
-        title="Something broke on this page"
-        message="An unexpected error occurred while rendering. Reload the page or try again."
+        title={t('app.somethingBrokeOnThisPage')}
+        message={t('app.anUnexpectedErrorOccurredWhile')}
         requestId={error.digest}
         onRetry={reset}
-        retryLabel="Try again"
+        retryLabel={t('common.tryAgain')}
       />
     </div>
   );

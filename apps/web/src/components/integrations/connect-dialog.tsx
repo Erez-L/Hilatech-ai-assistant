@@ -30,6 +30,7 @@ import { getErrorMessage } from '@/lib/api';
 import { useConnectIntegration, useUpdateIntegration } from '@/hooks/integrations';
 import { KeyValueEditor } from '@/components/automation/key-value-editor';
 import { serverFieldErrors, zodFieldErrors } from '@/lib/forms/zod-errors';
+import { useT } from '@/i18n/provider';
 
 type AuthType = 'none' | 'bearer' | 'basic' | 'header';
 
@@ -59,6 +60,7 @@ export function ConnectDialog({
   integration?: Integration;
   onClose: () => void;
 }) {
+  const t = useT();
   const connect = useConnectIntegration();
   const update = useUpdateIntegration();
   const editing = !!integration;
@@ -85,16 +87,16 @@ export function ConnectDialog({
 
   const secretFields: { key: keyof IntegrationSecrets; label: string }[] =
     kind === 'n8n'
-      ? [{ key: 'apiKey', label: 'API key (optional)' }]
+      ? [{ key: 'apiKey', label: t('integrations.apiKeyOptional') }]
       : authType === 'bearer'
-        ? [{ key: 'accessToken', label: 'Bearer token' }]
+        ? [{ key: 'accessToken', label: t('integrations.bearerToken') }]
         : authType === 'basic'
           ? [
-              { key: 'username', label: 'Username' },
-              { key: 'password', label: 'Password' },
+              { key: 'username', label: t('integrations.username') },
+              { key: 'password', label: t('common.password') },
             ]
           : authType === 'header'
-            ? [{ key: 'apiKey', label: 'Header value' }]
+            ? [{ key: 'apiKey', label: t('integrations.headerValue') }]
             : [];
 
   const submit = async (event: React.FormEvent) => {
@@ -136,7 +138,7 @@ export function ConnectDialog({
         }
         setErrors({});
         await update.mutateAsync({ id: integration.id, body: parsed.data });
-        toast.success(`${name} saved`);
+        toast.success(t('integrations.saved', { name }));
       } else {
         const parsed = createIntegrationSchema.safeParse({
           name,
@@ -151,9 +153,9 @@ export function ConnectDialog({
         setErrors({});
         const saved = await connect.mutateAsync(parsed.data);
         if (saved.status === 'error') {
-          toast.error(`${saved.name} was saved but the connection test failed`);
+          toast.error(t('integrations.wasSavedButTheConnection', { name: saved.name }));
         } else {
-          toast.success(`${saved.name} connected`);
+          toast.success(t('integrations.connected2', { name: saved.name }));
         }
       }
       onClose();
@@ -170,33 +172,30 @@ export function ConnectDialog({
         <form onSubmit={submit} noValidate autoComplete="off" className="flex min-h-0 flex-col">
           <DialogHeader>
             <DialogTitle>
-              {editing ? `Edit ${integration?.name}` : `Connect ${KIND_TITLES[kind]}`}
+              {editing
+                ? t('common.edit2', { name: integration?.name })
+                : t('integrations.connect3', { value: KIND_TITLES[kind] })}
             </DialogTitle>
             <DialogDescription>
-              Credentials are encrypted and write-only: once saved they can’t be displayed again,
-              only replaced or removed.
+              {t('integrations.credentialsAreEncryptedAndWrite')}
             </DialogDescription>
           </DialogHeader>
           <DialogBody className="flex flex-col gap-4 pb-2">
             {formError ? <Alert tone="danger">{formError}</Alert> : null}
-            <FormField id="integration-name" label="Name" required error={errors.name}>
+            <FormField id="integration-name" label={t('common.name')} required error={errors.name}>
               <Input value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
             </FormField>
             <FormField
               id="integration-base-url"
-              label="Base URL"
+              label={t('common.baseUrl')}
               required
               error={errors.baseUrl}
-              description={
-                kind === 'n8n'
-                  ? 'Where your n8n instance is reachable, e.g. https://n8n.example.com'
-                  : undefined
-              }
+              description={kind === 'n8n' ? t('integrations.whereYourN8nInstanceIs') : undefined}
             >
               <Input
                 type="url"
                 value={baseUrl}
-                placeholder="https://api.example.com"
+                placeholder={t('integrations.httpsApiExampleCom')}
                 onChange={(e) => setBaseUrl(e.target.value)}
               />
             </FormField>
@@ -204,31 +203,31 @@ export function ConnectDialog({
             {kind === 'n8n' ? (
               <FormField
                 id="integration-webhook-prefix"
-                label="Webhook path prefix"
-                description="Prepended to webhook paths used by n8n steps."
+                label={t('integrations.webhookPathPrefix')}
+                description={t('integrations.prependedToWebhookPathsUsed')}
                 error={errors.webhookPathPrefix}
               >
                 <Input value={prefix} onChange={(e) => setPrefix(e.target.value)} />
               </FormField>
             ) : (
               <>
-                <FormField id="integration-auth-type" label="Authentication">
+                <FormField id="integration-auth-type" label={t('integrations.authentication')}>
                   <NativeSelect
                     value={authType}
                     onChange={(e) => setAuthType(e.target.value as AuthType)}
                   >
-                    <option value="none">None</option>
-                    <option value="bearer">Bearer token</option>
-                    <option value="basic">Basic (username and password)</option>
-                    <option value="header">Custom header</option>
+                    <option value="none">{t('common.none')}</option>
+                    <option value="bearer">{t('integrations.bearerToken')}</option>
+                    <option value="basic">{t('integrations.basicUsernameAndPassword')}</option>
+                    <option value="header">{t('integrations.customHeader')}</option>
                   </NativeSelect>
                 </FormField>
                 {authType === 'header' ? (
                   <FormField
                     id="integration-auth-header"
-                    label="Header name"
+                    label={t('integrations.headerName')}
                     error={errors.authHeaderName}
-                    description="For example X-API-Key."
+                    description={t('integrations.forExampleXApiKey')}
                   >
                     <Input
                       value={authHeaderName}
@@ -237,13 +236,13 @@ export function ConnectDialog({
                   </FormField>
                 ) : null}
                 <div className="flex flex-col gap-1.5">
-                  <Label>Static headers</Label>
+                  <Label>{t('integrations.staticHeaders')}</Label>
                   <p className="text-xs text-fg-muted">
-                    Sent with every request. Don’t put secrets here — use the credential fields.
+                    {t('integrations.sentWithEveryRequestDon')}
                   </p>
                   <KeyValueEditor
                     idPrefix="integration-headers"
-                    label="Header"
+                    label={t('common.header')}
                     value={headers}
                     onChange={setHeaders}
                   />
@@ -253,7 +252,9 @@ export function ConnectDialog({
 
             {secretFields.length > 0 ? (
               <fieldset className="flex flex-col gap-3 rounded-md border border-border p-4">
-                <legend className="px-1 text-sm font-medium">Credentials (write-only)</legend>
+                <legend className="px-1 text-sm font-medium">
+                  {t('integrations.credentialsWriteOnly')}
+                </legend>
                 {secretFields.map(({ key, label }) => {
                   const isSet = stored.has(key);
                   const willClear = cleared.has(key);
@@ -266,8 +267,8 @@ export function ConnectDialog({
                         description={
                           isSet
                             ? willClear
-                              ? 'The stored value will be removed when you save.'
-                              : 'A value is stored. Leave blank to keep it, or type a new one to replace it.'
+                              ? t('integrations.theStoredValueWillBe')
+                              : t('integrations.aValueIsStoredLeave')
                             : undefined
                         }
                       >
@@ -302,7 +303,9 @@ export function ConnectDialog({
                             }
                           />
                           <Label htmlFor={`integration-clear-${key}`} className="font-normal">
-                            Remove the stored {label.toLowerCase()}
+                            {t('integrations.removeTheStored', {
+                              name: label.toLowerCase(),
+                            })}
                           </Label>
                         </div>
                       ) : null}
@@ -317,22 +320,22 @@ export function ConnectDialog({
                     leadingIcon={reveal ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
                     onClick={() => setReveal((v) => !v)}
                   >
-                    {reveal ? 'Hide what I type' : 'Show what I type'}
+                    {reveal ? t('integrations.hideWhatIType') : t('integrations.showWhatIType')}
                   </Button>
                 </div>
               </fieldset>
             ) : null}
 
-            <FormField id="integration-enabled" inline label="Enabled">
+            <FormField id="integration-enabled" inline label={t('common.enabled')}>
               <Switch checked={isEnabled} onCheckedChange={setIsEnabled} />
             </FormField>
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" loading={connect.isPending || update.isPending}>
-              {editing ? 'Save changes' : 'Connect'}
+              {editing ? t('common.saveChanges') : t('integrations.connect')}
             </Button>
           </DialogFooter>
         </form>

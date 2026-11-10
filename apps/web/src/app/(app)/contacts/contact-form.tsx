@@ -12,6 +12,7 @@ import {
 import { FormField, Input, TagInput, Textarea } from '@hilatech/ui';
 import { useContactTags } from '@/hooks/queries';
 import { AssigneePicker } from '@/components/crm/assignee-picker';
+import { useT } from '@/i18n/provider';
 
 /** Contract rules with browser-friendly inputs ('' for empty optional strings). */
 export const contactFormSchema = createContactSchema
@@ -101,6 +102,7 @@ export function ContactFormFields({
   autoFocusName?: boolean;
   disabled?: boolean;
 }) {
+  const t = useT();
   const errors = form.formState.errors;
   const tags = useContactTags();
   const id = (name: string) => `${idPrefix}-${name}`;
@@ -109,37 +111,45 @@ export function ContactFormFields({
       <div className="grid gap-5 sm:grid-cols-2">
         <FormField
           id={id('firstName')}
-          label="First name"
+          label={t('common.firstName')}
           error={errors.firstName?.message}
           required
         >
           <Input autoFocus={autoFocusName} autoComplete="off" {...form.register('firstName')} />
         </FormField>
-        <FormField id={id('lastName')} label="Last name" error={errors.lastName?.message}>
+        <FormField
+          id={id('lastName')}
+          label={t('common.lastName')}
+          error={errors.lastName?.message}
+        >
           <Input autoComplete="off" {...form.register('lastName')} />
         </FormField>
       </div>
       <div className="grid gap-5 sm:grid-cols-2">
-        <FormField id={id('email')} label="Email" error={errors.email?.message}>
+        <FormField id={id('email')} label={t('common.email')} error={errors.email?.message}>
           <Input type="email" inputMode="email" autoComplete="off" {...form.register('email')} />
         </FormField>
-        <FormField id={id('phone')} label="Phone" error={errors.phone?.message}>
+        <FormField id={id('phone')} label={t('common.phone')} error={errors.phone?.message}>
           <Input type="tel" inputMode="tel" autoComplete="off" {...form.register('phone')} />
         </FormField>
       </div>
       <div className="grid gap-5 sm:grid-cols-2">
-        <FormField id={id('company')} label="Company" error={errors.company?.message}>
+        <FormField id={id('company')} label={t('common.company')} error={errors.company?.message}>
           <Input autoComplete="organization" {...form.register('company')} />
         </FormField>
-        <FormField id={id('jobTitle')} label="Job title" error={errors.jobTitle?.message}>
+        <FormField
+          id={id('jobTitle')}
+          label={t('contacts.jobTitle')}
+          error={errors.jobTitle?.message}
+        >
           <Input autoComplete="organization-title" {...form.register('jobTitle')} />
         </FormField>
       </div>
       <div className={withOwner ? 'grid gap-5 sm:grid-cols-2' : 'grid gap-5'}>
         <FormField
           id={id('tags')}
-          label="Tags"
-          description="Press Enter or comma to add a tag."
+          label={t('common.tags')}
+          description={t('common.pressEnterOrCommaTo')}
           error={errors.tags?.message}
         >
           <Controller
@@ -161,8 +171,8 @@ export function ContactFormFields({
         {withOwner ? (
           <FormField
             id={id('ownerId')}
-            label="Owner"
-            description="The teammate who holds this relationship."
+            label={t('contacts.owner')}
+            description={t('contacts.theTeammateWhoHoldsThis')}
             error={errors.ownerId?.message}
           >
             <Controller
@@ -174,7 +184,7 @@ export function ContactFormFields({
                   aria-invalid={fieldState.error ? true : undefined}
                   value={field.value || null}
                   onValueChange={(next) => field.onChange(next ?? '')}
-                  emptyLabel="No owner"
+                  emptyLabel={t('contacts.noOwner')}
                   disabled={disabled}
                 />
               )}
@@ -182,10 +192,10 @@ export function ContactFormFields({
           </FormField>
         ) : null}
       </div>
-      <FormField id={id('notes')} label="Notes" error={errors.notes?.message}>
+      <FormField id={id('notes')} label={t('common.notes')} error={errors.notes?.message}>
         <Textarea
           rows={3}
-          placeholder="Preferences, history, anything the team should know."
+          placeholder={t('contacts.preferencesHistoryAnythingTheTeam')}
           {...form.register('notes')}
         />
       </FormField>

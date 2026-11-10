@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../lib/cn';
+import { useUiStrings } from '../lib/ui-strings';
 
 export interface TagInputProps {
   id?: string;
@@ -36,7 +37,7 @@ export const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(functi
     value,
     onValueChange,
     suggestions = [],
-    placeholder = 'Add a tag',
+    placeholder,
     maxTags,
     maxLength = 40,
     disabled,
@@ -46,6 +47,7 @@ export const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(functi
   },
   ref,
 ) {
+  const ui = useUiStrings();
   const reactId = React.useId();
   const inputId = id ?? reactId;
   const listId = `${inputId}-suggestions`;
@@ -106,17 +108,17 @@ export const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(functi
       onClick={() => inputRef.current?.focus()}
     >
       {value.length > 0 ? (
-        <ul className="contents" aria-label="Selected tags">
+        <ul className="contents" aria-label={ui.selectedTags}>
           {value.map((tag, index) => (
             <li
               key={tag}
-              className="inline-flex max-w-full items-center gap-1 rounded-full bg-surface-muted py-0.5 pr-1 pl-2 text-xs font-medium text-fg-muted"
+              className="inline-flex max-w-full items-center gap-1 rounded-full bg-surface-muted py-0.5 pe-1 ps-2 text-xs font-medium text-fg-muted"
             >
               <span className="truncate">{tag}</span>
               {disabled ? null : (
                 <button
                   type="button"
-                  aria-label={`Remove ${tag}`}
+                  aria-label={ui.removeTag(tag)}
                   onClick={(event) => {
                     event.stopPropagation();
                     remove(index);
@@ -136,7 +138,7 @@ export const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(functi
         type="text"
         value={draft}
         disabled={disabled || full}
-        placeholder={value.length === 0 ? placeholder : ''}
+        placeholder={value.length === 0 ? (placeholder ?? ui.addTag) : ''}
         list={filteredSuggestions.length > 0 ? listId : undefined}
         autoComplete="off"
         maxLength={maxLength}

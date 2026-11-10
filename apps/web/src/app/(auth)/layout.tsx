@@ -1,7 +1,10 @@
 import Link from 'next/link';
 import { Wordmark } from '@hilatech/ui';
+import { getT } from '@/i18n/server';
+import { LanguageSwitcher } from '@/components/shell/language-switcher';
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
+  const { t } = await getT();
   return (
     <div className="flex min-h-dvh flex-col bg-bg">
       <header className="flex h-16 items-center px-6 sm:px-10">
@@ -11,12 +14,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         >
           <Wordmark />
         </Link>
+        <LanguageSwitcher className="ms-auto" />
       </header>
       <main className="flex flex-1 items-start justify-center px-4 pt-6 pb-16 sm:items-center sm:pt-0">
         <div className="w-full max-w-md">{children}</div>
       </main>
       <footer className="px-6 py-6 text-center text-xs text-fg-subtle">
-        © {new Date().getFullYear()} HilaTech Dev. All rights reserved.
+        {t('common.hilatechDevAllRightsReserved', { year: String(new Date().getFullYear()) })}
       </footer>
     </div>
   );

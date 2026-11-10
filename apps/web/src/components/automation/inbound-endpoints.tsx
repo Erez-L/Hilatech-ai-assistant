@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { formatDistanceToNow } from 'date-fns';
 import { Check, Copy, KeyRound, Pencil, Plus, Trash2, Webhook as WebhookIcon } from 'lucide-react';
 import { Permission, type WebhookEndpoint } from '@hilatech/contracts';
 import {
@@ -34,6 +33,7 @@ import {
 import { useCan } from '@/hooks/use-can';
 import { EndpointDialog } from './endpoint-dialog';
 import { SecretDialog } from './secret-dialog';
+import { useT, useFormat } from '@/i18n/provider';
 
 /** Public URL external systems post to (API origin + the endpoint's /api/v1/hooks path). */
 export function endpointUrl(endpoint: Pick<WebhookEndpoint, 'path'>): string {
@@ -41,6 +41,7 @@ export function endpointUrl(endpoint: Pick<WebhookEndpoint, 'path'>): string {
 }
 
 export function InboundEndpoints() {
+  const t = useT();
   const canManage = useCan(Permission.AUTOMATIONS_MANAGE);
   const endpoints = useWebhookEndpoints();
   const workflows = useWorkflows({ pageSize: 100 });
@@ -55,38 +56,38 @@ export function InboundEndpoints() {
   );
   const columns = 6;
   const workflowName = (id: string | null) =>
-    id ? (workflows.data?.data.find((w) => w.id === id)?.name ?? 'Workflow') : null;
+    id
+      ? (workflows.data?.data.find((w) => w.id === id)?.name ?? t('automation.workflowFallback'))
+      : null;
 
   return (
     <section aria-labelledby="inbound-heading" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 id="inbound-heading" className="text-base font-semibold">
-            Inbound endpoints
+            {t('automation.inboundEndpoints')}
           </h2>
-          <p className="text-sm text-fg-muted">
-            Public URLs that start a workflow when an external system calls them.
-          </p>
+          <p className="text-sm text-fg-muted">{t('automation.publicUrlsThatStartA')}</p>
         </div>
         {canManage ? (
           <Button leadingIcon={<Plus aria-hidden />} onClick={() => setCreating(true)}>
-            New endpoint
+            {t('automation.newEndpoint')}
           </Button>
         ) : null}
       </div>
 
       <Card>
         <CardContent className="p-0">
-          <Table aria-label="Inbound endpoints">
+          <Table aria-label={t('automation.inboundEndpoints')}>
             <TableHeader>
               <TableRow>
-                <TableHead>Endpoint</TableHead>
-                <TableHead>URL</TableHead>
-                <TableHead>Workflow</TableHead>
-                <TableHead className="text-right">Received</TableHead>
-                <TableHead>Enabled</TableHead>
-                <TableHead className="text-right">
-                  <span className="sr-only">Actions</span>
+                <TableHead>{t('automation.endpoint')}</TableHead>
+                <TableHead>{t('automation.url')}</TableHead>
+                <TableHead>{t('common.workflow')}</TableHead>
+                <TableHead className="text-end">{t('automation.received')}</TableHead>
+                <TableHead>{t('common.enabled')}</TableHead>
+                <TableHead className="text-end">
+                  <span className="sr-only">{t('common.actions')}</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -98,7 +99,7 @@ export function InboundEndpoints() {
                   <div className="flex flex-col items-center gap-2">
                     <span>{getErrorMessage(endpoints.error)}</span>
                     <Button variant="secondary" size="sm" onClick={() => void endpoints.refetch()}>
-                      Try again
+                      {t('common.tryAgain')}
                     </Button>
                   </div>
                 </TableEmptyRow>
@@ -107,8 +108,8 @@ export function InboundEndpoints() {
                   <EmptyState
                     compact
                     icon={<WebhookIcon />}
-                    title="No inbound endpoints yet"
-                    description="Create an endpoint, bind it to a workflow with the “Inbound webhook” trigger, and post to its URL."
+                    title={t('automation.noInboundEndpointsYet')}
+                    description={t('automation.createAnEndpointBindIt')}
                   />
                 </TableEmptyRow>
               ) : (
@@ -133,7 +134,11 @@ export function InboundEndpoints() {
         <EndpointDialog
           onClose={() => setCreating(false)}
           onCreated={(c) =>
-            setReveal({ title: 'Endpoint created', secret: c.secret, url: endpointUrl(c) })
+            setReveal({
+              title: t('automation.endpointCreated'),
+              secret: c.secret,
+              url: endpointUrl(c),
+            })
           }
         />
       ) : null}
@@ -142,19 +147,20 @@ export function InboundEndpoints() {
         <SecretDialog
           title={reveal.title}
           secret={reveal.secret}
-          description="Callers authenticate with this secret."
+          description={t('automation.callersAuthenticateWithThisSecret')}
           onClose={() => setReveal(null)}
         >
           <div className="flex flex-col gap-1.5 text-xs text-fg-muted">
             <p>
-              POST to <code className="font-mono break-all text-fg">{reveal.url}</code>
+              {t('automation.postTo')}{' '}
+              <code className="font-mono break-all text-fg">{reveal.url}</code>
             </p>
             <pre className="overflow-x-auto rounded-md bg-surface-muted p-3 font-mono text-[0.6875rem] leading-relaxed text-fg">
-              {`curl -X POST '${reveal.url}' \\\n  -H 'content-type: application/json' \\\n  -H 'x-webhook-secret: <secret>' \\\n  -d '{"title":"Hello","message":"From curl"}'`}
+              {t('automation.curlXPostHContent', { url: reveal.url })}
             </pre>
             <p>
-              Alternatively sign the raw body and send{' '}
-              <code className="font-mono">x-hilatech-signature: sha256=&lt;hmac&gt;</code>.
+              {t('automation.alternativelySignTheRawBody')}{' '}
+              <code className="font-mono">{t('automation.xHilatechSignatureSha256Hmac')}</code>.
             </p>
           </div>
         </SecretDialog>
@@ -162,9 +168,9 @@ export function InboundEndpoints() {
       <ConfirmDialog
         open={!!rotating}
         onOpenChange={(open) => !open && setRotating(null)}
-        title="Rotate the endpoint secret?"
-        description="A new secret is generated and shown once. Callers using the old secret will be rejected."
-        confirmLabel="Rotate secret"
+        title={t('automation.rotateTheEndpointSecret')}
+        description={t('automation.aNewSecretIsGenerated')}
+        confirmLabel={t('automation.rotateSecret')}
         loading={rotate.isPending}
         onConfirm={async () => {
           if (!rotating) return;
@@ -172,7 +178,7 @@ export function InboundEndpoints() {
             const updated = await rotate.mutateAsync(rotating.id);
             setRotating(null);
             setReveal({
-              title: 'New endpoint secret',
+              title: t('automation.newEndpointSecret'),
               secret: updated.secret,
               url: endpointUrl(updated),
             });
@@ -184,18 +190,20 @@ export function InboundEndpoints() {
       <ConfirmDialog
         open={!!deleting}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title="Delete this endpoint?"
+        title={t('automation.deleteThisEndpoint')}
         description={
-          deleting ? `${endpointUrl(deleting)} will stop accepting requests.` : undefined
+          deleting
+            ? t('automation.willStopAcceptingRequests', { endpointUrl: endpointUrl(deleting) })
+            : undefined
         }
-        confirmLabel="Delete endpoint"
+        confirmLabel={t('automation.deleteEndpoint')}
         tone="danger"
         loading={remove.isPending}
         onConfirm={async () => {
           if (!deleting) return;
           try {
             await remove.mutateAsync(deleting.id);
-            toast.success('Endpoint deleted');
+            toast.success(t('automation.endpointDeleted'));
             setDeleting(null);
           } catch (e) {
             toast.error(getErrorMessage(e));
@@ -207,6 +215,7 @@ export function InboundEndpoints() {
 }
 
 function CopyUrl({ url, label }: { url: string; label: string }) {
+  const t = useT();
   const [copied, setCopied] = React.useState(false);
   return (
     <div className="flex items-center gap-1.5">
@@ -220,7 +229,7 @@ function CopyUrl({ url, label }: { url: string; label: string }) {
             setCopied(true);
             setTimeout(() => setCopied(false), 1500);
           } catch {
-            toast.error('Copying isn’t available here');
+            toast.error(t('automation.copyingIsnTAvailableHere'));
           }
         }}
       >
@@ -245,20 +254,27 @@ function EndpointRow({
   onRotate: () => void;
   onDelete: () => void;
 }) {
+  const fmt = useFormat();
+  const t = useT();
   const update = useUpdateWebhookEndpoint();
   return (
     <TableRow>
       <TableCell className="font-medium">{endpoint.name}</TableCell>
       <TableCell className="max-w-sm">
-        <CopyUrl url={endpointUrl(endpoint)} label={`Copy URL of ${endpoint.name}`} />
+        <CopyUrl
+          url={endpointUrl(endpoint)}
+          label={t('automation.copyUrlOf', { name: endpoint.name })}
+        />
       </TableCell>
-      <TableCell>{workflowName ?? <span className="text-fg-subtle">Not bound</span>}</TableCell>
-      <TableCell className="text-right tabular">
+      <TableCell>
+        {workflowName ?? <span className="text-fg-subtle">{t('automation.notBound')}</span>}
+      </TableCell>
+      <TableCell className="text-end tabular">
         <div className="flex flex-col items-end">
           <span>{endpoint.receivedCount}</span>
           {endpoint.lastReceivedAt ? (
             <span className="text-xs text-fg-muted">
-              {formatDistanceToNow(new Date(endpoint.lastReceivedAt), { addSuffix: true })}
+              {fmt.relative(new Date(endpoint.lastReceivedAt))}
             </span>
           ) : null}
         </div>
@@ -267,12 +283,18 @@ function EndpointRow({
         <Switch
           checked={endpoint.isEnabled}
           disabled={!canManage || update.isPending}
-          aria-label={`${endpoint.isEnabled ? 'Disable' : 'Enable'} endpoint ${endpoint.name}`}
+          aria-label={t(
+            endpoint.isEnabled ? 'automation.disableEndpoint' : 'automation.enableEndpoint',
+            { name: endpoint.name },
+          )}
           onCheckedChange={(isEnabled) =>
             update.mutate(
               { id: endpoint.id, body: { isEnabled } },
               {
-                onSuccess: () => toast.success(`Endpoint ${isEnabled ? 'enabled' : 'disabled'}`),
+                onSuccess: () =>
+                  toast.success(
+                    t(isEnabled ? 'automation.endpointEnabled' : 'automation.endpointDisabled'),
+                  ),
                 onError: (e) => toast.error(getErrorMessage(e)),
               },
             )
@@ -283,13 +305,25 @@ function EndpointRow({
         <div className="flex justify-end gap-1">
           {canManage ? (
             <>
-              <IconButton size="sm" label={`Rotate secret for ${endpoint.name}`} onClick={onRotate}>
+              <IconButton
+                size="sm"
+                label={t('automation.rotateSecretFor', { name: endpoint.name })}
+                onClick={onRotate}
+              >
                 <KeyRound aria-hidden />
               </IconButton>
-              <IconButton size="sm" label={`Edit endpoint ${endpoint.name}`} onClick={onEdit}>
+              <IconButton
+                size="sm"
+                label={t('automation.editEndpoint', { name: endpoint.name })}
+                onClick={onEdit}
+              >
                 <Pencil aria-hidden />
               </IconButton>
-              <IconButton size="sm" label={`Delete endpoint ${endpoint.name}`} onClick={onDelete}>
+              <IconButton
+                size="sm"
+                label={t('automation.deleteEndpoint2', { name: endpoint.name })}
+                onClick={onDelete}
+              >
                 <Trash2 aria-hidden />
               </IconButton>
             </>

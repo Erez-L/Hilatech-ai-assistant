@@ -22,7 +22,7 @@ export const Label = React.forwardRef<React.ComponentRef<typeof LabelPrimitive.R
       >
         {children}
         {required ? (
-          <span className="ml-0.5 text-danger" aria-hidden>
+          <span className="ms-0.5 text-danger" aria-hidden>
             *
           </span>
         ) : null}

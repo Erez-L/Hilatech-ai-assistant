@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { formatDistanceToNow } from 'date-fns';
 import { Info, KeyRound, Pencil, Plug, PlugZap, Unplug } from 'lucide-react';
 import { Permission, type Integration, type IntegrationCatalogueEntry } from '@hilatech/contracts';
 import {
@@ -36,10 +35,13 @@ import {
   SECRET_LABELS,
   isConnectable,
 } from '@/lib/integrations';
+import { useT, useFormat } from '@/i18n/provider';
+import { tm } from '@/i18n/msg';
 
 type ConnectTarget = { kind: 'rest' | 'n8n'; integration?: Integration };
 
 export function IntegrationsView() {
+  const t = useT();
   const canManage = useCan(Permission.INTEGRATIONS_MANAGE);
   const catalog = useIntegrationCatalog();
   const status = useIntegrationStatus();
@@ -52,17 +54,17 @@ export function IntegrationsView() {
     <PermissionGate anyOf={[Permission.INTEGRATIONS_READ]}>
       <div className="flex flex-col gap-6">
         <PageHeader
-          title="Integrations"
-          description="Connect the systems your workflows talk to. Credentials are encrypted, write-only and never shown again."
+          title={t('integrations.integrations')}
+          description={t('integrations.connectTheSystemsYourWorkflows')}
         />
         <QueryState
           query={catalog}
-          errorTitle="The integration catalog couldn’t be loaded"
+          errorTitle={t('integrations.theIntegrationCatalogCouldnT')}
           loading={
             <div
               className="grid gap-4 lg:grid-cols-2"
               aria-busy="true"
-              aria-label="Loading integrations"
+              aria-label={t('integrations.loadingIntegrations')}
             >
               {[0, 1, 2, 3].map((i) => (
                 <Skeleton key={i} className="h-44" />
@@ -70,10 +72,10 @@ export function IntegrationsView() {
             </div>
           }
           isEmpty={(c) => c.length === 0}
-          empty={<EmptyState icon={<Plug />} title="No integrations available" />}
+          empty={<EmptyState icon={<Plug />} title={t('integrations.noIntegrationsAvailable')} />}
         >
           {(entries) => (
-            <ul aria-label="Integrations" className="grid gap-4 lg:grid-cols-2">
+            <ul aria-label={t('integrations.integrations')} className="grid gap-4 lg:grid-cols-2">
               {entries.map((entry) => {
                 const summary = status.data?.find((s) => s.kind === entry.kind);
                 const connections = (integrations.data ?? []).filter((i) => i.kind === entry.kind);
@@ -111,20 +113,20 @@ export function IntegrationsView() {
         <ConfirmDialog
           open={!!disconnecting}
           onOpenChange={(open) => !open && setDisconnecting(null)}
-          title="Disconnect this integration?"
+          title={t('integrations.disconnectThisIntegration')}
           description={
             disconnecting
-              ? `“${disconnecting.name}” and its stored credentials will be deleted. Workflow steps that use it will fail until it is connected again.`
+              ? t('integrations.andItsStoredCredentialsWill', { name: disconnecting.name })
               : undefined
           }
-          confirmLabel="Disconnect"
+          confirmLabel={t('integrations.disconnect')}
           tone="danger"
           loading={disconnect.isPending}
           onConfirm={async () => {
             if (!disconnecting) return;
             try {
               await disconnect.mutateAsync(disconnecting.id);
-              toast.success(`${disconnecting.name} disconnected`);
+              toast.success(t('integrations.disconnected', { name: disconnecting.name }));
               setDisconnecting(null);
             } catch (e) {
               toast.error(getErrorMessage(e));
@@ -157,6 +159,7 @@ function IntegrationCard({
   onEdit: (i: Integration) => void;
   onDisconnect: (i: Integration) => void;
 }) {
+  const t = useT();
   const connectable = isConnectable(entry.kind, entry.liveSupport);
   return (
     <Card className="h-full">
@@ -168,11 +171,13 @@ function IntegrationCard({
           </div>
           {connectable ? (
             <Badge variant={connected > 0 ? 'success' : 'neutral'} dot className="shrink-0">
-              {connected > 0 ? `${connected} connected` : 'Not connected'}
+              {connected > 0
+                ? t('integrations.connected', { connected })
+                : t('integrations.notConnected')}
             </Badge>
           ) : (
             <Badge variant="warning" className="shrink-0">
-              Requires a provider
+              {t('integrations.requiresAProvider')}
             </Badge>
           )}
         </div>
@@ -181,11 +186,11 @@ function IntegrationCard({
           <Alert tone="neutral">
             <div className="flex flex-col gap-0.5">
               <span className="flex items-center gap-1.5 font-medium">
-                <Info className="size-4" aria-hidden /> Not configured
+                <Info className="size-4" aria-hidden /> {t('integrations.notConfigured')}
               </span>
               <span>
-                {PLANNED_REQUIREMENTS[entry.kind] ?? 'Requires a provider integration.'} Nothing is
-                sent and no connection is simulated in this release.
+                {t(PLANNED_REQUIREMENTS[entry.kind] ?? 'integrations.requiresAProviderIntegration')}{' '}
+                {t('integrations.nothingIsSentAndNo')}
               </span>
             </div>
           </Alert>
@@ -196,9 +201,12 @@ function IntegrationCard({
             {connectionsError}
           </p>
         ) : loadingConnections ? (
-          <Skeleton className="h-12" aria-label="Loading connections" />
+          <Skeleton className="h-12" aria-label={t('integrations.loadingConnections')} />
         ) : connections.length > 0 ? (
-          <ul aria-label={`${entry.name} connections`} className="flex flex-col gap-2">
+          <ul
+            aria-label={t('integrations.connections', { name: entry.name })}
+            className="flex flex-col gap-2"
+          >
             {connections.map((c) => (
               <ConnectionRow
                 key={c.id}
@@ -213,8 +221,8 @@ function IntegrationCard({
         ) : connectable ? (
           <p className="text-sm text-fg-muted">
             {canManage
-              ? 'No connection yet. Connect one to use it from workflows.'
-              : 'No connection yet. Ask someone with access to connect it.'}
+              ? t('integrations.noConnectionYetConnectOne')
+              : t('integrations.noConnectionYetAskSomeone')}
           </p>
         ) : null}
 
@@ -223,10 +231,10 @@ function IntegrationCard({
             <Button
               variant="secondary"
               leadingIcon={<PlugZap aria-hidden />}
-              aria-label={`Connect ${entry.name}`}
+              aria-label={t('integrations.connect2', { name: entry.name })}
               onClick={onConnect}
             >
-              Connect
+              {t('integrations.connect')}
             </Button>
           </div>
         ) : null}
@@ -248,8 +256,10 @@ function ConnectionRow({
   onEdit: () => void;
   onDisconnect: () => void;
 }) {
+  const fmt = useFormat();
+  const t = useT();
   const test = useTestIntegration();
-  const keys = integration.secretKeys.map((k) => SECRET_LABELS[k] ?? k);
+  const keys = integration.secretKeys.map((k) => tm(t, SECRET_LABELS[k] ?? k));
   return (
     <li className="flex flex-col gap-2 rounded-md border border-border bg-surface-muted/40 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -258,10 +268,12 @@ function ConnectionRow({
           <StatusBadge
             status={integration.status}
             tone={INTEGRATION_STATUS_TONES[integration.status]}
-            label={INTEGRATION_STATUS_LABELS[integration.status]}
+            label={t(INTEGRATION_STATUS_LABELS[integration.status])}
           />
-          {!integration.isEnabled ? <Badge variant="neutral">Disabled</Badge> : null}
-          {!connectable ? <Badge variant="outline">Configuration only</Badge> : null}
+          {!integration.isEnabled ? <Badge variant="neutral">{t('common.disabled')}</Badge> : null}
+          {!connectable ? (
+            <Badge variant="outline">{t('integrations.configurationOnly')}</Badge>
+          ) : null}
         </div>
         {canManage ? (
           <div className="flex flex-wrap gap-1.5">
@@ -271,7 +283,7 @@ function ConnectionRow({
                   size="sm"
                   variant="secondary"
                   loading={test.isPending}
-                  aria-label={`Test connection ${integration.name}`}
+                  aria-label={t('integrations.testConnection2', { name: integration.name })}
                   onClick={() =>
                     test.mutate(integration.id, {
                       onSuccess: (r) =>
@@ -282,16 +294,16 @@ function ConnectionRow({
                     })
                   }
                 >
-                  Test connection
+                  {t('integrations.testConnection')}
                 </Button>
                 <Button
                   size="sm"
                   variant="secondary"
                   leadingIcon={<Pencil aria-hidden />}
-                  aria-label={`Edit ${integration.name}`}
+                  aria-label={t('common.edit2', { name: integration.name })}
                   onClick={onEdit}
                 >
-                  Edit
+                  {t('common.edit')}
                 </Button>
               </>
             ) : null}
@@ -299,10 +311,10 @@ function ConnectionRow({
               size="sm"
               variant="secondary"
               leadingIcon={<Unplug aria-hidden />}
-              aria-label={`Disconnect ${integration.name}`}
+              aria-label={t('integrations.disconnect2', { name: integration.name })}
               onClick={onDisconnect}
             >
-              Disconnect
+              {t('integrations.disconnect')}
             </Button>
           </div>
         ) : null}
@@ -313,12 +325,16 @@ function ConnectionRow({
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg-muted">
         <span className="flex items-center gap-1">
           <KeyRound className="size-3.5" aria-hidden />
-          {keys.length > 0 ? `Credentials stored: ${keys.join(', ')}` : 'No credentials stored'}
+          {keys.length > 0
+            ? t('integrations.credentialsStored', { keys: keys.join(', ') })
+            : t('integrations.noCredentialsStored')}
         </span>
         <span>
           {integration.lastCheckedAt
-            ? `Checked ${formatDistanceToNow(new Date(integration.lastCheckedAt), { addSuffix: true })}`
-            : 'Never checked'}
+            ? t('integrations.checked', {
+                formatDistanceToNow: fmt.relative(new Date(integration.lastCheckedAt)),
+              })
+            : t('integrations.neverChecked')}
         </span>
       </p>
       {integration.lastError ? (

@@ -43,9 +43,16 @@ export function SegmentedControl<V extends string>({
     if (enabled.length === 0) return;
     const current = enabled.findIndex(({ o }) => o.value === value);
     let nextIndex: number | null = null;
-    if (event.key === 'ArrowRight' || event.key === 'ArrowDown')
+    // In RTL the visual order is reversed, so ArrowLeft advances.
+    const dirAttr = event.currentTarget.closest('[dir]')?.getAttribute('dir');
+    const rtl =
+      dirAttr === 'rtl' ||
+      (dirAttr !== 'ltr' && getComputedStyle(event.currentTarget).direction === 'rtl');
+    const forward = rtl ? 'ArrowLeft' : 'ArrowRight';
+    const backward = rtl ? 'ArrowRight' : 'ArrowLeft';
+    if (event.key === forward || event.key === 'ArrowDown')
       nextIndex = (current + 1) % enabled.length;
-    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp')
+    else if (event.key === backward || event.key === 'ArrowUp')
       nextIndex = (current - 1 + enabled.length) % enabled.length;
     else if (event.key === 'Home') nextIndex = 0;
     else if (event.key === 'End') nextIndex = enabled.length - 1;

@@ -130,10 +130,9 @@
 
 @theme inline {
   --font-sans:
-    var(--font-inter, 'Inter'), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
-  --font-mono:
-    ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+    var(--font-inter, 'Inter'), var(--font-heebo, 'Heebo'), ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 
   --color-bg: var(--bg);
   --color-surface: var(--surface);
@@ -197,7 +196,7 @@
 
   --animate-fade-in: fade-in 150ms ease-out;
   --animate-scale-in: scale-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
-  --animate-slide-in-left: slide-in-left 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-slide-in-start: slide-in-start 200ms cubic-bezier(0.16, 1, 0.3, 1);
   --animate-shimmer: shimmer 1.6s linear infinite;
 
   @keyframes fade-in {
@@ -218,9 +217,9 @@
       transform: translateY(0) scale(1);
     }
   }
-  @keyframes slide-in-left {
+  @keyframes slide-in-start {
     from {
-      transform: translateX(-100%);
+      transform: translateX(calc(-100% * var(--dir-sign, 1)));
     }
     to {
       transform: translateX(0);
@@ -303,4 +302,28 @@
 @utility scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border-strong) transparent;
+}
+
+/* Direction helpers ------------------------------------------------------------------------------ */
+:root {
+  --dir-sign: 1;
+}
+:root[dir='rtl'] {
+  --dir-sign: -1;
+}
+
+/* Directional glyphs (back/forward arrows, chevrons) mirror in RTL. Add `data-no-flip` to opt out.
+   Uses the individual `scale` property so it composes with Tailwind rotate utilities (expanders). */
+:is(
+    .lucide-arrow-left,
+    .lucide-arrow-right,
+    .lucide-chevron-left,
+    .lucide-chevron-right,
+    .lucide-chevrons-left,
+    .lucide-chevrons-right,
+    .lucide-send-horizontal,
+    .lucide-log-out,
+    .lucide-log-in
+  ):dir(rtl):not([data-no-flip]) {
+  scale: -1 1;
 }

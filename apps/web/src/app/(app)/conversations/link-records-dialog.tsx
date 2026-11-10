@@ -18,6 +18,7 @@ import {
 import { useUpdateConversation } from '@/hooks/queries';
 import { ContactPicker } from '@/components/crm/contact-picker';
 import { LeadPicker } from '@/components/crm/lead-picker';
+import { useT } from '@/i18n/provider';
 
 /** Edit the subject and the contact/lead a conversation is linked to (PATCH /conversations/:id). */
 export function LinkRecordsDialog({
@@ -45,6 +46,7 @@ function LinkForm({
   conversation: ConversationWithRelations;
   onDone: () => void;
 }) {
+  const t = useT();
   const update = useUpdateConversation();
   const [subject, setSubject] = React.useState(conversation.subject ?? '');
   const [contactId, setContactId] = React.useState<string | null>(conversation.contactId);
@@ -65,7 +67,7 @@ function LinkForm({
       },
       {
         onSuccess: () => {
-          toast.success('Conversation updated');
+          toast.success(t('conversations.conversationUpdated'));
           onDone();
         },
       },
@@ -75,16 +77,14 @@ function LinkForm({
   return (
     <form onSubmit={submit} noValidate className="flex min-h-0 flex-col">
       <DialogHeader>
-        <DialogTitle>Conversation details</DialogTitle>
-        <DialogDescription>
-          Link this thread to the contact and lead it belongs to so context travels with it.
-        </DialogDescription>
+        <DialogTitle>{t('conversations.conversationDetails')}</DialogTitle>
+        <DialogDescription>{t('conversations.linkThisThreadToThe')}</DialogDescription>
       </DialogHeader>
       <DialogBody className="flex flex-col gap-5 pb-2">
-        <FormField id="link-subject" label="Subject">
+        <FormField id="link-subject" label={t('common.subject')}>
           <Input value={subject} maxLength={200} onChange={(e) => setSubject(e.target.value)} />
         </FormField>
-        <FormField id="link-contact" label="Contact">
+        <FormField id="link-contact" label={t('common.contact')}>
           <ContactPicker
             value={contactId}
             selected={contact}
@@ -94,7 +94,7 @@ function LinkForm({
             }}
           />
         </FormField>
-        <FormField id="link-lead" label="Lead">
+        <FormField id="link-lead" label={t('common.lead')}>
           <LeadPicker
             value={leadId}
             selectedLabel={leadTitle}
@@ -108,10 +108,10 @@ function LinkForm({
       </DialogBody>
       <DialogFooter>
         <Button variant="secondary" onClick={onDone}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" loading={update.isPending}>
-          Save
+          {t('common.save')}
         </Button>
       </DialogFooter>
     </form>

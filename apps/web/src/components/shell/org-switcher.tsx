@@ -16,8 +16,11 @@ import {
   cn,
 } from '@hilatech/ui';
 import { useSession } from '@/stores/session';
+import { useT } from '@/i18n/provider';
+import { roleLabel } from '@/i18n/enums';
 
 export function OrgSwitcher({ className }: { className?: string }) {
+  const t = useT();
   const router = useRouter();
   const queryClient = useQueryClient();
   const organizations = useSession((s) => s.organizations);
@@ -38,10 +41,12 @@ export function OrgSwitcher({ className }: { className?: string }) {
         <button
           type="button"
           aria-label={
-            active ? `Organization: ${active.name}. Switch organization` : 'Switch organization'
+            active
+              ? t('shell.organizationSwitchOrganization', { name: active.name })
+              : t('shell.switchOrganization')
           }
           className={cn(
-            'flex h-11 w-full items-center gap-2.5 rounded-md border border-transparent px-2 text-left',
+            'flex h-11 w-full items-center gap-2.5 rounded-md border border-transparent px-2 text-start',
             'transition-colors hover:border-border hover:bg-surface-muted',
             'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
             'data-[state=open]:border-border data-[state=open]:bg-surface-muted',
@@ -51,21 +56,23 @@ export function OrgSwitcher({ className }: { className?: string }) {
           <Avatar
             size="md"
             src={active?.logoUrl}
-            name={active?.name ?? 'Organization'}
+            name={active?.name ?? t('common.organization')}
             firstName={active?.name}
             className="rounded-sm bg-fg text-fg-inverted"
           />
           <span className="flex min-w-0 flex-1 flex-col leading-tight">
             <span className="truncate text-sm font-semibold text-fg">
-              {active?.name ?? 'Select organization'}
+              {active?.name ?? t('shell.selectOrganization')}
             </span>
-            <span className="truncate text-xs text-fg-muted">{active?.roleName ?? '—'}</span>
+            <span className="truncate text-xs text-fg-muted">
+              {active ? roleLabel(t, active.roleName) : '—'}
+            </span>
           </span>
           <ChevronsUpDown className="size-4 shrink-0 text-fg-subtle" aria-hidden />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
-        <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+        <DropdownMenuLabel>{t('shell.organizations')}</DropdownMenuLabel>
         {organizations.map((org) => (
           <DropdownMenuItem key={org.id} onSelect={() => switchTo(org.id)} className="gap-2.5">
             <Avatar
@@ -77,7 +84,7 @@ export function OrgSwitcher({ className }: { className?: string }) {
             />
             <span className="flex min-w-0 flex-1 flex-col leading-tight">
               <span className="truncate font-medium">{org.name}</span>
-              <span className="truncate text-xs text-fg-muted">{org.roleName}</span>
+              <span className="truncate text-xs text-fg-muted">{roleLabel(t, org.roleName)}</span>
             </span>
             {org.id === active?.id ? <Check className="!text-accent" aria-hidden /> : null}
           </DropdownMenuItem>
@@ -86,7 +93,7 @@ export function OrgSwitcher({ className }: { className?: string }) {
         <DropdownMenuItem asChild>
           <Link href="/onboarding?new=1">
             <Plus aria-hidden />
-            Create organization
+            {t('common.createOrganization')}
           </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>

@@ -24,6 +24,7 @@ import { useExecuteAgent } from '@/hooks/queries';
 import { AiNotConfigured } from '@/components/ai/ai-not-configured';
 import { BudgetExceeded } from '@/components/ai/budget-exceeded';
 import { isBudgetExceededError } from '@/lib/billing';
+import { useT } from '@/i18n/provider';
 
 type InputKind = 'text' | 'json';
 type Mode = 'async' | 'sync';
@@ -69,6 +70,7 @@ export function RunAgentDialog({
 }
 
 function RunForm({ agent, onClose }: { agent: Pick<Agent, 'id' | 'name'>; onClose: () => void }) {
+  const t = useT();
   const router = useRouter();
   const execute = useExecuteAgent();
   const [kind, setKind] = React.useState<InputKind>('text');
@@ -91,7 +93,7 @@ function RunForm({ agent, onClose }: { agent: Pick<Agent, 'id' | 'name'>; onClos
     setFieldError(null);
     try {
       const execution = await execute.mutateAsync({ id: agent.id, body: built.body });
-      toast.success(mode === 'sync' ? 'Run finished' : 'Run queued');
+      toast.success(t(mode === 'sync' ? 'agents.runFinished' : 'agents.runQueued'));
       onClose();
       router.push(`/agents/executions/${execution.id}`);
     } catch (error) {
@@ -104,10 +106,8 @@ function RunForm({ agent, onClose }: { agent: Pick<Agent, 'id' | 'name'>; onClos
   return (
     <form onSubmit={submit} noValidate className="flex min-h-0 flex-col">
       <DialogHeader>
-        <DialogTitle>Run {agent.name}</DialogTitle>
-        <DialogDescription>
-          Give the agent a task. You can follow every step of the run.
-        </DialogDescription>
+        <DialogTitle>{t('common.run2', { name: agent.name })}</DialogTitle>
+        <DialogDescription>{t('agents.giveTheAgentATask')}</DialogDescription>
       </DialogHeader>
       <DialogBody className="flex flex-col gap-5 pb-2">
         {notConfigured ? <AiNotConfigured compact /> : null}
@@ -115,7 +115,7 @@ function RunForm({ agent, onClose }: { agent: Pick<Agent, 'id' | 'name'>; onClos
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
         <div className="flex items-center justify-between gap-3">
           <SegmentedControl
-            aria-label="Input type"
+            aria-label={t('agents.inputType')}
             size="sm"
             value={kind}
             onValueChange={(v) => {
@@ -123,49 +123,43 @@ function RunForm({ agent, onClose }: { agent: Pick<Agent, 'id' | 'name'>; onClos
               setFieldError(null);
             }}
             options={[
-              { value: 'text', label: 'Text' },
-              { value: 'json', label: 'JSON' },
+              { value: 'text', label: t('agents.text') },
+              { value: 'json', label: t('agents.json') },
             ]}
           />
         </div>
-        <FormField id="run-input" label="Input" required error={fieldError}>
+        <FormField id="run-input" label={t('common.input')} required error={fieldError}>
           <Textarea
             rows={7}
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
             className={kind === 'json' ? 'font-mono text-xs' : undefined}
-            placeholder={
-              kind === 'json'
-                ? '{\n  "leadId": "…"\n}'
-                : 'Review today’s new leads and suggest next steps'
-            }
+            placeholder={kind === 'json' ? t('agents.text2') : t('agents.reviewTodaySNewLeads')}
           />
         </FormField>
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-sm font-medium">Mode</legend>
+          <legend className="mb-1 text-sm font-medium">{t('agents.mode')}</legend>
           <SegmentedControl
-            aria-label="Run mode"
+            aria-label={t('agents.runMode')}
             size="sm"
             value={mode}
             onValueChange={setMode}
             options={[
-              { value: 'async', label: 'Background (async)' },
-              { value: 'sync', label: 'Wait for result (sync)' },
+              { value: 'async', label: t('agents.backgroundAsync') },
+              { value: 'sync', label: t('agents.waitForResultSync') },
             ]}
           />
           <p className="text-xs text-fg-muted">
-            {mode === 'async'
-              ? 'Queued and run by a worker; the run page updates every 2 seconds.'
-              : 'Runs inline with a short time cap — meant for quick tests.'}
+            {mode === 'async' ? t('agents.queuedAndRunByA') : t('agents.runsInlineWithAShort')}
           </p>
         </fieldset>
       </DialogBody>
       <DialogFooter>
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" loading={execute.isPending} leadingIcon={<Play aria-hidden />}>
-          Run agent
+          {t('agents.runAgent')}
         </Button>
       </DialogFooter>
     </form>

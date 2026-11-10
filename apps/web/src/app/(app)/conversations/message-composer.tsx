@@ -3,6 +3,8 @@
 import * as React from 'react';
 import { Headset, SendHorizontal, UserRound } from 'lucide-react';
 import { AutosizeTextarea, Button, SegmentedControl, cn } from '@hilatech/ui';
+import { useT } from '@/i18n/provider';
+import { msg } from '@/i18n/msg';
 
 export type ComposerRole = 'agent' | 'customer';
 
@@ -21,8 +23,8 @@ export interface MessageComposerProps {
 }
 
 const ROLE_OPTIONS = [
-  { value: 'agent', label: 'Reply', icon: <Headset /> },
-  { value: 'customer', label: 'Log customer message', icon: <UserRound /> },
+  { value: 'agent', label: msg('conversations.reply'), icon: <Headset /> },
+  { value: 'customer', label: msg('conversations.logCustomerMessage'), icon: <UserRound /> },
 ] as const;
 
 /** Enter sends, Shift+Enter inserts a newline. Disabled while a send is in flight. */
@@ -36,6 +38,7 @@ export function MessageComposer({
   autoFocus = false,
   className,
 }: MessageComposerProps) {
+  const t = useT();
   const [draft, setDraft] = React.useState('');
   const [role, setRole] = React.useState<ComposerRole>('agent');
   const [busy, setBusy] = React.useState(false);
@@ -62,8 +65,8 @@ export function MessageComposer({
   const effectivePlaceholder =
     placeholder ??
     (role === 'customer'
-      ? 'What did the customer say? Logged on their behalf.'
-      : 'Write a reply — Enter to send, Shift+Enter for a new line');
+      ? t('conversations.customerPlaceholder')
+      : t('conversations.replyPlaceholder'));
 
   return (
     <form
@@ -85,7 +88,9 @@ export function MessageComposer({
       >
         <AutosizeTextarea
           ref={ref}
-          aria-label={role === 'customer' ? 'Customer message' : 'Reply'}
+          aria-label={
+            role === 'customer' ? t('conversations.customerMessage') : t('conversations.reply')
+          }
           value={draft}
           autoFocus={autoFocus}
           disabled={blocked}
@@ -104,9 +109,9 @@ export function MessageComposer({
         <div className="flex items-center justify-between gap-3">
           {allowCustomerRole ? (
             <SegmentedControl
-              aria-label="Message role"
+              aria-label={t('conversations.messageRole')}
               size="sm"
-              options={ROLE_OPTIONS}
+              options={ROLE_OPTIONS.map((o) => ({ ...o, label: t(o.label) }))}
               value={role}
               onValueChange={(v) => setRole(v)}
               disabled={blocked}
@@ -121,7 +126,7 @@ export function MessageComposer({
             disabled={!canSend}
             trailingIcon={<SendHorizontal aria-hidden />}
           >
-            {role === 'customer' ? 'Log message' : 'Send'}
+            {role === 'customer' ? t('conversations.logMessage') : t('common.send')}
           </Button>
         </div>
       </div>

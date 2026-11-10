@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { formatDistanceToNowStrict } from 'date-fns';
 import { ChevronLeft, ChevronRight, MessageSquare, Plus } from 'lucide-react';
 import type { ConversationWithRelations } from '@hilatech/contracts';
 import { Avatar, Button, EmptyState, Skeleton, cn } from '@hilatech/ui';
@@ -10,6 +9,7 @@ import type { useConversations } from '@/hooks/queries';
 import { CONVERSATION_CHANNEL_LABELS, contactName } from '@/lib/crm';
 import { ConversationStatusBadge } from '@/components/crm/badges';
 import { ChannelIcon } from '@/components/crm/channel-icon';
+import { useT, useFormat } from '@/i18n/provider';
 
 export function ConversationList({
   query,
@@ -32,6 +32,7 @@ export function ConversationList({
   page: number;
   onPageChange: (page: number) => void;
 }) {
+  const t = useT();
   const totalPages = query.data?.meta.totalPages ?? 1;
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -52,34 +53,36 @@ export function ConversationList({
           <div className="flex flex-col items-center gap-2 px-4 py-10 text-center text-sm text-fg-muted">
             <span>{getErrorMessage(query.error)}</span>
             <Button size="sm" variant="secondary" onClick={() => void query.refetch()}>
-              Try again
+              {t('common.tryAgain')}
             </Button>
           </div>
         ) : query.data.data.length === 0 ? (
           <EmptyState
             compact
             icon={<MessageSquare />}
-            title={hasFilters ? 'No conversations match' : 'No conversations yet'}
+            title={
+              hasFilters ? t('conversations.noConversationsMatch') : t('common.noConversationsYet')
+            }
             description={
               hasFilters
-                ? 'Try different filters or clear them.'
-                : 'Start one, or wait for a customer to reach out.'
+                ? t('conversations.tryDifferentFiltersOrClear')
+                : t('conversations.startOneOrWaitFor')
             }
             action={
               hasFilters ? (
                 <Button size="sm" variant="secondary" onClick={onClear}>
-                  Clear filters
+                  {t('common.clearFilters')}
                 </Button>
               ) : canCreate ? (
                 <Button size="sm" leadingIcon={<Plus aria-hidden />} onClick={onCreate}>
-                  New conversation
+                  {t('common.newConversation')}
                 </Button>
               ) : undefined
             }
             className="py-14"
           />
         ) : (
-          <ul className="divide-y divide-border" aria-label="Conversations">
+          <ul className="divide-y divide-border" aria-label={t('common.conversations')}>
             {query.data.data.map((c) => (
               <ConversationListItem
                 key={c.id}
@@ -93,25 +96,23 @@ export function ConversationList({
       </div>
       {query.data && totalPages > 1 ? (
         <nav
-          aria-label="Conversation pages"
+          aria-label={t('conversations.conversationPages')}
           className="flex items-center justify-between border-t border-border px-3 py-2 text-xs text-fg-muted"
         >
           <Button
             size="sm"
             variant="ghost"
-            aria-label="Previous page"
+            aria-label={t('conversations.previousPage')}
             disabled={page <= 1}
             onClick={() => onPageChange(page - 1)}
           >
             <ChevronLeft aria-hidden />
           </Button>
-          <span className="tabular">
-            Page {page} of {totalPages}
-          </span>
+          <span className="tabular">{t('conversations.pageOf', { page, totalPages })}</span>
           <Button
             size="sm"
             variant="ghost"
-            aria-label="Next page"
+            aria-label={t('conversations.nextPage')}
             disabled={page >= totalPages}
             onClick={() => onPageChange(page + 1)}
           >
@@ -132,10 +133,16 @@ function ConversationListItem({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const title = c.subject || (c.contact ? contactName(c.contact) : 'No subject');
+  const fmt = useFormat();
+  const t = useT();
+  const title = c.subject || (c.contact ? contactName(c.contact) : t('conversations.noSubject'));
   const preview = c.lastMessage
-    ? `${c.lastMessage.role === 'agent' ? 'You: ' : c.lastMessage.role === 'assistant' ? 'Assistant: ' : ''}${c.lastMessage.content}`
-    : 'No messages yet';
+    ? c.lastMessage.role === 'agent'
+      ? t('conversations.previewYou', { text: c.lastMessage.content })
+      : c.lastMessage.role === 'assistant'
+        ? t('conversations.previewAssistant', { text: c.lastMessage.content })
+        : c.lastMessage.content
+    : t('conversations.noMessagesYet');
   const when = c.lastMessageAt ?? c.updatedAt;
   return (
     <li>
@@ -144,7 +151,7 @@ function ConversationListItem({
         onClick={onSelect}
         aria-current={selected ? 'true' : undefined}
         className={cn(
-          'flex w-full items-start gap-3 px-4 py-3 text-left transition-colors',
+          'flex w-full items-start gap-3 px-4 py-3 text-start transition-colors',
           'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
           selected ? 'bg-accent-soft/60' : 'hover:bg-surface-muted/70',
         )}
@@ -156,8 +163,8 @@ function ConversationListItem({
             lastName={c.contact?.lastName ?? ''}
           />
           <span
-            className="absolute -right-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full border border-surface bg-surface-muted text-fg-muted"
-            title={CONVERSATION_CHANNEL_LABELS[c.channel]}
+            className="absolute -end-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full border border-surface bg-surface-muted text-fg-muted"
+            title={t(CONVERSATION_CHANNEL_LABELS[c.channel])}
           >
             <ChannelIcon channel={c.channel} className="size-2.5" aria-hidden />
           </span>
@@ -168,7 +175,7 @@ function ConversationListItem({
               {title}
             </span>
             <time dateTime={when} className="shrink-0 text-2xs text-fg-subtle tabular">
-              {formatDistanceToNowStrict(new Date(when), { addSuffix: false })}
+              {fmt.relative(new Date(when))}
             </time>
           </span>
           {c.subject && c.contact ? (
@@ -192,7 +199,7 @@ function ConversationListItem({
                 {c.assignee.firstName}
               </span>
             ) : (
-              <span className="text-2xs text-fg-subtle">Unassigned</span>
+              <span className="text-2xs text-fg-subtle">{t('conversations.unassigned')}</span>
             )}
           </span>
         </span>

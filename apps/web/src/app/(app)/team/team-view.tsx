@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { format, formatDistanceToNow } from 'date-fns';
 import {
   MailPlus,
   MoreHorizontal,
@@ -65,10 +64,13 @@ import { useSession } from '@/stores/session';
 import { QueryState } from '@/components/common/query-state';
 import { PermissionGate } from '@/components/common/permission-gate';
 import { InviteDialog } from './invite-dialog';
+import { useT, useFormat } from '@/i18n/provider';
+import { roleLabel } from '@/i18n/enums';
 
 const PAGE_SIZE = 20;
 
 export function TeamView() {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = React.useState('');
@@ -94,8 +96,8 @@ export function TeamView() {
     <PermissionGate anyOf={[Permission.MEMBERS_READ]}>
       <div className="flex flex-col gap-8">
         <PageHeader
-          title="Team"
-          description="People who can sign in to this organization, and the role each of them holds."
+          title={t('common.team')}
+          description={t('team.peopleWhoCanSignIn')}
           actions={
             canInvite ? (
               <Button
@@ -103,7 +105,7 @@ export function TeamView() {
                 onClick={openInvite}
                 disabled={!roles.data}
               >
-                Invite a teammate
+                {t('common.inviteATeammate')}
               </Button>
             ) : undefined
           }
@@ -112,11 +114,9 @@ export function TeamView() {
         <Card>
           <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-1">
-              <CardTitle>Members</CardTitle>
+              <CardTitle>{t('team.members')}</CardTitle>
               <CardDescription>
-                {members.data
-                  ? `${members.data.meta.total} member${members.data.meta.total === 1 ? '' : 's'}`
-                  : ' '}
+                {members.data ? t('team.memberCount', { count: members.data.meta.total }) : ' '}
               </CardDescription>
             </div>
             <SearchInput
@@ -125,8 +125,8 @@ export function TeamView() {
                 setSearch(v);
                 setPage(1);
               }}
-              placeholder="Search by name or email"
-              aria-label="Search members"
+              placeholder={t('team.searchByNameOrEmail')}
+              aria-label={t('team.searchMembers')}
               className="w-full sm:w-72"
             />
           </CardHeader>
@@ -155,8 +155,8 @@ export function TeamView() {
         {canInvite ? (
           <Card>
             <CardHeader>
-              <CardTitle>Pending invitations</CardTitle>
-              <CardDescription>Invitations expire seven days after they are sent.</CardDescription>
+              <CardTitle>{t('team.pendingInvitations')}</CardTitle>
+              <CardDescription>{t('team.invitationsExpireSevenDaysAfter')}</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <InvitationsTable query={invitations} onInvite={openInvite} />
@@ -187,17 +187,18 @@ function MembersTable({
   canRemove: boolean;
   searching: boolean;
 }) {
+  const t = useT();
   const columns = 5;
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Member</TableHead>
-          <TableHead>Role</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Joined</TableHead>
+          <TableHead>{t('team.member')}</TableHead>
+          <TableHead>{t('common.role')}</TableHead>
+          <TableHead>{t('common.status')}</TableHead>
+          <TableHead>{t('team.joined')}</TableHead>
           <TableHead className="w-12">
-            <span className="sr-only">Actions</span>
+            <span className="sr-only">{t('common.actions')}</span>
           </TableHead>
         </TableRow>
       </TableHeader>
@@ -209,13 +210,13 @@ function MembersTable({
             <div className="flex flex-col items-center gap-2">
               <span>{getErrorMessage(query.error)}</span>
               <Button variant="secondary" size="sm" onClick={() => void query.refetch()}>
-                Try again
+                {t('common.tryAgain')}
               </Button>
             </div>
           </TableEmptyRow>
         ) : query.data.data.length === 0 ? (
           <TableEmptyRow colSpan={columns}>
-            {searching ? 'No members match your search.' : 'No members yet.'}
+            {searching ? t('team.noMembersMatchYourSearch') : t('team.noMembersYet')}
           </TableEmptyRow>
         ) : (
           query.data.data.map((member) => (
@@ -244,6 +245,8 @@ function MemberRow({
   canUpdate: boolean;
   canRemove: boolean;
 }) {
+  const fmt = useFormat();
+  const t = useT();
   const currentUserId = useSession((s) => s.user?.id);
   const update = useUpdateMember();
   const remove = useRemoveMember();
@@ -257,7 +260,7 @@ function MemberRow({
     update.mutate(
       { id: member.id, body: { roleId } },
       {
-        onSuccess: (m) => toast.success(`${fullName} is now ${m.role.name}`),
+        onSuccess: (m) => toast.success(t('team.isNow', { fullName, name: m.role.name })),
         onError: (e) => toast.error(getErrorMessage(e)),
       },
     );
@@ -270,7 +273,9 @@ function MemberRow({
       {
         onSuccess: () =>
           toast.success(
-            status === 'suspended' ? `${fullName} suspended` : `${fullName} reactivated`,
+            status === 'suspended'
+              ? t('team.memberSuspended', { name: fullName })
+              : t('team.memberReactivated', { name: fullName }),
           ),
         onError: (e) => toast.error(getErrorMessage(e)),
       },
@@ -280,7 +285,7 @@ function MemberRow({
   const onRemove = () => {
     remove.mutate(member.id, {
       onSuccess: () => {
-        toast.success(`${fullName} removed from the organization`);
+        toast.success(t('team.removedFromTheOrganization', { fullName }));
         setConfirmRemove(false);
       },
       onError: (e) => toast.error(getErrorMessage(e)),
@@ -303,7 +308,7 @@ function MemberRow({
               {fullName}
               {isSelf ? (
                 <Badge variant="outline" className="px-1.5 py-0 text-[0.625rem] leading-4">
-                  You
+                  {t('team.you')}
                 </Badge>
               ) : null}
             </span>
@@ -316,23 +321,23 @@ function MemberRow({
           {member.role.isSystem ? (
             <ShieldCheck className="size-3.5 text-fg-subtle" aria-hidden />
           ) : null}
-          {member.role.name}
+          {roleLabel(t, member.role.name)}
         </span>
       </TableCell>
       <TableCell>
         <StatusBadge status={member.status} />
       </TableCell>
       <TableCell className="text-fg-muted tabular">
-        <time dateTime={member.joinedAt} title={format(new Date(member.joinedAt), 'PPpp')}>
-          {format(new Date(member.joinedAt), 'd MMM yyyy')}
+        <time dateTime={member.joinedAt} title={fmt.dateTime(new Date(member.joinedAt), 'long')}>
+          {fmt.date(new Date(member.joinedAt))}
         </time>
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-end">
         {showMenu ? (
           <>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <IconButton label={`Actions for ${fullName}`} disabled={update.isPending}>
+                <IconButton label={t('team.actionsFor', { fullName })} disabled={update.isPending}>
                   <MoreHorizontal aria-hidden />
                 </IconButton>
               </DropdownMenuTrigger>
@@ -341,16 +346,16 @@ function MemberRow({
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
                       <ShieldCheck aria-hidden className="size-4 text-fg-subtle" />
-                      Change role
+                      {t('team.changeRole')}
                     </DropdownMenuSubTrigger>
                     <DropdownMenuSubContent>
-                      <DropdownMenuLabel>Role</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t('common.role')}</DropdownMenuLabel>
                       <DropdownMenuRadioGroup value={member.role.id} onValueChange={changeRole}>
                         {roles
                           .filter((r) => r.key !== 'owner')
                           .map((r) => (
                             <DropdownMenuRadioItem key={r.id} value={r.id}>
-                              {r.name}
+                              {roleLabel(t, r.name)}
                             </DropdownMenuRadioItem>
                           ))}
                       </DropdownMenuRadioGroup>
@@ -364,7 +369,7 @@ function MemberRow({
                     ) : (
                       <UserRoundCheck aria-hidden />
                     )}
-                    {member.status === 'active' ? 'Suspend access' : 'Reactivate'}
+                    {member.status === 'active' ? t('team.suspendAccess') : t('team.reactivate')}
                   </DropdownMenuItem>
                 ) : null}
                 {canRemove ? (
@@ -372,7 +377,7 @@ function MemberRow({
                     <DropdownMenuSeparator />
                     <DropdownMenuItem tone="danger" onSelect={() => setConfirmRemove(true)}>
                       <UserMinus aria-hidden />
-                      Remove from organization
+                      {t('team.removeFromOrganization')}
                     </DropdownMenuItem>
                   </>
                 ) : null}
@@ -381,9 +386,9 @@ function MemberRow({
             <ConfirmDialog
               open={confirmRemove}
               onOpenChange={setConfirmRemove}
-              title={`Remove ${fullName}?`}
-              description="They will lose access to this organization immediately. Their account and other organizations are not affected."
-              confirmLabel="Remove member"
+              title={t('team.remove', { fullName })}
+              description={t('team.theyWillLoseAccessTo')}
+              confirmLabel={t('team.removeMember')}
               tone="danger"
               loading={remove.isPending}
               onConfirm={onRemove}
@@ -404,6 +409,8 @@ function InvitationsTable({
   query: ReturnType<typeof useInvitations>;
   onInvite: () => void;
 }) {
+  const fmt = useFormat();
+  const t = useT();
   const revoke = useRevokeInvitation();
   const [target, setTarget] = React.useState<Invitation | null>(null);
   const columns = 5;
@@ -430,11 +437,11 @@ function InvitationsTable({
           <EmptyState
             compact
             icon={<Users />}
-            title="No pending invitations"
-            description="Invite someone and their invitation will wait here until it’s accepted."
+            title={t('team.noPendingInvitations')}
+            description={t('team.inviteSomeoneAndTheirInvitation')}
             action={
               <Button variant="secondary" size="sm" onClick={onInvite}>
-                Invite a teammate
+                {t('common.inviteATeammate')}
               </Button>
             }
           />
@@ -444,12 +451,12 @@ function InvitationsTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Invited by</TableHead>
-                <TableHead>Expires</TableHead>
+                <TableHead>{t('common.email')}</TableHead>
+                <TableHead>{t('common.role')}</TableHead>
+                <TableHead>{t('team.invitedBy')}</TableHead>
+                <TableHead>{t('common.expires')}</TableHead>
                 <TableHead className="w-12">
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">{t('common.actions')}</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -457,18 +464,21 @@ function InvitationsTable({
               {pending.map((inv) => (
                 <TableRow key={inv.id}>
                   <TableCell className="font-medium">{inv.email}</TableCell>
-                  <TableCell>{inv.role.name}</TableCell>
+                  <TableCell>{roleLabel(t, inv.role.name)}</TableCell>
                   <TableCell className="text-fg-muted">
                     {inv.invitedBy.firstName} {inv.invitedBy.lastName}
                   </TableCell>
                   <TableCell className="text-fg-muted">
-                    <time dateTime={inv.expiresAt} title={format(new Date(inv.expiresAt), 'PPpp')}>
-                      {formatDistanceToNow(new Date(inv.expiresAt), { addSuffix: true })}
+                    <time
+                      dateTime={inv.expiresAt}
+                      title={fmt.dateTime(new Date(inv.expiresAt), 'long')}
+                    >
+                      {fmt.relative(new Date(inv.expiresAt))}
                     </time>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     <IconButton
-                      label={`Revoke invitation for ${inv.email}`}
+                      label={t('team.revokeInvitationFor', { email: inv.email })}
                       variant="danger"
                       onClick={() => setTarget(inv)}
                     >
@@ -484,18 +494,16 @@ function InvitationsTable({
       <ConfirmDialog
         open={!!target}
         onOpenChange={(open) => !open && setTarget(null)}
-        title="Revoke this invitation?"
-        description={
-          target ? `${target.email} will no longer be able to join with this link.` : undefined
-        }
-        confirmLabel="Revoke invitation"
+        title={t('team.revokeThisInvitation')}
+        description={target ? t('team.willNoLongerBeAble', { email: target.email }) : undefined}
+        confirmLabel={t('team.revokeInvitation')}
         tone="danger"
         loading={revoke.isPending}
         onConfirm={() => {
           if (!target) return;
           revoke.mutate(target.id, {
             onSuccess: () => {
-              toast.success('Invitation revoked');
+              toast.success(t('team.invitationRevoked'));
               setTarget(null);
             },
             onError: (e) => toast.error(getErrorMessage(e)),

@@ -18,6 +18,7 @@ import {
 import { analyticsApi, getErrorMessage, type AnalyticsRangeParams } from '@/lib/api';
 import { DataTable, type Column } from '@/components/common/data-table';
 import { pct, saveBlob } from '@/lib/analytics';
+import { useT, useFormat } from '@/i18n/provider';
 
 export { DataTable, type Column };
 
@@ -28,8 +29,9 @@ export interface ReportContext {
 }
 
 export function ReportSkeleton() {
+  const t = useT();
   return (
-    <div className="flex flex-col gap-6" aria-busy="true" aria-label="Loading report">
+    <div className="flex flex-col gap-6" aria-busy="true" aria-label={t('analytics.loadingReport')}>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-[104px] w-full rounded-lg" />
@@ -93,14 +95,17 @@ export function SectionCard({
 export function BreakdownList({
   label,
   items,
-  emptyText = 'No data in this range.',
+  emptyText,
 }: {
   label: string;
   items: { key: string; label: string; count: number }[];
   emptyText?: string;
 }) {
+  const t = useT();
+  const fmt = useFormat();
   const total = items.reduce((sum, i) => sum + i.count, 0);
-  if (total === 0) return <p className="text-sm text-fg-muted">{emptyText}</p>;
+  if (total === 0)
+    return <p className="text-sm text-fg-muted">{emptyText ?? t('analytics.noDataInRange')}</p>;
   return (
     <ul aria-label={label} className="flex flex-col gap-3">
       {items.map((item) => (
@@ -109,8 +114,8 @@ export function BreakdownList({
             <span className="min-w-0 truncate text-fg-muted">{item.label}</span>
             <span className="font-medium tabular">
               {item.count}
-              <span className="ml-1.5 text-xs font-normal text-fg-subtle">
-                {pct(item.count / total)}
+              <span className="ms-1.5 text-xs font-normal text-fg-subtle">
+                {pct(item.count / total, fmt)}
               </span>
             </span>
           </div>
@@ -139,6 +144,7 @@ export function ExportButtons({
   ctx: ReportContext;
   label: string;
 }) {
+  const t = useT();
   const [busy, setBusy] = React.useState<'series' | 'breakdown' | null>(null);
 
   const run = async (section: 'series' | 'breakdown') => {
@@ -146,26 +152,30 @@ export function ExportButtons({
     try {
       const file = await analyticsApi.exportCsv({ report, section, ...ctx.params });
       saveBlob(file.blob, file.filename);
-      toast.success(`${file.filename} downloaded`);
+      toast.success(t('analytics.downloaded', { filename: file.filename }));
     } catch (error) {
-      toast.error(getErrorMessage(error, 'The export could not be created.'));
+      toast.error(getErrorMessage(error, t('analytics.exportFailed')));
     } finally {
       setBusy(null);
     }
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2" role="group" aria-label={`${label} export`}>
+    <div
+      className="flex flex-wrap items-center gap-2"
+      role="group"
+      aria-label={t('analytics.export', { label })}
+    >
       <Button
         variant="secondary"
         size="sm"
         leadingIcon={<Download aria-hidden />}
         loading={busy === 'series'}
         disabled={busy !== null}
-        aria-label={`Export ${label} time series as CSV`}
+        aria-label={t('analytics.exportTimeSeriesAsCsv', { label: label.toLowerCase() })}
         onClick={() => void run('series')}
       >
-        Export CSV: time series
+        {t('analytics.exportCsvTimeSeries')}
       </Button>
       <Button
         variant="secondary"
@@ -173,10 +183,10 @@ export function ExportButtons({
         leadingIcon={<Download aria-hidden />}
         loading={busy === 'breakdown'}
         disabled={busy !== null}
-        aria-label={`Export ${label} breakdown as CSV`}
+        aria-label={t('analytics.exportBreakdownAsCsv', { label: label.toLowerCase() })}
         onClick={() => void run('breakdown')}
       >
-        Export CSV: breakdown
+        {t('analytics.exportCsvBreakdown')}
       </Button>
     </div>
   );

@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { RefreshCw, Send } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import type { Webhook } from '@hilatech/contracts';
 import {
   Button,
@@ -30,11 +29,14 @@ import { getErrorMessage } from '@/lib/api';
 import { useTestWebhook, useWebhookDeliveries } from '@/hooks/automation';
 import { useCan } from '@/hooks/use-can';
 import { Permission } from '@hilatech/contracts';
+import { useT, useFormat } from '@/i18n/provider';
 
 type DeliveryStatus = 'pending' | 'delivered' | 'failed';
 
 /** Delivery attempts of a subscription (newest first); polls while any delivery is pending. */
 export function DeliveriesDialog({ webhook, onClose }: { webhook: Webhook; onClose: () => void }) {
+  const fmt = useFormat();
+  const t = useT();
   const canManage = useCan(Permission.AUTOMATIONS_MANAGE);
   const [page, setPage] = React.useState(1);
   const [status, setStatus] = React.useState<DeliveryStatus | ''>('');
@@ -46,26 +48,24 @@ export function DeliveriesDialog({ webhook, onClose }: { webhook: Webhook; onClo
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent size="xl">
         <DialogHeader>
-          <DialogTitle>Deliveries — {webhook.url}</DialogTitle>
-          <DialogDescription>
-            Every attempt to deliver an event to this endpoint, newest first.
-          </DialogDescription>
+          <DialogTitle>{t('automation.deliveries', { url: webhook.url })}</DialogTitle>
+          <DialogDescription>{t('automation.everyAttemptToDeliverAn')}</DialogDescription>
         </DialogHeader>
         <DialogBody className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <div className="w-44">
               <NativeSelect
-                aria-label="Filter deliveries by status"
+                aria-label={t('automation.filterDeliveriesByStatus')}
                 value={status}
                 onChange={(e) => {
                   setStatus(e.target.value as DeliveryStatus | '');
                   setPage(1);
                 }}
               >
-                <option value="">All statuses</option>
-                <option value="pending">Pending</option>
-                <option value="delivered">Delivered</option>
-                <option value="failed">Failed</option>
+                <option value="">{t('common.allStatuses')}</option>
+                <option value="pending">{t('automation.pending')}</option>
+                <option value="delivered">{t('common.delivered')}</option>
+                <option value="failed">{t('common.failed')}</option>
               </NativeSelect>
             </div>
             <Button
@@ -75,7 +75,7 @@ export function DeliveriesDialog({ webhook, onClose }: { webhook: Webhook; onClo
               loading={deliveries.isFetching}
               onClick={() => void deliveries.refetch()}
             >
-              Refresh
+              {t('common.refresh')}
             </Button>
             {canManage ? (
               <Button
@@ -85,24 +85,24 @@ export function DeliveriesDialog({ webhook, onClose }: { webhook: Webhook; onClo
                 loading={test.isPending}
                 onClick={() =>
                   test.mutate(webhook.id, {
-                    onSuccess: () => toast.success('Test delivery queued'),
+                    onSuccess: () => toast.success(t('automation.testDeliveryQueued')),
                     onError: (e) => toast.error(getErrorMessage(e)),
                   })
                 }
               >
-                Send test delivery
+                {t('automation.sendTestDelivery')}
               </Button>
             ) : null}
           </div>
-          <Table aria-label="Deliveries">
+          <Table aria-label={t('automation.deliveries2')}>
             <TableHeader>
               <TableRow>
-                <TableHead>Event</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Attempts</TableHead>
-                <TableHead className="text-right">Response</TableHead>
-                <TableHead>Error</TableHead>
-                <TableHead>When</TableHead>
+                <TableHead>{t('common.event')}</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
+                <TableHead className="text-end">{t('automation.attempts')}</TableHead>
+                <TableHead className="text-end">{t('automation.response')}</TableHead>
+                <TableHead>{t('automation.error')}</TableHead>
+                <TableHead>{t('common.when')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -113,7 +113,7 @@ export function DeliveriesDialog({ webhook, onClose }: { webhook: Webhook; onClo
                   <div className="flex flex-col items-center gap-2">
                     <span>{getErrorMessage(deliveries.error)}</span>
                     <Button variant="secondary" size="sm" onClick={() => void deliveries.refetch()}>
-                      Try again
+                      {t('common.tryAgain')}
                     </Button>
                   </div>
                 </TableEmptyRow>
@@ -121,8 +121,8 @@ export function DeliveriesDialog({ webhook, onClose }: { webhook: Webhook; onClo
                 <TableEmptyRow colSpan={columns} className="py-4">
                   <EmptyState
                     compact
-                    title="No deliveries yet"
-                    description="Send a test delivery, or wait for one of the subscribed events."
+                    title={t('automation.noDeliveriesYet')}
+                    description={t('automation.sendATestDeliveryOr')}
                   />
                 </TableEmptyRow>
               ) : (
@@ -141,13 +141,13 @@ export function DeliveriesDialog({ webhook, onClose }: { webhook: Webhook; onClo
                         }
                       />
                     </TableCell>
-                    <TableCell className="text-right tabular">{d.attempts}</TableCell>
-                    <TableCell className="text-right tabular">{d.responseStatus ?? '—'}</TableCell>
+                    <TableCell className="text-end tabular">{d.attempts}</TableCell>
+                    <TableCell className="text-end tabular">{d.responseStatus ?? '—'}</TableCell>
                     <TableCell className="max-w-xs text-xs break-words text-danger">
                       {d.lastError ?? ''}
                     </TableCell>
                     <TableCell className="text-fg-muted">
-                      {formatDistanceToNow(new Date(d.createdAt), { addSuffix: true })}
+                      {fmt.relative(new Date(d.createdAt))}
                     </TableCell>
                   </TableRow>
                 ))

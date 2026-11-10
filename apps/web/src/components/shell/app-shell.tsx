@@ -10,20 +10,22 @@ import { NotificationsMenu } from './notifications-menu';
 import { ThemeToggle } from './theme-toggle';
 import { UserMenu } from './user-menu';
 import { pageTitleFor } from './nav';
+import { useT } from '@/i18n/provider';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const t = useT();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const sessionLoaded = useSession((s) => s.sessionLoaded);
-  const title = pageTitleFor(pathname);
+  const title = pageTitleFor(pathname, t);
 
   return (
     <div className="flex min-h-dvh bg-bg">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-sm focus:bg-accent focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-accent-fg"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:start-3 focus:z-[60] focus:rounded-sm focus:bg-accent focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-accent-fg"
       >
-        Skip to content
+        {t('shell.skipToContent')}
       </a>
       {/* Desktop sidebar */}
       <div className="sticky top-0 hidden h-dvh shrink-0 lg:block">
@@ -32,7 +34,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile drawer */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" title="Navigation" closeOutside className="w-64 lg:hidden">
+        <SheetContent
+          side="start"
+          title={t('shell.navigation')}
+          closeOutside
+          className="w-64 lg:hidden"
+        >
           <AppSidebar onNavigate={() => setMobileOpen(false)} className="h-dvh" />
         </SheetContent>
       </Sheet>
@@ -42,7 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           start={
             <>
               <IconButton
-                label="Open navigation"
+                label={t('shell.openNavigation')}
                 className="lg:hidden"
                 onClick={() => setMobileOpen(true)}
               >
@@ -70,7 +77,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               children
             ) : (
               <div className="flex min-h-[40vh] items-center justify-center" role="status">
-                <Spinner label="Switching organization" />
+                <Spinner label={t('shell.switchingOrganization')} />
               </div>
             )}
           </div>

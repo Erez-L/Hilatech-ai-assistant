@@ -48,7 +48,10 @@ export function ChartTooltipContent({
 }: ChartTooltipContentProps) {
   if (!active || !payload || payload.length === 0) return null;
   return (
-    <div className="min-w-[8rem] rounded-md border border-border bg-surface-raised px-3 py-2 text-xs text-fg shadow-popover">
+    <div
+      dir={typeof document === 'undefined' ? undefined : document.documentElement.dir || undefined}
+      className="min-w-[8rem] rounded-md border border-border bg-surface-raised px-3 py-2 text-xs text-fg shadow-popover"
+    >
       {label !== undefined ? (
         <p className="mb-1.5 font-medium text-fg">
           {labelFormatter ? labelFormatter(label) : String(label)}
@@ -132,7 +135,8 @@ export function ChartFrame({
           {legend}
         </figcaption>
       ) : null}
-      <div style={{ height }} className="w-full text-fg-muted">
+      {/* Plots stay LTR (time runs left to right, numerals are LTR) even in RTL pages; text around them follows the page. */}
+      <div style={{ height }} dir="ltr" className="w-full text-fg-muted">
         {children}
       </div>
     </figure>

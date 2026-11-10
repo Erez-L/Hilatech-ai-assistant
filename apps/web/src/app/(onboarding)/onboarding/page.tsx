@@ -1,8 +1,12 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { OnboardingForm } from './onboarding-form';
+import { getT } from '@/i18n/server';
 
-export const metadata: Metadata = { title: 'Create your organization' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getT();
+  return { title: t('meta.createYourOrganization') };
+}
 
 export default function OnboardingPage() {
   return (

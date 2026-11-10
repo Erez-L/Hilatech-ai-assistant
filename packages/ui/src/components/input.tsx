@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Search, X } from 'lucide-react';
 import { cn } from '../lib/cn';
+import { useUiStrings } from '../lib/ui-strings';
 
 export const inputClassName = cn(
   'flex h-9 w-full min-w-0 rounded-sm border border-border bg-surface px-3 py-1 text-sm text-fg shadow-xs',
@@ -23,12 +24,16 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
   { className, type = 'text', invalid, ...props },
   ref,
 ) {
+  // Free text follows the direction of what is typed (Hebrew or English); identifiers
+  // (email, url, number, password...) are always LTR but align to the end edge in RTL pages.
+  const isFreeText = type === 'text' || type === 'search';
   return (
     <input
       ref={ref}
       type={type}
+      dir={isFreeText ? 'auto' : 'ltr'}
       aria-invalid={invalid || props['aria-invalid'] ? true : undefined}
-      className={cn(inputClassName, className)}
+      className={cn(inputClassName, !isFreeText && 'rtl:text-end', className)}
       {...props}
     />
   );
@@ -46,6 +51,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(fun
     <textarea
       ref={ref}
       rows={rows}
+      dir="auto"
       aria-invalid={invalid || props['aria-invalid'] ? true : undefined}
       className={cn(
         inputClassName,
@@ -120,9 +126,10 @@ export function SearchInput({
   onValueChange,
   debounceMs = 250,
   className,
-  placeholder = 'Search…',
+  placeholder,
   ...props
 }: SearchInputProps) {
+  const ui = useUiStrings();
   const [draft, setDraft] = React.useState(value);
   const [lastValue, setLastValue] = React.useState(value);
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -155,31 +162,31 @@ export function SearchInput({
   return (
     <div className={cn('relative', className)}>
       <Search
-        className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-fg-subtle"
+        className="pointer-events-none absolute top-1/2 start-2.5 size-4 -translate-y-1/2 text-fg-subtle"
         aria-hidden
       />
       <Input
         type="search"
         role="searchbox"
         value={draft}
-        placeholder={placeholder}
+        placeholder={placeholder ?? ui.search}
         onChange={(e) => {
           setDraft(e.target.value);
           emit(e.target.value);
         }}
-        className="pr-8 pl-8 [&::-webkit-search-cancel-button]:hidden"
+        className="pe-8 ps-8 [&::-webkit-search-cancel-button]:hidden"
         {...props}
       />
       {draft ? (
         <button
           type="button"
-          aria-label="Clear search"
+          aria-label={ui.clearSearch}
           onClick={() => {
             setDraft('');
             if (timer.current) clearTimeout(timer.current);
             onValueChange('');
           }}
-          className="absolute top-1/2 right-1.5 flex size-6 -translate-y-1/2 items-center justify-center rounded-xs text-fg-subtle hover:bg-surface-muted hover:text-fg"
+          className="absolute top-1/2 end-1.5 flex size-6 -translate-y-1/2 items-center justify-center rounded-xs text-fg-subtle hover:bg-surface-muted hover:text-fg"
         >
           <X className="size-3.5" aria-hidden />
         </button>
@@ -200,7 +207,7 @@ export const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProp
         <select
           ref={ref}
           aria-invalid={invalid || props['aria-invalid'] ? true : undefined}
-          className={cn(inputClassName, 'appearance-none pr-9', className)}
+          className={cn(inputClassName, 'appearance-none pe-9', className)}
           {...props}
         >
           {children}
@@ -208,7 +215,7 @@ export const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProp
         <svg
           aria-hidden
           viewBox="0 0 16 16"
-          className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-fg-subtle"
+          className="pointer-events-none absolute top-1/2 end-3 size-4 -translate-y-1/2 text-fg-subtle"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.5"

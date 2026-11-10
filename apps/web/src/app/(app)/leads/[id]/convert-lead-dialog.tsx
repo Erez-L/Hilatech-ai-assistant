@@ -1,4 +1,5 @@
 'use client';
+import { vm } from '@/i18n/validation';
 
 import * as React from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
@@ -29,6 +30,7 @@ import { getErrorMessage, type ConvertLeadResponse } from '@/lib/api';
 import { useConvertLead } from '@/hooks/queries';
 import { applyServerErrors } from '@/lib/forms/server-errors';
 import { ContactPicker } from '@/components/crm/contact-picker';
+import { useT } from '@/i18n/provider';
 
 /**
  * Form model: a mode switch plus both branches. `toConvertRequest` builds the contract payload with
@@ -52,14 +54,14 @@ export const convertFormSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['contactId'],
-        message: 'Select a contact to link',
+        message: vm('leads.selectAContactToLink'),
       });
     }
     if (v.mode === 'new' && !v.contact.firstName) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['contact', 'firstName'],
-        message: 'Enter a first name',
+        message: vm('leads.enterAFirstName'),
       });
     }
   });
@@ -128,6 +130,7 @@ function ConvertForm({
   lead: LeadWithRelations;
   onDone: (result?: ConvertLeadResponse) => void;
 }) {
+  const t = useT();
   const convert = useConvertLead();
   const [formError, setFormError] = React.useState<string | null>(null);
   const [selectedContact, setSelectedContact] = React.useState(lead.contact);
@@ -168,22 +171,22 @@ function ConvertForm({
   const modes: { value: ConvertFormValues['mode']; label: string; hint: string }[] = [
     {
       value: 'existing',
-      label: 'Link an existing contact',
-      hint: 'Attach this lead to someone already in your address book.',
+      label: t('leads.linkAnExistingContact'),
+      hint: t('leads.attachThisLeadToSomeone'),
     },
     {
       value: 'new',
-      label: 'Create a new contact',
-      hint: 'Add the person or company from this lead.',
+      label: t('leads.createANewContact'),
+      hint: t('leads.addThePersonOrCompany'),
     },
   ];
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex min-h-0 flex-col">
       <DialogHeader>
-        <DialogTitle>Convert lead</DialogTitle>
+        <DialogTitle>{t('leads.convertLead')}</DialogTitle>
         <DialogDescription>
-          Turn “{lead.title}” into a contact relationship. The lead keeps its history.
+          {t('leads.turnIntoAContactRelationship', { title: lead.title })}
         </DialogDescription>
       </DialogHeader>
       <DialogBody className="flex flex-col gap-5 pb-2">
@@ -193,7 +196,11 @@ function ConvertForm({
           control={form.control}
           name="mode"
           render={({ field }) => (
-            <div role="radiogroup" aria-label="Contact" className="grid gap-2 sm:grid-cols-2">
+            <div
+              role="radiogroup"
+              aria-label={t('common.contact')}
+              className="grid gap-2 sm:grid-cols-2"
+            >
               {modes.map((m) => {
                 const active = field.value === m.value;
                 return (
@@ -207,7 +214,7 @@ function ConvertForm({
                       form.clearErrors();
                     }}
                     className={cn(
-                      'flex flex-col items-start gap-1 rounded-md border px-4 py-3 text-left text-sm transition-colors',
+                      'flex flex-col items-start gap-1 rounded-md border px-4 py-3 text-start text-sm transition-colors',
                       'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                       active
                         ? 'border-accent bg-accent-soft text-accent-soft-fg'
@@ -228,7 +235,7 @@ function ConvertForm({
         {mode === 'existing' ? (
           <FormField
             id="convert-contact"
-            label="Contact"
+            label={t('common.contact')}
             error={form.formState.errors.contactId?.message}
             required
           >
@@ -254,7 +261,7 @@ function ConvertForm({
             <div className="grid gap-5 sm:grid-cols-2">
               <FormField
                 id="convert-first-name"
-                label="First name"
+                label={t('common.firstName')}
                 error={form.formState.errors.contact?.firstName?.message}
                 required
               >
@@ -262,7 +269,7 @@ function ConvertForm({
               </FormField>
               <FormField
                 id="convert-last-name"
-                label="Last name"
+                label={t('common.lastName')}
                 error={form.formState.errors.contact?.lastName?.message}
               >
                 <Input autoComplete="off" {...form.register('contact.lastName')} />
@@ -271,14 +278,14 @@ function ConvertForm({
             <div className="grid gap-5 sm:grid-cols-2">
               <FormField
                 id="convert-email"
-                label="Email"
+                label={t('common.email')}
                 error={form.formState.errors.contact?.email?.message}
               >
                 <Input type="email" autoComplete="off" {...form.register('contact.email')} />
               </FormField>
               <FormField
                 id="convert-phone"
-                label="Phone"
+                label={t('common.phone')}
                 error={form.formState.errors.contact?.phone?.message}
               >
                 <Input type="tel" autoComplete="off" {...form.register('contact.phone')} />
@@ -286,7 +293,7 @@ function ConvertForm({
             </div>
             <FormField
               id="convert-company"
-              label="Company"
+              label={t('common.company')}
               error={form.formState.errors.contact?.company?.message}
             >
               <Input autoComplete="off" {...form.register('contact.company')} />
@@ -307,11 +314,11 @@ function ConvertForm({
                 disabled={lead.status === 'won'}
               />
               <Label htmlFor="convert-mark-won" className="flex flex-col gap-0.5 font-normal">
-                <span className="text-sm font-medium">Mark as won</span>
+                <span className="text-sm font-medium">{t('leads.markAsWon')}</span>
                 <span className="text-xs text-fg-muted">
                   {lead.status === 'won'
-                    ? 'This lead is already won.'
-                    : 'Closes the lead as won at the same time.'}
+                    ? t('leads.thisLeadIsAlreadyWon')
+                    : t('leads.closesTheLeadAsWon')}
                 </span>
               </Label>
             </div>
@@ -320,10 +327,10 @@ function ConvertForm({
       </DialogBody>
       <DialogFooter>
         <Button variant="secondary" onClick={() => onDone()}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" loading={form.formState.isSubmitting}>
-          Convert lead
+          {t('leads.convertLead')}
         </Button>
       </DialogFooter>
     </form>

@@ -26,11 +26,14 @@ import { useCan } from '@/hooks/use-can';
 import { QueryState } from '@/components/common/query-state';
 import { PermissionGate } from '@/components/common/permission-gate';
 import { RoleDialog } from './role-dialog';
+import { useT } from '@/i18n/provider';
+import { roleLabel } from '@/i18n/enums';
 
 type DialogState =
   { mode: 'create' } | { mode: 'edit'; role: Role } | { mode: 'view'; role: Role } | null;
 
 export function RolesView() {
+  const t = useT();
   const roles = useRoles();
   const remove = useDeleteRole();
   const canManage = useCan(Permission.ROLES_MANAGE);
@@ -50,15 +53,15 @@ export function RolesView() {
     <PermissionGate anyOf={[Permission.ROLES_READ]}>
       <div className="flex flex-col gap-8">
         <PageHeader
-          title="Roles"
-          description="Roles bundle permissions. System roles come with every organization; custom roles are yours to shape."
+          title={t('roles.roles')}
+          description={t('roles.rolesBundlePermissionsSystemRoles')}
           actions={
             canManage ? (
               <Button
                 leadingIcon={<Plus aria-hidden />}
                 onClick={() => setDialog({ mode: 'create' })}
               >
-                Create role
+                {t('roles.createRole')}
               </Button>
             ) : undefined
           }
@@ -81,8 +84,8 @@ export function RolesView() {
           empty={
             <EmptyState
               icon={<Shield />}
-              title="No roles found"
-              description="System roles should exist for every organization. If this persists, contact support."
+              title={t('roles.noRolesFound')}
+              description={t('roles.systemRolesShouldExistFor')}
             />
           }
         >
@@ -113,16 +116,16 @@ export function RolesView() {
         <ConfirmDialog
           open={!!deleting}
           onOpenChange={(open) => !open && setDeleting(null)}
-          title={deleting ? `Delete “${deleting.name}”?` : ''}
-          description="Members holding this role will need a new one before they can keep working. This cannot be undone."
-          confirmLabel="Delete role"
+          title={deleting ? t('roles.delete', { name: deleting.name }) : ''}
+          description={t('roles.membersHoldingThisRoleWill')}
+          confirmLabel={t('roles.deleteRole')}
           tone="danger"
           loading={remove.isPending}
           onConfirm={() => {
             if (!deleting) return;
             remove.mutate(deleting.id, {
               onSuccess: () => {
-                toast.success(`Role “${deleting.name}” deleted`);
+                toast.success(t('roles.roleDeleted', { name: deleting.name }));
                 setDeleting(null);
               },
               onError: (e) => toast.error(getErrorMessage(e)),
@@ -147,6 +150,7 @@ function RoleCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const t = useT();
   const editable = canManage && !role.isSystem;
   const open = editable ? onEdit : onView;
   return (
@@ -156,42 +160,42 @@ function RoleCard({
           <button
             type="button"
             onClick={open}
-            className="flex min-w-0 flex-col gap-1 rounded-xs text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="flex min-w-0 flex-col gap-1 rounded-xs text-start focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             <span className="flex items-center gap-2">
-              <span className="truncate text-base font-semibold">{role.name}</span>
+              <span className="truncate text-base font-semibold">{roleLabel(t, role.name)}</span>
               {role.isSystem ? (
                 <Badge variant="neutral" className="gap-1">
                   <ShieldCheck aria-hidden />
-                  System
+                  {t('common.system')}
                 </Badge>
               ) : (
-                <Badge variant="accent">Custom</Badge>
+                <Badge variant="accent">{t('roles.custom')}</Badge>
               )}
             </span>
             <span className="font-mono text-xs text-fg-subtle">{role.key}</span>
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <IconButton label={`Actions for ${role.name}`}>
+              <IconButton label={t('common.actionsFor', { name: role.name })}>
                 <MoreHorizontal aria-hidden />
               </IconButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={onView}>
                 <Eye aria-hidden />
-                View permissions
+                {t('roles.viewPermissions')}
               </DropdownMenuItem>
               {editable ? (
                 <>
                   <DropdownMenuItem onSelect={onEdit}>
                     <Pencil aria-hidden />
-                    Edit role
+                    {t('roles.editRole')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem tone="danger" onSelect={onDelete}>
                     <Trash2 aria-hidden />
-                    Delete role
+                    {t('roles.deleteRole')}
                   </DropdownMenuItem>
                 </>
               ) : null}
@@ -199,10 +203,11 @@ function RoleCard({
           </DropdownMenu>
         </div>
         <p className="line-clamp-2 min-h-10 text-sm text-fg-muted">
-          {role.description || (role.isSystem ? 'Managed by the platform.' : 'No description.')}
+          {role.description ||
+            (role.isSystem ? t('roles.managedByThePlatform') : t('roles.noDescription'))}
         </p>
         <p className="mt-auto text-xs text-fg-subtle tabular">
-          {role.permissions.length} permission{role.permissions.length === 1 ? '' : 's'}
+          {t('roles.permissionCount', { count: role.permissions.length })}
         </p>
       </CardContent>
     </Card>

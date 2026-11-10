@@ -94,7 +94,7 @@ describe('ToolsPicker', () => {
         allowWrite={false}
       />,
     );
-    expect(screen.getByText('Crm')).toBeInTheDocument();
+    expect(screen.getByText('CRM')).toBeInTheDocument();
     expect(screen.getByText('Utility')).toBeInTheDocument();
     expect(screen.getByText('Dangerous')).toBeInTheDocument();
     expect(screen.getByText(/never runs without authorization/i)).toBeInTheDocument();

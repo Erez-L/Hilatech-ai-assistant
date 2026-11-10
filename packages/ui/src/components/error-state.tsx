@@ -4,6 +4,7 @@ import * as React from 'react';
 import { CircleAlert, RotateCw } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { Button } from './button';
+import { useUiStrings } from '../lib/ui-strings';
 
 export interface ErrorStateProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {
   title?: React.ReactNode;
@@ -18,16 +19,17 @@ export interface ErrorStateProps extends Omit<React.HTMLAttributes<HTMLDivElemen
 }
 
 export function ErrorState({
-  title = 'Something went wrong',
-  message = 'The data could not be loaded. Check your connection and try again.',
+  title,
+  message,
   requestId,
   onRetry,
-  retryLabel = 'Try again',
+  retryLabel,
   retrying,
   compact = false,
   className,
   ...props
 }: ErrorStateProps) {
+  const ui = useUiStrings();
   return (
     <div
       role="alert"
@@ -50,10 +52,12 @@ export function ErrorState({
         <CircleAlert />
       </div>
       <div className="flex max-w-sm flex-col gap-1">
-        <h3 className={cn('font-semibold text-fg', compact ? 'text-sm' : 'text-base')}>{title}</h3>
-        {message ? <p className="text-sm text-fg-muted">{message}</p> : null}
+        <h3 className={cn('font-semibold text-fg', compact ? 'text-sm' : 'text-base')}>
+          {title ?? ui.somethingWentWrong}
+        </h3>
+        <p className="text-sm text-fg-muted">{message ?? ui.loadFailed}</p>
         {requestId ? (
-          <p className="font-mono text-2xs text-fg-subtle">Request {requestId}</p>
+          <p className="font-mono text-2xs text-fg-subtle">{ui.request(requestId)}</p>
         ) : null}
       </div>
       {onRetry ? (
@@ -65,7 +69,7 @@ export function ErrorState({
           leadingIcon={<RotateCw aria-hidden />}
           className="mt-1"
         >
-          {retryLabel}
+          {retryLabel ?? ui.tryAgain}
         </Button>
       ) : null}
     </div>

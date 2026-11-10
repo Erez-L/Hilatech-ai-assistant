@@ -9,9 +9,9 @@ import {
   ACCEPT_ATTRIBUTE,
   ACCEPTED_EXTENSIONS,
   UPLOAD_SIZE_HINT_MB,
-  formatBytes,
   validateUploadFile,
 } from '@/lib/knowledge';
+import { useT, useFormat } from '@/i18n/provider';
 
 export interface UploadItem {
   id: number;
@@ -30,6 +30,8 @@ export function UploadZone({
   /** Called when the API answers 409 AI_NOT_CONFIGURED so the page can show the setup empty state. */
   onNotConfigured: () => void;
 }) {
+  const t = useT();
+  const fmt = useFormat();
   const upload = useUploadDocument(baseId);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [items, setItems] = React.useState<UploadItem[]>([]);
@@ -43,7 +45,7 @@ export function UploadZone({
     if (files.length === 0) return;
     const entries = files.map((file) => ({ file, id: nextId.current++ }));
     const initial: UploadItem[] = entries.map(({ file, id }) => {
-      const problem = validateUploadFile(file);
+      const problem = validateUploadFile(file, t, fmt);
       return {
         id,
         name: file.name,
@@ -61,7 +63,7 @@ export function UploadZone({
         patch(id, { state: 'done' });
       } catch (error) {
         if (isApiError(error) && error.code === 'AI_NOT_CONFIGURED') {
-          patch(id, { state: 'error', error: 'AI is not set up for this organization.' });
+          patch(id, { state: 'error', error: t('knowledge.aiNotSetUp') });
           onNotConfigured();
           break;
         }
@@ -90,10 +92,12 @@ export function UploadZone({
         )}
       >
         <UploadCloud className="size-6 text-fg-muted" aria-hidden />
-        <p className="text-sm font-medium">Drag files here, or choose them from your computer</p>
+        <p className="text-sm font-medium">{t('knowledge.dragFilesHereOrChoose')}</p>
         <p className="text-xs text-fg-muted">
-          {ACCEPTED_EXTENSIONS.join(' ')} · up to about {UPLOAD_SIZE_HINT_MB} MB each. Text is
-          extracted and indexed in the background.
+          {t('knowledge.uploadHint', {
+            types: ACCEPTED_EXTENSIONS.join(' '),
+            size: UPLOAD_SIZE_HINT_MB,
+          })}
         </p>
         <input
           ref={inputRef}
@@ -101,7 +105,7 @@ export function UploadZone({
           type="file"
           multiple
           accept={ACCEPT_ATTRIBUTE}
-          aria-label="Choose files to upload"
+          aria-label={t('knowledge.chooseFilesToUpload')}
           className="sr-only"
           tabIndex={-1}
           onChange={(e) => {
@@ -117,12 +121,12 @@ export function UploadZone({
           leadingIcon={<UploadCloud aria-hidden />}
           onClick={() => inputRef.current?.click()}
         >
-          Upload documents
+          {t('knowledge.uploadDocuments')}
         </Button>
       </div>
 
       {items.length > 0 ? (
-        <ul aria-label="Uploads" className="flex flex-col gap-1.5">
+        <ul aria-label={t('knowledge.uploads')} className="flex flex-col gap-1.5">
           {items.map((item) => (
             <li
               key={item.id}
@@ -140,7 +144,7 @@ export function UploadZone({
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">
                   {item.name}{' '}
-                  <span className="font-normal text-fg-muted">({formatBytes(item.size)})</span>
+                  <span className="font-normal text-fg-muted">({fmt.bytes(item.size)})</span>
                 </p>
                 <p
                   className={cn(
@@ -149,16 +153,16 @@ export function UploadZone({
                   )}
                   role={item.state === 'error' ? 'alert' : undefined}
                 >
-                  {item.state === 'queued' && 'Waiting'}
-                  {item.state === 'uploading' && 'Uploading…'}
-                  {item.state === 'done' && 'Uploaded — processing in the background'}
+                  {item.state === 'queued' && t('knowledge.waiting')}
+                  {item.state === 'uploading' && t('knowledge.uploading')}
+                  {item.state === 'done' && t('knowledge.uploadedProcessingInTheBackground')}
                   {item.state === 'error' && item.error}
                 </p>
               </div>
               {item.state === 'done' || item.state === 'error' ? (
                 <IconButton
                   size="sm"
-                  label={`Dismiss ${item.name}`}
+                  label={t('knowledge.dismiss', { name: item.name })}
                   onClick={() => setItems((list) => list.filter((i) => i.id !== item.id))}
                 >
                   <X aria-hidden />

@@ -26,6 +26,9 @@ import {
 import { getErrorMessage, type PermissionDefinition } from '@/lib/api';
 import { useCreateRole, usePermissionCatalog, useUpdateRole } from '@/hooks/queries';
 import { applyServerErrors } from '@/lib/forms/server-errors';
+import { enumLabel, hasMessage } from '@/i18n/enums';
+import type { MessageKey } from '@/i18n/messages';
+import { useT } from '@/i18n/provider';
 
 export interface RoleDialogProps {
   open: boolean;
@@ -71,6 +74,7 @@ function RoleForm({
   readOnly: boolean;
   onDone: () => void;
 }) {
+  const t = useT();
   const catalog = usePermissionCatalog();
   const create = useCreateRole();
   const update = useUpdateRole();
@@ -119,13 +123,13 @@ function RoleForm({
           id: role.id,
           body: { ...body, description: body.description || undefined },
         });
-        toast.success(`Role “${updated.name}” saved`);
+        toast.success(t('roles.roleSaved', { name: updated.name }));
       } else {
         const created = await create.mutateAsync({
           ...values,
           description: values.description || undefined,
         });
-        toast.success(`Role “${created.name}” created`);
+        toast.success(t('roles.roleCreated', { name: created.name }));
       }
       onDone();
     } catch (error) {
@@ -135,16 +139,18 @@ function RoleForm({
     }
   });
 
-  const title = readOnly ? role?.name : isEdit ? `Edit ${role?.name}` : 'Create a role';
+  const title = readOnly
+    ? role?.name
+    : isEdit
+      ? t('roles.editRole', { name: role?.name ?? '' })
+      : t('roles.createARole');
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex min-h-0 flex-col">
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>
-          {readOnly
-            ? 'System roles are managed by the platform and cannot be edited.'
-            : 'Pick exactly the permissions this role needs. You can change them later.'}
+          {readOnly ? t('roles.systemRolesAreManagedBy') : t('roles.pickExactlyThePermissionsThis')}
         </DialogDescription>
       </DialogHeader>
       <DialogBody className="flex flex-col gap-6 pb-2">
@@ -152,29 +158,31 @@ function RoleForm({
         <div className="grid gap-5 sm:grid-cols-2">
           <FormField
             id="role-name"
-            label="Name"
+            label={t('common.name')}
             error={form.formState.errors.name?.message}
             required
           >
             <Input
               autoFocus={!readOnly}
               readOnly={readOnly}
-              placeholder="Sales lead"
+              placeholder={t('roles.salesLead')}
               {...form.register('name')}
             />
           </FormField>
           <FormField
             id="role-key"
-            label="Key"
+            label={t('common.key')}
             description={
-              isEdit ? 'Keys cannot change after creation.' : 'Lowercase letters, numbers, _ or -.'
+              isEdit
+                ? t('roles.keysCannotChangeAfterCreation')
+                : t('roles.lowercaseLettersNumbersOr')
             }
             error={form.formState.errors.key?.message}
             required
           >
             <Input
               readOnly={isEdit || readOnly}
-              placeholder="sales_lead"
+              placeholder={t('roles.salesLead2')}
               className="font-mono"
               {...form.register('key', { onChange: () => setKeyTouched(true) })}
             />
@@ -182,22 +190,22 @@ function RoleForm({
         </div>
         <FormField
           id="role-description"
-          label="Description"
+          label={t('common.description')}
           error={form.formState.errors.description?.message}
         >
           <Textarea
             rows={2}
             readOnly={readOnly}
-            placeholder="What this role is for"
+            placeholder={t('roles.whatThisRoleIsFor')}
             {...form.register('description')}
           />
         </FormField>
 
         <fieldset className="flex flex-col gap-3" disabled={readOnly}>
           <legend className="flex w-full items-baseline justify-between text-sm font-medium">
-            <span>Permissions</span>
+            <span>{t('common.permissions')}</span>
             <span className="text-xs font-normal text-fg-muted tabular">
-              {selected.length} selected
+              {t('roles.selected', { length: selected.length })}
             </span>
           </legend>
           {form.formState.errors.permissions?.message ? (
@@ -213,13 +221,15 @@ function RoleForm({
             </div>
           ) : catalog.isError ? (
             <Alert tone="danger">
-              The permission catalog could not be loaded. {getErrorMessage(catalog.error)}{' '}
+              {t('roles.thePermissionCatalogCouldNot', {
+                getErrorMessage: getErrorMessage(catalog.error),
+              })}
               <button
                 type="button"
                 className="font-medium underline"
                 onClick={() => void catalog.refetch()}
               >
-                Try again
+                {t('common.tryAgain')}
               </button>
             </Alert>
           ) : (
@@ -237,10 +247,12 @@ function RoleForm({
                         id={groupId}
                         checked={all ? true : some ? 'indeterminate' : false}
                         onCheckedChange={(c) => toggleGroup(keys, c === true)}
-                        aria-label={`Select all ${humanize(group.name)} permissions`}
+                        aria-label={t('roles.selectAllPermissions', {
+                          humanize: enumLabel(t, 'permissionGroup', group.name),
+                        })}
                       />
                       <Label htmlFor={groupId} className="flex-1 text-sm">
-                        {humanize(group.name)}
+                        {enumLabel(t, 'permissionGroup', group.name)}
                       </Label>
                       <span className="text-xs text-fg-subtle tabular">
                         {count}/{keys.length}
@@ -262,7 +274,9 @@ function RoleForm({
                               className="flex flex-col gap-0.5 font-normal leading-snug"
                             >
                               <span className="text-sm">
-                                {perm.description || describePermission(perm.key)}
+                                {hasMessage(`permission.${perm.key}`)
+                                  ? t(`permission.${perm.key}` as MessageKey)
+                                  : perm.description || describePermission(perm.key)}
                               </span>
                               <span className="font-mono text-2xs text-fg-subtle">{perm.key}</span>
                             </Label>
@@ -279,11 +293,11 @@ function RoleForm({
       </DialogBody>
       <DialogFooter>
         <Button variant="secondary" onClick={onDone}>
-          {readOnly ? 'Close' : 'Cancel'}
+          {readOnly ? t('common.close') : t('common.cancel')}
         </Button>
         {readOnly ? null : (
           <Button type="submit" loading={form.formState.isSubmitting} disabled={catalog.isPending}>
-            {isEdit ? 'Save changes' : 'Create role'}
+            {isEdit ? t('common.saveChanges') : t('roles.createRole')}
           </Button>
         )}
       </DialogFooter>

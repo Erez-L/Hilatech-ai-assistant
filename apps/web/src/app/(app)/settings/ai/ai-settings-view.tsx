@@ -9,15 +9,17 @@ import { PromptsCard } from './prompts-card';
 import { ProvidersCard } from './providers-card';
 import { ToolsCard } from './tools-card';
 import { UsageCard } from './usage-card';
+import { useT } from '@/i18n/provider';
 
 export function AiSettingsView() {
+  const t = useT();
   const canSeeTools = useCan(Permission.AGENTS_READ);
   return (
     <PermissionGate anyOf={[Permission.AI_CONFIG_READ]}>
       <div className="flex flex-col gap-6">
         <PageHeader
-          title="Settings"
-          description="Connect an AI provider, watch usage and manage the building blocks of your agents."
+          title={t('settings.settings')}
+          description={t('settings.connectAnAiProviderWatch')}
         >
           <SettingsTabs />
         </PageHeader>

@@ -9,8 +9,10 @@ import { Alert, Button, Spinner } from '@hilatech/ui';
 import { authApi, getErrorMessage } from '@/lib/api';
 import { useSession } from '@/stores/session';
 import { AuthCard } from '@/components/auth/auth-card';
+import { useT } from '@/i18n/provider';
 
 export function VerifyEmail() {
+  const t = useT();
   const token = useSearchParams().get('token') ?? '';
   const mutation = useMutation({
     mutationFn: () => authApi.verifyEmail({ token }),
@@ -31,11 +33,11 @@ export function VerifyEmail() {
   if (!token || token.length < 16) {
     return (
       <AuthCard
-        title="This link isn’t complete"
-        description="Open the verification link from your email again."
+        title={t('auth.thisLinkIsnTComplete')}
+        description={t('auth.openTheVerificationLinkFrom')}
       >
         <Button asChild variant="secondary">
-          <Link href="/login">Go to sign in</Link>
+          <Link href="/login">{t('auth.goToSignIn')}</Link>
         </Button>
       </AuthCard>
     );
@@ -43,12 +45,15 @@ export function VerifyEmail() {
 
   if (mutation.isSuccess) {
     return (
-      <AuthCard title="Email verified" description="Thanks — your address is confirmed.">
+      <AuthCard
+        title={t('auth.emailVerified')}
+        description={t('auth.thanksYourAddressIsConfirmed')}
+      >
         <div className="flex flex-col items-start gap-4">
           <CheckCircle2 className="size-8 text-success" aria-hidden />
           <Button asChild>
             <Link href={signedIn ? '/dashboard' : '/login'}>
-              {signedIn ? 'Go to dashboard' : 'Sign in'}
+              {signedIn ? t('common.goToDashboard') : t('common.signIn')}
             </Link>
           </Button>
         </div>
@@ -58,10 +63,7 @@ export function VerifyEmail() {
 
   if (mutation.isError) {
     return (
-      <AuthCard
-        title="We couldn’t verify this link"
-        description="It may have expired or already been used."
-      >
+      <AuthCard title={t('auth.weCouldnTVerifyThis')} description={t('auth.itMayHaveExpiredOr3')}>
         <div className="flex flex-col gap-4">
           <Alert tone="danger">{getErrorMessage(mutation.error)}</Alert>
           <div className="flex gap-2">
@@ -70,10 +72,10 @@ export function VerifyEmail() {
               onClick={() => mutation.mutate()}
               loading={mutation.isPending}
             >
-              Try again
+              {t('common.tryAgain')}
             </Button>
             <Button asChild variant="ghost">
-              <Link href="/login">Go to sign in</Link>
+              <Link href="/login">{t('auth.goToSignIn')}</Link>
             </Button>
           </div>
         </div>
@@ -82,10 +84,10 @@ export function VerifyEmail() {
   }
 
   return (
-    <AuthCard title="Verifying your email" description="This only takes a moment.">
+    <AuthCard title={t('auth.verifyingYourEmail')} description={t('auth.thisOnlyTakesAMoment')}>
       <div className="flex items-center gap-3 text-sm text-fg-muted">
-        <Spinner size="sm" label="Verifying" />
-        Confirming your address…
+        <Spinner size="sm" label={t('auth.verifying')} />
+        {t('auth.confirmingYourAddress')}
       </div>
     </AuthCard>
   );

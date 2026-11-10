@@ -8,31 +8,38 @@ import type {
   UpdateBudgetRequest,
 } from '@hilatech/contracts';
 import { ErrorCode } from '@hilatech/contracts';
-import { formatBytesFromMb, formatCompact, formatCurrency } from '@hilatech/ui';
 import { isApiError } from '@/lib/api/client';
+import { msg, type Msg } from '@/i18n/msg';
+import type { T } from '@/i18n/provider';
+import type { Formatter } from '@/i18n/format';
 
 // ---------------------------------------------------------------------------
 // Entitlements
 // ---------------------------------------------------------------------------
 
-export function formatEntitlementValue(unit: EntitlementUsage['unit'], value: number): string {
-  if (unit === 'mb') return formatBytesFromMb(value);
-  return formatCompact(value);
+export function formatEntitlementValue(
+  unit: EntitlementUsage['unit'],
+  value: number,
+  fmt: Pick<Formatter, 'bytesFromMb' | 'compact'>,
+): string {
+  if (unit === 'mb') return fmt.bytesFromMb(value);
+  return fmt.compact(value);
 }
 
-export const ENTITLEMENT_STATE_LABEL: Record<EntitlementState, string> = {
-  ok: 'OK',
-  warning: 'Warning',
-  exceeded: 'Limit reached',
+export const ENTITLEMENT_STATE_LABEL: Record<EntitlementState, Msg> = {
+  ok: msg('billing.entitlementState.ok'),
+  warning: msg('billing.entitlementState.warning'),
+  exceeded: msg('billing.entitlementState.exceeded'),
 };
 
 /** Message shown next to a meter whose state is not ok (the state is never conveyed by colour alone). */
 export function entitlementStateNote(
   e: Pick<EntitlementUsage, 'state' | 'enforced'>,
+  t: T,
 ): string | null {
   if (e.state === 'ok') return null;
-  if (e.state === 'warning') return 'Approaching the limit';
-  return e.enforced ? 'Limit reached: new items are refused' : 'Over the limit (reported only)';
+  if (e.state === 'warning') return t('billing.approachingTheLimit');
+  return e.enforced ? t('billing.limitReachedRefused') : t('billing.overLimitReportedOnly');
 }
 
 // ---------------------------------------------------------------------------
@@ -41,23 +48,42 @@ export function entitlementStateNote(
 
 export const PLAN_LIMIT_ROWS: {
   key: keyof PlanLimits;
-  label: string;
-  format: (n: number) => string;
+  label: Msg;
+  unit: 'count' | 'mb';
 }[] = [
-  { key: 'seats', label: 'Seats', format: formatCompact },
-  { key: 'aiTokensPerMonth', label: 'AI tokens / month', format: formatCompact },
-  { key: 'agents', label: 'Agents', format: formatCompact },
-  { key: 'knowledgeDocuments', label: 'Knowledge documents', format: formatCompact },
-  { key: 'storageMb', label: 'Storage', format: formatBytesFromMb },
-  { key: 'automations', label: 'Automations', format: formatCompact },
+  { key: 'seats', label: msg('billing.limit.seats'), unit: 'count' },
+  { key: 'aiTokensPerMonth', label: msg('billing.limit.aiTokensPerMonth'), unit: 'count' },
+  { key: 'agents', label: msg('billing.limit.agents'), unit: 'count' },
+  {
+    key: 'knowledgeDocuments',
+    label: msg('billing.limit.knowledgeDocuments'),
+    unit: 'count',
+  },
+  { key: 'storageMb', label: msg('billing.limit.storageMb'), unit: 'mb' },
+  { key: 'automations', label: msg('billing.limit.automations'), unit: 'count' },
 ];
 
+export function formatLimit(
+  row: { unit: 'count' | 'mb' },
+  value: number,
+  fmt: Pick<Formatter, 'bytesFromMb' | 'compact'>,
+): string {
+  return row.unit === 'mb' ? fmt.bytesFromMb(value) : fmt.compact(value);
+}
+
 /** "+400K AI tokens / month" for a limit delta, or null for unknown keys / zero deltas. */
-export function describeLimitDelta(key: string, delta: number): string | null {
+export function describeLimitDelta(
+  key: string,
+  delta: number,
+  t: T,
+  fmt: Pick<Formatter, 'bytesFromMb' | 'compact'>,
+): string | null {
   const row = PLAN_LIMIT_ROWS.find((r) => r.key === key);
   if (!row || !Number.isFinite(delta) || delta === 0) return null;
   const sign = delta > 0 ? '+' : '−';
-  return `${sign}${row.format(Math.abs(delta))} ${row.label.toLowerCase()}`;
+  const amount =
+    row.unit === 'mb' ? fmt.bytesFromMb(Math.abs(delta)) : fmt.compact(Math.abs(delta));
+  return `${sign}${amount} ${t(row.label).toLowerCase()}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -92,38 +118,41 @@ export function budgetToFormValues(status: BudgetStatus): BudgetFormValues {
  */
 export function parseBudgetForm(
   values: BudgetFormValues,
+  t: T,
 ): { ok: true; body: UpdateBudgetRequest } | { ok: false; errors: BudgetFormErrors } {
   const errors: BudgetFormErrors = {};
 
   const tokenRaw = values.monthlyTokenBudget.trim().replace(/[,_\s]/g, '');
   let tokens: number | null = null;
   if (tokenRaw !== '') {
-    if (!/^\d+$/.test(tokenRaw)) errors.monthlyTokenBudget = 'Enter a whole number of tokens';
+    if (!/^\d+$/.test(tokenRaw)) errors.monthlyTokenBudget = t('billing.enterAWholeNumberOf');
     else {
       tokens = Number(tokenRaw);
-      if (tokens < 1) errors.monthlyTokenBudget = 'Must be at least 1 token';
-      else if (tokens > MAX_TOKEN_BUDGET) errors.monthlyTokenBudget = 'That is above the maximum';
+      if (tokens < 1) errors.monthlyTokenBudget = t('billing.mustBeAtLeast1');
+      else if (tokens > MAX_TOKEN_BUDGET)
+        errors.monthlyTokenBudget = t('billing.thatIsAboveTheMaximum');
     }
   }
 
   const costRaw = values.monthlyCostBudgetUsd.trim();
   let cost: number | null = null;
   if (costRaw !== '') {
-    if (!/^\d+(\.\d+)?$/.test(costRaw)) errors.monthlyCostBudgetUsd = 'Enter an amount in USD';
+    if (!/^\d+(\.\d+)?$/.test(costRaw))
+      errors.monthlyCostBudgetUsd = t('billing.enterAnAmountInUsd');
     else {
       cost = Number(costRaw);
-      if (cost <= 0) errors.monthlyCostBudgetUsd = 'Must be greater than 0';
+      if (cost <= 0) errors.monthlyCostBudgetUsd = t('billing.mustBeGreaterThan0');
       else if (cost > MAX_COST_BUDGET_USD)
-        errors.monthlyCostBudgetUsd = 'That is above the maximum';
+        errors.monthlyCostBudgetUsd = t('billing.thatIsAboveTheMaximum');
     }
   }
 
   const warnRaw = values.warnThresholdPct.trim();
   let warn = 0;
-  if (!/^\d+$/.test(warnRaw)) errors.warnThresholdPct = 'Enter a whole percentage from 1 to 100';
+  if (!/^\d+$/.test(warnRaw)) errors.warnThresholdPct = t('billing.enterAWholePercentageFrom');
   else {
     warn = Number(warnRaw);
-    if (warn < 1 || warn > 100) errors.warnThresholdPct = 'Enter a percentage from 1 to 100';
+    if (warn < 1 || warn > 100) errors.warnThresholdPct = t('billing.enterAPercentageFrom1');
   }
 
   if (
@@ -133,7 +162,7 @@ export function parseBudgetForm(
     !errors.monthlyTokenBudget &&
     !errors.monthlyCostBudgetUsd
   ) {
-    errors.hardStopEnabled = 'Set a token or cost budget before turning on the hard stop';
+    errors.hardStopEnabled = t('billing.setATokenOrCost');
   }
 
   if (Object.keys(errors).length > 0) return { ok: false, errors };
@@ -152,21 +181,28 @@ export function parseBudgetForm(
 // Alerts
 // ---------------------------------------------------------------------------
 
-export const ALERT_SCOPE_LABEL: Record<BudgetAlertScope, string> = {
-  budget_tokens: 'AI token budget',
-  budget_cost: 'AI cost budget',
-  plan_tokens: 'Plan AI token allowance',
+export const ALERT_SCOPE_LABEL: Record<BudgetAlertScope, Msg> = {
+  budget_tokens: msg('billing.alertScope.budget_tokens'),
+  budget_cost: msg('billing.alertScope.budget_cost'),
+  plan_tokens: msg('billing.alertScope.plan_tokens'),
 };
 
-export function formatAlertAmount(scope: BudgetAlertScope, n: number): string {
-  return scope === 'budget_cost' ? formatCurrency(n, 'USD') : formatCompact(n);
+export function formatAlertAmount(
+  scope: BudgetAlertScope,
+  n: number,
+  fmt: Pick<Formatter, 'currency' | 'compact'>,
+): string {
+  return scope === 'budget_cost' ? fmt.currency(n, 'USD') : fmt.compact(n);
 }
 
-export function describeAlert(a: Pick<BudgetAlert, 'scope' | 'kind' | 'thresholdPct'>): string {
-  const what = ALERT_SCOPE_LABEL[a.scope];
+export function describeAlert(
+  a: Pick<BudgetAlert, 'scope' | 'kind' | 'thresholdPct'>,
+  t: T,
+): string {
+  const what = t(ALERT_SCOPE_LABEL[a.scope]);
   return a.kind === 'exceeded'
-    ? `${what} used up`
-    : `${what} reached the ${a.thresholdPct}% warning threshold`;
+    ? t('billing.alertUsedUp', { what })
+    : t('billing.alertReachedThreshold', { what, pct: a.thresholdPct });
 }
 
 // ---------------------------------------------------------------------------
@@ -207,16 +243,24 @@ export function readBudgetDetails(details: unknown): BudgetExceededDetails {
 }
 
 /** Plain-language summary of why the request was refused. */
-export function describeBudgetExceeded(details: BudgetExceededDetails): string {
-  const what = details.scope === 'budget_cost' ? 'AI cost budget' : 'AI token budget';
+export function describeBudgetExceeded(
+  details: BudgetExceededDetails,
+  t: T,
+  fmt: Pick<Formatter, 'currency' | 'compact'>,
+): string {
+  const what =
+    details.scope === 'budget_cost' ? t('billing.aiCostBudget') : t('billing.aiTokenBudget');
   const scope = details.scope ?? 'budget_tokens';
   const figures =
     details.used !== undefined && details.budget != null
-      ? ` (${formatAlertAmount(scope, details.used)} of ${formatAlertAmount(scope, details.budget)} used)`
+      ? t('billing.budgetFigures', {
+          used: formatAlertAmount(scope, details.used, fmt),
+          budget: formatAlertAmount(scope, details.budget, fmt),
+        })
       : '';
   return details.reason === 'would_exceed'
-    ? `This request would go over your organization’s monthly ${what}${figures}.`
-    : `Your organization’s monthly ${what} is used up${figures}.`;
+    ? t('billing.requestWouldExceed', { what, figures })
+    : t('billing.budgetUsedUp', { what, figures });
 }
 
 // ---------------------------------------------------------------------------
@@ -226,9 +270,12 @@ export function describeBudgetExceeded(details: BudgetExceededDetails): string {
 /** `system` notifications created by the budget service carry `data.kind = "budget_alert"`. */
 export function budgetAlertInfo(n: {
   data?: Record<string, unknown> | null;
-}): { level: 'warning' | 'exceeded'; label: string } | null {
+}): { level: 'warning' | 'exceeded'; label: Msg } | null {
   const data = n.data;
   if (!data || data.kind !== 'budget_alert') return null;
   const level = data.level === 'exceeded' ? 'exceeded' : 'warning';
-  return { level, label: level === 'exceeded' ? 'Budget used up' : 'Budget warning' };
+  return {
+    level,
+    label: level === 'exceeded' ? msg('billing.budgetUsedUpShort') : msg('billing.budgetWarning'),
+  };
 }

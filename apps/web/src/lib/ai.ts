@@ -1,5 +1,7 @@
 import type { AgentExecutionStatus, AgentStepType, ToolRiskLevel } from '@hilatech/contracts';
 import type { StatusTone } from '@hilatech/ui';
+import type { Formatter } from '@/i18n/format';
+import { msg, type Msg } from '@/i18n/msg';
 
 export const EXECUTION_STATUSES: AgentExecutionStatus[] = [
   'queued',
@@ -10,13 +12,13 @@ export const EXECUTION_STATUSES: AgentExecutionStatus[] = [
   'cancelled',
 ];
 
-export const EXECUTION_STATUS_LABELS: Record<AgentExecutionStatus, string> = {
-  queued: 'Queued',
-  running: 'Running',
-  succeeded: 'Succeeded',
-  failed: 'Failed',
-  timed_out: 'Timed out',
-  cancelled: 'Cancelled',
+export const EXECUTION_STATUS_LABELS: Record<AgentExecutionStatus, Msg> = {
+  queued: msg('ai.executionStatus.queued'),
+  running: msg('ai.executionStatus.running'),
+  succeeded: msg('ai.executionStatus.succeeded'),
+  failed: msg('ai.executionStatus.failed'),
+  timed_out: msg('ai.executionStatus.timed_out'),
+  cancelled: msg('ai.executionStatus.cancelled'),
 };
 
 export const EXECUTION_STATUS_TONES: Record<AgentExecutionStatus, StatusTone> = {
@@ -28,47 +30,38 @@ export const EXECUTION_STATUS_TONES: Record<AgentExecutionStatus, StatusTone> = 
   cancelled: 'neutral',
 };
 
-export const STEP_TYPE_LABELS: Record<AgentStepType, string> = {
-  llm_call: 'Model call',
-  tool_call: 'Tool call',
-  delegation: 'Delegation',
-  final: 'Final answer',
-  error: 'Error',
+export const STEP_TYPE_LABELS: Record<AgentStepType, Msg> = {
+  llm_call: msg('ai.stepType.llm_call'),
+  tool_call: msg('ai.stepType.tool_call'),
+  delegation: msg('ai.stepType.delegation'),
+  final: msg('ai.stepType.final'),
+  error: msg('ai.stepType.error'),
 };
 
-export const RISK_LABELS: Record<ToolRiskLevel, string> = {
-  read: 'Read',
-  write: 'Write',
-  dangerous: 'Dangerous',
+export const RISK_LABELS: Record<ToolRiskLevel, Msg> = {
+  read: msg('ai.risk.read'),
+  write: msg('ai.risk.write'),
+  dangerous: msg('ai.risk.dangerous'),
 };
 
-export const TRIGGER_LABELS: Record<string, string> = {
-  manual: 'Manual',
-  api: 'API',
-  automation: 'Automation',
-  agent: 'Delegated by agent',
-  schedule: 'Schedule',
+export const TRIGGER_LABELS: Record<string, Msg> = {
+  manual: msg('ai.trigger.manual'),
+  api: msg('ai.trigger.api'),
+  automation: msg('ai.trigger.automation'),
+  agent: msg('ai.trigger.agent'),
+  schedule: msg('ai.trigger.schedule'),
 };
 
-/** 850 ms · 4.2 s · 2 min 5 s. Null → “—”. */
-export function formatDuration(ms: number | null | undefined): string {
+/** 850 ms · 4.2 sec · 2.1 min (locale aware). Null → “—”. */
+export function formatDuration(ms: number | null | undefined, fmt: Formatter): string {
   if (ms == null) return '—';
-  if (ms < 1000) return `${ms} ms`;
-  if (ms < 60_000) return `${(ms / 1000).toFixed(ms < 10_000 ? 1 : 0)} s`;
-  const minutes = Math.floor(ms / 60_000);
-  const seconds = Math.round((ms % 60_000) / 1000);
-  return `${minutes} min ${seconds} s`;
+  return fmt.duration(ms);
 }
 
 /** Estimated cost in USD, or “—” when the API reports no pricing for the model(s). */
-export function formatUsd(value: number | null | undefined): string {
+export function formatUsd(value: number | null | undefined, fmt: Formatter): string {
   if (value == null) return '—';
-  return new Intl.NumberFormat('en', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: value < 1 ? 4 : 2,
-  }).format(value);
+  return fmt.preciseCurrency(value, 'USD');
 }
 
 /** Extracts `{{variable}}` names from a prompt template, in order of first appearance. */

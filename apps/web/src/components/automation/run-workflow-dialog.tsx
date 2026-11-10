@@ -20,6 +20,8 @@ import {
 } from '@hilatech/ui';
 import { getErrorMessage } from '@/lib/api';
 import { useRunWorkflow } from '@/hooks/automation';
+import { rich } from '@/i18n/rich';
+import { useT } from '@/i18n/provider';
 
 /** Parses the manual-run input; it must be a JSON object (empty means `{}`). */
 export function parseRunInput(
@@ -63,6 +65,7 @@ function RunForm({
   workflow: Pick<Workflow, 'id' | 'name'>;
   onClose: () => void;
 }) {
+  const t = useT();
   const router = useRouter();
   const run = useRunWorkflow();
   const [raw, setRaw] = React.useState('{}');
@@ -80,7 +83,7 @@ function RunForm({
     setFieldError(null);
     try {
       const execution = await run.mutateAsync({ id: workflow.id, body: { input: parsed.input } });
-      toast.success('Run queued');
+      toast.success(t('automation.runQueued'));
       onClose();
       router.push(`/automations/executions/${execution.id}`);
     } catch (error) {
@@ -91,14 +94,20 @@ function RunForm({
   return (
     <form onSubmit={submit} noValidate className="flex min-h-0 flex-col">
       <DialogHeader>
-        <DialogTitle>Run {workflow.name}</DialogTitle>
+        <DialogTitle>{t('common.run2', { name: workflow.name })}</DialogTitle>
         <DialogDescription>
-          Starts the workflow now. The input is available to steps as {'{{ trigger.payload… }}'}.
+          {rich(t, 'automation.runWorkflowHint', {
+            code: <code className="font-mono text-xs">{'{{ trigger.payload… }}'}</code>, // i18n-ignore: template syntax
+          })}
         </DialogDescription>
       </DialogHeader>
       <DialogBody className="flex flex-col gap-4 pb-2">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
-        <FormField id="run-workflow-input" label="Input (JSON object)" error={fieldError}>
+        <FormField
+          id="run-workflow-input"
+          label={t('automation.inputJsonObject')}
+          error={fieldError}
+        >
           <Textarea
             rows={8}
             className="font-mono text-xs"
@@ -110,10 +119,10 @@ function RunForm({
       </DialogBody>
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" loading={run.isPending} leadingIcon={<Play aria-hidden />}>
-          Run workflow
+          {t('automation.runWorkflow')}
         </Button>
       </DialogFooter>
     </form>

@@ -3,7 +3,6 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { Play, Plus, Sparkles, Trash2, Workflow as WorkflowIcon } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import { Permission, type Workflow } from '@hilatech/contracts';
 import {
   Badge,
@@ -32,10 +31,12 @@ import { useDeleteWorkflow, useSetWorkflowEnabled, useWorkflows } from '@/hooks/
 import { useCan } from '@/hooks/use-can';
 import { RunWorkflowDialog } from '@/components/automation/run-workflow-dialog';
 import { STEP_META, triggerSummary } from '@/lib/automation';
+import { useT, useFormat } from '@/i18n/provider';
 
 const PAGE_SIZE = 20;
 
 export function WorkflowsView() {
+  const t = useT();
   const canManage = useCan(Permission.AUTOMATIONS_MANAGE);
   const [page, setPage] = React.useState(1);
   const [search, setSearch] = React.useState('');
@@ -62,32 +63,32 @@ export function WorkflowsView() {
               setSearch(v);
               setPage(1);
             }}
-            placeholder="Search workflows"
-            aria-label="Search workflows"
+            placeholder={t('automations.searchWorkflows')}
+            aria-label={t('automations.searchWorkflows')}
             className="w-full sm:max-w-xs"
           />
           <div className="w-40">
             <NativeSelect
-              aria-label="Filter by state"
+              aria-label={t('automations.filterByState')}
               value={enabled}
               onChange={(e) => {
                 setEnabled(e.target.value as '' | 'true' | 'false');
                 setPage(1);
               }}
             >
-              <option value="">All workflows</option>
-              <option value="true">Enabled</option>
-              <option value="false">Disabled</option>
+              <option value="">{t('common.allWorkflows')}</option>
+              <option value="true">{t('common.enabled')}</option>
+              <option value="false">{t('common.disabled')}</option>
             </NativeSelect>
           </div>
         </div>
         {canManage ? (
           <div className="flex gap-2">
             <Button asChild variant="secondary" leadingIcon={<Sparkles aria-hidden />}>
-              <Link href="/automations/templates">From a template</Link>
+              <Link href="/automations/templates">{t('automations.fromATemplate')}</Link>
             </Button>
             <Button asChild leadingIcon={<Plus aria-hidden />}>
-              <Link href="/automations/new">New workflow</Link>
+              <Link href="/automations/new">{t('automations.newWorkflow')}</Link>
             </Button>
           </div>
         ) : null}
@@ -95,16 +96,16 @@ export function WorkflowsView() {
 
       <Card>
         <CardContent className="p-0">
-          <Table aria-label="Workflows">
+          <Table aria-label={t('automations.workflows')}>
             <TableHeader>
               <TableRow>
-                <TableHead>Workflow</TableHead>
-                <TableHead>Trigger</TableHead>
-                <TableHead>Runs</TableHead>
-                <TableHead>Last run</TableHead>
-                <TableHead>Enabled</TableHead>
-                <TableHead className="text-right">
-                  <span className="sr-only">Actions</span>
+                <TableHead>{t('common.workflow')}</TableHead>
+                <TableHead>{t('common.trigger')}</TableHead>
+                <TableHead>{t('common.runs')}</TableHead>
+                <TableHead>{t('common.lastRun')}</TableHead>
+                <TableHead>{t('common.enabled')}</TableHead>
+                <TableHead className="text-end">
+                  <span className="sr-only">{t('common.actions')}</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -116,7 +117,7 @@ export function WorkflowsView() {
                   <div className="flex flex-col items-center gap-2">
                     <span>{getErrorMessage(workflows.error)}</span>
                     <Button variant="secondary" size="sm" onClick={() => void workflows.refetch()}>
-                      Try again
+                      {t('common.tryAgain')}
                     </Button>
                   </div>
                 </TableEmptyRow>
@@ -125,16 +126,20 @@ export function WorkflowsView() {
                   <EmptyState
                     compact
                     icon={<WorkflowIcon />}
-                    title={filtered ? 'No workflows match' : 'No workflows yet'}
+                    title={
+                      filtered ? t('automations.noWorkflowsMatch') : t('automations.noWorkflowsYet')
+                    }
                     description={
                       filtered
-                        ? 'Try a different search or filter.'
-                        : 'Start from a template or build a workflow from scratch.'
+                        ? t('automations.tryADifferentSearchOr')
+                        : t('automations.startFromATemplateOr')
                     }
                     action={
                       !filtered && canManage ? (
                         <Button asChild size="sm" leadingIcon={<Sparkles aria-hidden />}>
-                          <Link href="/automations/templates">Browse templates</Link>
+                          <Link href="/automations/templates">
+                            {t('automations.browseTemplates')}
+                          </Link>
                         </Button>
                       ) : undefined
                     }
@@ -177,20 +182,18 @@ export function WorkflowsView() {
       <ConfirmDialog
         open={!!deleting}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title="Delete this workflow?"
+        title={t('automations.deleteThisWorkflow')}
         description={
-          deleting
-            ? `“${deleting.name}” will be removed. Its past executions stay in the history.`
-            : undefined
+          deleting ? t('automations.willBeRemovedItsPast', { name: deleting.name }) : undefined
         }
-        confirmLabel="Delete workflow"
+        confirmLabel={t('automations.deleteWorkflow')}
         tone="danger"
         loading={remove.isPending}
         onConfirm={async () => {
           if (!deleting) return;
           try {
             await remove.mutateAsync(deleting.id);
-            toast.success(`Workflow “${deleting.name}” deleted`);
+            toast.success(t('automations.workflowDeleted', { name: deleting.name }));
             setDeleting(null);
           } catch (e) {
             toast.error(getErrorMessage(e));
@@ -212,12 +215,17 @@ function WorkflowRow({
   onRun: () => void;
   onDelete: () => void;
 }) {
+  const fmt = useFormat();
+  const t = useT();
   const setEnabled = useSetWorkflowEnabled();
   const toggle = (next: boolean) =>
     setEnabled.mutate(
       { id: workflow.id, enabled: next },
       {
-        onSuccess: () => toast.success(`${workflow.name} ${next ? 'enabled' : 'disabled'}`),
+        onSuccess: () =>
+          toast.success(
+            t(next ? 'agents.agentEnabled' : 'agents.agentDisabled', { name: workflow.name }),
+          ),
         onError: (e) => toast.error(getErrorMessage(e)),
       },
     );
@@ -232,27 +240,30 @@ function WorkflowRow({
             {workflow.name}
           </Link>
           <span className="line-clamp-1 text-xs text-fg-muted">
-            {workflow.steps.length} {workflow.steps.length === 1 ? 'step' : 'steps'}
+            {workflow.steps.length}{' '}
+            {workflow.steps.length === 1 ? t('automations.step') : t('automations.steps')}
             {workflow.steps[0]
-              ? ` · starts with ${STEP_META[workflow.steps[0].type].label.toLowerCase()}`
+              ? t('automations.startsWith', {
+                  name: t(STEP_META[workflow.steps[0].type].label).toLowerCase(),
+                })
               : ''}
           </span>
         </div>
       </TableCell>
       <TableCell>
-        <Badge variant="outline">{triggerSummary(workflow.trigger)}</Badge>
+        <Badge variant="outline">{triggerSummary(workflow.trigger, t)}</Badge>
       </TableCell>
       <TableCell className="tabular">{workflow.runCount}</TableCell>
       <TableCell className="text-fg-muted">
-        {workflow.lastRunAt
-          ? formatDistanceToNow(new Date(workflow.lastRunAt), { addSuffix: true })
-          : 'Never'}
+        {workflow.lastRunAt ? fmt.relative(new Date(workflow.lastRunAt)) : t('automations.never')}
       </TableCell>
       <TableCell>
         <Switch
           checked={workflow.isEnabled}
           disabled={!canManage || setEnabled.isPending}
-          aria-label={`${workflow.isEnabled ? 'Disable' : 'Enable'} ${workflow.name}`}
+          aria-label={t(workflow.isEnabled ? 'common.disableName' : 'common.enableName', {
+            name: workflow.name,
+          })}
           onCheckedChange={toggle}
         />
       </TableCell>
@@ -265,13 +276,17 @@ function WorkflowRow({
                 variant="secondary"
                 leadingIcon={<Play aria-hidden />}
                 disabled={!workflow.isEnabled}
-                aria-label={`Run ${workflow.name}`}
-                title={workflow.isEnabled ? undefined : 'Enable the workflow to run it'}
+                aria-label={t('common.run2', { name: workflow.name })}
+                title={workflow.isEnabled ? undefined : t('common.enableTheWorkflowToRun')}
                 onClick={onRun}
               >
-                Run
+                {t('common.run')}
               </Button>
-              <IconButton size="sm" label={`Delete ${workflow.name}`} onClick={onDelete}>
+              <IconButton
+                size="sm"
+                label={t('common.delete2', { name: workflow.name })}
+                onClick={onDelete}
+              >
                 <Trash2 aria-hidden />
               </IconButton>
             </>

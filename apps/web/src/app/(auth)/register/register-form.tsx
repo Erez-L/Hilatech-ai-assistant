@@ -14,8 +14,10 @@ import { safeNextPath } from '@/lib/navigation';
 import { useSession } from '@/stores/session';
 import { AuthCard } from '@/components/auth/auth-card';
 import { PasswordInput } from '@/components/auth/password-input';
+import { useT } from '@/i18n/provider';
 
 export function RegisterForm() {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get('invite');
@@ -63,26 +65,30 @@ export function RegisterForm() {
       ) {
         setFormError(
           isApiError(error) && error.code === 'CONFLICT'
-            ? 'An account with this email already exists. Sign in instead.'
+            ? t('auth.accountAlreadyExists')
             : getErrorMessage(error),
         );
       }
     }
   });
 
-  const passwordHint = 'At least 10 characters with upper and lower case letters and a number.';
+  const passwordHint = t('auth.passwordHint');
 
   return (
     <AuthCard
-      title={invitationUsable ? `Join ${preview.data?.organizationName}` : 'Create your account'}
+      title={
+        invitationUsable
+          ? t('auth.join', { organizationName: preview.data?.organizationName })
+          : t('auth.createYourAccount')
+      }
       description={
         invitationUsable
-          ? `You’ve been invited as ${preview.data?.roleName}. Set up your account to accept.`
-          : 'Start with your own workspace. You can invite your team afterwards.'
+          ? t('auth.youVeBeenInvitedAs2', { roleName: preview.data?.roleName })
+          : t('auth.startWithYourOwnWorkspace')
       }
       footer={
         <>
-          Already have an account?{' '}
+          {t('auth.alreadyHaveAnAccount')}{' '}
           <Link
             href={
               inviteToken
@@ -91,7 +97,7 @@ export function RegisterForm() {
             }
             className="font-medium text-accent hover:underline"
           >
-            Sign in
+            {t('common.signIn')}
           </Link>
         </>
       }
@@ -103,14 +109,17 @@ export function RegisterForm() {
         </div>
       ) : null}
       {inviteToken && preview.isError ? (
-        <Alert tone="warning" className="mb-5" title="This invitation link isn’t valid">
-          It may have expired or been revoked. You can still create an account and ask for a new
-          invitation.
+        <Alert tone="warning" className="mb-5" title={t('auth.thisInvitationLinkIsnT2')}>
+          {t('auth.itMayHaveExpiredOr2')}
         </Alert>
       ) : null}
       {inviteToken && preview.data && !invitationUsable ? (
-        <Alert tone="warning" className="mb-5" title={`This invitation is ${preview.data.status}`}>
-          Ask the person who invited you to send a new one.
+        <Alert
+          tone="warning"
+          className="mb-5"
+          title={t('auth.thisInvitationIs', { status: preview.data.status })}
+        >
+          {t('auth.askThePersonWhoInvited')}
         </Alert>
       ) : null}
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
@@ -118,7 +127,7 @@ export function RegisterForm() {
         <div className="grid gap-5 sm:grid-cols-2">
           <FormField
             id="firstName"
-            label="First name"
+            label={t('common.firstName')}
             error={form.formState.errors.firstName?.message}
             required
           >
@@ -126,7 +135,7 @@ export function RegisterForm() {
           </FormField>
           <FormField
             id="lastName"
-            label="Last name"
+            label={t('common.lastName')}
             error={form.formState.errors.lastName?.message}
             required
           >
@@ -135,9 +144,9 @@ export function RegisterForm() {
         </div>
         <FormField
           id="email"
-          label="Work email"
+          label={t('auth.workEmail')}
           error={form.formState.errors.email?.message}
-          description={invitationUsable ? 'The invitation was sent to this address.' : undefined}
+          description={invitationUsable ? t('auth.theInvitationWasSentTo') : undefined}
           required
         >
           <Input
@@ -150,7 +159,7 @@ export function RegisterForm() {
         </FormField>
         <FormField
           id="password"
-          label="Password"
+          label={t('common.password')}
           description={passwordHint}
           error={form.formState.errors.password?.message}
           required
@@ -158,11 +167,9 @@ export function RegisterForm() {
           <PasswordInput autoComplete="new-password" {...form.register('password')} />
         </FormField>
         <Button type="submit" size="lg" loading={form.formState.isSubmitting} className="w-full">
-          {invitationUsable ? 'Create account and join' : 'Create account'}
+          {invitationUsable ? t('auth.createAccountAndJoin') : t('common.createAccount')}
         </Button>
-        <p className="text-center text-xs text-fg-subtle">
-          By continuing you agree to use the platform according to your organization’s policies.
-        </p>
+        <p className="text-center text-xs text-fg-subtle">{t('auth.byContinuingYouAgreeTo')}</p>
       </form>
     </AuthCard>
   );

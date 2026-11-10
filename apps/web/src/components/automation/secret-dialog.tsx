@@ -15,6 +15,7 @@ import {
   Input,
   Label,
 } from '@hilatech/ui';
+import { useT } from '@/i18n/provider';
 
 /**
  * Shows a signing secret exactly once. The caller keeps the secret in state only while this dialog
@@ -34,6 +35,7 @@ export function SecretDialog({
   children?: React.ReactNode;
   onClose: () => void;
 }) {
+  const t = useT();
   const [copied, setCopied] = React.useState(false);
   const [copyError, setCopyError] = React.useState(false);
 
@@ -54,23 +56,22 @@ export function SecretDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            {description ?? 'Copy the secret now and store it somewhere safe.'}
+            {description ?? t('automation.copyTheSecretNowAnd')}
           </DialogDescription>
         </DialogHeader>
         <DialogBody className="flex flex-col gap-4 pb-2">
           <Alert tone="warning">
             <span className="flex items-center gap-1.5">
               <TriangleAlert className="size-4" aria-hidden />
-              This secret is shown only once. After you close this dialog it can’t be displayed
-              again — you can only rotate it.
+              {t('automation.thisSecretIsShownOnly')}
             </span>
           </Alert>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="webhook-secret-value">Signing secret</Label>
+            <Label htmlFor="webhook-secret-value">{t('automation.signingSecret')}</Label>
             <div className="flex gap-2">
               <Input
                 id="webhook-secret-value"
-                aria-label="Signing secret"
+                aria-label={t('automation.signingSecret')}
                 readOnly
                 value={secret}
                 className="font-mono text-xs"
@@ -82,20 +83,20 @@ export function SecretDialog({
                 leadingIcon={copied ? <Check aria-hidden /> : <Copy aria-hidden />}
                 onClick={() => void copy()}
               >
-                {copied ? 'Copied' : 'Copy secret'}
+                {copied ? t('automation.copied') : t('automation.copySecret')}
               </Button>
             </div>
           </div>
           {copyError ? (
             <p role="alert" className="text-xs text-danger">
-              Copying isn’t available here. Select the secret and copy it manually.
+              {t('automation.copyingIsnTAvailableHere2')}
             </p>
           ) : null}
           {children}
         </DialogBody>
         <DialogFooter>
           <Button type="button" onClick={onClose}>
-            I’ve saved the secret
+            {t('automation.iVeSavedTheSecret')}
           </Button>
         </DialogFooter>
       </DialogContent>

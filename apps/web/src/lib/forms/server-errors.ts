@@ -1,4 +1,5 @@
 import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
+import { vm } from '@/i18n/validation';
 import { isApiError } from '@/lib/api/client';
 
 interface IssueLike {
@@ -24,7 +25,7 @@ export function extractIssues(details: unknown): { path: string; message: string
         : typeof issue.path === 'string'
           ? issue.path
           : '';
-      return { path, message: issue.message ?? 'Invalid value' };
+      return { path, message: issue.message ?? vm('validation.invalidValue') };
     })
     .filter((i) => i.message);
 }

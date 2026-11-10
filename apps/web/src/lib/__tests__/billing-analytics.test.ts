@@ -20,6 +20,7 @@ import {
   recordToRows,
 } from '../analytics';
 import { filenameFromDisposition } from '../api/analytics';
+import { tEn as t, fmtEn as fmt } from '@/test/i18n';
 import { mergeSeries } from '@/app/(app)/analytics/report-parts';
 
 const form = (over: Partial<Parameters<typeof parseBudgetForm>[0]> = {}) => ({
@@ -32,7 +33,7 @@ const form = (over: Partial<Parameters<typeof parseBudgetForm>[0]> = {}) => ({
 
 describe('parseBudgetForm', () => {
   it('maps empty budgets to null (clears them) and numbers to numbers', () => {
-    expect(parseBudgetForm(form())).toEqual({
+    expect(parseBudgetForm(form(), t)).toEqual({
       ok: true,
       body: {
         monthlyTokenBudget: null,
@@ -44,6 +45,7 @@ describe('parseBudgetForm', () => {
     expect(
       parseBudgetForm(
         form({ monthlyTokenBudget: '1,500', monthlyCostBudgetUsd: '2.5', hardStopEnabled: true }),
+        t,
       ),
     ).toEqual({
       ok: true,
@@ -59,6 +61,7 @@ describe('parseBudgetForm', () => {
   it('rejects invalid values like the API contract does', () => {
     const r = parseBudgetForm(
       form({ monthlyTokenBudget: '12.5', monthlyCostBudgetUsd: '-1', warnThresholdPct: '101' }),
+      t,
     );
     expect(r.ok).toBe(false);
     if (!r.ok) {
@@ -66,14 +69,14 @@ describe('parseBudgetForm', () => {
       expect(r.errors.monthlyCostBudgetUsd).toBeTruthy();
       expect(r.errors.warnThresholdPct).toMatch(/1 to 100/);
     }
-    const zero = parseBudgetForm(form({ monthlyTokenBudget: '0' }));
+    const zero = parseBudgetForm(form({ monthlyTokenBudget: '0' }), t);
     expect(zero.ok).toBe(false);
-    const warn0 = parseBudgetForm(form({ warnThresholdPct: '0' }));
+    const warn0 = parseBudgetForm(form({ warnThresholdPct: '0' }), t);
     expect(warn0.ok).toBe(false);
   });
 
   it('requires a budget before the hard stop can be turned on', () => {
-    const r = parseBudgetForm(form({ hardStopEnabled: true }));
+    const r = parseBudgetForm(form({ hardStopEnabled: true }), t);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.errors.hardStopEnabled).toMatch(/budget/);
   });
@@ -98,18 +101,20 @@ describe('parseBudgetForm', () => {
 
 describe('billing helpers', () => {
   it('describes limit deltas with units and ignores zero or unknown keys', () => {
-    expect(describeLimitDelta('seats', 3)).toBe('+3 seats');
-    expect(describeLimitDelta('aiTokensPerMonth', 400_000)).toBe('+400K ai tokens / month');
-    expect(describeLimitDelta('storageMb', 2048)).toBe('+2.0 GB storage');
-    expect(describeLimitDelta('seats', 0)).toBeNull();
-    expect(describeLimitDelta('nope', 4)).toBeNull();
+    expect(describeLimitDelta('seats', 3, t, fmt)).toBe('+3 seats');
+    expect(describeLimitDelta('aiTokensPerMonth', 400_000, t, fmt)).toBe('+400K ai tokens / month');
+    expect(describeLimitDelta('storageMb', 2048, t, fmt)).toBe('+2 GB storage');
+    expect(describeLimitDelta('seats', 0, t, fmt)).toBeNull();
+    expect(describeLimitDelta('nope', 4, t, fmt)).toBeNull();
   });
 
   it('words entitlement states without relying on colour', () => {
-    expect(entitlementStateNote({ state: 'ok', enforced: true })).toBeNull();
-    expect(entitlementStateNote({ state: 'warning', enforced: true })).toMatch(/Approaching/);
-    expect(entitlementStateNote({ state: 'exceeded', enforced: true })).toMatch(/refused/);
-    expect(entitlementStateNote({ state: 'exceeded', enforced: false })).toMatch(/reported only/);
+    expect(entitlementStateNote({ state: 'ok', enforced: true }, t)).toBeNull();
+    expect(entitlementStateNote({ state: 'warning', enforced: true }, t)).toMatch(/Approaching/);
+    expect(entitlementStateNote({ state: 'exceeded', enforced: true }, t)).toMatch(/refused/);
+    expect(entitlementStateNote({ state: 'exceeded', enforced: false }, t)).toMatch(
+      /reported only/,
+    );
   });
 
   it('reads 402 details defensively and describes them', () => {
@@ -122,25 +127,27 @@ describe('billing helpers', () => {
       used: 1000,
       budget: 1000,
     });
-    expect(describeBudgetExceeded(d)).toBe(
+    expect(describeBudgetExceeded(d, t, fmt)).toBe(
       'Your organization’s monthly AI token budget is used up (1,000 of 1,000 used).',
     );
     expect(
-      describeBudgetExceeded({ scope: 'budget_cost', reason: 'would_exceed', used: 4, budget: 5 }),
+      describeBudgetExceeded(
+        { scope: 'budget_cost', reason: 'would_exceed', used: 4, budget: 5 },
+        t,
+        fmt,
+      ),
     ).toBe(
       'This request would go over your organization’s monthly AI cost budget ($4 of $5 used).',
     );
-    expect(describeBudgetExceeded({})).toContain('AI token budget is used up');
+    expect(describeBudgetExceeded({}, t, fmt)).toContain('AI token budget is used up');
   });
 
   it('recognises budget_alert notifications', () => {
-    expect(budgetAlertInfo({ data: { kind: 'budget_alert', level: 'exceeded' } })).toEqual({
-      level: 'exceeded',
-      label: 'Budget used up',
-    });
-    expect(budgetAlertInfo({ data: { kind: 'budget_alert', level: 'warning' } })?.label).toBe(
-      'Budget warning',
-    );
+    const exceeded = budgetAlertInfo({ data: { kind: 'budget_alert', level: 'exceeded' } });
+    expect(exceeded?.level).toBe('exceeded');
+    expect(t(exceeded!.label)).toBe('Budget used up');
+    const warning = budgetAlertInfo({ data: { kind: 'budget_alert', level: 'warning' } });
+    expect(t(warning!.label)).toBe('Budget warning');
     expect(budgetAlertInfo({ data: { kind: 'other' } })).toBeNull();
     expect(budgetAlertInfo({ data: {} })).toBeNull();
   });
@@ -153,36 +160,36 @@ describe('analytics helpers', () => {
   });
 
   it('turns inclusive custom dates into a [from, to) range and validates', () => {
-    expect(customRange('2026-11-01', '2026-11-03')).toEqual({
+    expect(customRange('2026-11-01', '2026-11-03', t)).toEqual({
       ok: true,
       from: '2026-11-01T00:00:00.000Z',
       to: '2026-11-04T00:00:00.000Z',
     });
-    expect(customRange('2026-11-05', '2026-11-01')).toMatchObject({ ok: false });
-    expect(customRange('', '2026-11-01')).toMatchObject({ ok: false });
-    expect(customRange('2025-01-01', '2026-11-01')).toMatchObject({
+    expect(customRange('2026-11-05', '2026-11-01', t)).toMatchObject({ ok: false });
+    expect(customRange('', '2026-11-01', t)).toMatchObject({ ok: false });
+    expect(customRange('2025-01-01', '2026-11-01', t)).toMatchObject({
       ok: false,
       error: expect.stringContaining('366'),
     });
-    expect(customRange('2026-01-01', '2026-12-31').ok).toBe(true);
+    expect(customRange('2026-01-01', '2026-12-31', t).ok).toBe(true);
   });
 
   it('formats rates, durations and cost honestly', () => {
-    expect(pct(null)).toBe('—');
-    expect(pct(0.4286)).toBe('42.9%');
-    expect(formatDuration(null)).toBe('—');
-    expect(formatDuration(850)).toBe('850 ms');
-    expect(formatDuration(4200)).toBe('4.2 s');
-    expect(formatDuration(126_000)).toBe('2.1 min');
-    expect(formatUsd(null)).toBe('—');
-    expect(formatUsd(0.0123)).toBe('$0.0123');
-    expect(formatUsd(12.5)).toBe('$12.50');
+    expect(pct(null, fmt)).toBe('—');
+    expect(pct(0.4286, fmt)).toBe('42.9%');
+    expect(formatDuration(null, fmt)).toBe('—');
+    expect(formatDuration(850, fmt)).toBe('850 ms');
+    expect(formatDuration(4200, fmt)).toBe('4.2 sec');
+    expect(formatDuration(126_000, fmt)).toBe('2.1 min');
+    expect(formatUsd(null, fmt)).toBe('—');
+    expect(formatUsd(0.0123, fmt)).toBe('$0.0123');
+    expect(formatUsd(12.5, fmt)).toBe('$12.50');
   });
 
   it('labels buckets by granularity in UTC', () => {
-    expect(bucketLabel('2026-11-09T00:00:00.000Z', 'day')).toBe('Nov 9');
-    expect(bucketLabel('2026-11-09T00:00:00.000Z', 'week')).toBe('Week of Nov 9');
-    expect(bucketLabel('2026-11-01T00:00:00.000Z', 'month')).toBe('Nov 2026');
+    expect(bucketLabel('2026-11-09T00:00:00.000Z', 'day', fmt, t)).toBe('Nov 9');
+    expect(bucketLabel('2026-11-09T00:00:00.000Z', 'week', fmt, t)).toBe('Week of Nov 9');
+    expect(bucketLabel('2026-11-01T00:00:00.000Z', 'month', fmt, t)).toBe('Nov 2026');
   });
 
   it('sorts record rows by count and fills missing keys', () => {

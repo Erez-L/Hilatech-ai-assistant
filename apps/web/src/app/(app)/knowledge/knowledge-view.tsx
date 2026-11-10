@@ -3,7 +3,6 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { BookOpen, FileText, Layers, Pencil, Plus, Trash2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import { Permission, type KnowledgeBase } from '@hilatech/contracts';
 import {
   Button,
@@ -29,10 +28,12 @@ import { PermissionGate } from '@/components/common/permission-gate';
 import { QueryState } from '@/components/common/query-state';
 import { BaseDialog } from '@/components/knowledge/base-dialog';
 import { RetrievalPanel } from '@/components/knowledge/retrieval-panel';
+import { useT, useFormat } from '@/i18n/provider';
 
 const PAGE_SIZE = 12;
 
 export function KnowledgeView() {
+  const t = useT();
   const canManage = useCan(Permission.KNOWLEDGE_MANAGE);
   const [page, setPage] = React.useState(1);
   const [search, setSearch] = React.useState('');
@@ -48,21 +49,21 @@ export function KnowledgeView() {
     <PermissionGate anyOf={[Permission.KNOWLEDGE_READ]}>
       <div className="flex flex-col gap-6">
         <PageHeader
-          title="Knowledge"
-          description="Documents that ground the assistant and agents in your business. Upload files, watch them get indexed, and test what search returns."
+          title={t('knowledge.knowledge')}
+          description={t('knowledge.documentsThatGroundTheAssistant')}
           actions={
             canManage ? (
               <Button leadingIcon={<Plus aria-hidden />} onClick={() => setCreating(true)}>
-                New knowledge base
+                {t('knowledge.newKnowledgeBase')}
               </Button>
             ) : null
           }
         />
 
         <Tabs defaultValue="bases">
-          <TabsList aria-label="Knowledge sections">
-            <TabsTrigger value="bases">Knowledge bases</TabsTrigger>
-            <TabsTrigger value="search">Retrieval test</TabsTrigger>
+          <TabsList aria-label={t('knowledge.knowledgeSections')}>
+            <TabsTrigger value="bases">{t('knowledge.knowledgeBases')}</TabsTrigger>
+            <TabsTrigger value="search">{t('knowledge.retrievalTest')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="bases" className="flex flex-col gap-4">
@@ -72,18 +73,18 @@ export function KnowledgeView() {
                 setSearch(v);
                 setPage(1);
               }}
-              placeholder="Search knowledge bases"
-              aria-label="Search knowledge bases"
+              placeholder={t('knowledge.searchKnowledgeBases')}
+              aria-label={t('knowledge.searchKnowledgeBases')}
               className="max-w-sm"
             />
             <QueryState
               query={bases}
-              errorTitle="Knowledge bases couldn’t be loaded"
+              errorTitle={t('knowledge.knowledgeBasesCouldnTBe')}
               loading={
                 <div
                   className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
                   aria-busy="true"
-                  aria-label="Loading knowledge bases"
+                  aria-label={t('knowledge.loadingKnowledgeBases')}
                 >
                   {[0, 1, 2].map((i) => (
                     <Skeleton key={i} className="h-36" />
@@ -94,18 +95,22 @@ export function KnowledgeView() {
               empty={
                 <EmptyState
                   icon={<BookOpen />}
-                  title={search ? 'No knowledge bases match' : 'No knowledge bases yet'}
+                  title={
+                    search
+                      ? t('knowledge.noKnowledgeBasesMatch')
+                      : t('knowledge.noKnowledgeBasesYet')
+                  }
                   description={
                     search
-                      ? 'Try a different search term.'
+                      ? t('common.tryADifferentSearchTerm')
                       : canManage
-                        ? 'Create a knowledge base, then upload documents for the assistant to draw on.'
-                        : 'Ask someone with access to create the first knowledge base.'
+                        ? t('knowledge.createAKnowledgeBaseThen')
+                        : t('knowledge.askSomeoneWithAccessTo')
                   }
                   action={
                     !search && canManage ? (
                       <Button leadingIcon={<Plus aria-hidden />} onClick={() => setCreating(true)}>
-                        New knowledge base
+                        {t('knowledge.newKnowledgeBase')}
                       </Button>
                     ) : undefined
                   }
@@ -115,7 +120,7 @@ export function KnowledgeView() {
               {(r) => (
                 <>
                   <ul
-                    aria-label="Knowledge bases"
+                    aria-label={t('knowledge.knowledgeBases')}
                     className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
                   >
                     {r.data.map((base) => (
@@ -155,20 +160,24 @@ export function KnowledgeView() {
         <ConfirmDialog
           open={!!deleting}
           onOpenChange={(open) => !open && setDeleting(null)}
-          title="Delete this knowledge base?"
+          title={t('knowledge.deleteThisKnowledgeBase')}
           description={
             deleting
-              ? `“${deleting.name}” with its ${deleting.documentCount} documents, ${deleting.chunkCount} chunks and stored files will be removed. This can’t be undone.`
+              ? t('knowledge.withItsDocumentsChunksAnd', {
+                  name: deleting.name,
+                  documentCount: deleting.documentCount,
+                  chunkCount: deleting.chunkCount,
+                })
               : undefined
           }
-          confirmLabel="Delete knowledge base"
+          confirmLabel={t('knowledge.deleteKnowledgeBase')}
           tone="danger"
           loading={remove.isPending}
           onConfirm={async () => {
             if (!deleting) return;
             try {
               await remove.mutateAsync(deleting.id);
-              toast.success(`Knowledge base “${deleting.name}” deleted`);
+              toast.success(t('knowledge.knowledgeBaseDeleted', { name: deleting.name }));
               setDeleting(null);
             } catch (e) {
               toast.error(getErrorMessage(e));
@@ -191,6 +200,8 @@ function BaseCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const fmt = useFormat();
+  const t = useT();
   return (
     <Card className="h-full">
       <CardContent className="flex h-full flex-col gap-3 py-4">
@@ -203,15 +214,19 @@ function BaseCard({
               {base.name}
             </Link>
             <p className="line-clamp-2 min-h-8 text-sm text-fg-muted">
-              {base.description || 'No description'}
+              {base.description || t('common.noDescription')}
             </p>
           </div>
           {canManage ? (
             <div className="flex shrink-0 gap-1">
-              <IconButton size="sm" label={`Edit ${base.name}`} onClick={onEdit}>
+              <IconButton size="sm" label={t('common.edit2', { name: base.name })} onClick={onEdit}>
                 <Pencil aria-hidden />
               </IconButton>
-              <IconButton size="sm" label={`Delete ${base.name}`} onClick={onDelete}>
+              <IconButton
+                size="sm"
+                label={t('common.delete2', { name: base.name })}
+                onClick={onDelete}
+              >
                 <Trash2 aria-hidden />
               </IconButton>
             </div>
@@ -220,21 +235,27 @@ function BaseCard({
         <dl className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-muted">
           <div className="flex items-center gap-1">
             <FileText className="size-3.5" aria-hidden />
-            <dt className="sr-only">Documents</dt>
+            <dt className="sr-only">{t('knowledge.documents2')}</dt>
             <dd className="tabular">
-              {base.documentCount} {base.documentCount === 1 ? 'document' : 'documents'}
+              {base.documentCount}{' '}
+              {base.documentCount === 1 ? t('knowledge.document') : t('knowledge.documents')}
             </dd>
           </div>
           <div className="flex items-center gap-1">
             <Layers className="size-3.5" aria-hidden />
-            <dt className="sr-only">Chunks</dt>
+            <dt className="sr-only">{t('knowledge.chunks2')}</dt>
             <dd className="tabular">
-              {base.chunkCount} {base.chunkCount === 1 ? 'chunk' : 'chunks'}
+              {base.chunkCount}{' '}
+              {base.chunkCount === 1 ? t('knowledge.chunk') : t('knowledge.chunks')}
             </dd>
           </div>
           <div>
-            <dt className="sr-only">Updated</dt>
-            <dd>Updated {formatDistanceToNow(new Date(base.updatedAt), { addSuffix: true })}</dd>
+            <dt className="sr-only">{t('common.updated')}</dt>
+            <dd>
+              {t('knowledge.updated', {
+                formatDistanceToNow: fmt.relative(new Date(base.updatedAt)),
+              })}
+            </dd>
           </div>
         </dl>
       </CardContent>

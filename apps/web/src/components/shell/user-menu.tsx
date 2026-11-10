@@ -16,8 +16,11 @@ import {
 } from '@hilatech/ui';
 import { authApi } from '@/lib/api';
 import { useSession } from '@/stores/session';
+import { useT } from '@/i18n/provider';
+import { LocaleRadioItems } from './language-switcher';
 
 export function useSignOut() {
+  const t = useT();
   const router = useRouter();
   const queryClient = useQueryClient();
   return async () => {
@@ -29,11 +32,12 @@ export function useSignOut() {
     useSession.getState().clear();
     queryClient.clear();
     router.replace('/login');
-    toast.success('Signed out');
+    toast.success(t('shell.signedOut'));
   };
 }
 
 export function UserMenu() {
+  const t = useT();
   const user = useSession((s) => s.user);
   const signOut = useSignOut();
   if (!user) return null;
@@ -43,7 +47,7 @@ export function UserMenu() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label={`Account menu for ${fullName}`}
+          aria-label={t('shell.accountMenuFor', { fullName })}
           className="flex size-9 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <Avatar
@@ -63,19 +67,24 @@ export function UserMenu() {
         <DropdownMenuItem asChild>
           <Link href="/settings/profile">
             <UserRound aria-hidden />
-            Your profile
+            {t('shell.yourProfile')}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/settings/organization">
             <Settings2 aria-hidden />
-            Organization settings
+            {t('shell.organizationSettings')}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-xs font-normal text-fg-muted">
+          {t('shell.language')}
+        </DropdownMenuLabel>
+        <LocaleRadioItems />
+        <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => void signOut()}>
           <LogOut aria-hidden />
-          Sign out
+          {t('common.signOut')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

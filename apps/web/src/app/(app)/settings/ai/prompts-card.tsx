@@ -46,8 +46,11 @@ import { useCan } from '@/hooks/use-can';
 import { applyServerErrors } from '@/lib/forms/server-errors';
 import { extractTemplateVariables } from '@/lib/ai';
 import { QueryState } from '@/components/common/query-state';
+import { rich } from '@/i18n/rich';
+import { useT } from '@/i18n/provider';
 
 export function PromptsCard() {
+  const t = useT();
   const canManage = useCan(Permission.AI_CONFIG_MANAGE);
   const prompts = useAiPrompts();
   const remove = useDeletePrompt();
@@ -59,14 +62,16 @@ export function PromptsCard() {
     <Card>
       <CardHeader className="flex-row items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <CardTitle>Prompt templates</CardTitle>
+          <CardTitle>{t('settings.promptTemplates')}</CardTitle>
           <CardDescription>
-            Reusable instructions with {'{{variables}}'} that are filled in at run time.
+            {rich(t, 'settings.promptTemplatesDescription', {
+              code: <code className="font-mono text-xs">{'{{variables}}'}</code>, // i18n-ignore: template syntax
+            })}
           </CardDescription>
         </div>
         {canManage ? (
           <Button size="sm" leadingIcon={<Plus aria-hidden />} onClick={() => setEditing({})}>
-            New template
+            {t('settings.newTemplate')}
           </Button>
         ) : null}
       </CardHeader>
@@ -74,7 +79,7 @@ export function PromptsCard() {
         <QueryState
           query={prompts}
           compact
-          errorTitle="Prompt templates couldn’t be loaded"
+          errorTitle={t('settings.promptTemplatesCouldnTBe')}
           loading={
             <div className="flex flex-col gap-3" aria-busy>
               <Skeleton className="h-14 w-full" />
@@ -86,8 +91,8 @@ export function PromptsCard() {
             <EmptyState
               compact
               icon={<FileText />}
-              title="No prompt templates"
-              description="Templates keep instructions consistent across agents."
+              title={t('settings.noPromptTemplates')}
+              description={t('settings.templatesKeepInstructionsConsistentAcross')}
               action={
                 canManage ? (
                   <Button
@@ -95,7 +100,7 @@ export function PromptsCard() {
                     leadingIcon={<Plus aria-hidden />}
                     onClick={() => setEditing({})}
                   >
-                    New template
+                    {t('settings.newTemplate')}
                   </Button>
                 ) : undefined
               }
@@ -112,7 +117,7 @@ export function PromptsCard() {
                       <span className="font-mono text-xs font-normal text-fg-subtle">{p.key}</span>
                       {p.isSystem ? (
                         <Badge variant="outline" className="px-1.5 py-0 text-[0.625rem]">
-                          System
+                          {t('common.system')}
                         </Badge>
                       ) : null}
                       <span className="text-xs font-normal text-fg-subtle">v{p.version}</span>
@@ -139,22 +144,22 @@ export function PromptsCard() {
                       size="sm"
                       variant="secondary"
                       leadingIcon={<Play aria-hidden />}
-                      aria-label={`Test ${p.name}`}
+                      aria-label={t('settings.test2', { name: p.name })}
                       onClick={() => setTesting(p)}
                     >
-                      Test
+                      {t('settings.test')}
                     </Button>
                     {canManage ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <IconButton label={`Actions for ${p.name}`} size="sm">
+                          <IconButton label={t('common.actionsFor', { name: p.name })} size="sm">
                             <MoreHorizontal aria-hidden />
                           </IconButton>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40">
                           <DropdownMenuItem onSelect={() => setEditing({ prompt: p })}>
                             <Pencil aria-hidden />
-                            Edit
+                            {t('common.edit')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             tone="danger"
@@ -162,7 +167,7 @@ export function PromptsCard() {
                             onSelect={() => setDeleting(p)}
                           >
                             <Trash2 aria-hidden />
-                            Delete
+                            {t('common.delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -188,16 +193,16 @@ export function PromptsCard() {
       <ConfirmDialog
         open={!!deleting}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title={`Delete “${deleting?.name ?? ''}”?`}
-        description="Agents that reference this template by key will no longer resolve it."
-        confirmLabel="Delete template"
+        title={t('settings.deleteQuoted', { name: deleting?.name ?? '' })}
+        description={t('settings.agentsThatReferenceThisTemplate')}
+        confirmLabel={t('settings.deleteTemplate')}
         tone="danger"
         loading={remove.isPending}
         onConfirm={() => {
           if (!deleting) return;
           remove.mutate(deleting.id, {
             onSuccess: () => {
-              toast.success('Template deleted');
+              toast.success(t('settings.templateDeleted'));
               setDeleting(null);
             },
             onError: (e) => {
@@ -232,6 +237,7 @@ function PromptDialog({
 }
 
 function PromptForm({ prompt, onDone }: { prompt?: PromptTemplate; onDone: () => void }) {
+  const t = useT();
   const save = useSavePrompt();
   const [formError, setFormError] = React.useState<string | null>(null);
   const editing = !!prompt;
@@ -265,7 +271,7 @@ function PromptForm({ prompt, onDone }: { prompt?: PromptTemplate; onDone: () =>
           create: { ...values, description: values.description || undefined },
         });
       }
-      toast.success(`Template “${values.name}” saved`);
+      toast.success(t('settings.templateSaved', { name: values.name }));
       onDone();
     } catch (error) {
       if (!applyServerErrors(error, form.setError, ['key', 'name', 'description', 'content']))
@@ -276,42 +282,60 @@ function PromptForm({ prompt, onDone }: { prompt?: PromptTemplate; onDone: () =>
   return (
     <form onSubmit={onSubmit} noValidate className="flex min-h-0 flex-col">
       <DialogHeader>
-        <DialogTitle>{editing ? `Edit ${prompt.name}` : 'New prompt template'}</DialogTitle>
+        <DialogTitle>
+          {editing ? t('common.edit2', { name: prompt.name }) : t('settings.newPromptTemplate')}
+        </DialogTitle>
         <DialogDescription>
-          Use {'{{variable}}'} placeholders; they are detected automatically.
-          {editing ? ' Changing the content creates a new version.' : ''}
+          {rich(t, 'settings.promptPlaceholderHint', {
+            code: <code className="font-mono text-xs">{'{{variable}}'}</code>, // i18n-ignore: template syntax
+          })}
+          {editing ? t('settings.changingTheContentCreatesA') : ''}
         </DialogDescription>
       </DialogHeader>
       <DialogBody className="flex flex-col gap-5 pb-2">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
         <div className="grid gap-5 sm:grid-cols-2">
-          <FormField id="prompt-name" label="Name" required error={errors.name?.message}>
+          <FormField
+            id="prompt-name"
+            label={t('common.name')}
+            required
+            error={errors.name?.message}
+          >
             <Input autoFocus {...form.register('name')} />
           </FormField>
           <FormField
             id="prompt-key"
-            label="Key"
+            label={t('common.key')}
             required
             error={errors.key?.message}
             description={
               editing
-                ? 'The key cannot be changed.'
-                : 'Lowercase letters, digits, “_”, “.” and “-”.'
+                ? t('settings.theKeyCannotBeChanged')
+                : t('settings.lowercaseLettersDigitsAnd')
             }
           >
             <Input disabled={editing} className="font-mono" {...form.register('key')} />
           </FormField>
         </div>
-        <FormField id="prompt-description" label="Description" error={errors.description?.message}>
+        <FormField
+          id="prompt-description"
+          label={t('common.description')}
+          error={errors.description?.message}
+        >
           <Input {...form.register('description')} />
         </FormField>
-        <FormField id="prompt-content" label="Content" required error={errors.content?.message}>
+        <FormField
+          id="prompt-content"
+          label={t('settings.content')}
+          required
+          error={errors.content?.message}
+        >
           <Textarea rows={10} className="font-mono text-xs" {...form.register('content')} />
         </FormField>
         <div className="flex flex-wrap items-center gap-2 text-sm" aria-live="polite">
-          <span className="text-fg-muted">Variables:</span>
+          <span className="text-fg-muted">{t('settings.variables')}</span>
           {variables.length === 0 ? (
-            <span className="text-fg-subtle">none detected</span>
+            <span className="text-fg-subtle">{t('settings.noneDetected')}</span>
           ) : (
             variables.map((v) => (
               <Badge key={v} variant="accent" className="font-mono">
@@ -323,10 +347,10 @@ function PromptForm({ prompt, onDone }: { prompt?: PromptTemplate; onDone: () =>
       </DialogBody>
       <DialogFooter>
         <Button variant="secondary" onClick={onDone}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" loading={form.formState.isSubmitting}>
-          {editing ? 'Save changes' : 'Create template'}
+          {editing ? t('common.saveChanges') : t('settings.createTemplate')}
         </Button>
       </DialogFooter>
     </form>
@@ -344,6 +368,7 @@ function RenderDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useT();
   const render = useRenderPrompt();
   const variables =
     prompt.variables.length > 0 ? prompt.variables : extractTemplateVariables(prompt.content);
@@ -352,12 +377,12 @@ function RenderDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>Test “{prompt.name}”</DialogTitle>
-          <DialogDescription>Fill in the variables to see the rendered prompt.</DialogDescription>
+          <DialogTitle>{t('settings.test3', { name: prompt.name })}</DialogTitle>
+          <DialogDescription>{t('settings.fillInTheVariablesTo')}</DialogDescription>
         </DialogHeader>
         <DialogBody className="flex flex-col gap-4 pb-2">
           {variables.length === 0 ? (
-            <p className="text-sm text-fg-muted">This template has no variables.</p>
+            <p className="text-sm text-fg-muted">{t('settings.thisTemplateHasNoVariables')}</p>
           ) : (
             variables.map((v) => (
               <FormField key={v} id={`render-${v}`} label={v}>
@@ -372,7 +397,7 @@ function RenderDialog({
           {render.data ? (
             <div className="flex flex-col gap-2">
               {render.data.missing.length > 0 ? (
-                <Alert tone="warning" title="Unresolved placeholders">
+                <Alert tone="warning" title={t('settings.unresolvedPlaceholders')}>
                   {render.data.missing.join(', ')}
                 </Alert>
               ) : null}
@@ -382,13 +407,13 @@ function RenderDialog({
         </DialogBody>
         <DialogFooter>
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
-            Close
+            {t('common.close')}
           </Button>
           <Button
             loading={render.isPending}
             onClick={() => render.mutate({ id: prompt.id, body: { variables: values } })}
           >
-            Render
+            {t('settings.render')}
           </Button>
         </DialogFooter>
       </DialogContent>

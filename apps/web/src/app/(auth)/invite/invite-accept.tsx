@@ -4,15 +4,18 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
 import { Building2 } from 'lucide-react';
 import { Alert, Button, Skeleton, StatusBadge, toast } from '@hilatech/ui';
 import { authApi, getErrorMessage } from '@/lib/api';
 import { useAcceptInvitation, useInvitationPreview } from '@/hooks/queries';
 import { useSession } from '@/stores/session';
 import { AuthCard } from '@/components/auth/auth-card';
+import { useT, useFormat } from '@/i18n/provider';
+import { roleLabel } from '@/i18n/enums';
 
 export function InviteAccept() {
+  const fmt = useFormat();
+  const t = useT();
   const router = useRouter();
   const queryClient = useQueryClient();
   const token = useSearchParams().get('token') ?? '';
@@ -39,7 +42,9 @@ export function InviteAccept() {
       if (refreshed) useSession.getState().applyAuthResponse(refreshed);
       useSession.getState().setActiveOrganization(member.organizationId);
       queryClient.removeQueries({ queryKey: ['org'] });
-      toast.success(`Welcome to ${preview.data?.organizationName ?? 'the team'}`);
+      toast.success(
+        t('auth.welcomeToOrg', { org: preview.data?.organizationName ?? t('auth.theTeam') }),
+      );
       router.replace('/dashboard');
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -49,11 +54,11 @@ export function InviteAccept() {
   if (!token) {
     return (
       <AuthCard
-        title="This invitation link isn’t complete"
-        description="Open the link from your email again."
+        title={t('auth.thisInvitationLinkIsnT')}
+        description={t('auth.openTheLinkFromYour')}
       >
         <Button asChild variant="secondary">
-          <Link href="/login">Go to sign in</Link>
+          <Link href="/login">{t('auth.goToSignIn')}</Link>
         </Button>
       </AuthCard>
     );
@@ -61,7 +66,7 @@ export function InviteAccept() {
 
   if (preview.isPending) {
     return (
-      <AuthCard title="Loading invitation">
+      <AuthCard title={t('auth.loadingInvitation')}>
         <div className="flex flex-col gap-3" aria-busy>
           <Skeleton className="h-5 w-2/3" />
           <Skeleton className="h-4 w-1/2" />
@@ -74,10 +79,10 @@ export function InviteAccept() {
   if (preview.isError || !preview.data) {
     return (
       <AuthCard
-        title="This invitation isn’t valid"
-        description="It may have expired or been revoked. Ask the person who invited you for a new one."
+        title={t('auth.thisInvitationIsnTValid')}
+        description={t('auth.itMayHaveExpiredOr')}
       >
-        <Alert tone="warning">{getErrorMessage(preview.error, 'Invitation not found.')}</Alert>
+        <Alert tone="warning">{getErrorMessage(preview.error, t('auth.invitationNotFound'))}</Alert>
       </AuthCard>
     );
   }
@@ -88,8 +93,8 @@ export function InviteAccept() {
 
   return (
     <AuthCard
-      title={`Join ${inv.organizationName}`}
-      description={`You’ve been invited as ${inv.roleName}.`}
+      title={t('auth.join', { organizationName: inv.organizationName })}
+      description={t('auth.youVeBeenInvitedAs', { roleName: inv.roleName })}
     >
       <div className="flex flex-col gap-5">
         <div className="flex items-start gap-3 rounded-md border border-border bg-surface-muted/60 p-4">
@@ -97,34 +102,33 @@ export function InviteAccept() {
             <Building2 className="size-5" aria-hidden />
           </div>
           <dl className="grid flex-1 grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-            <dt className="text-fg-muted">Organization</dt>
+            <dt className="text-fg-muted">{t('auth.organization')}</dt>
             <dd className="font-medium">{inv.organizationName}</dd>
-            <dt className="text-fg-muted">Role</dt>
-            <dd className="font-medium">{inv.roleName}</dd>
-            <dt className="text-fg-muted">Sent to</dt>
+            <dt className="text-fg-muted">{t('common.role')}</dt>
+            <dd className="font-medium">{roleLabel(t, inv.roleName)}</dd>
+            <dt className="text-fg-muted">{t('auth.sentTo')}</dt>
             <dd className="font-medium">{inv.email}</dd>
-            <dt className="text-fg-muted">Status</dt>
+            <dt className="text-fg-muted">{t('common.status')}</dt>
             <dd>
               <StatusBadge status={inv.status} />
             </dd>
-            <dt className="text-fg-muted">Expires</dt>
-            <dd>{format(new Date(inv.expiresAt), 'PPp')}</dd>
+            <dt className="text-fg-muted">{t('common.expires')}</dt>
+            <dd>{fmt.dateTime(new Date(inv.expiresAt))}</dd>
           </dl>
         </div>
 
         {!usable ? (
-          <Alert tone="warning" title={`This invitation is ${inv.status}`}>
-            Ask the person who invited you to send a new one.
+          <Alert tone="warning" title={t('auth.thisInvitationIs', { status: inv.status })}>
+            {t('auth.askThePersonWhoInvited')}
           </Alert>
         ) : status === 'authenticated' && user ? (
           emailMismatch ? (
-            <Alert tone="warning" title="Signed in with a different email">
-              You’re signed in as {user.email}, but this invitation was sent to {inv.email}. Sign
-              out and continue with the invited address.
+            <Alert tone="warning" title={t('auth.signedInWithADifferent')}>
+              {t('auth.youReSignedInAs', { email: user.email, email2: inv.email })}
             </Alert>
           ) : (
             <Button size="lg" onClick={() => void onAccept()} loading={accept.isPending}>
-              Accept and join {inv.organizationName}
+              {t('auth.acceptAndJoin', { organizationName: inv.organizationName })}
             </Button>
           )
         ) : status === 'loading' || status === 'idle' ? (
@@ -132,11 +136,13 @@ export function InviteAccept() {
         ) : (
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button asChild size="lg" className="flex-1">
-              <Link href={`/register?invite=${encodeURIComponent(token)}`}>Create an account</Link>
+              <Link href={`/register?invite=${encodeURIComponent(token)}`}>
+                {t('auth.createAnAccount')}
+              </Link>
             </Button>
             <Button asChild size="lg" variant="secondary" className="flex-1">
               <Link href={`/login?next=${encodeURIComponent(`/invite?token=${token}`)}`}>
-                Sign in to accept
+                {t('auth.signInToAccept')}
               </Link>
             </Button>
           </div>

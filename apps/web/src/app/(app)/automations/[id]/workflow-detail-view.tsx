@@ -5,23 +5,29 @@ import { isApiError } from '@/lib/api';
 import { useWorkflow } from '@/hooks/automation';
 import { QueryState } from '@/components/common/query-state';
 import { WorkflowEditor } from '@/components/automation/workflow-editor';
+import { useT } from '@/i18n/provider';
 
 export function WorkflowDetailView({ id }: { id: string }) {
+  const t = useT();
   const workflow = useWorkflow(id);
   if (workflow.isError && isApiError(workflow.error) && workflow.error.isNotFound) {
     return (
       <ErrorState
-        title="Workflow not found"
-        message="It may have been deleted, or it belongs to another organization."
+        title={t('automations.workflowNotFound')}
+        message={t('common.itMayHaveBeenDeleted')}
       />
     );
   }
   return (
     <QueryState
       query={workflow}
-      errorTitle="This workflow couldn’t be loaded"
+      errorTitle={t('automations.thisWorkflowCouldnTBe')}
       loading={
-        <div className="flex flex-col gap-3" aria-busy="true" aria-label="Loading workflow">
+        <div
+          className="flex flex-col gap-3"
+          aria-busy="true"
+          aria-label={t('automations.loadingWorkflow')}
+        >
           <Skeleton className="h-9 w-72" />
           <Skeleton className="h-48" />
           <Skeleton className="h-48" />

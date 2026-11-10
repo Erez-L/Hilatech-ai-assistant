@@ -33,6 +33,7 @@ import { applyServerErrors } from '@/lib/forms/server-errors';
 import { CONVERSATION_CHANNELS, CONVERSATION_CHANNEL_LABELS } from '@/lib/crm';
 import { ContactPicker } from './contact-picker';
 import { LeadPicker } from './lead-picker';
+import { useT } from '@/i18n/provider';
 
 export const newConversationFormSchema = z.object({
   subject: z.string().trim().max(200, 'Keep the subject under 200 characters'),
@@ -96,6 +97,7 @@ function NewConversationForm({
   lead: { id: string; title: string } | null;
   onDone: (conversation?: ConversationWithRelations) => void;
 }) {
+  const t = useT();
   const create = useCreateConversation();
   const [formError, setFormError] = React.useState<string | null>(null);
   const [selectedContact, setSelectedContact] = React.useState(contact);
@@ -116,7 +118,7 @@ function NewConversationForm({
     setFormError(null);
     try {
       const conversation = await create.mutateAsync(toCreateConversationRequest(values));
-      toast.success('Conversation started');
+      toast.success(t('crm.conversationStarted'));
       onDone(conversation);
     } catch (error) {
       if (
@@ -136,34 +138,32 @@ function NewConversationForm({
   return (
     <form onSubmit={onSubmit} noValidate className="flex min-h-0 flex-col">
       <DialogHeader>
-        <DialogTitle>New conversation</DialogTitle>
-        <DialogDescription>
-          Open a thread with a customer or log one that happened elsewhere.
-        </DialogDescription>
+        <DialogTitle>{t('common.newConversation')}</DialogTitle>
+        <DialogDescription>{t('crm.openAThreadWithA')}</DialogDescription>
       </DialogHeader>
       <DialogBody className="flex flex-col gap-5 pb-2">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
         <div className="grid gap-5 sm:grid-cols-[1fr_11rem]">
           <FormField
             id="conv-subject"
-            label="Subject"
+            label={t('common.subject')}
             error={form.formState.errors.subject?.message}
           >
             <Input
               autoFocus
-              placeholder="Quote for the spring campaign"
+              placeholder={t('crm.quoteForTheSpringCampaign')}
               {...form.register('subject')}
             />
           </FormField>
           <FormField
             id="conv-channel"
-            label="Channel"
+            label={t('common.channel')}
             error={form.formState.errors.channel?.message}
           >
             <NativeSelect {...form.register('channel')}>
               {CONVERSATION_CHANNELS.map((c) => (
                 <option key={c} value={c}>
-                  {CONVERSATION_CHANNEL_LABELS[c]}
+                  {t(CONVERSATION_CHANNEL_LABELS[c])}
                 </option>
               ))}
             </NativeSelect>
@@ -172,7 +172,7 @@ function NewConversationForm({
         <div className="grid gap-5 sm:grid-cols-2">
           <FormField
             id="conv-contact"
-            label="Contact"
+            label={t('common.contact')}
             error={form.formState.errors.contactId?.message}
           >
             <Controller
@@ -192,7 +192,11 @@ function NewConversationForm({
               )}
             />
           </FormField>
-          <FormField id="conv-lead" label="Lead" error={form.formState.errors.leadId?.message}>
+          <FormField
+            id="conv-lead"
+            label={t('common.lead')}
+            error={form.formState.errors.leadId?.message}
+          >
             <Controller
               control={form.control}
               name="leadId"
@@ -213,23 +217,23 @@ function NewConversationForm({
         </div>
         <FormField
           id="conv-message"
-          label="First message"
-          description="Sent as the team’s opening message. Optional."
+          label={t('crm.firstMessage')}
+          description={t('crm.sentAsTheTeamS')}
           error={form.formState.errors.initialMessage?.message}
         >
           <Textarea
             rows={3}
-            placeholder="Hi! Thanks for reaching out…"
+            placeholder={t('crm.hiThanksForReachingOut')}
             {...form.register('initialMessage')}
           />
         </FormField>
       </DialogBody>
       <DialogFooter>
         <Button variant="secondary" onClick={() => onDone()}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" loading={form.formState.isSubmitting}>
-          Start conversation
+          {t('crm.startConversation')}
         </Button>
       </DialogFooter>
     </form>

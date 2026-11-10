@@ -28,6 +28,7 @@ import { isBudgetExceededCode } from '@/lib/billing';
 import { Markdown } from '@/components/ai/markdown';
 import { ToolChip, outcomeFromResult, type ToolOutcome } from '@/components/ai/tool-chip';
 import { threadTitle } from './thread-list';
+import { useT } from '@/i18n/provider';
 
 type Context = NonNullable<SendAssistantMessageRequest['context']>;
 
@@ -41,8 +42,12 @@ export function ChatPane({
   onBack: () => void;
   onDeleted?: () => void;
 }) {
+  const t = useT();
   const threads = useAssistantThreads({ page: 1, pageSize: 100 });
-  const title = threadTitle(threads.data?.data.find((t) => t.id === threadId) ?? { title: null });
+  const title = threadTitle(
+    threads.data?.data.find((th) => th.id === threadId) ?? { title: null },
+    t,
+  );
   const messages = useAssistantMessages(threadId);
   const { state, send, dismissError, streaming } = useAssistantStream(threadId);
   const [contextDismissed, setContextDismissed] = React.useState(false);
@@ -61,11 +66,11 @@ export function ChatPane({
 
   return (
     <section
-      aria-label="Assistant chat"
+      aria-label={t('assistant.assistantChat')}
       className="flex min-h-0 min-w-0 flex-1 flex-col bg-surface"
     >
       <header className="flex items-center gap-3 border-b border-border px-4 py-3">
-        <IconButton label="Back to threads" className="lg:hidden" onClick={onBack}>
+        <IconButton label={t('assistant.backToThreads')} className="lg:hidden" onClick={onBack}>
           <ArrowLeft aria-hidden />
         </IconButton>
         <h2 className="min-w-0 flex-1 truncate text-sm font-semibold">{title}</h2>
@@ -78,19 +83,19 @@ export function ChatPane({
         ref={scrollRef}
         role="log"
         aria-live="polite"
-        aria-label="Messages"
+        aria-label={t('common.messages')}
         className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto bg-bg/40 px-4 py-4 scrollbar-thin"
       >
         {messages.isPending ? (
           <div className="flex flex-col gap-4" aria-busy>
-            <Skeleton className="ml-auto h-10 w-1/2 rounded-xl" />
+            <Skeleton className="ms-auto h-10 w-1/2 rounded-xl" />
             <Skeleton className="h-16 w-2/3 rounded-xl" />
           </div>
         ) : messages.isError ? (
           <div className="m-auto flex flex-col items-center gap-2 text-center text-sm text-fg-muted">
             <span>{getErrorMessage(messages.error)}</span>
             <Button size="sm" variant="secondary" onClick={() => void messages.refetch()}>
-              Try again
+              {t('common.tryAgain')}
             </Button>
           </div>
         ) : items.length === 0 && state.status === 'idle' ? (
@@ -98,8 +103,8 @@ export function ChatPane({
             <EmptyState
               compact
               icon={<Bot />}
-              title="Ask the assistant"
-              description="Try “Which leads need a follow-up this week?” or “Summarise this lead”."
+              title={t('common.askTheAssistant')}
+              description={t('assistant.tryWhichLeadsNeedA')}
             />
           </div>
         ) : (
@@ -123,11 +128,11 @@ export function ChatPane({
           ) : budgetExceeded ? (
             <BudgetExceeded details={state.error.details} onDismiss={dismissError} />
           ) : (
-            <Alert tone="danger" title="The assistant couldn’t answer">
+            <Alert tone="danger" title={t('assistant.theAssistantCouldnTAnswer')}>
               <div className="flex flex-wrap items-center gap-3">
                 <span>{state.error.message}</span>
                 <Button size="sm" variant="secondary" onClick={dismissError}>
-                  Dismiss
+                  {t('common.dismiss')}
                 </Button>
               </div>
             </Alert>
@@ -196,8 +201,8 @@ function parseMaybeJson(text: string): unknown {
 
 function UserBubble({ content }: { content: string }) {
   return (
-    <div className="ml-auto flex max-w-[85%] flex-col items-end gap-1 sm:max-w-[75%]">
-      <div className="rounded-xl rounded-tr-sm bg-accent-soft px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words text-accent-soft-fg shadow-xs">
+    <div className="ms-auto flex max-w-[85%] flex-col items-end gap-1 sm:max-w-[75%]">
+      <div className="rounded-xl rounded-se-sm bg-accent-soft px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words text-accent-soft-fg shadow-xs">
         {content}
       </div>
     </div>
@@ -216,10 +221,11 @@ function AssistantAvatar() {
 }
 
 function AssistantBlock({ item }: { item: Extract<FoldedItem, { kind: 'assistant' }> }) {
+  const t = useT();
   const { message, tools } = item;
   const hasUsage = message.inputTokens != null || message.outputTokens != null;
   return (
-    <div className="mr-auto flex max-w-[90%] gap-2.5 sm:max-w-[80%]">
+    <div className="me-auto flex max-w-[90%] gap-2.5 sm:max-w-[80%]">
       <AssistantAvatar />
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         {tools.length > 0 ? (
@@ -236,13 +242,16 @@ function AssistantBlock({ item }: { item: Extract<FoldedItem, { kind: 'assistant
           </div>
         ) : null}
         {message.content.trim() ? (
-          <div className="rounded-xl rounded-tl-sm border border-info/20 bg-surface px-3.5 py-2 text-sm leading-relaxed shadow-xs">
+          <div className="rounded-xl rounded-ss-sm border border-info/20 bg-surface px-3.5 py-2 text-sm leading-relaxed shadow-xs">
             <Markdown source={message.content} />
           </div>
         ) : null}
         {hasUsage ? (
           <p className="text-2xs text-fg-subtle tabular">
-            {message.inputTokens ?? 0} in · {message.outputTokens ?? 0} out tokens
+            {t('assistant.inOutTokens', {
+              value: message.inputTokens ?? 0,
+              value2: message.outputTokens ?? 0,
+            })}
           </p>
         ) : null}
       </div>
@@ -251,13 +260,14 @@ function AssistantBlock({ item }: { item: Extract<FoldedItem, { kind: 'assistant
 }
 
 function LiveTurn({ state }: { state: StreamState }) {
+  const t = useT();
   if (state.status === 'idle' || state.userContent == null) return null;
   return (
     <>
       <UserBubble content={state.userContent} />
       {state.status === 'streaming' || state.text || state.tools.length > 0 ? (
         <div
-          className="mr-auto flex max-w-[90%] gap-2.5 sm:max-w-[80%]"
+          className="me-auto flex max-w-[90%] gap-2.5 sm:max-w-[80%]"
           aria-busy={state.status === 'streaming'}
         >
           <AssistantAvatar />
@@ -280,12 +290,12 @@ function LiveTurn({ state }: { state: StreamState }) {
               />
             ))}
             {state.text ? (
-              <div className="rounded-xl rounded-tl-sm border border-info/20 bg-surface px-3.5 py-2 text-sm leading-relaxed shadow-xs">
+              <div className="rounded-xl rounded-ss-sm border border-info/20 bg-surface px-3.5 py-2 text-sm leading-relaxed shadow-xs">
                 <Markdown source={state.text} />
               </div>
             ) : state.status === 'streaming' && state.tools.length === 0 ? (
               <p className="text-xs text-fg-subtle" role="status">
-                Thinking…
+                {t('assistant.thinking')}
               </p>
             ) : null}
           </div>
@@ -296,23 +306,31 @@ function LiveTurn({ state }: { state: StreamState }) {
 }
 
 function ContextChip({ context, onDismiss }: { context: Context; onDismiss: () => void }) {
+  const t = useT();
   const canLeads = useCan(Permission.LEADS_READ);
   const canContacts = useCan(Permission.CONTACTS_READ);
   const lead = useLead(canLeads ? (context.leadId ?? null) : null);
   const contact = useContact(canContacts ? (context.contactId ?? null) : null);
   const parts: string[] = [];
-  if (context.leadId) parts.push(`Lead: ${lead.data?.title ?? 'selected lead'}`);
+  if (context.leadId)
+    parts.push(
+      t('assistant.contextLead', { name: lead.data?.title ?? t('assistant.contextSelectedLead') }),
+    );
   if (context.contactId)
-    parts.push(`Contact: ${contact.data ? contactName(contact.data) : 'selected contact'}`);
-  if (context.conversationId) parts.push('Conversation attached');
+    parts.push(
+      t('assistant.contextContact', {
+        name: contact.data ? contactName(contact.data) : t('assistant.contextSelectedContact'),
+      }),
+    );
+  if (context.conversationId) parts.push(t('assistant.contextConversation'));
   return (
-    <Badge variant="accent" className="max-w-xs gap-1.5 pr-1">
-      <span className="truncate" title="Sent with each message as context">
+    <Badge variant="accent" className="max-w-xs gap-1.5 pe-1">
+      <span className="truncate" title={t('assistant.sentWithEachMessageAs')}>
         {parts.join(' · ')}
       </span>
       <button
         type="button"
-        aria-label="Remove context"
+        aria-label={t('assistant.removeContext')}
         onClick={onDismiss}
         className="flex size-4 shrink-0 items-center justify-center rounded-full hover:bg-accent/20"
       >
@@ -333,6 +351,7 @@ export function AssistantComposer({
   disabled?: boolean;
   streaming?: boolean;
 }) {
+  const t = useT();
   const [draft, setDraft] = React.useState('');
   const ref = React.useRef<HTMLTextAreaElement>(null);
   const canSend = draft.trim().length > 0 && !disabled;
@@ -365,13 +384,13 @@ export function AssistantComposer({
       >
         <AutosizeTextarea
           ref={ref}
-          aria-label="Message the assistant"
+          aria-label={t('assistant.messageTheAssistant')}
           value={draft}
           disabled={disabled}
           minRows={1}
           maxRows={8}
           maxLength={50000}
-          placeholder="Ask anything — Enter to send, Shift+Enter for a new line"
+          placeholder={t('assistant.askAnythingEnterToSend')}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(event) => {
             if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
@@ -387,7 +406,7 @@ export function AssistantComposer({
           disabled={!canSend}
           trailingIcon={<SendHorizontal aria-hidden />}
         >
-          Send
+          {t('common.send')}
         </Button>
       </div>
     </form>

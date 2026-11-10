@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { formatDistanceToNow } from 'date-fns';
 import { KeyRound, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { Permission, type AiProviderConfig } from '@hilatech/contracts';
 import {
@@ -40,8 +39,11 @@ import {
 import { useCan } from '@/hooks/use-can';
 import { HealthBadge } from '@/components/ai/badges';
 import { PROVIDER_LABELS, ProviderDialog } from './provider-dialog';
+import { useT, useFormat } from '@/i18n/provider';
 
 export function ProvidersCard() {
+  const fmt = useFormat();
+  const t = useT();
   const canManage = useCan(Permission.AI_CONFIG_MANAGE);
   const providers = useAiProviders();
   const check = useCheckAiProvider();
@@ -57,9 +59,15 @@ export function ProvidersCard() {
       onSuccess: (r) =>
         r.status === 'ok'
           ? toast.success(
-              `${p.name} is healthy${r.latencyMs != null ? ` (${r.latencyMs} ms)` : ''}`,
+              r.latencyMs != null
+                ? t('settings.providerHealthyMs', { name: p.name, ms: r.latencyMs })
+                : t('settings.providerHealthy', { name: p.name }),
             )
-          : toast.error(`${p.name} check failed${r.error ? `: ${r.error}` : ''}`),
+          : toast.error(
+              r.error
+                ? t('settings.providerCheckFailedWith', { name: p.name, error: r.error })
+                : t('settings.providerCheckFailed', { name: p.name }),
+            ),
       onError: (e) => toast.error(getErrorMessage(e)),
       onSettled: () => setCheckingId(null),
     });
@@ -71,15 +79,12 @@ export function ProvidersCard() {
     <Card>
       <CardHeader className="flex-row items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <CardTitle>Providers</CardTitle>
-          <CardDescription>
-            Where model calls are sent. The default provider serves the assistant and any agent
-            without its own choice.
-          </CardDescription>
+          <CardTitle>{t('settings.providers')}</CardTitle>
+          <CardDescription>{t('settings.whereModelCallsAreSent')}</CardDescription>
         </div>
         {canManage ? (
           <Button size="sm" leadingIcon={<Plus aria-hidden />} onClick={() => setDialog({})}>
-            Add provider
+            {t('settings.addProvider')}
           </Button>
         ) : null}
       </CardHeader>
@@ -87,16 +92,16 @@ export function ProvidersCard() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Provider</TableHead>
-              <TableHead>Model</TableHead>
-              <TableHead>Key</TableHead>
-              <TableHead>Enabled</TableHead>
-              <TableHead>Health</TableHead>
-              <TableHead className="text-right">
-                <span className="sr-only">Check</span>
+              <TableHead>{t('settings.provider')}</TableHead>
+              <TableHead>{t('common.model')}</TableHead>
+              <TableHead>{t('common.key')}</TableHead>
+              <TableHead>{t('common.enabled')}</TableHead>
+              <TableHead>{t('settings.health')}</TableHead>
+              <TableHead className="text-end">
+                <span className="sr-only">{t('settings.check')}</span>
               </TableHead>
               <TableHead className="w-10">
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">{t('common.actions')}</span>
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -108,7 +113,7 @@ export function ProvidersCard() {
                 <div className="flex flex-col items-center gap-2">
                   <span>{getErrorMessage(providers.error)}</span>
                   <Button size="sm" variant="secondary" onClick={() => void providers.refetch()}>
-                    Try again
+                    {t('common.tryAgain')}
                   </Button>
                 </div>
               </TableEmptyRow>
@@ -117,11 +122,11 @@ export function ProvidersCard() {
                 <EmptyState
                   compact
                   icon={<KeyRound />}
-                  title="No AI provider yet"
+                  title={t('settings.noAiProviderYet')}
                   description={
                     canManage
-                      ? 'Add a provider and API key to turn on the assistant and agents.'
-                      : 'Ask an administrator to add a provider.'
+                      ? t('settings.addAProviderAndApi')
+                      : t('settings.askAnAdministratorToAdd')
                   }
                   action={
                     canManage ? (
@@ -130,7 +135,7 @@ export function ProvidersCard() {
                         leadingIcon={<Plus aria-hidden />}
                         onClick={() => setDialog({})}
                       >
-                        Add provider
+                        {t('settings.addProvider')}
                       </Button>
                     ) : undefined
                   }
@@ -145,7 +150,7 @@ export function ProvidersCard() {
                         {p.name}
                         {p.isDefault ? (
                           <Badge variant="accent" className="px-1.5 py-0 text-[0.625rem]">
-                            Default
+                            {t('common.default')}
                           </Badge>
                         ) : null}
                       </span>
@@ -157,14 +162,16 @@ export function ProvidersCard() {
                     {p.hasApiKey
                       ? `••••${p.keyLast4 ?? ''}`
                       : p.provider === 'mock'
-                        ? 'Not needed'
-                        : 'No key'}
+                        ? t('settings.notNeeded')
+                        : t('settings.noKey')}
                   </TableCell>
                   <TableCell>
                     <Switch
                       checked={p.isEnabled}
                       disabled={!canManage || update.isPending}
-                      aria-label={`${p.isEnabled ? 'Disable' : 'Enable'} ${p.name}`}
+                      aria-label={t(p.isEnabled ? 'common.disableName' : 'common.enableName', {
+                        name: p.name,
+                      })}
                       onCheckedChange={(isEnabled) =>
                         update.mutate(
                           { id: p.id, body: { isEnabled } },
@@ -178,7 +185,7 @@ export function ProvidersCard() {
                       <HealthBadge status={p.lastHealthStatus} />
                       {p.lastHealthCheckAt ? (
                         <span className="text-2xs text-fg-subtle">
-                          {formatDistanceToNow(new Date(p.lastHealthCheckAt), { addSuffix: true })}
+                          {fmt.relative(new Date(p.lastHealthCheckAt))}
                         </span>
                       ) : null}
                       {p.lastHealthStatus === 'error' && p.lastHealthError ? (
@@ -191,17 +198,17 @@ export function ProvidersCard() {
                       ) : null}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     {canManage ? (
                       <Button
                         size="sm"
                         variant="secondary"
                         leadingIcon={<RefreshCw aria-hidden />}
                         loading={checkingId === p.id}
-                        aria-label={`Check ${p.name}`}
+                        aria-label={t('settings.check2', { name: p.name })}
                         onClick={() => runCheck(p)}
                       >
-                        Check
+                        {t('settings.check')}
                       </Button>
                     ) : null}
                   </TableCell>
@@ -209,18 +216,18 @@ export function ProvidersCard() {
                     {canManage ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <IconButton label={`Actions for ${p.name}`} size="sm">
+                          <IconButton label={t('common.actionsFor', { name: p.name })} size="sm">
                             <MoreHorizontal aria-hidden />
                           </IconButton>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40">
                           <DropdownMenuItem onSelect={() => setDialog({ provider: p })}>
                             <Pencil aria-hidden />
-                            Edit
+                            {t('common.edit')}
                           </DropdownMenuItem>
                           <DropdownMenuItem tone="danger" onSelect={() => setDeleting(p)}>
                             <Trash2 aria-hidden />
-                            Delete
+                            {t('common.delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -244,16 +251,18 @@ export function ProvidersCard() {
       <ConfirmDialog
         open={!!deleting}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title={`Delete ${deleting?.name ?? 'provider'}?`}
-        description="Agents that use this provider block the deletion. The stored key is destroyed."
-        confirmLabel="Delete provider"
+        title={t('settings.deleteNamed', {
+          name: deleting?.name ?? t('settings.providerFallback'),
+        })}
+        description={t('settings.agentsThatUseThisProvider')}
+        confirmLabel={t('settings.deleteProvider')}
         tone="danger"
         loading={remove.isPending}
         onConfirm={() => {
           if (!deleting) return;
           remove.mutate(deleting.id, {
             onSuccess: () => {
-              toast.success('Provider deleted');
+              toast.success(t('settings.providerDeleted'));
               setDeleting(null);
             },
             onError: (e) => {

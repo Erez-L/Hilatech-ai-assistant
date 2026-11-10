@@ -17,6 +17,7 @@ import {
   cn,
 } from '@hilatech/ui';
 import { LEAD_PIPELINE_STAGES, LEAD_STATUS_LABELS } from '@/lib/crm';
+import { useT } from '@/i18n/provider';
 
 export interface LeadStatusPipelineProps {
   status: LeadStatus;
@@ -38,6 +39,7 @@ export function LeadStatusPipeline({
   pending = false,
   className,
 }: LeadStatusPipelineProps) {
+  const t = useT();
   const [lostOpen, setLostOpen] = React.useState(false);
   const [reason, setReason] = React.useState('');
   const isWon = status === 'won';
@@ -65,7 +67,7 @@ export function LeadStatusPipeline({
       )}
       aria-busy={pending || undefined}
     >
-      <ol aria-label="Pipeline stage" className="flex flex-wrap items-center gap-1.5">
+      <ol aria-label={t('leads.pipelineStage')} className="flex flex-wrap items-center gap-1.5">
         {LEAD_PIPELINE_STAGES.map((stage, index) => {
           const reached = isWon || (!isLost && index <= currentIndex);
           const current = stage === status;
@@ -89,7 +91,7 @@ export function LeadStatusPipeline({
                 )}
               >
                 {reached && !current ? <Check className="size-3.5" aria-hidden /> : null}
-                {LEAD_STATUS_LABELS[stage]}
+                {t(LEAD_STATUS_LABELS[stage])}
               </button>
               {index < LEAD_PIPELINE_STAGES.length - 1 ? (
                 <span
@@ -119,7 +121,7 @@ export function LeadStatusPipeline({
             !isWon && 'text-success hover:border-success/50',
           )}
         >
-          {isWon ? 'Won' : 'Mark won'}
+          {isWon ? t('common.won') : t('leads.markWon')}
         </Button>
         <Button
           size="sm"
@@ -129,7 +131,7 @@ export function LeadStatusPipeline({
           leadingIcon={<X aria-hidden />}
           onClick={() => select('lost')}
         >
-          {isLost ? 'Lost' : 'Mark lost'}
+          {isLost ? t('common.lost') : t('leads.markLost')}
         </Button>
       </div>
 
@@ -144,16 +146,14 @@ export function LeadStatusPipeline({
             className="flex flex-col"
           >
             <DialogHeader>
-              <DialogTitle>Mark this lead as lost?</DialogTitle>
-              <DialogDescription>
-                A short reason helps the team learn what to change next time.
-              </DialogDescription>
+              <DialogTitle>{t('leads.markThisLeadAsLost')}</DialogTitle>
+              <DialogDescription>{t('leads.aShortReasonHelpsThe')}</DialogDescription>
             </DialogHeader>
             <DialogBody className="pb-2">
               <FormField
                 id="lost-reason"
-                label="Reason"
-                description="Optional, up to 500 characters."
+                label={t('common.reason')}
+                description={t('leads.optionalUpTo500Characters')}
               >
                 <Textarea
                   autoFocus
@@ -161,16 +161,16 @@ export function LeadStatusPipeline({
                   maxLength={500}
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="Chose a competitor, budget cut, no response…"
+                  placeholder={t('leads.choseACompetitorBudgetCut')}
                 />
               </FormField>
             </DialogBody>
             <DialogFooter>
               <Button variant="secondary" onClick={() => setLostOpen(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" variant="danger">
-                Mark as lost
+                {t('leads.markAsLost')}
               </Button>
             </DialogFooter>
           </form>

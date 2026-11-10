@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { Download, FileText, ListTree, RefreshCw, Trash2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import { Permission, type Document, type DocumentStatus } from '@hilatech/contracts';
 import {
   Button,
@@ -31,11 +30,14 @@ import { AiNotConfigured } from '@/components/ai/ai-not-configured';
 import { ChunkViewer } from './chunk-viewer';
 import { DocumentStatusBadge } from './document-status-badge';
 import { UploadZone } from './upload-zone';
-import { formatBytes, saveBlob } from '@/lib/knowledge';
+import { saveBlob } from '@/lib/knowledge';
+import { useT, useFormat } from '@/i18n/provider';
 
 const PAGE_SIZE = 20;
 
 export function DocumentsPanel({ baseId }: { baseId: string }) {
+  const fmt = useFormat();
+  const t = useT();
   const canManage = useCan(Permission.KNOWLEDGE_MANAGE);
   const [page, setPage] = React.useState(1);
   const [search, setSearch] = React.useState('');
@@ -57,7 +59,7 @@ export function DocumentsPanel({ baseId }: { baseId: string }) {
   const onReprocess = (doc: Document) => {
     setBusyId(doc.id);
     reprocess.mutate(doc.id, {
-      onSuccess: () => toast.success(`“${doc.title}” queued for reprocessing`),
+      onSuccess: () => toast.success(t('knowledge.queuedForReprocessing', { title: doc.title })),
       onError: (e) => {
         if (isApiError(e) && e.code === 'AI_NOT_CONFIGURED') setNotConfigured(true);
         else toast.error(getErrorMessage(e));
@@ -94,24 +96,24 @@ export function DocumentsPanel({ baseId }: { baseId: string }) {
               setSearch(v);
               setPage(1);
             }}
-            placeholder="Search documents"
-            aria-label="Search documents"
+            placeholder={t('knowledge.searchDocuments')}
+            aria-label={t('knowledge.searchDocuments')}
             className="sm:max-w-sm sm:flex-1"
           />
           <div className="sm:w-48">
             <NativeSelect
-              aria-label="Filter by status"
+              aria-label={t('common.filterByStatus')}
               value={status}
               onChange={(e) => {
                 setStatus(e.target.value as DocumentStatus | '');
                 setPage(1);
               }}
             >
-              <option value="">All statuses</option>
-              <option value="uploaded">Uploaded</option>
-              <option value="processing">Processing</option>
-              <option value="ready">Ready</option>
-              <option value="failed">Failed</option>
+              <option value="">{t('common.allStatuses')}</option>
+              <option value="uploaded">{t('knowledge.uploaded')}</option>
+              <option value="processing">{t('knowledge.processing')}</option>
+              <option value="ready">{t('knowledge.ready')}</option>
+              <option value="failed">{t('common.failed')}</option>
             </NativeSelect>
           </div>
         </CardContent>
@@ -119,16 +121,16 @@ export function DocumentsPanel({ baseId }: { baseId: string }) {
 
       <Card>
         <CardContent className="p-0">
-          <Table aria-label="Documents">
+          <Table aria-label={t('knowledge.documents2')}>
             <TableHeader>
               <TableRow>
-                <TableHead>Document</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Size</TableHead>
-                <TableHead className="text-right">Chunks</TableHead>
-                <TableHead>Uploaded</TableHead>
-                <TableHead className="text-right">
-                  <span className="sr-only">Actions</span>
+                <TableHead>{t('knowledge.document2')}</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
+                <TableHead className="text-end">{t('knowledge.size')}</TableHead>
+                <TableHead className="text-end">{t('knowledge.chunks2')}</TableHead>
+                <TableHead>{t('knowledge.uploaded')}</TableHead>
+                <TableHead className="text-end">
+                  <span className="sr-only">{t('common.actions')}</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -140,7 +142,7 @@ export function DocumentsPanel({ baseId }: { baseId: string }) {
                   <div className="flex flex-col items-center gap-2">
                     <span>{getErrorMessage(docs.error)}</span>
                     <Button variant="secondary" size="sm" onClick={() => void docs.refetch()}>
-                      Try again
+                      {t('common.tryAgain')}
                     </Button>
                   </div>
                 </TableEmptyRow>
@@ -149,13 +151,15 @@ export function DocumentsPanel({ baseId }: { baseId: string }) {
                   <EmptyState
                     compact
                     icon={<FileText />}
-                    title={filtered ? 'No documents match' : 'No documents yet'}
+                    title={
+                      filtered ? t('knowledge.noDocumentsMatch') : t('knowledge.noDocumentsYet')
+                    }
                     description={
                       filtered
-                        ? 'Try a different search or status.'
+                        ? t('knowledge.tryADifferentSearchOr')
                         : canManage
-                          ? 'Upload a document above to build this knowledge base.'
-                          : 'Documents appear here once someone uploads them.'
+                          ? t('knowledge.uploadADocumentAboveTo')
+                          : t('knowledge.documentsAppearHereOnceSomeone')
                     }
                   />
                 </TableEmptyRow>
@@ -176,18 +180,16 @@ export function DocumentsPanel({ baseId }: { baseId: string }) {
                         ) : null}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right tabular">
-                      {formatBytes(doc.sizeBytes)}
-                    </TableCell>
-                    <TableCell className="text-right tabular">{doc.chunkCount}</TableCell>
+                    <TableCell className="text-end tabular">{fmt.bytes(doc.sizeBytes)}</TableCell>
+                    <TableCell className="text-end tabular">{doc.chunkCount}</TableCell>
                     <TableCell className="text-fg-muted">
-                      {formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true })}
+                      {fmt.relative(new Date(doc.createdAt))}
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
                         <IconButton
                           size="sm"
-                          label={`View chunks of ${doc.title}`}
+                          label={t('knowledge.viewChunksOf', { title: doc.title })}
                           disabled={doc.chunkCount === 0}
                           onClick={() => setChunksFor(doc)}
                         >
@@ -195,7 +197,7 @@ export function DocumentsPanel({ baseId }: { baseId: string }) {
                         </IconButton>
                         <IconButton
                           size="sm"
-                          label={`Download ${doc.title}`}
+                          label={t('knowledge.download', { title: doc.title })}
                           disabled={busyId === doc.id}
                           onClick={() => void onDownload(doc)}
                         >
@@ -205,7 +207,7 @@ export function DocumentsPanel({ baseId }: { baseId: string }) {
                           <>
                             <IconButton
                               size="sm"
-                              label={`Reprocess ${doc.title}`}
+                              label={t('knowledge.reprocess', { title: doc.title })}
                               disabled={busyId === doc.id || doc.status === 'processing'}
                               onClick={() => onReprocess(doc)}
                             >
@@ -213,7 +215,7 @@ export function DocumentsPanel({ baseId }: { baseId: string }) {
                             </IconButton>
                             <IconButton
                               size="sm"
-                              label={`Delete ${doc.title}`}
+                              label={t('knowledge.delete', { title: doc.title })}
                               onClick={() => setDeleting(doc)}
                             >
                               <Trash2 aria-hidden />
@@ -245,20 +247,18 @@ export function DocumentsPanel({ baseId }: { baseId: string }) {
       <ConfirmDialog
         open={!!deleting}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title="Delete this document?"
+        title={t('knowledge.deleteThisDocument')}
         description={
-          deleting
-            ? `“${deleting.title}”, its chunks and the stored file will be removed. This can’t be undone.`
-            : undefined
+          deleting ? t('knowledge.itsChunksAndTheStored', { title: deleting.title }) : undefined
         }
-        confirmLabel="Delete document"
+        confirmLabel={t('knowledge.deleteDocument')}
         tone="danger"
         loading={remove.isPending}
         onConfirm={async () => {
           if (!deleting) return;
           try {
             await remove.mutateAsync(deleting.id);
-            toast.success(`“${deleting.title}” deleted`);
+            toast.success(t('knowledge.deleted', { title: deleting.title }));
             setDeleting(null);
           } catch (e) {
             toast.error(getErrorMessage(e));

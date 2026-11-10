@@ -14,6 +14,8 @@ import { applyServerErrors } from '@/lib/forms/server-errors';
 import { useSession } from '@/stores/session';
 import { useSignOut } from '@/components/shell/user-menu';
 import { COMMON_TIMEZONES, INDUSTRIES } from '@/lib/reference-data';
+import { enumLabel } from '@/i18n/enums';
+import { useT } from '@/i18n/provider';
 
 type CreateOrganizationInput = z.input<typeof createOrganizationSchema>;
 
@@ -30,6 +32,7 @@ function slugify(value: string): string {
 }
 
 export function OnboardingForm() {
+  const t = useT();
   const router = useRouter();
   const queryClient = useQueryClient();
   const isAdditional = useSearchParams().get('new') === '1';
@@ -77,7 +80,7 @@ export function OnboardingForm() {
       if (auth) useSession.getState().applyAuthResponse(auth);
       useSession.getState().setActiveOrganization(org.id);
       queryClient.removeQueries({ queryKey: ['org'] });
-      toast.success(`${org.name} is ready`);
+      toast.success(t('onboarding.isReady', { name: org.name }));
       router.replace('/dashboard');
     } catch (error) {
       if (
@@ -93,13 +96,15 @@ export function OnboardingForm() {
       <div className="flex flex-col gap-1.5">
         <h1 className="text-2xl font-semibold tracking-tight">
           {isAdditional
-            ? 'Create another organization'
-            : `Welcome${user ? `, ${user.firstName}` : ''}`}
+            ? t('onboarding.createAnotherOrganization')
+            : user
+              ? t('onboarding.welcomeName', { name: user.firstName })
+              : t('onboarding.welcome')}
         </h1>
         <p className="text-sm text-fg-muted">
           {isAdditional
-            ? 'Each organization has its own team, roles, data and assistant settings.'
-            : 'Set up your organization. This is the workspace your team and your assistant will work in.'}
+            ? t('onboarding.eachOrganizationHasItsOwn')
+            : t('onboarding.setUpYourOrganizationThis')}
         </p>
       </div>
 
@@ -108,20 +113,24 @@ export function OnboardingForm() {
           {formError ? <Alert tone="danger">{formError}</Alert> : null}
           <FormField
             id="name"
-            label="Organization name"
+            label={t('onboarding.organizationName')}
             error={form.formState.errors.name?.message}
             required
           >
-            <Input autoFocus placeholder="Acme Dental Clinic" {...form.register('name')} />
+            <Input
+              autoFocus
+              placeholder={t('onboarding.acmeDentalClinic')}
+              {...form.register('name')}
+            />
           </FormField>
           <FormField
             id="slug"
-            label="Workspace handle"
-            description="Lowercase letters, numbers and hyphens. Used in links and integrations."
+            label={t('onboarding.workspaceHandle')}
+            description={t('onboarding.lowercaseLettersNumbersAndHyphens')}
             error={form.formState.errors.slug?.message}
           >
             <Input
-              placeholder="acme-dental"
+              placeholder={t('onboarding.acmeDental')}
               {...form.register('slug', { onChange: () => setSlugTouched(true) })}
               onBlur={(e) => {
                 if (!e.target.value) setSlugTouched(false);
@@ -131,29 +140,33 @@ export function OnboardingForm() {
           <div className="grid gap-5 sm:grid-cols-2">
             <FormField
               id="industry"
-              label="Industry"
+              label={t('common.industry')}
               error={form.formState.errors.industry?.message}
             >
               <NativeSelect {...form.register('industry')}>
-                <option value="">Choose…</option>
+                <option value="">{t('onboarding.choose')}</option>
                 {INDUSTRIES.map((i) => (
                   <option key={i} value={i}>
-                    {i}
+                    {enumLabel(t, 'industry', i)}
                   </option>
                 ))}
               </NativeSelect>
             </FormField>
-            <FormField id="locale" label="Language" error={form.formState.errors.locale?.message}>
+            <FormField
+              id="locale"
+              label={t('common.language')}
+              error={form.formState.errors.locale?.message}
+            >
               <NativeSelect {...form.register('locale')}>
-                <option value="en">English</option>
-                <option value="he">Hebrew</option>
+                <option value="en">{t('common.english')}</option>
+                <option value="he">{t('common.hebrew')}</option>
               </NativeSelect>
             </FormField>
           </div>
           <FormField
             id="timezone"
-            label="Time zone"
-            description="Business hours and reports use this time zone."
+            label={t('common.timeZone')}
+            description={t('onboarding.businessHoursAndReportsUse')}
             error={form.formState.errors.timezone?.message}
           >
             <NativeSelect {...form.register('timezone')}>
@@ -170,15 +183,15 @@ export function OnboardingForm() {
           <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-between">
             {isAdditional && organizations.length > 0 ? (
               <Button asChild variant="ghost">
-                <Link href="/dashboard">Cancel</Link>
+                <Link href="/dashboard">{t('common.cancel')}</Link>
               </Button>
             ) : (
               <Button variant="ghost" onClick={() => void signOut()}>
-                Sign out
+                {t('common.signOut')}
               </Button>
             )}
             <Button type="submit" size="lg" loading={form.formState.isSubmitting}>
-              Create organization
+              {t('common.createOrganization')}
             </Button>
           </div>
         </form>

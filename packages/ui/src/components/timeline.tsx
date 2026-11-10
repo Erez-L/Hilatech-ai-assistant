@@ -40,7 +40,7 @@ export function TimelineItem({
     <li className={cn('group relative flex gap-3 pb-5 last:pb-0', className)} {...props}>
       <span
         aria-hidden
-        className="absolute top-7 bottom-0 left-[0.8125rem] w-px bg-border group-last:hidden"
+        className="absolute top-7 bottom-0 start-[0.8125rem] w-px bg-border group-last:hidden"
       />
       <span
         aria-hidden

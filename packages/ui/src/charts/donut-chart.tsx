@@ -10,6 +10,7 @@ import {
   seriesColor,
   type ValueFormatter,
 } from './chart-shared';
+import { useUiStrings } from '../lib/ui-strings';
 
 export interface DonutDatum {
   label: string;
@@ -34,12 +35,13 @@ export function DonutChart({
   data,
   title,
   description,
-  centerLabel = 'Total',
+  centerLabel,
   centerValue,
   height = 220,
   valueFormatter = formatNumber,
   className,
 }: DonutChartProps) {
+  const ui = useUiStrings();
   const total = data.reduce((sum, d) => sum + d.value, 0);
   const legend = (
     <ChartLegend items={data.map((d, i) => ({ label: d.label, color: seriesColor(i, d.color) }))} />
@@ -78,7 +80,7 @@ export function DonutChart({
           <span className="text-xl font-semibold tabular text-fg">
             {centerValue ?? formatCompact(total)}
           </span>
-          <span className="text-xs text-fg-muted">{centerLabel}</span>
+          <span className="text-xs text-fg-muted">{centerLabel ?? ui.total}</span>
         </div>
       </div>
     </ChartFrame>

@@ -1,4 +1,5 @@
 'use client';
+import { vm } from '@/i18n/validation';
 
 import * as React from 'react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
@@ -13,6 +14,7 @@ import { FormField, Input, NativeSelect, TagInput, Textarea } from '@hilatech/ui
 import { LEAD_SOURCES, LEAD_SOURCE_LABELS, LEAD_STATUSES, LEAD_STATUS_LABELS } from '@/lib/crm';
 import { ContactPicker } from '@/components/crm/contact-picker';
 import { AssigneePicker } from '@/components/crm/assignee-picker';
+import { useT } from '@/i18n/provider';
 
 /**
  * Form-side schema: the contract rules for every field, with the inputs the browser produces
@@ -40,11 +42,14 @@ export const leadFormSchema = createLeadSchema
         if (raw === '') return '';
         const n = Number(raw);
         if (!Number.isFinite(n)) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Enter a valid amount' });
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: vm('leads.enterAValidAmount') });
           return z.NEVER;
         }
         if (n < 0) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Value cannot be negative' });
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: vm('leads.valueCannotBeNegative'),
+          });
           return z.NEVER;
         }
         return n;
@@ -148,44 +153,45 @@ export function LeadFormFields({
   autoFocusTitle = false,
   disabled = false,
 }: LeadFormFieldsProps) {
+  const t = useT();
   const errors = form.formState.errors;
   const [contact, setContact] = React.useState(selectedContact ?? null);
   const id = (name: string) => `${idPrefix}-${name}`;
 
   return (
     <fieldset disabled={disabled} className="flex flex-col gap-5">
-      <FormField id={id('title')} label="Title" error={errors.title?.message} required>
+      <FormField id={id('title')} label={t('common.title')} error={errors.title?.message} required>
         <Input
           autoFocus={autoFocusTitle}
-          placeholder="Website redesign for Acme"
+          placeholder={t('leads.websiteRedesignForAcme')}
           {...form.register('title')}
         />
       </FormField>
 
       <div className="grid gap-5 sm:grid-cols-2">
         {withStatus ? (
-          <FormField id={id('status')} label="Stage" error={errors.status?.message}>
+          <FormField id={id('status')} label={t('common.stage')} error={errors.status?.message}>
             <NativeSelect {...form.register('status')}>
               {LEAD_STATUSES.map((s) => (
                 <option key={s} value={s}>
-                  {LEAD_STATUS_LABELS[s]}
+                  {t(LEAD_STATUS_LABELS[s])}
                 </option>
               ))}
             </NativeSelect>
           </FormField>
         ) : null}
-        <FormField id={id('source')} label="Source" error={errors.source?.message}>
+        <FormField id={id('source')} label={t('common.source')} error={errors.source?.message}>
           <NativeSelect {...form.register('source')}>
             {LEAD_SOURCES.map((s) => (
               <option key={s} value={s}>
-                {LEAD_SOURCE_LABELS[s]}
+                {t(LEAD_SOURCE_LABELS[s])}
               </option>
             ))}
           </NativeSelect>
         </FormField>
         <FormField
           id={id('expectedCloseDate')}
-          label="Expected close"
+          label={t('leads.expectedClose')}
           error={errors.expectedCloseDate?.message}
         >
           <Input type="date" {...form.register('expectedCloseDate')} />
@@ -195,9 +201,9 @@ export function LeadFormFields({
       <div className="grid gap-5 sm:grid-cols-[1fr_7rem]">
         <FormField
           id={id('value')}
-          label="Value"
+          label={t('common.value')}
           error={errors.value?.message}
-          description="Estimated deal value. Leave empty if unknown."
+          description={t('leads.estimatedDealValueLeaveEmpty')}
         >
           <Input
             type="number"
@@ -209,10 +215,14 @@ export function LeadFormFields({
             {...form.register('value')}
           />
         </FormField>
-        <FormField id={id('currency')} label="Currency" error={errors.currency?.message}>
+        <FormField
+          id={id('currency')}
+          label={t('common.currency')}
+          error={errors.currency?.message}
+        >
           <Input
             maxLength={3}
-            placeholder="USD"
+            placeholder={t('leads.usd')}
             className="font-mono uppercase"
             autoCapitalize="characters"
             {...form.register('currency')}
@@ -223,9 +233,9 @@ export function LeadFormFields({
       <div className={withAssignee ? 'grid gap-5 sm:grid-cols-2' : 'grid gap-5'}>
         <FormField
           id={id('contactId')}
-          label="Contact"
+          label={t('common.contact')}
           error={errors.contactId?.message}
-          description="The person or company this lead belongs to."
+          description={t('leads.thePersonOrCompanyThis')}
         >
           <Controller
             control={form.control}
@@ -246,7 +256,11 @@ export function LeadFormFields({
           />
         </FormField>
         {withAssignee ? (
-          <FormField id={id('assigneeId')} label="Assignee" error={errors.assigneeId?.message}>
+          <FormField
+            id={id('assigneeId')}
+            label={t('common.assignee')}
+            error={errors.assigneeId?.message}
+          >
             <Controller
               control={form.control}
               name="assigneeId"
@@ -266,9 +280,9 @@ export function LeadFormFields({
 
       <FormField
         id={id('tags')}
-        label="Tags"
+        label={t('common.tags')}
         error={errors.tags?.message}
-        description="Press Enter or comma to add a tag."
+        description={t('common.pressEnterOrCommaTo')}
       >
         <Controller
           control={form.control}
@@ -286,10 +300,14 @@ export function LeadFormFields({
         />
       </FormField>
 
-      <FormField id={id('description')} label="Description" error={errors.description?.message}>
+      <FormField
+        id={id('description')}
+        label={t('common.description')}
+        error={errors.description?.message}
+      >
         <Textarea
           rows={3}
-          placeholder="What they need, budget, timeline…"
+          placeholder={t('leads.whatTheyNeedBudgetTimeline')}
           {...form.register('description')}
         />
       </FormField>

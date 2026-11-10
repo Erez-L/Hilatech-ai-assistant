@@ -5,6 +5,7 @@ import type { Contact, ContactSummary } from '@hilatech/contracts';
 import { Combobox, type ComboboxItem } from '@hilatech/ui';
 import { useContacts } from '@/hooks/queries';
 import { contactMeta, contactName } from '@/lib/crm';
+import { useT } from '@/i18n/provider';
 
 export interface ContactPickerProps {
   id?: string;
@@ -48,12 +49,13 @@ export function ContactPicker({
   value,
   onValueChange,
   selected,
-  placeholder = 'Search contacts',
+  placeholder,
   disabled,
   clearable = true,
   footer,
   ...aria
 }: ContactPickerProps) {
+  const t = useT();
   const [search, setSearch] = React.useState('');
   const debounced = useDebounced(search);
   const query = useContacts({ search: debounced || undefined, page: 1, pageSize: 10 });
@@ -82,14 +84,14 @@ export function ContactPicker({
       search={search}
       onSearchChange={setSearch}
       loading={query.isFetching}
-      placeholder={placeholder}
-      searchPlaceholder="Type a name, email or company"
+      placeholder={placeholder ?? t('crm.searchContacts')}
+      searchPlaceholder={t('crm.typeANameEmailOr')}
       emptyMessage={
         query.isError
-          ? 'Contacts could not be loaded.'
+          ? t('crm.contactsCouldNotLoad')
           : debounced
-            ? 'No contacts match.'
-            : 'No contacts yet.'
+            ? t('crm.noContactsMatch')
+            : t('crm.noContactsYet')
       }
       disabled={disabled}
       clearable={clearable}

@@ -5,6 +5,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { Button, type ButtonProps } from './button';
+import { useUiStrings } from '../lib/ui-strings';
 
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
@@ -38,6 +39,7 @@ export const DialogContent = React.forwardRef<
   React.ComponentRef<typeof DialogPrimitive.Content>,
   DialogContentProps
 >(function DialogContent({ className, children, size = 'md', hideClose, ...props }, ref) {
+  const ui = useUiStrings();
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -55,8 +57,8 @@ export const DialogContent = React.forwardRef<
         {children}
         {hideClose ? null : (
           <DialogPrimitive.Close
-            className="absolute top-3.5 right-3.5 flex size-8 items-center justify-center rounded-sm text-fg-subtle transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            aria-label="Close"
+            className="absolute top-3.5 end-3.5 flex size-8 items-center justify-center rounded-sm text-fg-subtle transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            aria-label={ui.close}
           >
             <X className="size-4" aria-hidden />
           </DialogPrimitive.Close>
@@ -67,7 +69,7 @@ export const DialogContent = React.forwardRef<
 });
 
 export function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('flex flex-col gap-1 px-6 pt-6 pb-4 pr-12', className)} {...props} />;
+  return <div className={cn('flex flex-col gap-1 px-6 pt-6 pb-4 pe-12', className)} {...props} />;
 }
 
 export function DialogBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
@@ -132,13 +134,14 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   tone = 'default',
   loading,
   onConfirm,
   children,
 }: ConfirmDialogProps) {
+  const ui = useUiStrings();
   const variant: ButtonProps['variant'] = tone === 'danger' ? 'danger' : 'primary';
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -151,11 +154,11 @@ export function ConfirmDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="secondary" disabled={loading}>
-              {cancelLabel}
+              {cancelLabel ?? ui.cancel}
             </Button>
           </DialogClose>
           <Button variant={variant} loading={loading} onClick={() => void onConfirm()}>
-            {confirmLabel}
+            {confirmLabel ?? ui.confirm}
           </Button>
         </DialogFooter>
       </DialogContent>

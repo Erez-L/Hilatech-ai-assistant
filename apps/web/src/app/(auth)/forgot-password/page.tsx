@@ -9,8 +9,10 @@ import { Alert, Button, FormField, Input } from '@hilatech/ui';
 import { authApi, getErrorMessage } from '@/lib/api';
 import { applyServerErrors } from '@/lib/forms/server-errors';
 import { AuthCard } from '@/components/auth/auth-card';
+import { useT } from '@/i18n/provider';
 
 export default function ForgotPasswordPage() {
+  const t = useT();
   const [sent, setSent] = React.useState<string | null>(null);
   const [formError, setFormError] = React.useState<string | null>(null);
   const form = useForm<ForgotPasswordRequest>({
@@ -31,22 +33,22 @@ export default function ForgotPasswordPage() {
   if (sent) {
     return (
       <AuthCard
-        title="Check your inbox"
-        description={`If an account exists for ${sent}, a reset link is on its way. It expires in about an hour.`}
+        title={t('auth.checkYourInbox')}
+        description={t('auth.ifAnAccountExistsFor', { sent })}
         footer={
           <Link href="/login" className="font-medium text-accent hover:underline">
-            Back to sign in
+            {t('auth.backToSignIn')}
           </Link>
         }
       >
         <p className="text-sm text-fg-muted">
-          Didn’t get it? Check your spam folder, or{' '}
+          {t('auth.didnTGetItCheck')}{' '}
           <button
             type="button"
             className="font-medium text-accent hover:underline"
             onClick={() => setSent(null)}
           >
-            send it again
+            {t('auth.sendItAgain')}
           </button>
           .
         </p>
@@ -56,17 +58,22 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthCard
-      title="Reset your password"
-      description="Enter the email you use to sign in and we’ll send you a link."
+      title={t('auth.resetYourPassword')}
+      description={t('auth.enterTheEmailYouUse')}
       footer={
         <Link href="/login" className="font-medium text-accent hover:underline">
-          Back to sign in
+          {t('auth.backToSignIn')}
         </Link>
       }
     >
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
-        <FormField id="email" label="Email" error={form.formState.errors.email?.message} required>
+        <FormField
+          id="email"
+          label={t('common.email')}
+          error={form.formState.errors.email?.message}
+          required
+        >
           <Input
             type="email"
             autoComplete="email"
@@ -76,7 +83,7 @@ export default function ForgotPasswordPage() {
           />
         </FormField>
         <Button type="submit" size="lg" loading={form.formState.isSubmitting} className="w-full">
-          Send reset link
+          {t('auth.sendResetLink')}
         </Button>
       </form>
     </AuthCard>

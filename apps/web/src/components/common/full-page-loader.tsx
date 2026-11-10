@@ -1,6 +1,11 @@
-import { LogoMark, Spinner } from '@hilatech/ui';
+'use client';
 
-export function FullPageLoader({ label = 'Loading your workspace' }: { label?: string }) {
+import { LogoMark, Spinner } from '@hilatech/ui';
+import { useT } from '@/i18n/provider';
+
+export function FullPageLoader({ label }: { label?: string }) {
+  const t = useT();
+  label ??= t('common.loadingYourWorkspace');
   return (
     <div
       className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-bg"

@@ -1,7 +1,7 @@
 'use client';
 
 import { Target } from 'lucide-react';
-import { BarChart, EmptyState, StatCard, formatCurrency } from '@hilatech/ui';
+import { BarChart, EmptyState, StatCard } from '@hilatech/ui';
 import { useSalesAnalytics } from '@/hooks/analytics';
 import { QueryState } from '@/components/common/query-state';
 import { bucketLabel, hasActivity, pct } from '@/lib/analytics';
@@ -13,20 +13,21 @@ import {
   SectionCard,
   type ReportContext,
 } from './report-parts';
+import { useT, useFormat } from '@/i18n/provider';
 
 export function SalesTab({ ctx }: { ctx: ReportContext }) {
+  const fmt = useFormat();
+  const t = useT();
   const query = useSalesAnalytics(ctx.params);
   return (
     <div className="flex flex-col gap-6" aria-busy={query.isFetching}>
-      <ReportNote title="Sales are derived from leads" testId="deals-not-modelled">
-        There is no deals or opportunities model yet, so these figures come from leads that carry a
-        value. A won or lost lead is dated by its conversion date, or its last update when it has
-        none. Amounts are never added up across currencies.
+      <ReportNote title={t('analytics.salesAreDerivedFromLeads')} testId="deals-not-modelled">
+        {t('analytics.thereIsNoDealsOr')}
       </ReportNote>
       <QueryState
         query={query}
         loading={<ReportSkeleton />}
-        errorTitle="Sales analytics couldn’t be loaded"
+        errorTitle={t('analytics.salesAnalyticsCouldnTBe')}
       >
         {(d) => {
           const closedTotal = d.closedInRange.reduce((n, c) => n + c.wonCount + c.lostCount, 0);
@@ -36,119 +37,134 @@ export function SalesTab({ ctx }: { ctx: ReportContext }) {
             <>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
-                  label="Win rate"
-                  value={pct(d.winRate)}
-                  hint={d.winRate == null ? 'No leads closed in this range' : 'won ÷ (won + lost)'}
+                  label={t('analytics.winRate')}
+                  value={pct(d.winRate, fmt)}
+                  hint={
+                    d.winRate == null
+                      ? t('analytics.noLeadsClosedInThis')
+                      : t('analytics.wonWonLost')
+                  }
                 />
-                <StatCard label="Leads won" value={wonTotal} />
-                <StatCard label="Leads closed" value={closedTotal} />
+                <StatCard label={t('analytics.leadsWon')} value={wonTotal} />
+                <StatCard label={t('analytics.leadsClosed')} value={closedTotal} />
                 <StatCard
-                  label="Avg. sales cycle"
+                  label={t('analytics.avgSalesCycle')}
                   value={
                     d.avgSalesCycleDays == null
                       ? '—'
-                      : `${Math.round(d.avgSalesCycleDays * 10) / 10} days`
+                      : t('analytics.daysValue', {
+                          count: Math.round(d.avgSalesCycleDays * 10) / 10,
+                        })
                   }
-                  hint={d.avgSalesCycleDays == null ? 'No won leads to measure' : undefined}
+                  hint={
+                    d.avgSalesCycleDays == null ? t('analytics.noWonLeadsToMeasure') : undefined
+                  }
                 />
               </div>
 
               {empty ? (
                 <EmptyState
                   icon={<Target />}
-                  title="No leads with a value yet"
-                  description="Add a value to your leads and mark them won or lost to see the pipeline and win rate here."
+                  title={t('analytics.noLeadsWithAValue')}
+                  description={t('analytics.addAValueToYour')}
                 />
               ) : (
                 <>
                   <SectionCard
-                    title="Open pipeline"
-                    description="Leads still in progress, by stage and currency."
+                    title={t('analytics.openPipeline')}
+                    description={t('analytics.leadsStillInProgressBy')}
                     flush
                   >
                     <DataTable
-                      caption="Open pipeline"
+                      caption={t('analytics.openPipeline')}
                       rows={d.pipeline}
                       rowKey={(r) => `${r.status}-${r.currency}`}
-                      emptyText="No open leads carry a value."
+                      emptyText={t('analytics.noOpenLeadsCarryA')}
                       columns={[
-                        { header: 'Stage', render: (r) => LEAD_STATUS_LABELS[r.status] },
-                        { header: 'Currency', render: (r) => r.currency },
-                        { header: 'Leads', align: 'right', render: (r) => r.count },
                         {
-                          header: 'Value',
+                          header: t('common.stage'),
+                          render: (r) => t(LEAD_STATUS_LABELS[r.status]),
+                        },
+                        { header: t('common.currency'), render: (r) => r.currency },
+                        { header: t('common.leads'), align: 'right', render: (r) => r.count },
+                        {
+                          header: t('common.value'),
                           align: 'right',
-                          render: (r) => formatCurrency(r.value, r.currency),
+                          render: (r) => fmt.currency(r.value, r.currency),
                         },
                       ]}
                     />
                   </SectionCard>
 
                   <SectionCard
-                    title="Closed in range"
-                    description="Won and lost leads by currency."
+                    title={t('analytics.closedInRange')}
+                    description={t('analytics.wonAndLostLeadsBy')}
                     flush
                   >
                     <DataTable
-                      caption="Closed leads by currency"
+                      caption={t('analytics.closedLeadsByCurrency')}
                       rows={d.closedInRange}
                       rowKey={(r) => r.currency}
-                      emptyText="No leads were closed in this range."
+                      emptyText={t('analytics.noLeadsWereClosedIn')}
                       columns={[
-                        { header: 'Currency', render: (r) => r.currency },
-                        { header: 'Won', align: 'right', render: (r) => r.wonCount },
+                        { header: t('common.currency'), render: (r) => r.currency },
+                        { header: t('common.won'), align: 'right', render: (r) => r.wonCount },
                         {
-                          header: 'Won value',
+                          header: t('analytics.wonValue'),
                           align: 'right',
-                          render: (r) => formatCurrency(r.wonValue, r.currency),
+                          render: (r) => fmt.currency(r.wonValue, r.currency),
                         },
-                        { header: 'Lost', align: 'right', render: (r) => r.lostCount },
+                        { header: t('common.lost'), align: 'right', render: (r) => r.lostCount },
                         {
-                          header: 'Lost value',
+                          header: t('analytics.lostValue'),
                           align: 'right',
-                          render: (r) => formatCurrency(r.lostValue, r.currency),
+                          render: (r) => fmt.currency(r.lostValue, r.currency),
                         },
                         {
-                          header: 'Avg. won value',
+                          header: t('analytics.avgWonValue'),
                           align: 'right',
                           render: (r) =>
-                            r.avgWonValue == null ? '—' : formatCurrency(r.avgWonValue, r.currency),
+                            r.avgWonValue == null ? '—' : fmt.currency(r.avgWonValue, r.currency),
                         },
                       ]}
                     />
                   </SectionCard>
 
                   <div className="grid gap-6 lg:grid-cols-2">
-                    <SectionCard title="Win rate by source" flush>
+                    <SectionCard title={t('analytics.winRateBySource')} flush>
                       <DataTable
-                        caption="Win rate by source"
+                        caption={t('analytics.winRateBySource')}
                         rows={d.bySource}
                         rowKey={(r) => r.source}
-                        emptyText="No leads were closed in this range."
+                        emptyText={t('analytics.noLeadsWereClosedIn')}
                         columns={[
                           {
-                            header: 'Source',
-                            render: (r) => LEAD_SOURCE_LABELS[r.source] ?? r.source,
+                            header: t('common.source'),
+                            render: (r) => t(LEAD_SOURCE_LABELS[r.source] ?? r.source),
                           },
-                          { header: 'Won', align: 'right', render: (r) => r.won },
-                          { header: 'Lost', align: 'right', render: (r) => r.lost },
-                          { header: 'Win rate', align: 'right', render: (r) => pct(r.winRate) },
+                          { header: t('common.won'), align: 'right', render: (r) => r.won },
+                          { header: t('common.lost'), align: 'right', render: (r) => r.lost },
+                          {
+                            header: t('analytics.winRate'),
+                            align: 'right',
+                            render: (r) => pct(r.winRate, fmt),
+                          },
                         ]}
                       />
                     </SectionCard>
-                    <SectionCard title="Leads won over time">
+                    <SectionCard title={t('analytics.leadsWonOverTime')}>
                       {hasActivity(d.wonSeries, ['count']) ? (
                         <BarChart
                           data={d.wonSeries.map((p) => ({
-                            bucket: bucketLabel(p.bucket, ctx.granularity),
+                            bucket: bucketLabel(p.bucket, ctx.granularity, fmt, t),
                             won: p.count,
                           }))}
                           xKey="bucket"
-                          series={[{ key: 'won', label: 'Leads won' }]}
+                          series={[{ key: 'won', label: t('analytics.leadsWon') }]}
                           height={220}
                         />
                       ) : (
-                        <p className="text-sm text-fg-muted">No leads were won in this range.</p>
+                        <p className="text-sm text-fg-muted">{t('analytics.noLeadsWereWonIn')}</p>
                       )}
                     </SectionCard>
                   </div>

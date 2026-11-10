@@ -21,6 +21,7 @@ import { useCan } from '@/hooks/use-can';
 import { useSession } from '@/stores/session';
 import { fullName } from '@/lib/crm';
 import { UserChip } from './user-chip';
+import { useT } from '@/i18n/provider';
 
 export interface AssigneeMenuProps {
   assignee: UserSummary | null;
@@ -48,8 +49,9 @@ export function AssigneeMenu({
   pending,
   size = 'md',
   className,
-  label = 'Assignee',
+  label,
 }: AssigneeMenuProps) {
+  const t = useT();
   const me = useSession((s) => s.user);
   const canReadMembers = useCan(Permission.MEMBERS_READ);
   const [open, setOpen] = React.useState(false);
@@ -68,7 +70,10 @@ export function AssigneeMenu({
           variant="secondary"
           size={size}
           loading={pending}
-          aria-label={`${label}: ${assignee ? fullName(assignee) : 'unassigned'}`}
+          aria-label={t('crm.assigneeAria', {
+            label: label ?? t('common.assignee'),
+            value: assignee ? fullName(assignee) : t('crm.unassignedLower'),
+          })}
           className={cn('max-w-56 justify-between', className)}
           trailingIcon={<ChevronDown aria-hidden />}
         >
@@ -79,19 +84,19 @@ export function AssigneeMenu({
         {me && assignee?.id !== me.id ? (
           <DropdownMenuItem onSelect={() => onAssign(me.id)}>
             <UserRoundCheck aria-hidden />
-            Assign to me
+            {t('crm.assignToMe')}
           </DropdownMenuItem>
         ) : null}
         {assignee && canAssign ? (
           <DropdownMenuItem onSelect={() => onAssign(null)}>
             <UserRoundX aria-hidden />
-            Unassign
+            {t('crm.unassign')}
           </DropdownMenuItem>
         ) : null}
         {canAssign && canReadMembers && active.length > 0 ? (
           <>
             {(me && assignee?.id !== me.id) || assignee ? <DropdownMenuSeparator /> : null}
-            <DropdownMenuLabel>Team</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('common.team')}</DropdownMenuLabel>
             <DropdownMenuRadioGroup
               value={assignee?.id ?? ''}
               onValueChange={(id) => {
@@ -110,7 +115,7 @@ export function AssigneeMenu({
                       />
                       <span className="truncate">{fullName(m.user)}</span>
                       {m.userId === me?.id ? (
-                        <span className="text-xs text-fg-subtle">(you)</span>
+                        <span className="text-xs text-fg-subtle">{t('common.you')}</span>
                       ) : null}
                     </span>
                   </DropdownMenuRadioItem>

@@ -31,6 +31,7 @@ import { PermissionGate } from '@/components/common/permission-gate';
 import { NewConversationDialog } from '@/components/crm/new-conversation-dialog';
 import { ConversationList } from './conversation-list';
 import { ConversationThread } from './conversation-thread';
+import { useT } from '@/i18n/provider';
 
 const PAGE_SIZE = 25;
 const ME = '__me__';
@@ -41,6 +42,7 @@ const ME = '__me__';
  * panes stack: the list is shown until a thread is chosen, then the thread with a back button.
  */
 export function ConversationsView() {
+  const t = useT();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -100,12 +102,12 @@ export function ConversationsView() {
     <PermissionGate anyOf={[Permission.CONVERSATIONS_READ]}>
       <div className="flex flex-col gap-4">
         <PageHeader
-          title="Conversations"
-          description="Every exchange with customers — by the team and the assistant."
+          title={t('common.conversations')}
+          description={t('conversations.everyExchangeWithCustomersBy')}
           actions={
             canCreate ? (
               <Button leadingIcon={<Plus aria-hidden />} onClick={() => setCreateOpen(true)}>
-                New conversation
+                {t('common.newConversation')}
               </Button>
             ) : undefined
           }
@@ -114,9 +116,9 @@ export function ConversationsView() {
         <div className="grid h-[calc(100dvh-13.5rem)] min-h-[32rem] overflow-hidden rounded-lg border border-border bg-surface shadow-xs lg:grid-cols-[22rem_minmax(0,1fr)]">
           {/* List pane */}
           <aside
-            aria-label="Conversation list"
+            aria-label={t('conversations.conversationList')}
             className={cn(
-              'flex min-h-0 flex-col border-border lg:border-r',
+              'flex min-h-0 flex-col border-border lg:border-e',
               selectedId ? 'hidden lg:flex' : 'flex',
             )}
           >
@@ -127,15 +129,17 @@ export function ConversationsView() {
                   setSearch(v);
                   setPage(1);
                 }}
-                placeholder="Search subject or contact"
-                aria-label="Search conversations"
+                placeholder={t('conversations.searchSubjectOrContact')}
+                aria-label={t('conversations.searchConversations')}
                 className="flex-1"
               />
               <Popover>
                 <PopoverTrigger asChild>
                   <IconButton
                     label={
-                      activeFilterCount > 0 ? `Filters, ${activeFilterCount} active` : 'Filters'
+                      activeFilterCount > 0
+                        ? t('conversations.filtersActive', { activeFilterCount })
+                        : t('conversations.filters')
                     }
                     variant="secondary"
                     className="relative"
@@ -144,7 +148,7 @@ export function ConversationsView() {
                     {activeFilterCount > 0 ? (
                       <span
                         aria-hidden
-                        className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-accent text-[0.625rem] font-semibold text-accent-fg"
+                        className="absolute -top-1 -end-1 flex size-4 items-center justify-center rounded-full bg-accent text-[0.625rem] font-semibold text-accent-fg"
                       >
                         {activeFilterCount}
                       </span>
@@ -153,7 +157,7 @@ export function ConversationsView() {
                 </PopoverTrigger>
                 <PopoverContent align="end" className="flex w-72 flex-col gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="conv-filter-status">Status</Label>
+                    <Label htmlFor="conv-filter-status">{t('common.status')}</Label>
                     <NativeSelect
                       id="conv-filter-status"
                       value={status}
@@ -162,16 +166,16 @@ export function ConversationsView() {
                         setPage(1);
                       }}
                     >
-                      <option value="">All statuses</option>
+                      <option value="">{t('common.allStatuses')}</option>
                       {CONVERSATION_STATUSES.map((s) => (
                         <option key={s} value={s}>
-                          {CONVERSATION_STATUS_LABELS[s]}
+                          {t(CONVERSATION_STATUS_LABELS[s])}
                         </option>
                       ))}
                     </NativeSelect>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="conv-filter-channel">Channel</Label>
+                    <Label htmlFor="conv-filter-channel">{t('common.channel')}</Label>
                     <NativeSelect
                       id="conv-filter-channel"
                       value={channel}
@@ -180,16 +184,16 @@ export function ConversationsView() {
                         setPage(1);
                       }}
                     >
-                      <option value="">All channels</option>
+                      <option value="">{t('conversations.allChannels')}</option>
                       {CONVERSATION_CHANNELS.map((c) => (
                         <option key={c} value={c}>
-                          {CONVERSATION_CHANNEL_LABELS[c]}
+                          {t(CONVERSATION_CHANNEL_LABELS[c])}
                         </option>
                       ))}
                     </NativeSelect>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="conv-filter-assignee">Assignee</Label>
+                    <Label htmlFor="conv-filter-assignee">{t('common.assignee')}</Label>
                     <NativeSelect
                       id="conv-filter-assignee"
                       value={assignee}
@@ -198,8 +202,8 @@ export function ConversationsView() {
                         setPage(1);
                       }}
                     >
-                      <option value="">Anyone</option>
-                      {me ? <option value={ME}>Assigned to me</option> : null}
+                      <option value="">{t('common.anyone')}</option>
+                      {me ? <option value={ME}>{t('conversations.assignedToMe')}</option> : null}
                       {canReadMembers
                         ? (members.data?.data ?? [])
                             .filter((m) => m.userId !== me?.id)
@@ -219,7 +223,7 @@ export function ConversationsView() {
                     leadingIcon={<FilterX aria-hidden />}
                     className="self-end"
                   >
-                    Clear filters
+                    {t('common.clearFilters')}
                   </Button>
                 </PopoverContent>
               </Popover>
@@ -250,8 +254,8 @@ export function ConversationsView() {
                 <EmptyState
                   compact
                   icon={<MessageSquare />}
-                  title="Pick a conversation"
-                  description="Choose a thread on the left to read and reply."
+                  title={t('conversations.pickAConversation')}
+                  description={t('conversations.chooseAThreadOnThe')}
                   action={
                     canCreate ? (
                       <Button
@@ -260,7 +264,7 @@ export function ConversationsView() {
                         leadingIcon={<Plus aria-hidden />}
                         onClick={() => setCreateOpen(true)}
                       >
-                        New conversation
+                        {t('common.newConversation')}
                       </Button>
                     ) : undefined
                   }

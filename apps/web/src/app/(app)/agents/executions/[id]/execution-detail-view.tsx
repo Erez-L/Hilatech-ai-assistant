@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { format } from 'date-fns';
 import {
   ArrowLeft,
   ChevronRight,
@@ -46,15 +45,18 @@ import { PermissionGate } from '@/components/common/permission-gate';
 import { QueryState } from '@/components/common/query-state';
 import { ExecutionStatusBadge } from '@/components/ai/badges';
 import { Markdown } from '@/components/ai/markdown';
+import { useT, useFormat } from '@/i18n/provider';
+import { tm } from '@/i18n/msg';
 
 export function ExecutionDetailView({ id }: { id: string }) {
+  const t = useT();
   const execution = useAgentExecution(id);
   return (
     <PermissionGate anyOf={[Permission.AGENTS_READ]}>
       <QueryState
         query={execution}
         loading={<DetailSkeleton />}
-        errorTitle="This run couldn’t be loaded"
+        errorTitle={t('agents.thisRunCouldnTBe')}
       >
         {(data) => <ExecutionDetail execution={data} />}
       </QueryState>
@@ -88,6 +90,8 @@ function stepTone(step: AgentExecutionStep): TimelineTone {
 }
 
 function ExecutionDetail({ execution }: { execution: AgentExecutionDetail }) {
+  const t = useT();
+  const fmt = useFormat();
   const canExecute = useCan(Permission.AGENTS_EXECUTE);
   const cancel = useCancelExecution();
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -100,7 +104,7 @@ function ExecutionDetail({ execution }: { execution: AgentExecutionDetail }) {
         breadcrumb={
           <Link href="/agents/executions" className="inline-flex items-center gap-1 hover:text-fg">
             <ArrowLeft className="size-3.5" aria-hidden />
-            Agent runs
+            {t('agents.agentRuns')}
           </Link>
         }
         title={
@@ -110,15 +114,19 @@ function ExecutionDetail({ execution }: { execution: AgentExecutionDetail }) {
                 {execution.agent.name}
               </Link>
             ) : (
-              'Deleted agent'
+              t('common.deletedAgent')
             )}
             <ExecutionStatusBadge status={execution.status} className="translate-y-0.5" />
           </span>
         }
         description={
           live
-            ? 'This run is still in progress; the page refreshes every 2 seconds.'
-            : `Finished ${execution.finishedAt ? format(new Date(execution.finishedAt), 'PPpp') : ''}`.trim()
+            ? t('agents.thisRunIsStillIn')
+            : execution.finishedAt
+              ? t('agents.finishedAt', {
+                  when: fmt.dateTime(new Date(execution.finishedAt), 'long'),
+                })
+              : ''
         }
         actions={
           live && canExecute ? (
@@ -127,7 +135,7 @@ function ExecutionDetail({ execution }: { execution: AgentExecutionDetail }) {
               leadingIcon={<Square aria-hidden />}
               onClick={() => setConfirmOpen(true)}
             >
-              Cancel run
+              {t('agents.cancelRun')}
             </Button>
           ) : undefined
         }
@@ -136,23 +144,31 @@ function ExecutionDetail({ execution }: { execution: AgentExecutionDetail }) {
       <Card>
         <CardContent className="py-4">
           <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-3 lg:grid-cols-6">
-            <Stat label="Trigger" value={TRIGGER_LABELS[execution.trigger] ?? execution.trigger} />
-            <Stat label="Duration" value={formatDuration(execution.durationMs)} />
-            <Stat label="Steps" value={String(execution.stepCount)} />
             <Stat
-              label="Tokens"
-              value={tokens.toLocaleString('en')}
-              hint={`${execution.inputTokens.toLocaleString('en')} in · ${execution.outputTokens.toLocaleString('en')} out`}
+              label={t('common.trigger')}
+              value={tm(t, TRIGGER_LABELS[execution.trigger] ?? execution.trigger)}
+            />
+            <Stat label={t('common.duration')} value={formatDuration(execution.durationMs, fmt)} />
+            <Stat label={t('common.steps')} value={String(execution.stepCount)} />
+            <Stat
+              label={t('common.tokens')}
+              value={fmt.number(tokens)}
+              hint={t('agents.inOut', {
+                number: fmt.number(execution.inputTokens),
+                number2: fmt.number(execution.outputTokens),
+              })}
             />
             <Stat
-              label="Estimated cost"
-              value={formatUsd(execution.estimatedCostUsd)}
-              hint={execution.estimatedCostUsd == null ? 'No pricing configured' : undefined}
+              label={t('common.estimatedCost')}
+              value={formatUsd(execution.estimatedCostUsd, fmt)}
+              hint={
+                execution.estimatedCostUsd == null ? t('common.noPricingConfigured') : undefined
+              }
             />
             <Stat
-              label="Started"
+              label={t('common.started')}
               value={
-                execution.startedAt ? format(new Date(execution.startedAt), 'd MMM, HH:mm:ss') : '—'
+                execution.startedAt ? fmt.dateTime(new Date(execution.startedAt), 'long') : '—'
               }
             />
           </dl>
@@ -160,7 +176,7 @@ function ExecutionDetail({ execution }: { execution: AgentExecutionDetail }) {
       </Card>
 
       {execution.error ? (
-        <Alert tone="danger" title="This run did not complete">
+        <Alert tone="danger" title={t('agents.thisRunDidNotComplete')}>
           {execution.error}
         </Alert>
       ) : null}
@@ -168,20 +184,20 @@ function ExecutionDetail({ execution }: { execution: AgentExecutionDetail }) {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Input</CardTitle>
+            <CardTitle>{t('common.input')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <Payload value={execution.input} empty="No input" />
+            <Payload value={execution.input} empty={t('agents.noInput')} />
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Output</CardTitle>
+            <CardTitle>{t('agents.output')}</CardTitle>
           </CardHeader>
           <CardContent>
             <Payload
               value={execution.output}
-              empty={live ? 'The output appears when the run finishes.' : 'No output'}
+              empty={live ? t('agents.outputAppearsWhenFinished') : t('agents.noOutput')}
             />
           </CardContent>
         </Card>
@@ -189,16 +205,16 @@ function ExecutionDetail({ execution }: { execution: AgentExecutionDetail }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Steps</CardTitle>
-          <CardDescription>Every model call, tool call and delegation, in order.</CardDescription>
+          <CardTitle>{t('common.steps')}</CardTitle>
+          <CardDescription>{t('agents.everyModelCallToolCall')}</CardDescription>
         </CardHeader>
         <CardContent>
           {execution.steps.length === 0 ? (
             <p className="text-sm text-fg-muted">
-              {live ? 'Waiting for the first step…' : 'This run recorded no steps.'}
+              {live ? t('agents.waitingForTheFirstStep') : t('agents.thisRunRecordedNoSteps')}
             </p>
           ) : (
-            <Timeline aria-label="Steps">
+            <Timeline aria-label={t('common.steps')}>
               {execution.steps.map((step) => (
                 <StepItem key={step.id} step={step} />
               ))}
@@ -210,8 +226,8 @@ function ExecutionDetail({ execution }: { execution: AgentExecutionDetail }) {
       {execution.children.length > 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>Delegations</CardTitle>
-            <CardDescription>Runs started by this agent for sub-tasks.</CardDescription>
+            <CardTitle>{t('agents.delegations')}</CardTitle>
+            <CardDescription>{t('agents.runsStartedByThisAgent')}</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <ul className="divide-y divide-border">
@@ -226,15 +242,15 @@ function ExecutionDetail({ execution }: { execution: AgentExecutionDetail }) {
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Cancel this run?"
-        description="A queued run is cancelled immediately; a running one stops at its next safe point. Work already done is kept."
-        confirmLabel="Cancel run"
+        title={t('agents.cancelThisRun')}
+        description={t('agents.aQueuedRunIsCancelled')}
+        confirmLabel={t('agents.cancelRun')}
         tone="danger"
         loading={cancel.isPending}
         onConfirm={() => {
           cancel.mutate(execution.id, {
             onSuccess: () => {
-              toast.success('Cancellation requested');
+              toast.success(t('agents.cancellationRequested'));
               setConfirmOpen(false);
             },
             onError: (e) => {
@@ -265,6 +281,8 @@ function Payload({ value, empty }: { value: unknown; empty: string }) {
 }
 
 function StepItem({ step }: { step: AgentExecutionStep }) {
+  const t = useT();
+  const fmt = useFormat();
   const [open, setOpen] = React.useState(false);
   const hasDetails = step.input != null || step.output != null || !!step.error;
   const tokens = (step.inputTokens ?? 0) + (step.outputTokens ?? 0);
@@ -274,16 +292,16 @@ function StepItem({ step }: { step: AgentExecutionStep }) {
       tone={stepTone(step)}
       title={
         <span className="flex flex-wrap items-center gap-x-2">
-          <span className="font-medium">{step.name ?? STEP_TYPE_LABELS[step.type]}</span>
+          <span className="font-medium">{step.name ?? t(STEP_TYPE_LABELS[step.type])}</span>
           <span className="text-xs text-fg-muted">
-            {STEP_TYPE_LABELS[step.type]} · {step.status}
+            {t(STEP_TYPE_LABELS[step.type])} · {step.status}
           </span>
         </span>
       }
       meta={
         <>
-          {formatDuration(step.durationMs)}
-          {tokens > 0 ? ` · ${tokens.toLocaleString('en')} tokens` : ''}
+          {formatDuration(step.durationMs, fmt)}
+          {tokens > 0 ? t('agents.tokens', { number: fmt.number(tokens) }) : ''}
         </>
       }
     >
@@ -300,20 +318,24 @@ function StepItem({ step }: { step: AgentExecutionStep }) {
               className={cn('size-3.5 transition-transform', open && 'rotate-90')}
               aria-hidden
             />
-            {open ? 'Hide details' : 'Show details'}
+            {open ? t('common.hideDetails') : t('common.showDetails')}
           </button>
           {open ? (
             <div className="mt-2 flex flex-col gap-3">
               {step.input != null ? (
                 <div>
-                  <p className="mb-1 text-2xs font-medium text-fg-subtle uppercase">Input</p>
-                  <Payload value={step.input} empty="No input" />
+                  <p className="mb-1 text-2xs font-medium text-fg-subtle uppercase">
+                    {t('common.input')}
+                  </p>
+                  <Payload value={step.input} empty={t('agents.noInput')} />
                 </div>
               ) : null}
               {step.output != null ? (
                 <div>
-                  <p className="mb-1 text-2xs font-medium text-fg-subtle uppercase">Output</p>
-                  <Payload value={step.output} empty="No output" />
+                  <p className="mb-1 text-2xs font-medium text-fg-subtle uppercase">
+                    {t('agents.output')}
+                  </p>
+                  <Payload value={step.output} empty={t('agents.noOutput')} />
                 </div>
               ) : null}
             </div>
@@ -325,6 +347,8 @@ function StepItem({ step }: { step: AgentExecutionStep }) {
 }
 
 function ChildRow({ child }: { child: AgentExecution }) {
+  const t = useT();
+  const fmt = useFormat();
   return (
     <li>
       <Link
@@ -332,12 +356,16 @@ function ChildRow({ child }: { child: AgentExecution }) {
         className="flex items-center justify-between gap-3 px-5 py-3 text-sm hover:bg-surface-muted/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
       >
         <span className="flex min-w-0 items-center gap-3">
-          <span className="truncate font-medium">{child.agent?.name ?? 'Deleted agent'}</span>
+          <span className="truncate font-medium">
+            {child.agent?.name ?? t('common.deletedAgent')}
+          </span>
           <ExecutionStatusBadge status={child.status} />
         </span>
         <span className="shrink-0 text-xs text-fg-muted tabular">
-          {formatDuration(child.durationMs)} ·{' '}
-          {(child.inputTokens + child.outputTokens).toLocaleString('en')} tokens
+          {t('agents.durationTokens', {
+            duration: formatDuration(child.durationMs, fmt),
+            tokens: fmt.number(child.inputTokens + child.outputTokens),
+          })}
         </span>
       </Link>
     </li>

@@ -17,13 +17,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  formatCompact,
 } from '@hilatech/ui';
 import type { AiUsageSummary } from '@hilatech/contracts';
 import { useAiUsageSummary } from '@/hooks/queries';
 import { formatUsd } from '@/lib/ai';
 import { QueryState } from '@/components/common/query-state';
 import { PROVIDER_LABELS } from './provider-dialog';
+import { useT, useFormat } from '@/i18n/provider';
 
 type Period = 'month' | '7d' | '30d';
 
@@ -38,6 +38,7 @@ export function rangeFor(period: Period, now = new Date()): { from?: string; to?
 }
 
 export function UsageCard() {
+  const t = useT();
   const [period, setPeriod] = React.useState<Period>('month');
   // Stable across renders so the query key does not change every tick.
   const range = React.useMemo(() => rangeFor(period), [period]);
@@ -47,21 +48,18 @@ export function UsageCard() {
     <Card>
       <CardHeader className="flex-row items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <CardTitle>Usage</CardTitle>
-          <CardDescription>
-            Model calls made by the assistant and agents. Costs are estimates and only shown when a
-            price is configured for the model.
-          </CardDescription>
+          <CardTitle>{t('settings.usage')}</CardTitle>
+          <CardDescription>{t('settings.modelCallsMadeByThe')}</CardDescription>
         </div>
         <SegmentedControl
-          aria-label="Usage period"
+          aria-label={t('settings.usagePeriod')}
           size="sm"
           value={period}
           onValueChange={setPeriod}
           options={[
-            { value: 'month', label: 'This month' },
-            { value: '7d', label: '7 days' },
-            { value: '30d', label: '30 days' },
+            { value: 'month', label: t('settings.thisMonth') },
+            { value: '7d', label: t('settings.n7Days') },
+            { value: '30d', label: t('settings.n30Days') },
           ]}
         />
       </CardHeader>
@@ -69,7 +67,7 @@ export function UsageCard() {
         <QueryState
           query={usage}
           compact
-          errorTitle="Usage couldn’t be loaded"
+          errorTitle={t('settings.usageCouldnTBeLoaded')}
           loading={
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-busy>
               {Array.from({ length: 4 }).map((_, i) => (
@@ -86,39 +84,53 @@ export function UsageCard() {
 }
 
 export function UsageBody({ summary }: { summary: AiUsageSummary }) {
+  const fmt = useFormat();
+  const t = useT();
   const { limit } = summary;
   const ratio = limit.tokens ? limit.used / limit.tokens : 0;
   return (
     <div className="flex flex-col gap-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Requests" value={summary.requests} hint={`${summary.errorCount} failed`} />
         <StatCard
-          label="Tokens"
-          value={summary.totalTokens}
-          hint={`${formatCompact(summary.inputTokens)} in · ${formatCompact(summary.outputTokens)} out`}
+          label={t('common.requests')}
+          value={summary.requests}
+          hint={t('settings.failed', { errorCount: summary.errorCount })}
         />
         <StatCard
-          label="Estimated cost"
-          value={summary.estimatedCostUsd == null ? '—' : formatUsd(summary.estimatedCostUsd)}
-          hint={summary.estimatedCostUsd == null ? 'No pricing configured' : undefined}
+          label={t('common.tokens')}
+          value={summary.totalTokens}
+          hint={t('common.inOut', {
+            formatCompact: fmt.compact(summary.inputTokens),
+            formatCompact2: fmt.compact(summary.outputTokens),
+          })}
+        />
+        <StatCard
+          label={t('common.estimatedCost')}
+          value={summary.estimatedCostUsd == null ? '—' : formatUsd(summary.estimatedCostUsd, fmt)}
+          hint={summary.estimatedCostUsd == null ? t('common.noPricingConfigured') : undefined}
         />
         <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface px-5 py-4 shadow-xs">
-          <p className="text-sm text-fg-muted">Plan token limit</p>
+          <p className="text-sm text-fg-muted">{t('settings.planTokenLimit')}</p>
           {limit.tokens == null ? (
             <p className="text-sm">
-              <span className="font-medium tabular">{limit.used.toLocaleString('en')}</span> used ·
-              no limit on this plan
+              <span className="font-medium tabular">{fmt.number(limit.used)}</span>{' '}
+              {t('settings.usedNoLimitOnThis')}
             </p>
           ) : (
             <>
               <p className="text-sm">
-                <span className="font-medium tabular">{limit.used.toLocaleString('en')}</span>
-                <span className="text-fg-subtle"> / {limit.tokens.toLocaleString('en')}</span>
-                <span className="ml-2 text-xs text-fg-subtle tabular">
-                  {Math.round(ratio * 100)}%
+                <bdi dir="ltr" className="font-medium tabular">
+                  {fmt.number(limit.used)}
+                </bdi>
+                <span className="text-fg-subtle">
+                  {' '}
+                  / <bdi dir="ltr">{fmt.number(limit.tokens)}</bdi>
+                </span>
+                <span className="ms-2 text-xs text-fg-subtle tabular">
+                  <bdi dir="ltr">{Math.round(ratio * 100)}%</bdi>
                 </span>
               </p>
-              <Meter label="Plan token usage" value={limit.used} max={limit.tokens} />
+              <Meter label={t('settings.planTokenUsage')} value={limit.used} max={limit.tokens} />
             </>
           )}
         </div>
@@ -127,23 +139,23 @@ export function UsageBody({ summary }: { summary: AiUsageSummary }) {
       <div className="grid gap-6 xl:grid-cols-2">
         <section aria-labelledby="usage-by-model" className="flex flex-col gap-2">
           <h3 id="usage-by-model" className="text-sm font-semibold">
-            By model
+            {t('common.byModel')}
           </h3>
           <div className="rounded-lg border border-border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Model</TableHead>
-                  <TableHead className="text-right">Requests</TableHead>
-                  <TableHead className="text-right">Tokens</TableHead>
-                  <TableHead className="text-right">Cost</TableHead>
+                  <TableHead>{t('common.model')}</TableHead>
+                  <TableHead className="text-end">{t('common.requests')}</TableHead>
+                  <TableHead className="text-end">{t('common.tokens')}</TableHead>
+                  <TableHead className="text-end">{t('common.cost')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {summary.byModel.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-fg-muted">
-                      No requests in this period.
+                      {t('settings.noRequestsInThisPeriod')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -157,14 +169,12 @@ export function UsageBody({ summary }: { summary: AiUsageSummary }) {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-right tabular">
-                        {m.requests.toLocaleString('en')}
+                      <TableCell className="text-end tabular">{fmt.number(m.requests)}</TableCell>
+                      <TableCell className="text-end tabular">
+                        {fmt.number(m.inputTokens + m.outputTokens)}
                       </TableCell>
-                      <TableCell className="text-right tabular">
-                        {(m.inputTokens + m.outputTokens).toLocaleString('en')}
-                      </TableCell>
-                      <TableCell className="text-right tabular">
-                        {formatUsd(m.estimatedCostUsd)}
+                      <TableCell className="text-end tabular">
+                        {formatUsd(m.estimatedCostUsd, fmt)}
                       </TableCell>
                     </TableRow>
                   ))
@@ -176,35 +186,34 @@ export function UsageBody({ summary }: { summary: AiUsageSummary }) {
 
         <section aria-labelledby="usage-by-agent" className="flex flex-col gap-2">
           <h3 id="usage-by-agent" className="text-sm font-semibold">
-            By agent
+            {t('common.byAgent')}
           </h3>
           <div className="rounded-lg border border-border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Agent</TableHead>
-                  <TableHead className="text-right">Requests</TableHead>
-                  <TableHead className="text-right">Tokens</TableHead>
+                  <TableHead>{t('common.agent')}</TableHead>
+                  <TableHead className="text-end">{t('common.requests')}</TableHead>
+                  <TableHead className="text-end">{t('common.tokens')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {summary.byAgent.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={3} className="text-center text-fg-muted">
-                      No requests in this period.
+                      {t('settings.noRequestsInThisPeriod')}
                     </TableCell>
                   </TableRow>
                 ) : (
                   summary.byAgent.map((a) => (
                     <TableRow key={a.agentId ?? 'assistant'}>
                       <TableCell>
-                        {a.agentName ?? (a.agentId ? 'Deleted agent' : 'Assistant & other')}
+                        {a.agentName ??
+                          (a.agentId ? t('common.deletedAgent') : t('settings.assistantOther'))}
                       </TableCell>
-                      <TableCell className="text-right tabular">
-                        {a.requests.toLocaleString('en')}
-                      </TableCell>
-                      <TableCell className="text-right tabular">
-                        {a.totalTokens.toLocaleString('en')}
+                      <TableCell className="text-end tabular">{fmt.number(a.requests)}</TableCell>
+                      <TableCell className="text-end tabular">
+                        {fmt.number(a.totalTokens)}
                       </TableCell>
                     </TableRow>
                   ))

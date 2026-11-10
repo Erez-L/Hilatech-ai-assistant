@@ -1,5 +1,6 @@
 'use client';
 
+import { useT } from '@/i18n/provider';
 import * as React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, cn } from '@hilatech/ui';
 
@@ -15,7 +16,7 @@ export function DataTable<T>({
   columns,
   rows,
   rowKey,
-  emptyText = 'Nothing to show for this range.',
+  emptyText,
 }: {
   caption: string;
   columns: Column<T>[];
@@ -23,12 +24,13 @@ export function DataTable<T>({
   rowKey: (row: T, index: number) => string;
   emptyText?: string;
 }) {
+  const t = useT();
   return (
     <Table aria-label={caption}>
       <TableHeader>
         <TableRow>
           {columns.map((c) => (
-            <TableHead key={c.header} className={c.align === 'right' ? 'text-right' : undefined}>
+            <TableHead key={c.header} className={c.align === 'right' ? 'text-end' : undefined}>
               {c.header}
             </TableHead>
           ))}
@@ -38,7 +40,7 @@ export function DataTable<T>({
         {rows.length === 0 ? (
           <TableRow>
             <TableCell colSpan={columns.length} className="py-6 text-center text-fg-muted">
-              {emptyText}
+              {emptyText ?? t('common.nothingToShowForRange')}
             </TableCell>
           </TableRow>
         ) : (
@@ -47,7 +49,7 @@ export function DataTable<T>({
               {columns.map((c) => (
                 <TableCell
                   key={c.header}
-                  className={cn('tabular', c.align === 'right' && 'text-right')}
+                  className={cn('tabular', c.align === 'right' && 'text-end')}
                 >
                   {c.render(row)}
                 </TableCell>

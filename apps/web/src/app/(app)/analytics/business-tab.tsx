@@ -22,15 +22,19 @@ import {
   mergeSeries,
   type ReportContext,
 } from './report-parts';
+import { useT, useFormat } from '@/i18n/provider';
+import { tm } from '@/i18n/msg';
 
 export function BusinessTab({ ctx }: { ctx: ReportContext }) {
+  const t = useT();
+  const fmt = useFormat();
   const query = useBusinessAnalytics(ctx.params);
   return (
     <div className="flex flex-col gap-6" aria-busy={query.isFetching}>
       <QueryState
         query={query}
         loading={<ReportSkeleton />}
-        errorTitle="Business analytics couldn’t be loaded"
+        errorTitle={t('analytics.businessAnalyticsCouldnTBe')}
       >
         {(d) => {
           const chartData = mergeSeries([
@@ -48,135 +52,151 @@ export function BusinessTab({ ctx }: { ctx: ReportContext }) {
           return (
             <>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <StatCard label="Leads created" value={d.leads.created} />
-                <StatCard label="Contacts created" value={d.contacts.created} />
-                <StatCard label="Conversations created" value={d.conversations.created} />
+                <StatCard label={t('analytics.leadsCreated')} value={d.leads.created} />
+                <StatCard label={t('analytics.contactsCreated')} value={d.contacts.created} />
                 <StatCard
-                  label="Lead conversion"
-                  value={pct(d.funnel.conversionRate)}
+                  label={t('analytics.conversationsCreated')}
+                  value={d.conversations.created}
+                />
+                <StatCard
+                  label={t('analytics.leadConversion')}
+                  value={pct(d.funnel.conversionRate, fmt)}
                   hint={
                     d.funnel.conversionRate == null
-                      ? 'No leads created in this range'
-                      : 'won ÷ created'
+                      ? t('analytics.noLeadsCreatedInThis')
+                      : t('analytics.wonCreated')
                   }
                 />
               </div>
 
               <SectionCard
-                title="Activity over time"
-                description="New leads, conversations and contacts per period (UTC)."
-                actions={<ExportButtons report="business" ctx={ctx} label="business" />}
+                title={t('analytics.activityOverTime')}
+                description={t('analytics.newLeadsConversationsAndContacts')}
+                actions={
+                  <ExportButtons report="business" ctx={ctx} label={t('analytics.business')} />
+                }
               >
                 {anyActivity ? (
                   <AreaChart
                     data={chartData}
                     xKey="bucket"
                     height={260}
-                    labelFormatter={(l) => bucketLabel(l, ctx.granularity)}
+                    labelFormatter={(l) => bucketLabel(l, ctx.granularity, fmt, t)}
                     series={[
-                      { key: 'leads', label: 'Leads' },
-                      { key: 'conversations', label: 'Conversations' },
-                      { key: 'contacts', label: 'Contacts' },
+                      { key: 'leads', label: t('common.leads') },
+                      { key: 'conversations', label: t('common.conversations') },
+                      { key: 'contacts', label: t('common.contacts') },
                     ]}
                   />
                 ) : (
                   <EmptyState
                     compact
                     icon={<BarChart3 />}
-                    title="No activity in this range"
-                    description="No leads, conversations or contacts were created in the selected dates. Widen the range to see more."
+                    title={t('analytics.noActivityInThisRange')}
+                    description={t('analytics.noLeadsConversationsOrContacts')}
                   />
                 )}
               </SectionCard>
 
               <div className="grid gap-6 lg:grid-cols-2">
                 <SectionCard
-                  title="Lead funnel"
-                  description="How many leads created in this range reached each stage."
+                  title={t('analytics.leadFunnel')}
+                  description={t('analytics.howManyLeadsCreatedIn')}
                   flush
                 >
                   <DataTable
-                    caption="Lead funnel"
+                    caption={t('analytics.leadFunnel')}
                     rows={d.funnel.stages}
                     rowKey={(r) => r.status}
                     columns={[
-                      { header: 'Stage', render: (r) => LEAD_STATUS_LABELS[r.status] },
-                      { header: 'Reached', align: 'right', render: (r) => r.reached },
+                      { header: t('common.stage'), render: (r) => t(LEAD_STATUS_LABELS[r.status]) },
+                      { header: t('analytics.reached'), align: 'right', render: (r) => r.reached },
                       {
-                        header: 'From previous',
+                        header: t('analytics.fromPrevious'),
                         align: 'right',
-                        render: (r) => pct(r.rateFromPrevious),
+                        render: (r) => pct(r.rateFromPrevious, fmt),
                       },
-                      { header: 'From top', align: 'right', render: (r) => pct(r.rateFromTop) },
+                      {
+                        header: t('analytics.fromTop'),
+                        align: 'right',
+                        render: (r) => pct(r.rateFromTop, fmt),
+                      },
                     ]}
                   />
                   <div className="flex flex-col gap-2 px-5 py-3 text-sm">
                     <p>
-                      <span className="text-fg-muted">Lost: </span>
+                      <span className="text-fg-muted">{t('analytics.lost')} </span>
                       <span className="font-medium tabular">{d.funnel.lost}</span>
                     </p>
-                    <InlineHint>
-                      There is no stage history, so a lead counts as having “reached” a stage when
-                      its current status is that stage or a later one.
-                    </InlineHint>
+                    <InlineHint>{t('analytics.thereIsNoStageHistory')}</InlineHint>
                   </div>
                 </SectionCard>
 
                 <SectionCard
-                  title="Leads by status"
-                  description="Current status of leads created in this range."
+                  title={t('analytics.leadsByStatus')}
+                  description={t('analytics.currentStatusOfLeadsCreated')}
                 >
                   <BreakdownList
-                    label="Leads by status"
+                    label={t('analytics.leadsByStatus')}
                     items={status.map((s) => ({
                       key: s.key,
-                      label: LEAD_STATUS_LABELS[s.key],
+                      label: t(LEAD_STATUS_LABELS[s.key]),
                       count: s.count,
                     }))}
-                    emptyText="No leads were created in this range."
+                    emptyText={t('analytics.noLeadsWereCreatedIn')}
                   />
                 </SectionCard>
 
-                <SectionCard title="Leads by source">
+                <SectionCard title={t('analytics.leadsBySource')}>
                   <BreakdownList
-                    label="Leads by source"
+                    label={t('analytics.leadsBySource')}
                     items={recordToRows(d.leads.bySource).map((s) => ({
                       key: s.key,
-                      label: LEAD_SOURCE_LABELS[s.key] ?? s.key,
+                      label: tm(t, LEAD_SOURCE_LABELS[s.key] ?? s.key),
                       count: s.count,
                     }))}
-                    emptyText="No leads were created in this range."
+                    emptyText={t('analytics.noLeadsWereCreatedIn')}
                   />
                 </SectionCard>
 
-                <SectionCard title="Conversations by channel">
+                <SectionCard title={t('analytics.conversationsByChannel')}>
                   <BreakdownList
-                    label="Conversations by channel"
+                    label={t('analytics.conversationsByChannel')}
                     items={recordToRows(d.conversations.byChannel).map((s) => ({
                       key: s.key,
-                      label: CONVERSATION_CHANNEL_LABELS[s.key] ?? s.key,
+                      label: tm(t, CONVERSATION_CHANNEL_LABELS[s.key] ?? s.key),
                       count: s.count,
                     }))}
-                    emptyText="No conversations were created in this range."
+                    emptyText={t('analytics.noConversationsWereCreatedIn')}
                   />
                 </SectionCard>
 
-                <SectionCard title="Conversations by status">
+                <SectionCard title={t('analytics.conversationsByStatus')}>
                   <BreakdownList
-                    label="Conversations by status"
+                    label={t('analytics.conversationsByStatus')}
                     items={recordToRows(d.conversations.byStatus).map((s) => ({
                       key: s.key,
-                      label: CONVERSATION_STATUS_LABELS[s.key] ?? s.key,
+                      label: tm(t, CONVERSATION_STATUS_LABELS[s.key] ?? s.key),
                       count: s.count,
                     }))}
-                    emptyText="No conversations were created in this range."
+                    emptyText={t('analytics.noConversationsWereCreatedIn')}
                   />
                 </SectionCard>
               </div>
 
-              <ReportNote title="Tasks are not tracked" testId="tasks-not-modelled">
-                {d.tasks.reason}
-              </ReportNote>
+              {d.tasks.modelled ? (
+                <ReportNote title={t('analytics.tasks')} testId="tasks-modelled">
+                  {t('analytics.tasksSummary', {
+                    open: d.tasks.open,
+                    overdue: d.tasks.overdue,
+                    dueToday: d.tasks.dueToday,
+                  })}
+                </ReportNote>
+              ) : (
+                <ReportNote title={t('analytics.tasksAreNotTracked')} testId="tasks-not-modelled">
+                  {d.tasks.reason}
+                </ReportNote>
+              )}
             </>
           );
         }}

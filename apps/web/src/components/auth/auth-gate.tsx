@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { authApi, keys } from '@/lib/api';
 import { useSession } from '@/stores/session';
 import { FullPageLoader } from '@/components/common/full-page-loader';
+import { useT } from '@/i18n/provider';
 
 export interface AuthGateProps {
   children: React.ReactNode;
@@ -21,6 +22,7 @@ export interface AuthGateProps {
  * 4. No organizations → /onboarding (unless requireOrganization is false).
  */
 export function AuthGate({ children, requireOrganization = true }: AuthGateProps) {
+  const t = useT();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -74,7 +76,7 @@ export function AuthGate({ children, requireOrganization = true }: AuthGateProps
   }, [needsOnboarding, router]);
 
   if (status === 'idle' || status === 'loading') return <FullPageLoader />;
-  if (status === 'unauthenticated') return <FullPageLoader label="Redirecting to sign in" />;
+  if (status === 'unauthenticated') return <FullPageLoader label={t('auth.redirectingToSignIn')} />;
   if (!sessionLoaded) {
     if (sessionQuery.isError) {
       // Session could not be resolved (e.g. API down). Let the user retry rather than spin forever.
@@ -87,32 +89,31 @@ export function AuthGate({ children, requireOrganization = true }: AuthGateProps
     }
     return <FullPageLoader />;
   }
-  if (needsOnboarding) return <FullPageLoader label="Setting up your workspace" />;
+  if (needsOnboarding) return <FullPageLoader label={t('auth.settingUpYourWorkspace')} />;
   return <>{children}</>;
 }
 
 function SessionError({ onRetry, onSignOut }: { onRetry: () => void; onSignOut: () => void }) {
+  const t = useT();
   return (
     <div className="flex min-h-dvh items-center justify-center bg-bg p-6">
       <div className="flex max-w-sm flex-col gap-3 text-center">
-        <h1 className="text-lg font-semibold">We couldn&apos;t load your account</h1>
-        <p className="text-sm text-fg-muted">
-          The server didn&apos;t respond. Check that the API is running, then try again.
-        </p>
+        <h1 className="text-lg font-semibold">{t('auth.weCouldnTLoadYour')}</h1>
+        <p className="text-sm text-fg-muted">{t('auth.theServerDidnTRespond')}</p>
         <div className="mt-2 flex justify-center gap-2">
           <button
             type="button"
             onClick={onRetry}
             className="h-9 rounded-sm bg-accent px-4 text-sm font-medium text-accent-fg hover:bg-accent-hover"
           >
-            Try again
+            {t('common.tryAgain')}
           </button>
           <button
             type="button"
             onClick={onSignOut}
             className="h-9 rounded-sm border border-border bg-surface px-4 text-sm font-medium hover:bg-surface-muted"
           >
-            Sign out
+            {t('common.signOut')}
           </button>
         </div>
       </div>

@@ -25,6 +25,7 @@ export const Switch = React.forwardRef<
         className={cn(
           'pointer-events-none block size-4 rounded-full bg-white shadow-sm ring-0 transition-transform duration-150',
           'data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0',
+          'rtl:data-[state=checked]:-translate-x-4',
         )}
       />
     </SwitchPrimitive.Root>

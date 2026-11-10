@@ -137,7 +137,7 @@ export function Markdown({ source, className }: { source: string; className?: st
             );
           case 'ul':
             return (
-              <ul key={i} className="list-disc pl-5">
+              <ul key={i} className="list-disc ps-5">
                 {b.items.map((item, j) => (
                   <li key={j}>{renderInline(item)}</li>
                 ))}
@@ -145,7 +145,7 @@ export function Markdown({ source, className }: { source: string; className?: st
             );
           case 'ol':
             return (
-              <ol key={i} className="list-decimal pl-5">
+              <ol key={i} className="list-decimal ps-5">
                 {b.items.map((item, j) => (
                   <li key={j}>{renderInline(item)}</li>
                 ))}

@@ -1,0 +1,15 @@
+export const industry = {
+  'industry.Beauty & wellness': 'יופי ובריאות',
+  'industry.Construction & trades': 'בנייה ומלאכות',
+  'industry.Education': 'חינוך',
+  'industry.Finance & insurance': 'פיננסים וביטוח',
+  'industry.Healthcare & clinics': 'בריאות ומרפאות',
+  'industry.Hospitality & food': 'אירוח ומזון',
+  'industry.Manufacturing': 'ייצור',
+  'industry.Non-profit': 'מלכ״ר',
+  'industry.Other': 'אחר',
+  'industry.Professional services': 'שירותים מקצועיים',
+  'industry.Real estate': 'נדל״ן',
+  'industry.Retail & e-commerce': 'קמעונאות ומסחר אלקטרוני',
+  'industry.Technology': 'טכנולוגיה',
+} as const;

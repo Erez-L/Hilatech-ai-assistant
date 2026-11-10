@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format, formatDistanceToNow } from 'date-fns';
 import {
   ArrowLeft,
   ArrowRight,
@@ -38,7 +37,6 @@ import {
   IconButton,
   PageHeader,
   Skeleton,
-  formatCurrency,
   toast,
 } from '@hilatech/ui';
 import { getErrorMessage, isApiError } from '@/lib/api';
@@ -61,22 +59,24 @@ import {
   type ContactFormInput,
   type ContactFormValues,
 } from '../contact-form';
+import { useT, useFormat } from '@/i18n/provider';
 
 export function ContactDetailView({ id }: { id: string }) {
+  const t = useT();
   const contact = useContact(id);
   return (
     <PermissionGate anyOf={[Permission.CONTACTS_READ]}>
       <QueryState
         query={contact}
         loading={<ContactDetailSkeleton />}
-        errorTitle="This contact couldn’t be loaded"
+        errorTitle={t('contacts.thisContactCouldnTBe')}
       >
         {(data) => <ContactDetailBody contact={data} />}
       </QueryState>
       {contact.isError && isApiError(contact.error) && contact.error.isNotFound ? (
         <div className="mt-4 flex justify-center">
           <Button asChild variant="secondary" leadingIcon={<ArrowLeft aria-hidden />}>
-            <Link href="/contacts">Back to contacts</Link>
+            <Link href="/contacts">{t('contacts.backToContacts')}</Link>
           </Button>
         </div>
       ) : null}
@@ -103,6 +103,8 @@ function ContactDetailSkeleton() {
 }
 
 function ContactDetailBody({ contact }: { contact: ContactDetail }) {
+  const fmt = useFormat();
+  const t = useT();
   const router = useRouter();
   const canUpdate = useCan(Permission.CONTACTS_UPDATE);
   const canDelete = useCan(Permission.CONTACTS_DELETE);
@@ -118,7 +120,7 @@ function ContactDetailBody({ contact }: { contact: ContactDetail }) {
         breadcrumb={
           <Link href="/contacts" className="inline-flex items-center gap-1 hover:text-fg">
             <ArrowLeft className="size-3.5" aria-hidden />
-            Contacts
+            {t('common.contacts')}
           </Link>
         }
         title={
@@ -163,20 +165,20 @@ function ContactDetailBody({ contact }: { contact: ContactDetail }) {
                 leadingIcon={<Plus aria-hidden />}
                 onClick={() => setLeadOpen(true)}
               >
-                New lead
+                {t('common.newLead')}
               </Button>
             ) : null}
             {canDelete ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <IconButton label="More actions" variant="secondary">
+                  <IconButton label={t('common.moreActions')} variant="secondary">
                     <MoreHorizontal aria-hidden />
                   </IconButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem tone="danger" onSelect={() => setDeleteOpen(true)}>
                     <Trash2 aria-hidden />
-                    Delete contact
+                    {t('contacts.deleteContact')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -196,19 +198,19 @@ function ContactDetailBody({ contact }: { contact: ContactDetail }) {
         <div className="flex min-w-0 flex-col gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>At a glance</CardTitle>
+              <CardTitle>{t('contacts.atAGlance')}</CardTitle>
             </CardHeader>
             <CardContent>
               <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
-                <dt className="text-fg-muted">Owner</dt>
+                <dt className="text-fg-muted">{t('contacts.owner')}</dt>
                 <dd>
-                  <UserChip user={contact.owner} emptyLabel="No owner" />
+                  <UserChip user={contact.owner} emptyLabel={t('contacts.noOwner')} />
                 </dd>
-                <dt className="text-fg-muted">Leads</dt>
+                <dt className="text-fg-muted">{t('common.leads')}</dt>
                 <dd className="tabular">{contact.leadCount}</dd>
-                <dt className="text-fg-muted">Conversations</dt>
+                <dt className="text-fg-muted">{t('common.conversations')}</dt>
                 <dd className="tabular">{contact.conversationCount}</dd>
-                <dt className="text-fg-muted">Tags</dt>
+                <dt className="text-fg-muted">{t('common.tags')}</dt>
                 <dd className="flex flex-wrap gap-1">
                   {contact.tags.length > 0 ? (
                     contact.tags.map((t) => (
@@ -220,26 +222,24 @@ function ContactDetailBody({ contact }: { contact: ContactDetail }) {
                     <span className="text-fg-subtle">—</span>
                   )}
                 </dd>
-                <dt className="text-fg-muted">Added</dt>
+                <dt className="text-fg-muted">{t('contacts.added')}</dt>
                 <dd>
                   <time
                     dateTime={contact.createdAt}
-                    title={format(new Date(contact.createdAt), 'PPpp')}
+                    title={fmt.dateTime(new Date(contact.createdAt), 'long')}
                   >
-                    {format(new Date(contact.createdAt), 'd MMM yyyy')}
+                    {fmt.date(new Date(contact.createdAt))}
                   </time>
                 </dd>
-                <dt className="text-fg-muted">Updated</dt>
-                <dd className="tabular">
-                  {formatDistanceToNow(new Date(contact.updatedAt), { addSuffix: true })}
-                </dd>
+                <dt className="text-fg-muted">{t('common.updated')}</dt>
+                <dd className="tabular">{fmt.relative(new Date(contact.updatedAt))}</dd>
               </dl>
             </CardContent>
           </Card>
           <RelatedConversations
             contactId={contact.id}
             contact={contact}
-            description="Threads with this contact."
+            description={t('contacts.threadsWithThisContact')}
           />
         </div>
       </div>
@@ -253,15 +253,15 @@ function ContactDetailBody({ contact }: { contact: ContactDetail }) {
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title={`Delete ${name}?`}
-        description="Leads and conversations linked to this contact are kept but lose the link. This cannot be undone."
-        confirmLabel="Delete contact"
+        title={t('contacts.delete', { name })}
+        description={t('contacts.leadsAndConversationsLinkedTo')}
+        confirmLabel={t('contacts.deleteContact')}
         tone="danger"
         loading={remove.isPending}
         onConfirm={() =>
           remove.mutate(contact.id, {
             onSuccess: () => {
-              toast.success(`${name} deleted`);
+              toast.success(t('contacts.deleted', { name }));
               router.replace('/contacts');
             },
             onError: (e) => toast.error(getErrorMessage(e)),
@@ -281,6 +281,7 @@ function ContactDetailsForm({
   contact: ContactDetail;
   canUpdate: boolean;
 }) {
+  const t = useT();
   const update = useUpdateContact();
   const canReadMembers = useCan(Permission.MEMBERS_READ);
   const [formError, setFormError] = React.useState<string | null>(null);
@@ -301,7 +302,7 @@ function ContactDetailsForm({
         body: toUpdateContactRequest(values),
       });
       form.reset(contactFormDefaults(updated));
-      toast.success('Contact saved');
+      toast.success(t('contacts.contactSaved'));
     } catch (error) {
       if (!applyServerErrors(error, form.setError, CONTACT_FORM_FIELDS))
         setFormError(getErrorMessage(error));
@@ -312,20 +313,20 @@ function ContactDetailsForm({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Details</CardTitle>
-          <CardDescription>Your role can view this contact but not edit it.</CardDescription>
+          <CardTitle>{t('common.details')}</CardTitle>
+          <CardDescription>{t('contacts.yourRoleCanViewThis')}</CardDescription>
         </CardHeader>
         <CardContent>
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
-            <dt className="text-fg-muted">Email</dt>
+            <dt className="text-fg-muted">{t('common.email')}</dt>
             <dd>{contact.email ?? '—'}</dd>
-            <dt className="text-fg-muted">Phone</dt>
+            <dt className="text-fg-muted">{t('common.phone')}</dt>
             <dd>{contact.phone ?? '—'}</dd>
-            <dt className="text-fg-muted">Company</dt>
+            <dt className="text-fg-muted">{t('common.company')}</dt>
             <dd>{contact.company ?? '—'}</dd>
-            <dt className="text-fg-muted">Job title</dt>
+            <dt className="text-fg-muted">{t('contacts.jobTitle')}</dt>
             <dd>{contact.jobTitle ?? '—'}</dd>
-            <dt className="text-fg-muted">Notes</dt>
+            <dt className="text-fg-muted">{t('common.notes')}</dt>
             <dd className="whitespace-pre-wrap">{contact.notes ?? '—'}</dd>
           </dl>
         </CardContent>
@@ -337,8 +338,8 @@ function ContactDetailsForm({
     <Card>
       <form onSubmit={onSubmit} noValidate>
         <CardHeader>
-          <CardTitle>Details</CardTitle>
-          <CardDescription>Contact information, tags and ownership.</CardDescription>
+          <CardTitle>{t('common.details')}</CardTitle>
+          <CardDescription>{t('contacts.contactInformationTagsAndOwnership')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           {formError ? <Alert tone="danger">{formError}</Alert> : null}
@@ -355,14 +356,14 @@ function ContactDetailsForm({
             disabled={!form.formState.isDirty || form.formState.isSubmitting}
             onClick={() => form.reset(defaults)}
           >
-            Discard
+            {t('common.discard')}
           </Button>
           <Button
             type="submit"
             loading={form.formState.isSubmitting}
             disabled={!form.formState.isDirty}
           >
-            Save changes
+            {t('common.saveChanges')}
           </Button>
         </CardFooter>
       </form>
@@ -373,6 +374,8 @@ function ContactDetailsForm({
 // ---------------------------------------------------------------------------
 
 function RelatedLeads({ contact, onCreate }: { contact: ContactDetail; onCreate?: () => void }) {
+  const fmt = useFormat();
+  const t = useT();
   const canRead = useCan(Permission.LEADS_READ);
   const leads = useLeads(
     { contactId: contact.id, page: 1, pageSize: 10, sortBy: 'updatedAt', sortOrder: 'desc' },
@@ -382,14 +385,16 @@ function RelatedLeads({ contact, onCreate }: { contact: ContactDetail; onCreate?
     <Card>
       <CardHeader className="flex-row items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <CardTitle>Leads</CardTitle>
+          <CardTitle>{t('common.leads')}</CardTitle>
           <CardDescription>
-            Opportunities with {contactName(contact, 'this contact')}.
+            {t('contacts.opportunitiesWith', {
+              name: contactName(contact, t('contacts.thisContact')),
+            })}
           </CardDescription>
         </div>
         {canRead ? (
           <Button asChild variant="ghost" size="sm" trailingIcon={<ArrowRight aria-hidden />}>
-            <Link href={`/leads?contactId=${contact.id}`}>All leads</Link>
+            <Link href={`/leads?contactId=${contact.id}`}>{t('common.allLeads')}</Link>
           </Button>
         ) : null}
       </CardHeader>
@@ -398,8 +403,8 @@ function RelatedLeads({ contact, onCreate }: { contact: ContactDetail; onCreate?
           <EmptyState
             compact
             icon={<Target />}
-            title="Leads are restricted"
-            description="Your role can’t view leads."
+            title={t('contacts.leadsAreRestricted')}
+            description={t('contacts.yourRoleCanTView')}
           />
         ) : (
           <QueryState
@@ -410,7 +415,7 @@ function RelatedLeads({ contact, onCreate }: { contact: ContactDetail; onCreate?
                 {Array.from({ length: 2 }).map((_, i) => (
                   <li key={i} className="flex items-center gap-3 px-5 py-3">
                     <Skeleton className="h-4 w-48" />
-                    <Skeleton className="ml-auto h-4 w-16" />
+                    <Skeleton className="ms-auto h-4 w-16" />
                   </li>
                 ))}
               </ul>
@@ -420,8 +425,8 @@ function RelatedLeads({ contact, onCreate }: { contact: ContactDetail; onCreate?
               <EmptyState
                 compact
                 icon={<Target />}
-                title="No leads for this contact"
-                description="Create one to track an opportunity with them."
+                title={t('contacts.noLeadsForThisContact')}
+                description={t('contacts.createOneToTrackAn')}
                 action={
                   onCreate ? (
                     <Button
@@ -430,7 +435,7 @@ function RelatedLeads({ contact, onCreate }: { contact: ContactDetail; onCreate?
                       leadingIcon={<Plus aria-hidden />}
                       onClick={onCreate}
                     >
-                      New lead
+                      {t('common.newLead')}
                     </Button>
                   ) : undefined
                 }
@@ -447,8 +452,8 @@ function RelatedLeads({ contact, onCreate }: { contact: ContactDetail; onCreate?
                     >
                       <span className="min-w-0 flex-1 truncate font-medium">{lead.title}</span>
                       <LeadStatusBadge status={lead.status} />
-                      <span className="w-24 shrink-0 text-right tabular text-fg-muted">
-                        {lead.value != null ? formatCurrency(lead.value, lead.currency) : '—'}
+                      <span className="w-24 shrink-0 text-end tabular text-fg-muted">
+                        {lead.value != null ? fmt.currency(lead.value, lead.currency) : '—'}
                       </span>
                       <ArrowRight className="size-4 shrink-0 text-fg-subtle" aria-hidden />
                     </Link>

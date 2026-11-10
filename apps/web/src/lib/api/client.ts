@@ -8,6 +8,9 @@ import {
 } from '@hilatech/contracts';
 import { env } from '@/lib/env';
 import { useSession } from '@/stores/session';
+import { activeT, translateActive } from '@/i18n/active';
+import { vm } from '@/i18n/validation';
+import type { MessageKey } from '@/i18n/messages';
 
 /** Error surfaced to the UI for any non-2xx response (or network failure). */
 export class ApiError extends Error {
@@ -52,20 +55,43 @@ export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError;
 }
 
-/** Human-readable message for any thrown value. */
-export function getErrorMessage(
-  error: unknown,
-  fallback = 'Something went wrong. Please try again.',
-): string {
+/** Error codes whose server text is generic; the UI shows its own translated message instead. */
+const LOCALIZED_CODES = new Set([
+  'NETWORK_ERROR',
+  'STREAM_UNAVAILABLE',
+  'RATE_LIMITED',
+  'UNAUTHORIZED',
+  'INVALID_CREDENTIALS',
+  'TOKEN_EXPIRED',
+  'TOKEN_INVALID',
+  'TOKEN_REUSED',
+  'FORBIDDEN',
+  'ORGANIZATION_REQUIRED',
+  'NOT_A_MEMBER',
+  'NOT_FOUND',
+  'PAYLOAD_TOO_LARGE',
+  'UNSUPPORTED_MEDIA_TYPE',
+  'PAYMENT_NOT_CONFIGURED',
+  'PROVIDER_NOT_CONFIGURED',
+  'PROVIDER_ERROR',
+  'AI_NOT_CONFIGURED',
+  'AI_PROVIDER_ERROR',
+  'INTERNAL_ERROR',
+]);
+
+/**
+ * Human-readable, translated message for any thrown value. Known error codes map to `errors.<CODE>`;
+ * other API messages (conflicts, limits) are the server's own text, translated when it matches a known one.
+ */
+export function getErrorMessage(error: unknown, fallback?: string): string {
+  const fb = fallback ?? activeT('errors.generic');
   if (isApiError(error)) {
-    if (error.code === ErrorCode.RATE_LIMITED)
-      return 'Too many attempts. Wait a moment and try again.';
-    if (error.status === 0)
-      return 'The server could not be reached. Check your connection and try again.';
-    return error.message || fallback;
+    if (LOCALIZED_CODES.has(error.code)) return activeT(`errors.${error.code}` as MessageKey);
+    if (error.status === 0) return activeT('errors.NETWORK_ERROR');
+    return error.message ? translateActive(error.message) : fb;
   }
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
+  if (error instanceof Error && error.message) return translateActive(error.message);
+  return fb;
 }
 
 export type QueryParams = Record<string, string | number | boolean | null | undefined>;
@@ -196,19 +222,17 @@ function defaultCodeForStatus(status: number): string {
 function defaultMessageForStatus(status: number): string {
   switch (status) {
     case 401:
-      return 'Your session has expired. Sign in again to continue.';
+      return vm('errors.UNAUTHORIZED');
     case 403:
-      return 'You do not have permission to do this.';
+      return vm('errors.FORBIDDEN');
     case 404:
-      return 'The requested resource was not found.';
+      return vm('errors.NOT_FOUND');
     case 409:
-      return 'This conflicts with an existing record.';
+      return vm('errors.CONFLICT');
     case 429:
-      return 'Too many requests. Wait a moment and try again.';
+      return vm('errors.RATE_LIMITED');
     default:
-      return status >= 500
-        ? 'The server ran into a problem. Please try again.'
-        : 'The request could not be completed.';
+      return status >= 500 ? vm('errors.INTERNAL_ERROR') : vm('errors.requestFailed');
   }
 }
 
@@ -278,7 +302,7 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
         throw new ApiError({
           status: 0,
           code: 'NETWORK_ERROR',
-          message: 'The server could not be reached. Check your connection and try again.',
+          message: vm('errors.NETWORK_ERROR'),
         });
       }
     };

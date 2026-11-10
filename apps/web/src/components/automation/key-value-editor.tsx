@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Plus, X } from 'lucide-react';
 import { Button, IconButton, Input } from '@hilatech/ui';
+import { useT } from '@/i18n/provider';
 
 interface Row {
   id: number;
@@ -19,9 +20,9 @@ export function KeyValueEditor({
   label,
   value,
   onChange,
-  keyPlaceholder = 'Header',
-  valuePlaceholder = 'Value',
-  addLabel = 'Add header',
+  keyPlaceholder,
+  valuePlaceholder,
+  addLabel,
 }: {
   idPrefix: string;
   label: string;
@@ -31,6 +32,7 @@ export function KeyValueEditor({
   valuePlaceholder?: string;
   addLabel?: string;
 }) {
+  const t = useT();
   const [rows, setRows] = React.useState<Row[]>(() =>
     Object.entries(value).map(([key, v], id) => ({ id, key, value: v })),
   );
@@ -49,25 +51,25 @@ export function KeyValueEditor({
         <div key={row.id} className="flex items-center gap-2">
           <Input
             id={`${idPrefix}-key-${i}`}
-            aria-label={`${label} name ${i + 1}`}
+            aria-label={t('automation.name', { label, value: i + 1 })}
             value={row.key}
-            placeholder={keyPlaceholder}
+            placeholder={keyPlaceholder ?? t('automation.headerPlaceholder')}
             onChange={(e) =>
               commit(rows.map((r) => (r.id === row.id ? { ...r, key: e.target.value } : r)))
             }
           />
           <Input
             id={`${idPrefix}-value-${i}`}
-            aria-label={`${label} value ${i + 1}`}
+            aria-label={t('automation.value', { label, value: i + 1 })}
             value={row.value}
-            placeholder={valuePlaceholder}
+            placeholder={valuePlaceholder ?? t('automation.valuePlaceholder')}
             onChange={(e) =>
               commit(rows.map((r) => (r.id === row.id ? { ...r, value: e.target.value } : r)))
             }
           />
           <IconButton
             size="sm"
-            label={`Remove ${label.toLowerCase()} ${i + 1}`}
+            label={t('automation.remove', { name: label.toLowerCase(), value: i + 1 })}
             onClick={() => commit(rows.filter((r) => r.id !== row.id))}
           >
             <X aria-hidden />

@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { format, formatDistanceToNow } from 'date-fns';
 import { ChevronDown, ChevronRight, FilterX, ScrollText } from 'lucide-react';
 import { AuditAction, Permission, type AuditLog } from '@hilatech/contracts';
 import {
@@ -28,8 +27,10 @@ import {
 } from '@hilatech/ui';
 import { getErrorMessage } from '@/lib/api';
 import { useAuditLogs, useMembers } from '@/hooks/queries';
+import { enumLabel } from '@/i18n/enums';
 import { auditTone, describeAuditAction, describeAuditTarget } from '@/lib/audit-labels';
 import { PermissionGate } from '@/components/common/permission-gate';
+import { useT, useFormat } from '@/i18n/provider';
 
 const PAGE_SIZE = 25;
 
@@ -38,6 +39,7 @@ const ACTION_GROUPS = Array.from(
 );
 
 export function AuditView() {
+  const t = useT();
   const [page, setPage] = React.useState(1);
   const [action, setAction] = React.useState('');
   const [actor, setActor] = React.useState('');
@@ -67,22 +69,23 @@ export function AuditView() {
     const map = new Map<string, string>();
     for (const m of members.data?.data ?? [])
       map.set(m.userId, `${m.user.firstName} ${m.user.lastName}`.trim());
-    return (id: string | null) => (id ? (map.get(id) ?? 'Former member') : 'System');
-  }, [members.data]);
+    return (id: string | null) =>
+      id ? (map.get(id) ?? t('audit.formerMember')) : t('audit.system');
+  }, [members.data, t]);
 
   return (
     <PermissionGate anyOf={[Permission.AUDIT_READ]}>
       <div className="flex flex-col gap-6">
         <PageHeader
-          title="Audit log"
-          description="A permanent record of sensitive actions in this organization — by people and by the assistant."
+          title={t('common.auditLog')}
+          description={t('audit.aPermanentRecordOfSensitive')}
         />
 
         <Card>
           <CardContent className="flex flex-col gap-4 py-4">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto_auto_auto] lg:items-end">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="audit-action">Action</Label>
+                <Label htmlFor="audit-action">{t('audit.action')}</Label>
                 <NativeSelect
                   id="audit-action"
                   value={action}
@@ -91,14 +94,14 @@ export function AuditView() {
                     setPage(1);
                   }}
                 >
-                  <option value="">All actions</option>
+                  <option value="">{t('audit.allActions')}</option>
                   {ACTION_GROUPS.map((group) => (
                     <optgroup key={group} label={group}>
                       {Object.values(AuditAction)
                         .filter((a) => a.startsWith(`${group}.`))
                         .map((a) => (
                           <option key={a} value={a}>
-                            {describeAuditAction(a)}
+                            {describeAuditAction(a, t)}
                           </option>
                         ))}
                     </optgroup>
@@ -106,7 +109,7 @@ export function AuditView() {
                 </NativeSelect>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="audit-actor">Actor</Label>
+                <Label htmlFor="audit-actor">{t('audit.actor')}</Label>
                 <NativeSelect
                   id="audit-actor"
                   value={actor}
@@ -115,7 +118,7 @@ export function AuditView() {
                     setPage(1);
                   }}
                 >
-                  <option value="">Anyone</option>
+                  <option value="">{t('common.anyone')}</option>
                   {(members.data?.data ?? []).map((m) => (
                     <option key={m.userId} value={m.userId}>
                       {m.user.firstName} {m.user.lastName}
@@ -124,7 +127,7 @@ export function AuditView() {
                 </NativeSelect>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="audit-from">From</Label>
+                <Label htmlFor="audit-from">{t('common.from')}</Label>
                 <Input
                   id="audit-from"
                   type="date"
@@ -137,7 +140,7 @@ export function AuditView() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="audit-to">To</Label>
+                <Label htmlFor="audit-to">{t('audit.to')}</Label>
                 <Input
                   id="audit-to"
                   type="date"
@@ -155,7 +158,7 @@ export function AuditView() {
                 disabled={!hasFilters}
                 leadingIcon={<FilterX aria-hidden />}
               >
-                Clear
+                {t('common.clear')}
               </Button>
             </div>
           </CardContent>
@@ -198,18 +201,19 @@ function AuditTable({
   hasFilters: boolean;
   onClear: () => void;
 }) {
+  const t = useT();
   const columns = 5;
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead className="w-8">
-            <span className="sr-only">Details</span>
+            <span className="sr-only">{t('common.details')}</span>
           </TableHead>
-          <TableHead>When</TableHead>
-          <TableHead>Action</TableHead>
-          <TableHead>Actor</TableHead>
-          <TableHead>Target</TableHead>
+          <TableHead>{t('common.when')}</TableHead>
+          <TableHead>{t('audit.action')}</TableHead>
+          <TableHead>{t('audit.actor')}</TableHead>
+          <TableHead>{t('audit.target')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -220,7 +224,7 @@ function AuditTable({
             <div className="flex flex-col items-center gap-2">
               <span>{getErrorMessage(query.error)}</span>
               <Button variant="secondary" size="sm" onClick={() => void query.refetch()}>
-                Try again
+                {t('common.tryAgain')}
               </Button>
             </div>
           </TableEmptyRow>
@@ -229,16 +233,20 @@ function AuditTable({
             <EmptyState
               compact
               icon={<ScrollText />}
-              title={hasFilters ? 'Nothing matches these filters' : 'No activity recorded yet'}
+              title={
+                hasFilters
+                  ? t('audit.nothingMatchesTheseFilters')
+                  : t('audit.noActivityRecordedYet')
+              }
               description={
                 hasFilters
-                  ? 'Widen the date range or clear the filters.'
-                  : 'Sign-ins, invitations, role changes and settings updates will appear here.'
+                  ? t('audit.widenTheDateRangeOr')
+                  : t('audit.signInsInvitationsRoleChanges')
               }
               action={
                 hasFilters ? (
                   <Button variant="secondary" size="sm" onClick={onClear}>
-                    Clear filters
+                    {t('common.clearFilters')}
                   </Button>
                 ) : undefined
               }
@@ -255,15 +263,17 @@ function AuditTable({
 }
 
 function AuditRow({ log, actorName }: { log: AuditLog; actorName: string }) {
+  const fmt = useFormat();
+  const t = useT();
   const [open, setOpen] = React.useState(false);
   const hasMeta = Object.keys(log.metadata ?? {}).length > 0;
   const detailsId = `audit-${log.id}`;
   return (
     <>
       <TableRow className={cn(open && 'bg-surface-muted/40')}>
-        <TableCell className="pr-0">
+        <TableCell className="pe-0">
           <IconButton
-            label={open ? 'Hide details' : 'Show details'}
+            label={open ? t('common.hideDetails') : t('common.showDetails')}
             size="sm"
             aria-expanded={open}
             aria-controls={detailsId}
@@ -273,48 +283,48 @@ function AuditRow({ log, actorName }: { log: AuditLog; actorName: string }) {
           </IconButton>
         </TableCell>
         <TableCell className="whitespace-nowrap text-fg-muted tabular">
-          <time dateTime={log.createdAt} title={format(new Date(log.createdAt), 'PPpp')}>
-            {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
+          <time dateTime={log.createdAt} title={fmt.dateTime(new Date(log.createdAt), 'long')}>
+            {fmt.relative(new Date(log.createdAt))}
           </time>
         </TableCell>
         <TableCell>
           <span className="flex items-center gap-2">
             <Badge variant={auditTone(log.action)} dot>
-              {log.action.split('.')[0]}
+              {enumLabel(t, 'audit.target', log.action.split('.')[0] ?? '')}
             </Badge>
-            <span className="font-medium">{describeAuditAction(log.action)}</span>
+            <span className="font-medium">{describeAuditAction(log.action, t)}</span>
           </span>
         </TableCell>
         <TableCell>{actorName}</TableCell>
-        <TableCell className="text-fg-muted">{describeAuditTarget(log) ?? '—'}</TableCell>
+        <TableCell className="text-fg-muted">{describeAuditTarget(log, t) ?? '—'}</TableCell>
       </TableRow>
       {open ? (
         <tr id={detailsId} className="border-b border-border bg-surface-muted/40">
           <td />
           <td colSpan={4} className="px-3 pt-0 pb-4">
             <dl className="grid gap-x-6 gap-y-1.5 text-xs sm:grid-cols-[auto_1fr]">
-              <dt className="text-fg-muted">Action key</dt>
+              <dt className="text-fg-muted">{t('audit.actionKey')}</dt>
               <dd className="font-mono">{log.action}</dd>
-              <dt className="text-fg-muted">Timestamp</dt>
-              <dd className="tabular">{format(new Date(log.createdAt), 'PPpp')}</dd>
+              <dt className="text-fg-muted">{t('audit.timestamp')}</dt>
+              <dd className="tabular">{fmt.dateTime(new Date(log.createdAt), 'long')}</dd>
               {log.targetType ? (
                 <>
-                  <dt className="text-fg-muted">Target</dt>
+                  <dt className="text-fg-muted">{t('audit.target')}</dt>
                   <dd className="font-mono">
                     {log.targetType}
                     {log.targetId ? ` · ${log.targetId}` : ''}
                   </dd>
                 </>
               ) : null}
-              <dt className="text-fg-muted">IP address</dt>
+              <dt className="text-fg-muted">{t('audit.ipAddress')}</dt>
               <dd className="font-mono">{log.ipAddress ?? '—'}</dd>
-              <dt className="text-fg-muted">User agent</dt>
+              <dt className="text-fg-muted">{t('audit.userAgent')}</dt>
               <dd className="break-all">{log.userAgent ?? '—'}</dd>
-              <dt className="text-fg-muted">Request id</dt>
+              <dt className="text-fg-muted">{t('audit.requestId')}</dt>
               <dd className="font-mono">{log.requestId ?? '—'}</dd>
               {hasMeta ? (
                 <>
-                  <dt className="text-fg-muted">Metadata</dt>
+                  <dt className="text-fg-muted">{t('audit.metadata')}</dt>
                   <dd>
                     <pre className="max-h-48 overflow-auto rounded-sm border border-border bg-surface p-2 font-mono text-2xs leading-relaxed scrollbar-thin">
                       {JSON.stringify(log.metadata, null, 2)}

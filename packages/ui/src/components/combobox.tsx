@@ -4,6 +4,7 @@ import * as React from 'react';
 import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { Check, ChevronsUpDown, Loader2, Search, X } from 'lucide-react';
 import { cn } from '../lib/cn';
+import { useUiStrings } from '../lib/ui-strings';
 
 export interface ComboboxItem {
   value: string;
@@ -53,9 +54,9 @@ export function Combobox({
   onValueChange,
   search,
   onSearchChange,
-  placeholder = 'Select…',
-  searchPlaceholder = 'Search…',
-  emptyMessage = 'No results.',
+  placeholder,
+  searchPlaceholder,
+  emptyMessage,
   loading = false,
   disabled = false,
   clearable = false,
@@ -66,6 +67,7 @@ export function Combobox({
   className,
   ...aria
 }: ComboboxProps) {
+  const ui = useUiStrings();
   const reactId = React.useId();
   const listboxId = `${id ?? reactId}-listbox`;
   const [open, setOpen] = React.useState(false);
@@ -155,16 +157,16 @@ export function Combobox({
             aria-required={aria['aria-required'] || undefined}
             disabled={disabled}
             className={cn(
-              'flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-sm border border-border bg-surface px-3 py-1 text-left text-sm text-fg shadow-xs',
+              'flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-sm border border-border bg-surface px-3 py-1 text-start text-sm text-fg shadow-xs',
               'transition-[border-color,box-shadow] duration-150 hover:border-border-strong',
               'focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring/40',
               'disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-fg-muted',
               'aria-invalid:border-danger',
-              clearable && value && 'pr-14',
+              clearable && value && 'pe-14',
             )}
           >
             <span className={cn('truncate', !display && 'text-fg-subtle')}>
-              {display ?? placeholder}
+              {display ?? placeholder ?? ui.select}
             </span>
             <ChevronsUpDown className="size-4 shrink-0 text-fg-subtle" aria-hidden />
           </button>
@@ -172,12 +174,12 @@ export function Combobox({
         {clearable && value && !disabled ? (
           <button
             type="button"
-            aria-label="Clear selection"
+            aria-label={ui.clearSelection}
             onClick={(event) => {
               event.stopPropagation();
               onValueChange(null, null);
             }}
-            className="absolute top-1/2 right-8 flex size-6 -translate-y-1/2 items-center justify-center rounded-xs text-fg-subtle hover:bg-surface-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="absolute top-1/2 end-8 flex size-6 -translate-y-1/2 items-center justify-center rounded-xs text-fg-subtle hover:bg-surface-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             <X className="size-3.5" aria-hidden />
           </button>
@@ -209,7 +211,7 @@ export function Combobox({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={onKeyDown}
-              placeholder={searchPlaceholder}
+              placeholder={searchPlaceholder ?? ui.search}
               autoComplete="off"
               spellCheck={false}
               className="h-10 w-full min-w-0 bg-transparent text-sm text-fg outline-none placeholder:text-fg-subtle"
@@ -231,7 +233,7 @@ export function Combobox({
                 className="px-2 py-6 text-center text-sm text-fg-muted"
                 aria-live="polite"
               >
-                {loading ? 'Searching…' : emptyMessage}
+                {loading ? ui.searching : (emptyMessage ?? ui.noResults)}
               </li>
             ) : (
               visible.map((item, index) => {
@@ -249,7 +251,7 @@ export function Combobox({
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => choose(item)}
                     className={cn(
-                      'flex cursor-default items-center gap-2 rounded-xs py-1.5 pr-2 pl-2 text-sm select-none',
+                      'flex cursor-default items-center gap-2 rounded-xs py-1.5 pe-2 ps-2 text-sm select-none',
                       isActive && 'bg-surface-muted text-fg',
                       item.disabled && 'pointer-events-none opacity-50',
                     )}

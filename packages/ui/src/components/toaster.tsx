@@ -2,15 +2,18 @@
 
 import * as React from 'react';
 import { Toaster as SonnerToaster, toast, type ToasterProps } from 'sonner';
+import { useDirection } from '@radix-ui/react-direction';
 import { CheckCircle2, CircleAlert, Info, Loader2, TriangleAlert } from 'lucide-react';
 
 export { toast };
 
 /** Sonner toaster themed with design tokens. Mount once in the root layout. */
 export function Toaster(props: ToasterProps) {
+  const dir = useDirection();
   return (
     <SonnerToaster
-      position="bottom-right"
+      dir={dir}
+      position={dir === 'rtl' ? 'bottom-left' : 'bottom-right'}
       closeButton
       duration={4500}
       gap={8}

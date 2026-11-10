@@ -1,5 +1,6 @@
 'use client';
 
+import { roleLabel } from '@/i18n/enums';
 import * as React from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,6 +27,7 @@ import {
 import { getErrorMessage } from '@/lib/api';
 import { useCreateInvitation } from '@/hooks/queries';
 import { applyServerErrors } from '@/lib/forms/server-errors';
+import { useT } from '@/i18n/provider';
 
 export function InviteDialog({
   open,
@@ -47,6 +49,7 @@ export function InviteDialog({
 }
 
 function InviteForm({ roles, onDone }: { roles: Role[]; onDone: () => void }) {
+  const t = useT();
   const create = useCreateInvitation();
   const [formError, setFormError] = React.useState<string | null>(null);
   const defaultRole = roles.find((r) => r.key === 'member') ?? roles[0];
@@ -61,7 +64,7 @@ function InviteForm({ roles, onDone }: { roles: Role[]; onDone: () => void }) {
     setFormError(null);
     try {
       const invitation = await create.mutateAsync(values);
-      toast.success(`Invitation sent to ${invitation.email}`);
+      toast.success(t('team.invitationSentTo', { email: invitation.email }));
       onDone();
     } catch (error) {
       if (!applyServerErrors(error, form.setError, ['email', 'roleId']))
@@ -72,16 +75,14 @@ function InviteForm({ roles, onDone }: { roles: Role[]; onDone: () => void }) {
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col">
       <DialogHeader>
-        <DialogTitle>Invite a teammate</DialogTitle>
-        <DialogDescription>
-          They’ll get an email with a link that’s valid for seven days.
-        </DialogDescription>
+        <DialogTitle>{t('common.inviteATeammate')}</DialogTitle>
+        <DialogDescription>{t('team.theyLlGetAnEmail')}</DialogDescription>
       </DialogHeader>
       <DialogBody className="flex flex-col gap-5 pb-2">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
         <FormField
           id="invite-email"
-          label="Email"
+          label={t('common.email')}
           error={form.formState.errors.email?.message}
           required
         >
@@ -89,13 +90,13 @@ function InviteForm({ roles, onDone }: { roles: Role[]; onDone: () => void }) {
             type="email"
             autoComplete="off"
             autoFocus
-            placeholder="name@company.com"
+            placeholder={t('team.nameCompanyCom')}
             {...form.register('email')}
           />
         </FormField>
         <FormField
           id="invite-role"
-          label="Role"
+          label={t('common.role')}
           description={roles.find((r) => r.id === selectedRoleId)?.description ?? undefined}
           error={form.formState.errors.roleId?.message}
           required
@@ -103,7 +104,7 @@ function InviteForm({ roles, onDone }: { roles: Role[]; onDone: () => void }) {
           <NativeSelect {...form.register('roleId')}>
             {roles.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.name}
+                {roleLabel(t, r.name)}
               </option>
             ))}
           </NativeSelect>
@@ -111,10 +112,10 @@ function InviteForm({ roles, onDone }: { roles: Role[]; onDone: () => void }) {
       </DialogBody>
       <DialogFooter>
         <Button variant="secondary" onClick={onDone}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" loading={form.formState.isSubmitting}>
-          Send invitation
+          {t('team.sendInvitation')}
         </Button>
       </DialogFooter>
     </form>

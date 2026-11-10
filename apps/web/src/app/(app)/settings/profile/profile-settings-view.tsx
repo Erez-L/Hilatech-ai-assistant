@@ -1,10 +1,10 @@
 'use client';
+import { vm } from '@/i18n/validation';
 
 import * as React from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { format, formatDistanceToNow } from 'date-fns';
 import { Laptop, LogOut, Monitor, Moon, Smartphone, Sun } from 'lucide-react';
 import { changePasswordSchema, type AuthUser } from '@hilatech/contracts';
 import {
@@ -51,12 +51,19 @@ import { QueryState } from '@/components/common/query-state';
 import { SettingsTabs } from '@/components/settings/settings-tabs';
 import { NotificationPreferencesCard } from '@/components/settings/notification-preferences-card';
 import { PasswordInput } from '@/components/auth/password-input';
+import { useT, useFormat, type T } from '@/i18n/provider';
+import { useChangeLocale } from '@/components/shell/language-switcher';
+import type { Locale } from '@/i18n/config';
 
 export function ProfileSettingsView() {
+  const t = useT();
   const user = useSession((s) => s.user);
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Settings" description="Your account, security and preferences.">
+      <PageHeader
+        title={t('settings.settings')}
+        description={t('settings.yourAccountSecurityAndPreferences')}
+      >
         <SettingsTabs />
       </PageHeader>
       {user ? <ProfileForm user={user} /> : null}
@@ -71,6 +78,8 @@ export function ProfileSettingsView() {
 // ---------------------------------------------------------------------------
 
 function ProfileForm({ user }: { user: AuthUser }) {
+  const t = useT();
+  const fmt = useFormat();
   const update = useUpdateProfile();
   const [formError, setFormError] = React.useState<string | null>(null);
   const defaults = React.useMemo<UpdateProfileRequest>(
@@ -87,7 +96,7 @@ function ProfileForm({ user }: { user: AuthUser }) {
     setFormError(null);
     try {
       await update.mutateAsync(values);
-      toast.success('Profile saved');
+      toast.success(t('settings.profileSaved'));
     } catch (error) {
       if (!applyServerErrors(error, form.setError, ['firstName', 'lastName', 'avatarUrl'])) {
         setFormError(getErrorMessage(error));
@@ -101,8 +110,8 @@ function ProfileForm({ user }: { user: AuthUser }) {
     <Card>
       <form onSubmit={onSubmit} noValidate>
         <CardHeader>
-          <CardTitle>Profile</CardTitle>
-          <CardDescription>How you appear to teammates.</CardDescription>
+          <CardTitle>{t('settings.profile')}</CardTitle>
+          <CardDescription>{t('settings.howYouAppearToTeammates')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           {formError ? <Alert tone="danger">{formError}</Alert> : null}
@@ -118,21 +127,25 @@ function ProfileForm({ user }: { user: AuthUser }) {
               <span className="flex items-center gap-2 text-fg-muted">
                 {user.emailVerifiedAt ? (
                   <Badge variant="success" dot>
-                    Verified
+                    {t('settings.verified')}
                   </Badge>
                 ) : (
                   <Badge variant="warning" dot>
-                    Not verified
+                    {t('settings.notVerified')}
                   </Badge>
                 )}
-                <span>Member since {format(new Date(user.createdAt), 'MMMM yyyy')}</span>
+                <span>
+                  {t('settings.memberSince', {
+                    monthYear: fmt.monthYear(new Date(user.createdAt)),
+                  })}
+                </span>
               </span>
             </div>
           </div>
           <div className="grid gap-5 sm:grid-cols-2">
             <FormField
               id="firstName"
-              label="First name"
+              label={t('common.firstName')}
               error={form.formState.errors.firstName?.message}
               required
             >
@@ -140,7 +153,7 @@ function ProfileForm({ user }: { user: AuthUser }) {
             </FormField>
             <FormField
               id="lastName"
-              label="Last name"
+              label={t('common.lastName')}
               error={form.formState.errors.lastName?.message}
               required
             >
@@ -149,14 +162,14 @@ function ProfileForm({ user }: { user: AuthUser }) {
           </div>
           <FormField
             id="avatarUrl"
-            label="Avatar URL"
-            description="Image uploads arrive in a later milestone; paste a link for now."
+            label={t('settings.avatarUrl')}
+            description={t('settings.imageUploadsArriveInA')}
             error={form.formState.errors.avatarUrl?.message}
           >
             <Input
               type="url"
               inputMode="url"
-              placeholder="https://"
+              placeholder={t('settings.https')}
               {...form.register('avatarUrl')}
             />
           </FormField>
@@ -168,14 +181,14 @@ function ProfileForm({ user }: { user: AuthUser }) {
             disabled={!form.formState.isDirty || form.formState.isSubmitting}
             onClick={() => form.reset(defaults)}
           >
-            Discard
+            {t('common.discard')}
           </Button>
           <Button
             type="submit"
             loading={form.formState.isSubmitting}
             disabled={!form.formState.isDirty}
           >
-            Save profile
+            {t('settings.saveProfile')}
           </Button>
         </CardFooter>
       </form>
@@ -186,41 +199,45 @@ function ProfileForm({ user }: { user: AuthUser }) {
 // ---------------------------------------------------------------------------
 
 function PreferencesCard() {
+  const t = useT();
   const { theme, setTheme } = useThemePreference();
   const prefs = usePreferences();
   const update = useUpdatePreferences();
+  const changeLocale = useChangeLocale();
 
-  const save = (
-    patch: Partial<{ locale: 'en' | 'he'; notifications: { email: boolean; inApp: boolean } }>,
-  ) => {
+  const save = (patch: Partial<{ notifications: { email: boolean; inApp: boolean } }>) => {
     const next = {
       theme: prefs.theme,
-      locale: patch.locale ?? prefs.locale,
+      locale: prefs.locale,
       notifications: patch.notifications ?? prefs.notifications,
     };
     prefs.setPreferences(next);
     update.mutate(next, {
-      onSuccess: () => toast.success('Preferences saved'),
+      onSuccess: () => toast.success(t('settings.preferencesSaved')),
       onError: (e) => toast.error(getErrorMessage(e)),
     });
   };
 
   const themes: { value: Theme; label: string; icon: React.ElementType }[] = [
-    { value: 'light', label: 'Light', icon: Sun },
-    { value: 'dark', label: 'Dark', icon: Moon },
-    { value: 'system', label: 'System', icon: Monitor },
+    { value: 'light', label: t('common.light'), icon: Sun },
+    { value: 'dark', label: t('common.dark'), icon: Moon },
+    { value: 'system', label: t('common.system'), icon: Monitor },
   ];
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Preferences</CardTitle>
-        <CardDescription>Appearance, language and how you want to be notified.</CardDescription>
+        <CardTitle>{t('settings.preferences')}</CardTitle>
+        <CardDescription>{t('settings.appearanceLanguageAndHowYou')}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-2 text-sm font-medium">Theme</legend>
-          <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-2 sm:max-w-md">
+          <legend className="mb-2 text-sm font-medium">{t('settings.theme')}</legend>
+          <div
+            role="radiogroup"
+            aria-label={t('settings.theme')}
+            className="grid grid-cols-3 gap-2 sm:max-w-md"
+          >
             {themes.map((t) => {
               const Icon = t.icon;
               const active = theme === t.value;
@@ -249,43 +266,47 @@ function PreferencesCard() {
 
         <FormField
           id="locale"
-          label="Language"
-          description="Hebrew UI arrives in a later milestone."
+          label={t('common.language')}
+          description={t('settings.hebrewUiArrivesInA')}
           className="sm:max-w-xs"
         >
           <NativeSelect
             value={prefs.locale}
-            onChange={(e) => save({ locale: e.target.value as 'en' | 'he' })}
+            onChange={(e) => {
+              // Uses the merge-PUT (GET + PUT) so server-side notification maps are preserved.
+              changeLocale(e.target.value as Locale);
+              toast.success(t('settings.preferencesSaved'));
+            }}
           >
-            <option value="en">English</option>
-            <option value="he">Hebrew</option>
+            <option value="en">{t('common.english')}</option>
+            <option value="he">{t('common.hebrew')}</option>
           </NativeSelect>
         </FormField>
 
         <fieldset className="flex flex-col gap-3">
-          <legend className="mb-1 text-sm font-medium">Notifications</legend>
+          <legend className="mb-1 text-sm font-medium">{t('common.notifications')}</legend>
           <label className="flex items-center justify-between gap-4 rounded-md border border-border px-4 py-3 sm:max-w-md">
             <span className="flex flex-col">
-              <span className="text-sm font-medium">In-app</span>
-              <span className="text-xs text-fg-muted">Show notifications in the bell menu.</span>
+              <span className="text-sm font-medium">{t('settings.inApp')}</span>
+              <span className="text-xs text-fg-muted">
+                {t('settings.showNotificationsInTheBell')}
+              </span>
             </span>
             <Switch
               checked={prefs.notifications.inApp}
               onCheckedChange={(c) => save({ notifications: { ...prefs.notifications, inApp: c } })}
-              aria-label="In-app notifications"
+              aria-label={t('settings.inAppNotifications')}
             />
           </label>
           <label className="flex items-center justify-between gap-4 rounded-md border border-border px-4 py-3 sm:max-w-md">
             <span className="flex flex-col">
-              <span className="text-sm font-medium">Email</span>
-              <span className="text-xs text-fg-muted">
-                Send a summary of important events by email.
-              </span>
+              <span className="text-sm font-medium">{t('common.email')}</span>
+              <span className="text-xs text-fg-muted">{t('settings.sendASummaryOfImportant')}</span>
             </span>
             <Switch
               checked={prefs.notifications.email}
               onCheckedChange={(c) => save({ notifications: { ...prefs.notifications, email: c } })}
-              aria-label="Email notifications"
+              aria-label={t('settings.emailNotifications')}
             />
           </label>
         </fieldset>
@@ -299,12 +320,13 @@ function PreferencesCard() {
 const passwordFormSchema = changePasswordSchema
   .extend({ confirmPassword: z.string() })
   .refine((v) => v.newPassword === v.confirmPassword, {
-    message: 'Passwords don’t match',
+    message: vm('common.passwordsDonTMatch'),
     path: ['confirmPassword'],
   });
 type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 function PasswordCard() {
+  const t = useT();
   const change = useChangePassword();
   const [formError, setFormError] = React.useState<string | null>(null);
   const form = useForm<PasswordFormValues>({
@@ -317,7 +339,7 @@ function PasswordCard() {
     try {
       await change.mutateAsync({ currentPassword, newPassword });
       form.reset();
-      toast.success('Password changed');
+      toast.success(t('settings.passwordChanged'));
     } catch (error) {
       if (!applyServerErrors(error, form.setError, ['currentPassword', 'newPassword'])) {
         setFormError(getErrorMessage(error));
@@ -329,16 +351,14 @@ function PasswordCard() {
     <Card>
       <form onSubmit={onSubmit} noValidate>
         <CardHeader>
-          <CardTitle>Password</CardTitle>
-          <CardDescription>
-            Use at least 10 characters with upper and lower case letters and a number.
-          </CardDescription>
+          <CardTitle>{t('common.password')}</CardTitle>
+          <CardDescription>{t('settings.useAtLeast10Characters')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           {formError ? <Alert tone="danger">{formError}</Alert> : null}
           <FormField
             id="currentPassword"
-            label="Current password"
+            label={t('settings.currentPassword')}
             error={form.formState.errors.currentPassword?.message}
             required
             className="sm:max-w-md"
@@ -348,7 +368,7 @@ function PasswordCard() {
           <div className="grid gap-5 sm:grid-cols-2">
             <FormField
               id="newPassword"
-              label="New password"
+              label={t('common.newPassword')}
               error={form.formState.errors.newPassword?.message}
               required
             >
@@ -356,7 +376,7 @@ function PasswordCard() {
             </FormField>
             <FormField
               id="confirmPassword"
-              label="Confirm new password"
+              label={t('common.confirmNewPassword')}
               error={form.formState.errors.confirmPassword?.message}
               required
             >
@@ -366,7 +386,7 @@ function PasswordCard() {
         </CardContent>
         <CardFooter className="justify-end">
           <Button type="submit" loading={form.formState.isSubmitting}>
-            Change password
+            {t('common.changePassword')}
           </Button>
         </CardFooter>
       </form>
@@ -376,8 +396,8 @@ function PasswordCard() {
 
 // ---------------------------------------------------------------------------
 
-function describeAgent(ua: string | null): { label: string; icon: React.ElementType } {
-  if (!ua) return { label: 'Unknown device', icon: Laptop };
+function describeAgent(ua: string | null, t: T): { label: string; icon: React.ElementType } {
+  if (!ua) return { label: t('settings.unknownDevice'), icon: Laptop };
   const mobile = /iphone|android|mobile/i.test(ua);
   const browser = /edg\//i.test(ua)
     ? 'Edge'
@@ -387,7 +407,7 @@ function describeAgent(ua: string | null): { label: string; icon: React.ElementT
         ? 'Safari'
         : /firefox\//i.test(ua)
           ? 'Firefox'
-          : 'Browser';
+          : t('settings.browserFallback');
   const os = /windows/i.test(ua)
     ? 'Windows'
     : /mac os/i.test(ua)
@@ -399,10 +419,15 @@ function describeAgent(ua: string | null): { label: string; icon: React.ElementT
           : /linux/i.test(ua)
             ? 'Linux'
             : '';
-  return { label: [browser, os].filter(Boolean).join(' on '), icon: mobile ? Smartphone : Laptop };
+  return {
+    label: os ? t('settings.browserOnOs', { browser, os }) : browser,
+    icon: mobile ? Smartphone : Laptop,
+  };
 }
 
 function SessionsCard() {
+  const fmt = useFormat();
+  const t = useT();
   const sessions = useAuthSessions();
   const revoke = useRevokeSession();
   const [target, setTarget] = React.useState<AuthSessionInfo | null>(null);
@@ -410,10 +435,8 @@ function SessionsCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Active sessions</CardTitle>
-        <CardDescription>
-          Devices currently signed in to your account. Sign out any you don’t recognise.
-        </CardDescription>
+        <CardTitle>{t('settings.activeSessions')}</CardTitle>
+        <CardDescription>{t('settings.devicesCurrentlySignedInTo')}</CardDescription>
       </CardHeader>
       <CardContent className="p-0">
         <QueryState
@@ -436,8 +459,8 @@ function SessionsCard() {
           empty={
             <EmptyState
               compact
-              title="No active sessions"
-              description="This is unexpected — try refreshing the page."
+              title={t('settings.noActiveSessions')}
+              description={t('settings.thisIsUnexpectedTryRefreshing')}
             />
           }
         >
@@ -446,7 +469,7 @@ function SessionsCard() {
               {[...list]
                 .sort((a, b) => Number(b.current) - Number(a.current))
                 .map((s) => {
-                  const { label, icon: Icon } = describeAgent(s.userAgent);
+                  const { label, icon: Icon } = describeAgent(s.userAgent, t);
                   return (
                     <li
                       key={s.familyId}
@@ -463,14 +486,16 @@ function SessionsCard() {
                               variant="accent"
                               className="px-1.5 py-0 text-[0.625rem] leading-4"
                             >
-                              This device
+                              {t('settings.thisDevice')}
                             </Badge>
                           ) : null}
                         </span>
                         <span className="text-xs text-fg-muted">
-                          {s.ipAddress ?? 'Unknown IP'} · Last active{' '}
-                          {formatDistanceToNow(new Date(s.lastUsedAt), { addSuffix: true })} ·
-                          Signed in {format(new Date(s.createdAt), 'd MMM yyyy')}
+                          {t('settings.sessionMeta', {
+                            ip: s.ipAddress ?? t('settings.unknownIp'),
+                            lastActive: fmt.relative(new Date(s.lastUsedAt)),
+                            signedIn: fmt.date(new Date(s.createdAt)),
+                          })}
                         </span>
                       </div>
                       {s.current ? null : (
@@ -480,7 +505,7 @@ function SessionsCard() {
                           leadingIcon={<LogOut aria-hidden />}
                           onClick={() => setTarget(s)}
                         >
-                          Sign out
+                          {t('common.signOut')}
                         </Button>
                       )}
                     </li>
@@ -493,20 +518,20 @@ function SessionsCard() {
       <ConfirmDialog
         open={!!target}
         onOpenChange={(open) => !open && setTarget(null)}
-        title="Sign out this device?"
+        title={t('settings.signOutThisDevice')}
         description={
           target
-            ? `${describeAgent(target.userAgent).label} will need to sign in again.`
+            ? t('settings.willNeedToSignIn', { label: describeAgent(target.userAgent, t).label })
             : undefined
         }
-        confirmLabel="Sign out device"
+        confirmLabel={t('settings.signOutDevice')}
         tone="danger"
         loading={revoke.isPending}
         onConfirm={() => {
           if (!target) return;
           revoke.mutate(target.familyId, {
             onSuccess: () => {
-              toast.success('Device signed out');
+              toast.success(t('settings.deviceSignedOut'));
               setTarget(null);
             },
             onError: (e) => toast.error(getErrorMessage(e)),

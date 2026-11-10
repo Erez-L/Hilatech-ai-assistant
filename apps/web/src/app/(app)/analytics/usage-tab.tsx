@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Cpu } from 'lucide-react';
 import { Permission } from '@hilatech/contracts';
-import { AreaChart, Badge, Button, EmptyState, Meter, StatCard, formatCompact } from '@hilatech/ui';
+import { AreaChart, Badge, Button, EmptyState, Meter, StatCard } from '@hilatech/ui';
 import { useUsageAnalytics } from '@/hooks/analytics';
 import { useCan } from '@/hooks/use-can';
 import { QueryState } from '@/components/common/query-state';
@@ -16,8 +16,11 @@ import {
   SectionCard,
   type ReportContext,
 } from './report-parts';
+import { useT, useFormat } from '@/i18n/provider';
 
 export function UsageTab({ ctx }: { ctx: ReportContext }) {
+  const fmt = useFormat();
+  const t = useT();
   const query = useUsageAnalytics(ctx.params);
   const canBilling = useCan(Permission.ORG_BILLING_MANAGE);
   return (
@@ -25,22 +28,22 @@ export function UsageTab({ ctx }: { ctx: ReportContext }) {
       <QueryState
         query={query}
         loading={<ReportSkeleton />}
-        errorTitle="Usage analytics couldn’t be loaded"
+        errorTitle={t('analytics.usageAnalyticsCouldnTBe')}
       >
         {(d) => {
-          const t = d.totals;
+          const totals = d.totals;
           const cp = d.currentPeriod;
           const b = cp.budget;
-          const unpriced = t.requests - t.pricedRequests;
+          const unpriced = totals.requests - totals.pricedRequests;
           return (
             <>
               <SectionCard
-                title="This month against your limits"
-                description="The current calendar month, independent of the selected date range."
+                title={t('analytics.thisMonthAgainstYourLimits')}
+                description={t('analytics.theCurrentCalendarMonthIndependent')}
                 actions={
                   canBilling ? (
                     <Button asChild variant="secondary" size="sm">
-                      <Link href="/settings/billing">Manage budget</Link>
+                      <Link href="/settings/billing">{t('analytics.manageBudget')}</Link>
                     </Button>
                   ) : undefined
                 }
@@ -48,25 +51,25 @@ export function UsageTab({ ctx }: { ctx: ReportContext }) {
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-baseline justify-between text-sm">
-                      <span className="text-fg-muted">Plan AI tokens</span>
+                      <span className="text-fg-muted">{t('analytics.planAiTokens')}</span>
                       <span className="font-medium tabular">
-                        {formatCompact(cp.tokensUsed)}
+                        {fmt.compact(cp.tokensUsed)}
                         <span className="text-fg-subtle">
                           {' '}
                           /{' '}
                           {cp.planTokenLimit == null
-                            ? 'no limit'
-                            : formatCompact(cp.planTokenLimit)}
+                            ? t('common.noLimit')
+                            : fmt.compact(cp.planTokenLimit)}
                         </span>
                         {cp.percentOfPlan != null ? (
-                          <span className="ml-2 text-xs text-fg-subtle">
+                          <span className="ms-2 text-xs text-fg-subtle">
                             {Math.round(cp.percentOfPlan)}%
                           </span>
                         ) : null}
                       </span>
                     </div>
                     <Meter
-                      label="Plan AI tokens used this month"
+                      label={t('analytics.planAiTokensUsedThis')}
                       value={cp.tokensUsed}
                       max={cp.planTokenLimit}
                     />
@@ -74,30 +77,34 @@ export function UsageTab({ ctx }: { ctx: ReportContext }) {
                   <div className="flex flex-col gap-2">
                     <div className="flex items-baseline justify-between text-sm">
                       <span className="flex items-center gap-2 text-fg-muted">
-                        Token budget
-                        {b.blocked ? <Badge variant="danger">AI requests blocked</Badge> : null}
+                        {t('analytics.tokenBudget')}
+                        {b.blocked ? (
+                          <Badge variant="danger">{t('analytics.aiRequestsBlocked')}</Badge>
+                        ) : null}
                         {!b.blocked && b.tokens.level !== 'ok' ? (
                           <Badge variant="warning">
-                            {b.tokens.level === 'exceeded' ? 'Exceeded' : 'Warning'}
+                            {b.tokens.level === 'exceeded'
+                              ? t('common.exceeded')
+                              : t('common.warning')}
                           </Badge>
                         ) : null}
                       </span>
                       <span className="font-medium tabular">
                         {b.tokens.budget == null ? (
-                          <span className="text-fg-subtle">No budget set</span>
+                          <span className="text-fg-subtle">{t('analytics.noBudgetSet')}</span>
                         ) : (
                           <>
-                            {formatCompact(b.tokens.used)}
+                            {fmt.compact(b.tokens.used)}
                             <span className="text-fg-subtle">
                               {' '}
-                              / {formatCompact(b.tokens.budget)}
+                              / {fmt.compact(b.tokens.budget)}
                             </span>
                           </>
                         )}
                       </span>
                     </div>
                     <Meter
-                      label="Token budget used this month"
+                      label={t('common.tokenBudgetUsedThisMonth')}
                       value={b.tokens.used}
                       max={b.tokens.budget}
                     />
@@ -105,132 +112,164 @@ export function UsageTab({ ctx }: { ctx: ReportContext }) {
                 </div>
                 {b.cost.budgetUsd != null && !b.cost.enforceable ? (
                   <p className="mt-4 text-xs text-fg-muted" data-testid="usage-cost-budget-note">
-                    A cost budget is set, but it cannot be measured or enforced until model pricing
-                    is configured.
+                    {t('analytics.aCostBudgetIsSet')}
                   </p>
                 ) : null}
               </SectionCard>
 
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
-                  label="AI requests"
-                  value={t.requests}
-                  hint={`${t.successRequests} ok · ${t.errorRequests} errors`}
+                  label={t('analytics.aiRequests')}
+                  value={totals.requests}
+                  hint={t('analytics.okErrors', {
+                    successRequests: totals.successRequests,
+                    errorRequests: totals.errorRequests,
+                  })}
                 />
                 <StatCard
-                  label="Total tokens"
-                  value={t.totalTokens}
-                  hint={`${formatCompact(t.inputTokens)} in · ${formatCompact(t.outputTokens)} out`}
+                  label={t('analytics.totalTokens')}
+                  value={totals.totalTokens}
+                  hint={t('common.inOut', {
+                    formatCompact: fmt.compact(totals.inputTokens),
+                    formatCompact2: fmt.compact(totals.outputTokens),
+                  })}
                 />
                 <StatCard
-                  label="Estimated cost"
-                  value={formatUsd(t.costUsd)}
+                  label={t('common.estimatedCost')}
+                  value={formatUsd(totals.costUsd, fmt)}
                   hint={
-                    t.costUsd == null
-                      ? 'Not available'
-                      : `${t.pricedRequests}/${t.requests} requests priced`
+                    totals.costUsd == null
+                      ? t('analytics.notAvailable')
+                      : t('analytics.requestsPriced', {
+                          pricedRequests: totals.pricedRequests,
+                          requests: totals.requests,
+                        })
                   }
                 />
                 <StatCard
-                  label="Share of plan tokens"
-                  value={pct(cp.percentOfPlan == null ? null : cp.percentOfPlan / 100)}
-                  hint="this month"
+                  label={t('analytics.shareOfPlanTokens')}
+                  value={pct(cp.percentOfPlan == null ? null : cp.percentOfPlan / 100, fmt)}
+                  hint={t('analytics.thisMonth')}
                 />
               </div>
 
               {!d.pricingConfigured ? (
-                <ReportNote title="Cost is not available" testId="usage-cost-note">
-                  No model pricing is configured, so no cost is estimated and a cost budget cannot
-                  be enforced. Token counts are exact.
+                <ReportNote title={t('analytics.costIsNotAvailable')} testId="usage-cost-note">
+                  {t('analytics.noModelPricingIsConfigured')}
                 </ReportNote>
               ) : unpriced > 0 ? (
-                <ReportNote title="Partial cost coverage" testId="usage-cost-note">
-                  {unpriced} of {t.requests} requests used a model without a configured price, so
-                  the cost total is a lower bound.
+                <ReportNote title={t('analytics.partialCostCoverage')} testId="usage-cost-note">
+                  {t('analytics.ofRequestsUsedAModel', { unpriced, requests: totals.requests })}
                 </ReportNote>
               ) : null}
 
               <SectionCard
-                title="Tokens over time"
-                description="Input and output tokens per period (UTC)."
-                actions={<ExportButtons report="usage" ctx={ctx} label="usage" />}
+                title={t('analytics.tokensOverTime')}
+                description={t('analytics.inputAndOutputTokensPer')}
+                actions={<ExportButtons report="usage" ctx={ctx} label={t('analytics.usage')} />}
               >
-                {t.requests === 0 ? (
+                {totals.requests === 0 ? (
                   <EmptyState
                     compact
                     icon={<Cpu />}
-                    title="No AI usage in this range"
-                    description="Requests from the assistant and agents will be counted here. Widen the date range to see more."
+                    title={t('analytics.noAiUsageInThis')}
+                    description={t('analytics.requestsFromTheAssistantAnd')}
                   />
                 ) : (
                   <AreaChart
                     data={d.series.map((p) => ({ ...p }))}
                     xKey="bucket"
                     height={240}
-                    labelFormatter={(l) => bucketLabel(l, ctx.granularity)}
+                    labelFormatter={(l) => bucketLabel(l, ctx.granularity, fmt, t)}
                     series={[
-                      { key: 'inputTokens', label: 'Input tokens' },
-                      { key: 'outputTokens', label: 'Output tokens' },
+                      { key: 'inputTokens', label: t('analytics.inputTokens') },
+                      { key: 'outputTokens', label: t('analytics.outputTokens') },
                     ]}
                   />
                 )}
               </SectionCard>
 
-              {t.requests > 0 ? (
+              {totals.requests > 0 ? (
                 <>
-                  <SectionCard title="By model" flush>
+                  <SectionCard title={t('common.byModel')} flush>
                     <DataTable
-                      caption="Usage by model"
+                      caption={t('analytics.usageByModel')}
                       rows={d.byModel}
                       rowKey={(r) => `${r.provider}/${r.model}`}
                       columns={[
-                        { header: 'Model', render: (r) => `${r.provider} / ${r.model}` },
-                        { header: 'Requests', align: 'right', render: (r) => r.requests },
+                        { header: t('common.model'), render: (r) => `${r.provider} / ${r.model}` },
+                        { header: t('common.requests'), align: 'right', render: (r) => r.requests },
                         {
-                          header: 'Tokens',
+                          header: t('common.tokens'),
                           align: 'right',
-                          render: (r) => formatCompact(r.totalTokens),
+                          render: (r) => fmt.compact(r.totalTokens),
                         },
-                        { header: 'Cost', align: 'right', render: (r) => formatUsd(r.costUsd) },
+                        {
+                          header: t('common.cost'),
+                          align: 'right',
+                          render: (r) => formatUsd(r.costUsd, fmt),
+                        },
                       ]}
                     />
                   </SectionCard>
                   <div className="grid gap-6 lg:grid-cols-2">
                     <SectionCard
-                      title="By agent"
-                      description="Assistant and other non-agent calls are grouped separately."
+                      title={t('common.byAgent')}
+                      description={t('analytics.assistantAndOtherNonAgent')}
                       flush
                     >
                       <DataTable
-                        caption="Usage by agent"
+                        caption={t('analytics.usageByAgent')}
                         rows={d.byAgent}
                         rowKey={(r) => r.agentId ?? 'none'}
                         columns={[
-                          { header: 'Agent', render: (r) => r.name ?? 'Assistant & other calls' },
-                          { header: 'Requests', align: 'right', render: (r) => r.requests },
                           {
-                            header: 'Tokens',
-                            align: 'right',
-                            render: (r) => formatCompact(r.totalTokens),
+                            header: t('common.agent'),
+                            render: (r) => r.name ?? t('analytics.assistantAndOtherCalls'),
                           },
-                          { header: 'Cost', align: 'right', render: (r) => formatUsd(r.costUsd) },
+                          {
+                            header: t('common.requests'),
+                            align: 'right',
+                            render: (r) => r.requests,
+                          },
+                          {
+                            header: t('common.tokens'),
+                            align: 'right',
+                            render: (r) => fmt.compact(r.totalTokens),
+                          },
+                          {
+                            header: t('common.cost'),
+                            align: 'right',
+                            render: (r) => formatUsd(r.costUsd, fmt),
+                          },
                         ]}
                       />
                     </SectionCard>
-                    <SectionCard title="By user" flush>
+                    <SectionCard title={t('analytics.byUser')} flush>
                       <DataTable
-                        caption="Usage by user"
+                        caption={t('analytics.usageByUser')}
                         rows={d.byUser}
                         rowKey={(r, i) => r.userId ?? `none-${i}`}
                         columns={[
-                          { header: 'User', render: (r) => r.name ?? 'System / unknown' },
-                          { header: 'Requests', align: 'right', render: (r) => r.requests },
                           {
-                            header: 'Tokens',
-                            align: 'right',
-                            render: (r) => formatCompact(r.totalTokens),
+                            header: t('analytics.user'),
+                            render: (r) => r.name ?? 'System / unknown',
                           },
-                          { header: 'Cost', align: 'right', render: (r) => formatUsd(r.costUsd) },
+                          {
+                            header: t('common.requests'),
+                            align: 'right',
+                            render: (r) => r.requests,
+                          },
+                          {
+                            header: t('common.tokens'),
+                            align: 'right',
+                            render: (r) => fmt.compact(r.totalTokens),
+                          },
+                          {
+                            header: t('common.cost'),
+                            align: 'right',
+                            render: (r) => formatUsd(r.costUsd, fmt),
+                          },
                         ]}
                       />
                     </SectionCard>

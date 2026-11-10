@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { format } from 'date-fns';
 import {
   Alert,
   Badge,
@@ -22,12 +21,18 @@ import { QueryState } from '@/components/common/query-state';
 import { RunStatusBadge } from '@/components/automation/run-status-badge';
 import { STEP_META, type StepType } from '@/lib/automation';
 import { formatDuration } from '../executions-view';
+import { useT, useFormat } from '@/i18n/provider';
 
 export function ExecutionDetailView({ id }: { id: string }) {
+  const fmt = useFormat();
+  const t = useT();
   const execution = useWorkflowExecution(id);
   if (execution.isError && isApiError(execution.error) && execution.error.isNotFound) {
     return (
-      <ErrorState title="Execution not found" message="It may belong to another organization." />
+      <ErrorState
+        title={t('automations.executionNotFound')}
+        message={t('automations.itMayBelongToAnother')}
+      />
     );
   }
   return (
@@ -39,13 +44,17 @@ export function ExecutionDetailView({ id }: { id: string }) {
         className="self-start"
         leadingIcon={<ArrowLeft aria-hidden />}
       >
-        <Link href="/automations/executions">All executions</Link>
+        <Link href="/automations/executions">{t('automations.allExecutions')}</Link>
       </Button>
       <QueryState
         query={execution}
-        errorTitle="This execution couldn’t be loaded"
+        errorTitle={t('automations.thisExecutionCouldnTBe')}
         loading={
-          <div className="flex flex-col gap-3" aria-busy="true" aria-label="Loading execution">
+          <div
+            className="flex flex-col gap-3"
+            aria-busy="true"
+            aria-label={t('automations.loadingExecution')}
+          >
             <Skeleton className="h-8 w-72" />
             <Skeleton className="h-32" />
             <Skeleton className="h-48" />
@@ -62,24 +71,26 @@ export function ExecutionDetailView({ id }: { id: string }) {
                       {e.workflow.name}
                     </Link>
                   ) : (
-                    'Deleted workflow'
+                    t('automations.deletedWorkflow')
                   )}
                 </h2>
                 <RunStatusBadge status={e.status} />
               </div>
               <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-fg-muted">
                 <div className="flex gap-1.5">
-                  <dt>Started</dt>
+                  <dt>{t('common.started')}</dt>
                   <dd className="text-fg">
-                    {e.startedAt ? format(new Date(e.startedAt), 'PPpp') : 'Not started'}
+                    {e.startedAt
+                      ? fmt.dateTime(new Date(e.startedAt), 'long')
+                      : t('automations.notStarted')}
                   </dd>
                 </div>
                 <div className="flex gap-1.5">
-                  <dt>Duration</dt>
-                  <dd className="text-fg tabular">{formatDuration(e.durationMs)}</dd>
+                  <dt>{t('common.duration')}</dt>
+                  <dd className="text-fg tabular">{formatDuration(e.durationMs, fmt)}</dd>
                 </div>
                 <div className="flex gap-1.5">
-                  <dt>Attempt</dt>
+                  <dt>{t('automations.attempt')}</dt>
                   <dd className="text-fg tabular">{e.attempt}</dd>
                 </div>
               </dl>
@@ -88,18 +99,18 @@ export function ExecutionDetailView({ id }: { id: string }) {
             {e.error ? <Alert tone="danger">{e.error}</Alert> : null}
             {e.status === 'queued' || e.status === 'running' ? (
               <Alert tone="info">
-                <span role="status">This run is {e.status}. The page updates automatically.</span>
+                <span role="status">{t('automations.thisRunIsThePage', { status: e.status })}</span>
               </Alert>
             ) : null}
 
             <section aria-labelledby="step-results-heading" className="flex flex-col gap-3">
               <h3 id="step-results-heading" className="text-base font-semibold">
-                Step results
+                {t('automations.stepResults')}
               </h3>
               {e.stepResults.length === 0 ? (
-                <p className="text-sm text-fg-muted">No steps have run yet.</p>
+                <p className="text-sm text-fg-muted">{t('automations.noStepsHaveRunYet')}</p>
               ) : (
-                <ol aria-label="Step results" className="flex flex-col gap-3">
+                <ol aria-label={t('automations.stepResults')} className="flex flex-col gap-3">
                   {e.stepResults.map((r, i) => {
                     const meta = STEP_META[r.type as StepType];
                     return (
@@ -109,7 +120,7 @@ export function ExecutionDetailView({ id }: { id: string }) {
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="tabular text-sm text-fg-subtle">{i + 1}.</span>
-                          <span className="font-medium">{meta?.label ?? r.type}</span>
+                          <span className="font-medium">{t(meta?.label ?? r.type)}</span>
                           <span className="font-mono text-xs text-fg-muted">{r.stepId}</span>
                           <StatusBadge
                             status={r.status}
@@ -122,7 +133,7 @@ export function ExecutionDetailView({ id }: { id: string }) {
                             }
                           />
                           <Badge variant="outline" className="tabular">
-                            {formatDuration(r.durationMs)}
+                            {formatDuration(r.durationMs, fmt)}
                           </Badge>
                         </div>
                         {r.error ? <p className="mt-2 text-sm text-danger">{r.error}</p> : null}
@@ -132,7 +143,7 @@ export function ExecutionDetailView({ id }: { id: string }) {
                               value={r.output}
                               defaultExpandedDepth={1}
                               maxHeight={240}
-                              aria-label={`Output of ${r.stepId}`}
+                              aria-label={t('automations.outputOf', { stepId: r.stepId })}
                             />
                           </div>
                         ) : null}
@@ -146,9 +157,9 @@ export function ExecutionDetailView({ id }: { id: string }) {
             <div className="grid gap-4 lg:grid-cols-3">
               {(
                 [
-                  ['Trigger', e.trigger],
-                  ['Input', e.input],
-                  ['Output', e.output],
+                  [t('automations.sectionTrigger'), e.trigger],
+                  [t('automations.sectionInput'), e.input],
+                  [t('automations.sectionOutput'), e.output],
                 ] as const
               ).map(([title, value]) => (
                 <Card key={title}>
@@ -158,9 +169,9 @@ export function ExecutionDetailView({ id }: { id: string }) {
                   <CardContent>
                     <JsonViewer
                       value={value}
-                      emptyLabel="None"
+                      emptyLabel={t('common.none')}
                       maxHeight={240}
-                      aria-label={`${title} JSON`}
+                      aria-label={t('automations.json', { title })}
                     />
                   </CardContent>
                 </Card>

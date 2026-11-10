@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '@/lib/api/client';
-import { validateUploadFile, formatBytes } from '@/lib/knowledge';
+import { validateUploadFile } from '@/lib/knowledge';
 import {
   PLACEHOLDER_ID,
   applyPlaceholders,
@@ -9,15 +9,16 @@ import {
   parseIssuePath,
   uniqueStepId,
 } from '@/lib/automation';
+import { tEn as t, fmtEn as fmt } from '@/test/i18n';
 import type { WorkflowStep } from '@hilatech/contracts';
 
 describe('validateUploadFile', () => {
   it('accepts supported types and rejects unsupported, empty and oversized files', () => {
-    expect(validateUploadFile({ name: 'a.TXT', size: 10 })).toBeNull();
-    expect(validateUploadFile({ name: 'a.exe', size: 10 })).toMatch(/Unsupported/);
-    expect(validateUploadFile({ name: 'a.txt', size: 0 })).toMatch(/empty/);
-    expect(validateUploadFile({ name: 'a.pdf', size: 100 }, 50)).toMatch(/limit/);
-    expect(formatBytes(2048)).toBe('2.0 KB');
+    expect(validateUploadFile({ name: 'a.TXT', size: 10 }, t, fmt)).toBeNull();
+    expect(validateUploadFile({ name: 'a.exe', size: 10 }, t, fmt)).toMatch(/Unsupported/);
+    expect(validateUploadFile({ name: 'a.txt', size: 0 }, t, fmt)).toMatch(/empty/);
+    expect(validateUploadFile({ name: 'a.pdf', size: 100 }, t, fmt, 50)).toMatch(/limit/);
+    expect(fmt.bytes(2048)).toBe('2.0 KB');
   });
 });
 
@@ -32,10 +33,10 @@ describe('workflow templates', () => {
     },
   ];
   it('finds and fills placeholder ids', () => {
-    const found = findPlaceholders(steps);
+    const found = findPlaceholders(steps, t);
     expect(found.map((p) => p.key)).toEqual(['digest.agentId', 'tell.userId']);
     const filled = applyPlaceholders(steps, { 'digest.agentId': 'a-1', 'tell.userId': 'u-1' });
-    expect(findPlaceholders(filled)).toHaveLength(0);
+    expect(findPlaceholders(filled, t)).toHaveLength(0);
     expect(JSON.stringify(filled)).toContain('a-1');
   });
   it('generates unique step ids', () => {

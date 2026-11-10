@@ -30,6 +30,7 @@ import {
   type ContactFormInput,
   type ContactFormValues,
 } from './contact-form';
+import { useT } from '@/i18n/provider';
 
 export interface ContactDialogProps {
   open: boolean;
@@ -53,6 +54,7 @@ export function ContactDialog({ open, onOpenChange, onCreated }: ContactDialogPr
 }
 
 function ContactCreateForm({ onDone }: { onDone: (contact?: Contact) => void }) {
+  const t = useT();
   const create = useCreateContact();
   const canReadMembers = useCan(Permission.MEMBERS_READ);
   const [formError, setFormError] = React.useState<string | null>(null);
@@ -65,7 +67,7 @@ function ContactCreateForm({ onDone }: { onDone: (contact?: Contact) => void }) 
     setFormError(null);
     try {
       const contact = await create.mutateAsync(toCreateContactRequest(values));
-      toast.success(`${contactName(contact)} added to contacts`);
+      toast.success(t('contacts.addedToContacts', { contactName: contactName(contact) }));
       onDone(contact);
     } catch (error) {
       if (!applyServerErrors(error, form.setError, CONTACT_FORM_FIELDS))
@@ -76,8 +78,8 @@ function ContactCreateForm({ onDone }: { onDone: (contact?: Contact) => void }) 
   return (
     <form onSubmit={onSubmit} noValidate className="flex min-h-0 flex-col">
       <DialogHeader>
-        <DialogTitle>New contact</DialogTitle>
-        <DialogDescription>A person or company your business talks to.</DialogDescription>
+        <DialogTitle>{t('contacts.newContact')}</DialogTitle>
+        <DialogDescription>{t('contacts.aPersonOrCompanyYour')}</DialogDescription>
       </DialogHeader>
       <DialogBody className="flex flex-col gap-5 pb-2">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
@@ -85,10 +87,10 @@ function ContactCreateForm({ onDone }: { onDone: (contact?: Contact) => void }) 
       </DialogBody>
       <DialogFooter>
         <Button variant="secondary" onClick={() => onDone()}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" loading={form.formState.isSubmitting}>
-          Create contact
+          {t('contacts.createContact')}
         </Button>
       </DialogFooter>
     </form>

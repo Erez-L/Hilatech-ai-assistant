@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { format, formatDistanceToNow } from 'date-fns';
 import { StickyNote, Trash2 } from 'lucide-react';
 import type { LeadNoteWithAuthor } from '@hilatech/contracts';
 import {
@@ -24,10 +23,13 @@ import { useAddLeadNote, useDeleteLeadNote, useLeadNotes } from '@/hooks/queries
 import { useSession } from '@/stores/session';
 import { fullName } from '@/lib/crm';
 import { QueryState } from '@/components/common/query-state';
+import { useT, useFormat } from '@/i18n/provider';
 
 const MAX_NOTE = 5000;
 
 export function LeadNotes({ leadId, canWrite }: { leadId: string; canWrite: boolean }) {
+  const fmt = useFormat();
+  const t = useT();
   const notes = useLeadNotes(leadId, { page: 1, pageSize: 50 });
   const add = useAddLeadNote(leadId);
   const remove = useDeleteLeadNote(leadId);
@@ -52,13 +54,13 @@ export function LeadNotes({ leadId, canWrite }: { leadId: string; canWrite: bool
     <Card>
       <CardHeader className="flex-row items-start justify-between">
         <div className="flex flex-col gap-1">
-          <CardTitle>Notes</CardTitle>
-          <CardDescription>
-            Internal context for the team. Customers never see these.
-          </CardDescription>
+          <CardTitle>{t('common.notes')}</CardTitle>
+          <CardDescription>{t('leads.internalContextForTheTeam')}</CardDescription>
         </div>
         {notes.data ? (
-          <span className="text-xs text-fg-subtle tabular">{notes.data.meta.total} total</span>
+          <span className="text-xs text-fg-subtle tabular">
+            {t('leads.total', { total: notes.data.meta.total })}
+          </span>
         ) : null}
       </CardHeader>
       {canWrite ? (
@@ -71,8 +73,8 @@ export function LeadNotes({ leadId, canWrite }: { leadId: string; canWrite: bool
         >
           <AutosizeTextarea
             ref={textareaRef}
-            aria-label="New note"
-            placeholder="Add a note — press Ctrl+Enter to save"
+            aria-label={t('leads.newNote')}
+            placeholder={t('leads.addANotePressCtrl')}
             minRows={2}
             maxRows={10}
             maxLength={MAX_NOTE}
@@ -91,7 +93,7 @@ export function LeadNotes({ leadId, canWrite }: { leadId: string; canWrite: bool
               {draft.length > MAX_NOTE * 0.8 ? `${draft.length}/${MAX_NOTE}` : ' '}
             </span>
             <Button type="submit" size="sm" loading={add.isPending} disabled={!draft.trim()}>
-              Add note
+              {t('leads.addNote')}
             </Button>
           </div>
         </form>
@@ -118,11 +120,9 @@ export function LeadNotes({ leadId, canWrite }: { leadId: string; canWrite: bool
             <EmptyState
               compact
               icon={<StickyNote />}
-              title="No notes yet"
+              title={t('leads.noNotesYet')}
               description={
-                canWrite
-                  ? 'Write down what you learned on the last call or what to do next.'
-                  : 'Notes added by the team will appear here.'
+                canWrite ? t('leads.writeDownWhatYouLearned') : t('leads.notesAddedByTheTeam')
               }
             />
           }
@@ -142,22 +142,24 @@ export function LeadNotes({ leadId, canWrite }: { leadId: string; canWrite: bool
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
                       <div className="flex items-baseline justify-between gap-3">
                         <span className="text-sm font-medium">
-                          {note.author ? fullName(note.author) : 'Former member'}
-                          {own ? <span className="ml-1 text-xs text-fg-subtle">(you)</span> : null}
+                          {note.author ? fullName(note.author) : t('common.formerMember')}
+                          {own ? (
+                            <span className="ms-1 text-xs text-fg-subtle">{t('common.you')}</span>
+                          ) : null}
                         </span>
                         <time
                           dateTime={note.createdAt}
-                          title={format(new Date(note.createdAt), 'PPpp')}
+                          title={fmt.dateTime(new Date(note.createdAt), 'long')}
                           className="shrink-0 text-xs text-fg-subtle tabular"
                         >
-                          {formatDistanceToNow(new Date(note.createdAt), { addSuffix: true })}
+                          {fmt.relative(new Date(note.createdAt))}
                         </time>
                       </div>
                       <p className="text-sm whitespace-pre-wrap text-fg">{note.body}</p>
                     </div>
                     {own && canWrite ? (
                       <IconButton
-                        label="Delete note"
+                        label={t('leads.deleteNote')}
                         size="sm"
                         variant="danger"
                         className="opacity-60 group-hover:opacity-100 focus-visible:opacity-100"
@@ -176,16 +178,16 @@ export function LeadNotes({ leadId, canWrite }: { leadId: string; canWrite: bool
       <ConfirmDialog
         open={!!target}
         onOpenChange={(open) => !open && setTarget(null)}
-        title="Delete this note?"
-        description="The note is removed for everyone. This cannot be undone."
-        confirmLabel="Delete note"
+        title={t('leads.deleteThisNote')}
+        description={t('leads.theNoteIsRemovedFor')}
+        confirmLabel={t('leads.deleteNote')}
         tone="danger"
         loading={remove.isPending}
         onConfirm={() => {
           if (!target) return;
           remove.mutate(target.id, {
             onSuccess: () => {
-              toast.success('Note deleted');
+              toast.success(t('leads.noteDeleted'));
               setTarget(null);
             },
           });

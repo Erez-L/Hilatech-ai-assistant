@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { cn } from '../lib/cn';
 import { Label } from './label';
+import { useUiStrings } from '../lib/ui-strings';
 
 export interface FormFieldProps {
   /** id of the control; used for label htmlFor and aria-describedby wiring. */
@@ -31,6 +32,8 @@ export function FormField({
   className,
   children,
 }: FormFieldProps) {
+  const ui = useUiStrings();
+  if (typeof error === 'string') error = ui.formatMessage(error);
   const descriptionId = description ? `${id}-description` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   const describedBy = [descriptionId, errorId].filter(Boolean).join(' ') || undefined;
@@ -54,12 +57,12 @@ export function FormField({
           ) : null}
         </div>
         {description ? (
-          <p id={descriptionId} className="pl-7 text-xs text-fg-muted">
+          <p id={descriptionId} className="ps-7 text-xs text-fg-muted">
             {description}
           </p>
         ) : null}
         {error ? (
-          <p id={errorId} role="alert" className="pl-7 text-xs text-danger">
+          <p id={errorId} role="alert" className="ps-7 text-xs text-danger">
             {error}
           </p>
         ) : null}

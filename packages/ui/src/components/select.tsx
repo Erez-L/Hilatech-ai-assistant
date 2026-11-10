@@ -23,7 +23,7 @@ export const SelectTrigger = React.forwardRef<
         'focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring/40',
         'disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-fg-muted',
         'data-[placeholder]:text-fg-subtle aria-invalid:border-danger',
-        '[&>span]:truncate [&>span]:text-left',
+        '[&>span]:truncate [&>span]:text-start',
         className,
       )}
       {...props}
@@ -87,14 +87,14 @@ export const SelectItem = React.forwardRef<
     <SelectPrimitive.Item
       ref={ref}
       className={cn(
-        'relative flex w-full cursor-default items-center rounded-xs py-1.5 pr-8 pl-2 text-sm outline-none select-none',
+        'relative flex w-full cursor-default items-center rounded-xs py-1.5 pe-8 ps-2 text-sm outline-none select-none',
         'data-[highlighted]:bg-surface-muted data-[highlighted]:text-fg',
         'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className,
       )}
       {...props}
     >
-      <span className="absolute right-2 flex size-4 items-center justify-center">
+      <span className="absolute end-2 flex size-4 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
           <Check className="size-4 text-accent" aria-hidden />
         </SelectPrimitive.ItemIndicator>

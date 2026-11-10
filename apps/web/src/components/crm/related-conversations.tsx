@@ -3,7 +3,6 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { formatDistanceToNow } from 'date-fns';
 import { ArrowRight, MessageSquare, Plus } from 'lucide-react';
 import { Permission, type ContactSummary } from '@hilatech/contracts';
 import {
@@ -24,6 +23,7 @@ import { ConversationStatusBadge } from './badges';
 import { ChannelIcon } from './channel-icon';
 import { NewConversationDialog } from './new-conversation-dialog';
 import { UserChip } from './user-chip';
+import { useT, useFormat } from '@/i18n/provider';
 
 export interface RelatedConversationsProps {
   /** Filter: conversations linked to this lead (sent as `leadId`) or contact (`contactId`). */
@@ -40,8 +40,10 @@ export function RelatedConversations({
   contactId,
   contact,
   lead,
-  description = 'Threads linked to this record.',
+  description,
 }: RelatedConversationsProps) {
+  const fmt = useFormat();
+  const t = useT();
   const router = useRouter();
   const canRead = useCan(Permission.CONVERSATIONS_READ);
   const canCreate = useCan(Permission.CONVERSATIONS_CREATE);
@@ -58,7 +60,7 @@ export function RelatedConversations({
       leadingIcon={<Plus aria-hidden />}
       onClick={() => setOpen(true)}
     >
-      Start conversation
+      {t('crm.startConversation')}
     </Button>
   ) : null;
 
@@ -66,8 +68,8 @@ export function RelatedConversations({
     <Card>
       <CardHeader className="flex-row items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <CardTitle>Conversations</CardTitle>
-          <CardDescription>{description}</CardDescription>
+          <CardTitle>{t('common.conversations')}</CardTitle>
+          <CardDescription>{description ?? t('crm.threadsLinkedToRecord')}</CardDescription>
         </div>
         {startButton}
       </CardHeader>
@@ -76,8 +78,8 @@ export function RelatedConversations({
           <EmptyState
             compact
             icon={<MessageSquare />}
-            title="Conversations are restricted"
-            description="Your role can’t view conversations."
+            title={t('crm.conversationsAreRestricted')}
+            description={t('crm.yourRoleCanTView')}
           />
         ) : (
           <QueryState
@@ -101,8 +103,8 @@ export function RelatedConversations({
               <EmptyState
                 compact
                 icon={<MessageSquare />}
-                title="No conversations yet"
-                description="Start one to keep the whole exchange in one place."
+                title={t('common.noConversationsYet')}
+                description={t('crm.startOneToKeepThe')}
                 action={startButton ?? undefined}
               />
             }
@@ -117,26 +119,25 @@ export function RelatedConversations({
                     >
                       <span
                         className="flex size-8 shrink-0 items-center justify-center rounded-md bg-surface-muted text-fg-muted"
-                        title={CONVERSATION_CHANNEL_LABELS[c.channel]}
+                        title={t(CONVERSATION_CHANNEL_LABELS[c.channel])}
                       >
                         <ChannelIcon channel={c.channel} className="size-4" aria-hidden />
                       </span>
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="truncate text-sm font-medium">
-                          {c.subject || 'No subject'}
+                          {c.subject || t('common.noSubject')}
                         </span>
                         <span className="truncate text-xs text-fg-muted">
-                          {c.lastMessage?.content ?? `${c.messageCount} messages`}
+                          {c.lastMessage?.content ??
+                            t('crm.messages', { messageCount: c.messageCount })}
                         </span>
                       </span>
                       <span className="hidden sm:block">
                         <UserChip user={c.assignee} />
                       </span>
                       <ConversationStatusBadge status={c.status} />
-                      <span className="hidden w-20 shrink-0 text-right text-xs text-fg-subtle tabular md:block">
-                        {c.lastMessageAt
-                          ? formatDistanceToNow(new Date(c.lastMessageAt), { addSuffix: true })
-                          : '—'}
+                      <span className="hidden w-20 shrink-0 text-end text-xs text-fg-subtle tabular md:block">
+                        {c.lastMessageAt ? fmt.relative(new Date(c.lastMessageAt)) : '—'}
                       </span>
                       <ArrowRight className="size-4 shrink-0 text-fg-subtle" aria-hidden />
                     </Link>

@@ -12,12 +12,14 @@ import { PermissionGate } from '@/components/common/permission-gate';
 import { AiNotConfigured } from '@/components/ai/ai-not-configured';
 import { ChatPane } from './chat-pane';
 import { ThreadList } from './thread-list';
+import { useT } from '@/i18n/provider';
 
 /**
  * Two-pane assistant. The open thread is `?t=<id>`; CRM context arrives as `?leadId=`, `?contactId=`
  * or `?conversationId=` and is passed with every message sent from this page.
  */
 export function AssistantView() {
+  const t = useT();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -64,8 +66,8 @@ export function AssistantView() {
     <PermissionGate anyOf={[Permission.AI_ASSISTANT_USE]}>
       <div className="flex flex-col gap-4">
         <PageHeader
-          title="Assistant"
-          description="Ask questions about your pipeline and let the assistant look things up — with your permissions."
+          title={t('common.assistant')}
+          description={t('assistant.askQuestionsAboutYourPipeline')}
           actions={
             <Button
               leadingIcon={<Plus aria-hidden />}
@@ -73,7 +75,7 @@ export function AssistantView() {
               loading={create.isPending}
               disabled={notConfigured}
             >
-              New thread
+              {t('assistant.newThread')}
             </Button>
           }
         />
@@ -82,9 +84,9 @@ export function AssistantView() {
         ) : (
           <div className="grid h-[calc(100dvh-13.5rem)] min-h-[32rem] overflow-hidden rounded-lg border border-border bg-surface shadow-xs lg:grid-cols-[20rem_minmax(0,1fr)]">
             <aside
-              aria-label="Threads"
+              aria-label={t('assistant.threads')}
               className={cn(
-                'flex min-h-0 flex-col border-border lg:border-r',
+                'flex min-h-0 flex-col border-border lg:border-e',
                 threadId ? 'hidden lg:flex' : 'flex',
               )}
             >
@@ -104,11 +106,11 @@ export function AssistantView() {
                   <EmptyState
                     compact
                     icon={<Sparkles />}
-                    title="Start a conversation"
-                    description="Pick a thread on the left or start a new one."
+                    title={t('assistant.startAConversation')}
+                    description={t('assistant.pickAThreadOnThe')}
                     action={
                       <Button size="sm" leadingIcon={<Plus aria-hidden />} onClick={newThread}>
-                        New thread
+                        {t('assistant.newThread')}
                       </Button>
                     }
                   />

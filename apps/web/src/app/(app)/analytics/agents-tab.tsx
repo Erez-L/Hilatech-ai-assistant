@@ -1,7 +1,7 @@
 'use client';
 
 import { Bot } from 'lucide-react';
-import { AreaChart, EmptyState, StatCard, formatCompact } from '@hilatech/ui';
+import { AreaChart, EmptyState, StatCard } from '@hilatech/ui';
 import { useAgentAnalytics } from '@/hooks/analytics';
 import { QueryState } from '@/components/common/query-state';
 import { bucketLabel, formatDuration, formatUsd, pct, recordToRows } from '@/lib/analytics';
@@ -13,126 +13,157 @@ import {
   SectionCard,
   type ReportContext,
 } from './report-parts';
+import { useT, useFormat } from '@/i18n/provider';
 
 export function AgentsTab({ ctx }: { ctx: ReportContext }) {
+  const fmt = useFormat();
+  const t = useT();
   const query = useAgentAnalytics(ctx.params);
   return (
     <div className="flex flex-col gap-6" aria-busy={query.isFetching}>
       <QueryState
         query={query}
         loading={<ReportSkeleton />}
-        errorTitle="Agent analytics couldn’t be loaded"
+        errorTitle={t('analytics.agentAnalyticsCouldnTBe')}
       >
         {(d) => {
-          const t = d.totals;
+          const totals = d.totals;
           const costNote = !d.pricingConfigured
-            ? 'No model pricing is configured, so costs are not estimated. Token counts are exact.'
-            : t.costCoverage.priced < t.costCoverage.total
-              ? `Cost covers ${t.costCoverage.priced} of ${t.costCoverage.total} runs; runs on models without a configured price are left out, so the total is a lower bound.`
+            ? t('analytics.noModelPricing')
+            : totals.costCoverage.priced < totals.costCoverage.total
+              ? t('analytics.costCoverage', {
+                  priced: totals.costCoverage.priced,
+                  total: totals.costCoverage.total,
+                })
               : null;
           return (
             <>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
-                  label="Runs"
-                  value={t.executions}
-                  hint={`${t.succeeded} succeeded · ${t.failed} failed`}
+                  label={t('common.runs')}
+                  value={totals.executions}
+                  hint={t('analytics.succeededFailed', {
+                    succeeded: totals.succeeded,
+                    failed: totals.failed,
+                  })}
                 />
                 <StatCard
-                  label="Success rate"
-                  value={pct(t.successRate)}
-                  hint={t.successRate == null ? 'No finished runs' : 'succeeded ÷ finished'}
+                  label={t('analytics.successRate')}
+                  value={pct(totals.successRate, fmt)}
+                  hint={
+                    totals.successRate == null
+                      ? t('analytics.noFinishedRuns')
+                      : t('analytics.succeededFinished')
+                  }
                 />
                 <StatCard
-                  label="Median duration"
-                  value={formatDuration(t.durationMs.p50)}
-                  hint={`p95 ${formatDuration(t.durationMs.p95)}`}
+                  label={t('analytics.medianDuration')}
+                  value={formatDuration(totals.durationMs.p50, fmt)}
+                  hint={`p95 ${formatDuration(totals.durationMs.p95, fmt)}`}
                 />
                 <StatCard
-                  label="Tokens"
-                  value={t.totalTokens}
-                  hint={`${formatCompact(t.inputTokens)} in · ${formatCompact(t.outputTokens)} out`}
+                  label={t('common.tokens')}
+                  value={totals.totalTokens}
+                  hint={t('common.inOut', {
+                    formatCompact: fmt.compact(totals.inputTokens),
+                    formatCompact2: fmt.compact(totals.outputTokens),
+                  })}
                 />
               </div>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
-                  label="Estimated cost"
-                  value={formatUsd(t.costUsd)}
+                  label={t('common.estimatedCost')}
+                  value={formatUsd(totals.costUsd, fmt)}
                   hint={
-                    t.costUsd == null
-                      ? 'Not available'
-                      : `${t.costCoverage.priced}/${t.costCoverage.total} runs priced`
+                    totals.costUsd == null
+                      ? t('analytics.notAvailable')
+                      : t('analytics.runsPriced', {
+                          priced: totals.costCoverage.priced,
+                          total: totals.costCoverage.total,
+                        })
                   }
                 />
               </div>
               {costNote ? (
                 <ReportNote
-                  title={d.pricingConfigured ? 'Partial cost coverage' : 'Cost is not available'}
+                  title={
+                    d.pricingConfigured
+                      ? t('analytics.partialCostCoverage')
+                      : t('analytics.costIsNotAvailable')
+                  }
                   testId="agents-cost-note"
                 >
                   {costNote}
                 </ReportNote>
               ) : null}
 
-              {t.executions === 0 ? (
+              {totals.executions === 0 ? (
                 <EmptyState
                   icon={<Bot />}
-                  title="No agent runs in this range"
-                  description="Runs appear here once your agents execute. Widen the date range or run an agent."
+                  title={t('analytics.noAgentRunsInThis')}
+                  description={t('analytics.runsAppearHereOnceYour')}
                 />
               ) : (
                 <>
                   <SectionCard
-                    title="Runs over time"
-                    description="Successful and failed runs per period (UTC); failed includes timeouts."
+                    title={t('analytics.runsOverTime')}
+                    description={t('analytics.successfulAndFailedRunsPer')}
                   >
                     <AreaChart
                       data={d.series.map((p) => ({ ...p }))}
                       xKey="bucket"
                       height={240}
-                      labelFormatter={(l) => bucketLabel(l, ctx.granularity)}
+                      labelFormatter={(l) => bucketLabel(l, ctx.granularity, fmt, t)}
                       series={[
-                        { key: 'succeeded', label: 'Succeeded' },
-                        { key: 'failed', label: 'Failed' },
+                        { key: 'succeeded', label: t('analytics.succeeded') },
+                        { key: 'failed', label: t('common.failed') },
                       ]}
                     />
                   </SectionCard>
                   <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
-                    <SectionCard title="Runs by status">
+                    <SectionCard title={t('analytics.runsByStatus')}>
                       <BreakdownList
-                        label="Runs by status"
-                        items={recordToRows(t.byStatus).map((s) => ({
+                        label={t('analytics.runsByStatus')}
+                        items={recordToRows(totals.byStatus).map((s) => ({
                           key: s.key,
                           label: s.key.replace(/_/g, ' '),
                           count: s.count,
                         }))}
                       />
                     </SectionCard>
-                    <SectionCard title="By agent" flush>
+                    <SectionCard title={t('common.byAgent')} flush>
                       <DataTable
-                        caption="Agent performance by agent"
+                        caption={t('analytics.agentPerformanceByAgent')}
                         rows={d.byAgent}
                         rowKey={(r) => r.agentId}
                         columns={[
-                          { header: 'Agent', render: (r) => r.name },
-                          { header: 'Runs', align: 'right', render: (r) => r.executions },
-                          { header: 'Success', align: 'right', render: (r) => pct(r.successRate) },
+                          { header: t('common.agent'), render: (r) => r.name },
+                          { header: t('common.runs'), align: 'right', render: (r) => r.executions },
+                          {
+                            header: t('analytics.success'),
+                            align: 'right',
+                            render: (r) => pct(r.successRate, fmt),
+                          },
                           {
                             header: 'p50',
                             align: 'right',
-                            render: (r) => formatDuration(r.durationMs.p50),
+                            render: (r) => formatDuration(r.durationMs.p50, fmt),
                           },
                           {
                             header: 'p95',
                             align: 'right',
-                            render: (r) => formatDuration(r.durationMs.p95),
+                            render: (r) => formatDuration(r.durationMs.p95, fmt),
                           },
                           {
-                            header: 'Tokens',
+                            header: t('common.tokens'),
                             align: 'right',
-                            render: (r) => formatCompact(r.totalTokens),
+                            render: (r) => fmt.compact(r.totalTokens),
                           },
-                          { header: 'Cost', align: 'right', render: (r) => formatUsd(r.costUsd) },
+                          {
+                            header: t('common.cost'),
+                            align: 'right',
+                            render: (r) => formatUsd(r.costUsd, fmt),
+                          },
                         ]}
                       />
                     </SectionCard>

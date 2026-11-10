@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cn } from '../lib/cn';
+import { useUiStrings } from '../lib/ui-strings';
 
 export interface SidebarProps extends React.HTMLAttributes<HTMLElement> {
   /** Header slot (brand, organization switcher). */
@@ -13,16 +14,20 @@ export interface SidebarProps extends React.HTMLAttributes<HTMLElement> {
 
 /** Vertical navigation rail. Width and positioning are controlled by the shell around it. */
 export function Sidebar({ header, footer, className, children, ...props }: SidebarProps) {
+  const ui = useUiStrings();
   return (
     <aside
       className={cn(
-        'flex h-full w-64 flex-col border-r border-border bg-surface text-fg',
+        'flex h-full w-64 flex-col border-e border-border bg-surface text-fg',
         className,
       )}
       {...props}
     >
       {header ? <div className="flex flex-col gap-2 px-3 pt-4 pb-2">{header}</div> : null}
-      <nav aria-label="Primary" className="flex-1 overflow-y-auto px-3 py-2 scrollbar-thin">
+      <nav
+        aria-label={ui.primaryNavigation}
+        className="flex-1 overflow-y-auto px-3 py-2 scrollbar-thin"
+      >
         {children}
       </nav>
       {footer ? <div className="border-t border-border px-3 py-3">{footer}</div> : null}

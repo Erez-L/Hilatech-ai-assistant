@@ -14,62 +14,74 @@ import {
 } from '@hilatech/ui';
 import { useNotificationPreferences, useUpdateNotificationPreferences } from '@/hooks/queries';
 import { QueryState } from '@/components/common/query-state';
+import { useT } from '@/i18n/provider';
+import { msg, type Msg } from '@/i18n/msg';
 
 type Channel = 'inApp' | 'email';
 
 export const NOTIFICATION_TYPE_LABELS: Record<
   NotificationType,
-  { label: string; description: string; group: string }
+  { label: Msg; description: Msg; group: Msg }
 > = {
   lead_assigned: {
-    label: 'Lead assigned to me',
-    description: 'When a teammate hands you a lead.',
-    group: 'Customers',
+    label: msg('settings.notifications.lead_assigned'),
+    description: msg('settings.notifications.lead_assigned.description'),
+    group: msg('settings.notificationGroup.customers'),
   },
   conversation_assigned: {
-    label: 'Conversation assigned to me',
-    description: 'When a thread lands in your queue.',
-    group: 'Customers',
+    label: msg('settings.notifications.conversation_assigned'),
+    description: msg('settings.notifications.conversation_assigned.description'),
+    group: msg('settings.notificationGroup.customers'),
   },
   member_joined: {
-    label: 'Teammate joined',
-    description: 'When an invitation is accepted.',
-    group: 'Team',
+    label: msg('settings.notifications.member_joined'),
+    description: msg('settings.notifications.member_joined.description'),
+    group: msg('settings.notificationGroup.team'),
   },
   invitation_received: {
-    label: 'Invitation received',
-    description: 'When you are invited to another organization.',
-    group: 'Team',
+    label: msg('settings.notifications.invitation_received'),
+    description: msg('settings.notifications.invitation_received.description'),
+    group: msg('settings.notificationGroup.team'),
   },
   agent_execution_completed: {
-    label: 'Agent run completed',
-    description: 'When an agent you started finishes.',
-    group: 'AI and automation',
+    label: msg('settings.notifications.agent_execution_completed'),
+    description: msg('settings.notifications.agent_execution_completed.description'),
+    group: msg('settings.notificationGroup.aiAndAutomation'),
   },
   agent_execution_failed: {
-    label: 'Agent run failed',
-    description: 'When an agent run stops with an error.',
-    group: 'AI and automation',
+    label: msg('settings.notifications.agent_execution_failed'),
+    description: msg('settings.notifications.agent_execution_failed.description'),
+    group: msg('settings.notificationGroup.aiAndAutomation'),
   },
   document_processed: {
-    label: 'Document processed',
-    description: 'When an uploaded document is ready for the assistant.',
-    group: 'AI and automation',
+    label: msg('settings.notifications.document_processed'),
+    description: msg('settings.notifications.document_processed.description'),
+    group: msg('settings.notificationGroup.aiAndAutomation'),
   },
   document_failed: {
-    label: 'Document failed',
-    description: 'When a document could not be processed.',
-    group: 'AI and automation',
+    label: msg('settings.notifications.document_failed'),
+    description: msg('settings.notifications.document_failed.description'),
+    group: msg('settings.notificationGroup.aiAndAutomation'),
   },
   automation_failed: {
-    label: 'Automation failed',
-    description: 'When an automation run stops with an error.',
-    group: 'AI and automation',
+    label: msg('settings.notifications.automation_failed'),
+    description: msg('settings.notifications.automation_failed.description'),
+    group: msg('settings.notificationGroup.aiAndAutomation'),
+  },
+  task_assigned: {
+    label: msg('settings.notifications.task_assigned'),
+    description: msg('settings.notifications.task_assigned.description'),
+    group: msg('settings.notificationGroup.customers'),
+  },
+  task_reminder: {
+    label: msg('settings.notifications.task_reminder'),
+    description: msg('settings.notifications.task_reminder.description'),
+    group: msg('settings.notificationGroup.customers'),
   },
   system: {
-    label: 'System announcements',
-    description: 'Maintenance windows and important platform notices.',
-    group: 'Platform',
+    label: msg('settings.notifications.system'),
+    description: msg('settings.notifications.system.description'),
+    group: msg('settings.notificationGroup.platform'),
   },
 };
 
@@ -83,17 +95,18 @@ export function isEnabled(
 }
 
 export function NotificationPreferencesCard() {
+  const t = useT();
   const prefs = useNotificationPreferences();
   const update = useUpdateNotificationPreferences();
 
   const groups = React.useMemo(() => {
     const map = new Map<string, NotificationType[]>();
     for (const type of NotificationType.options) {
-      const group = NOTIFICATION_TYPE_LABELS[type].group;
+      const group = t(NOTIFICATION_TYPE_LABELS[type].group);
       map.set(group, [...(map.get(group) ?? []), type]);
     }
     return Array.from(map.entries());
-  }, []);
+  }, [t]);
 
   const toggle = (
     current: NotificationPreferences,
@@ -106,17 +119,16 @@ export function NotificationPreferencesCard() {
       email: { ...(current.email ?? {}) },
       [channel]: { ...(current[channel] ?? {}), [type]: on },
     };
-    update.mutate(next, { onSuccess: () => toast.success('Notification preferences saved') });
+    update.mutate(next, {
+      onSuccess: () => toast.success(t('settings.notificationPreferencesSaved')),
+    });
   };
 
   return (
     <Card id="notifications">
       <CardHeader>
-        <CardTitle>Notification preferences</CardTitle>
-        <CardDescription>
-          Choose which events reach you in the app and by email. Everything is on until you turn it
-          off.
-        </CardDescription>
+        <CardTitle>{t('settings.notificationPreferences')}</CardTitle>
+        <CardDescription>{t('settings.chooseWhichEventsReachYou')}</CardDescription>
       </CardHeader>
       <CardContent className="p-0">
         <QueryState
@@ -142,15 +154,15 @@ export function NotificationPreferencesCard() {
           {(data) => (
             <div className="flex flex-col">
               <div className="grid grid-cols-[1fr_4rem_4rem] items-center gap-4 border-b border-border bg-surface-muted/60 px-5 py-2 text-xs font-medium text-fg-muted">
-                <span>Event</span>
-                <span className="text-center">In-app</span>
-                <span className="text-center">Email</span>
+                <span>{t('common.event')}</span>
+                <span className="text-center">{t('settings.inApp')}</span>
+                <span className="text-center">{t('common.email')}</span>
               </div>
               {groups.map(([group, types]) => (
                 <section key={group} aria-labelledby={`notif-group-${group}`}>
                   <h4
                     id={`notif-group-${group}`}
-                    className="px-5 pt-4 pb-1 text-xs font-semibold tracking-wide text-fg-subtle uppercase"
+                    className="px-5 pt-4 pb-1 text-xs font-semibold tracking-wide rtl:tracking-normal text-fg-subtle uppercase"
                   >
                     {group}
                   </h4>
@@ -164,14 +176,21 @@ export function NotificationPreferencesCard() {
                         >
                           <div className="flex min-w-0 flex-col">
                             <span id={`notif-${type}`} className="text-sm font-medium">
-                              {meta.label}
+                              {t(meta.label)}
                             </span>
-                            <span className="text-xs text-fg-muted">{meta.description}</span>
+                            <span className="text-xs text-fg-muted">{t(meta.description)}</span>
                           </div>
                           {(['inApp', 'email'] as const).map((channel) => (
                             <div key={channel} className="flex justify-center">
                               <Switch
-                                aria-label={`${meta.label} — ${channel === 'inApp' ? 'in-app' : 'email'}`}
+                                aria-label={t('settings.notificationChannelAria', {
+                                  label: t(meta.label),
+                                  channel: t(
+                                    channel === 'inApp'
+                                      ? 'settings.channelInApp'
+                                      : 'settings.channelEmail',
+                                  ),
+                                })}
                                 checked={isEnabled(data, channel, type)}
                                 disabled={update.isPending}
                                 onCheckedChange={(on) => toggle(data, channel, type, on)}

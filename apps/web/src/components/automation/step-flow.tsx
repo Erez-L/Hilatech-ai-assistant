@@ -5,6 +5,7 @@ import { ArrowDown, Play } from 'lucide-react';
 import type { WorkflowStep, WorkflowTrigger } from '@hilatech/contracts';
 import { Badge, cn } from '@hilatech/ui';
 import { STEP_META, stepSummary, triggerSummary } from '@/lib/automation';
+import { useT } from '@/i18n/provider';
 
 export interface FlowStep {
   /** Stable key (not the editable step id). */
@@ -27,16 +28,17 @@ export function StepFlow({
   steps: FlowStep[];
   onSelect?: (key: string) => void;
 }) {
+  const t = useT();
   return (
-    <ol aria-label="Workflow flow" className="flex flex-col items-stretch">
+    <ol aria-label={t('automation.workflowFlow')} className="flex flex-col items-stretch">
       <li className="flex flex-col items-center">
         <div className="flex w-full max-w-md items-center gap-3 rounded-lg border border-accent/40 bg-accent-soft px-4 py-3">
           <Play className="size-4 shrink-0 text-accent-soft-fg" aria-hidden />
           <div className="min-w-0">
-            <p className="text-xs font-medium tracking-wide text-accent-soft-fg uppercase">
-              Trigger
+            <p className="text-xs font-medium tracking-wide rtl:tracking-normal text-accent-soft-fg uppercase">
+              {t('common.trigger')}
             </p>
-            <p className="truncate text-sm font-medium">{triggerSummary(trigger)}</p>
+            <p className="truncate text-sm font-medium">{triggerSummary(trigger, t)}</p>
           </div>
         </div>
       </li>
@@ -50,9 +52,18 @@ export function StepFlow({
             <button
               type="button"
               onClick={() => onSelect?.(key)}
-              aria-label={`Go to step ${index + 1}: ${meta.label} (${step.id})${failing ? `, ${issueCount} ${issueCount === 1 ? 'problem' : 'problems'}` : ''}`}
+              aria-label={
+                failing
+                  ? t('automation.goToStepProblems', {
+                      n: index + 1,
+                      label: t(meta.label),
+                      id: step.id,
+                      count: issueCount,
+                    })
+                  : t('automation.goToStep', { n: index + 1, label: t(meta.label), id: step.id })
+              }
               className={cn(
-                'flex w-full max-w-md items-start gap-3 rounded-lg border bg-surface px-4 py-3 text-left transition-colors',
+                'flex w-full max-w-md items-start gap-3 rounded-lg border bg-surface px-4 py-3 text-start transition-colors',
                 'hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                 failing ? 'border-danger bg-danger-soft/40' : 'border-border',
               )}
@@ -63,19 +74,23 @@ export function StepFlow({
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2 text-sm font-medium">
                   <span className="tabular text-fg-subtle">{index + 1}.</span>
-                  {meta.label}
+                  {t(meta.label)}
                   <span className="truncate font-mono text-xs font-normal text-fg-muted">
                     {step.id}
                   </span>
                 </span>
-                <span className="block truncate text-xs text-fg-muted">{stepSummary(step)}</span>
+                <span className="block truncate text-xs text-fg-muted">{stepSummary(step, t)}</span>
                 {step.type === 'condition' ? (
                   <span className="mt-1.5 flex flex-wrap gap-1.5">
                     <Badge variant="success">
-                      then: {step.then.length ? step.then.join(', ') : 'continue'}
+                      {t('automation.branchThen', {
+                        steps: step.then.length ? step.then.join(', ') : t('automation.continue'),
+                      })}
                     </Badge>
                     <Badge variant="neutral">
-                      else: {step.else.length ? step.else.join(', ') : 'continue'}
+                      {t('automation.branchElse', {
+                        steps: step.else.length ? step.else.join(', ') : t('automation.continue'),
+                      })}
                     </Badge>
                   </span>
                 ) : null}

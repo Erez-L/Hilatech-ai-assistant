@@ -35,16 +35,19 @@ import {
   findPlaceholders,
   triggerSummary,
 } from '@/lib/automation';
+import { useT } from '@/i18n/provider';
+import { msg, type Msg } from '@/i18n/msg';
 
-const CATEGORY_LABELS: Record<WorkflowTemplate['category'], string> = {
-  crm: 'CRM',
-  notifications: 'Notifications',
-  integrations: 'Integrations',
-  ai: 'AI',
-  scheduling: 'Scheduling',
+const CATEGORY_LABELS: Record<WorkflowTemplate['category'], Msg> = {
+  crm: msg('toolCategory.crm'),
+  notifications: msg('toolCategory.notifications'),
+  integrations: msg('toolCategory.integrations'),
+  ai: msg('toolCategory.ai'),
+  scheduling: msg('toolCategory.scheduling'),
 };
 
 export function TemplatesView() {
+  const t = useT();
   const canManage = useCan(Permission.AUTOMATIONS_MANAGE);
   const templates = useWorkflowTemplates();
   const [selected, setSelected] = React.useState<WorkflowTemplate | null>(null);
@@ -52,45 +55,48 @@ export function TemplatesView() {
   return (
     <div className="flex flex-col gap-4">
       <p className="max-w-2xl text-sm text-fg-muted">
-        Ready-made workflows. Pick one, choose the people and agents it needs, and it is created
-        disabled so you can validate and enable it from the editor.
+        {t('automations.readyMadeWorkflowsPickOne')}
       </p>
       <QueryState
         query={templates}
-        errorTitle="Templates couldn’t be loaded"
+        errorTitle={t('automations.templatesCouldnTBeLoaded')}
         loading={
           <div
             className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
             aria-busy="true"
-            aria-label="Loading templates"
+            aria-label={t('automations.loadingTemplates')}
           >
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} className="h-44" />
             ))}
           </div>
         }
-        isEmpty={(t) => t.length === 0}
-        empty={<EmptyState icon={<Sparkles />} title="No templates available" />}
+        isEmpty={(tpl) => tpl.length === 0}
+        empty={<EmptyState icon={<Sparkles />} title={t('automations.noTemplatesAvailable')} />}
       >
         {(list) => (
-          <ul aria-label="Templates" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {list.map((t) => (
-              <li key={t.key}>
+          <ul
+            aria-label={t('automations.templates')}
+            className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+          >
+            {list.map((tpl) => (
+              <li key={tpl.key}>
                 <Card className="h-full">
                   <CardContent className="flex h-full flex-col gap-3 py-4">
                     <div className="flex items-start justify-between gap-2">
-                      <h2 className="text-base font-semibold">{t.name}</h2>
-                      <Badge variant="outline">{CATEGORY_LABELS[t.category]}</Badge>
+                      <h2 className="text-base font-semibold">{tpl.name}</h2>
+                      <Badge variant="outline">{t(CATEGORY_LABELS[tpl.category])}</Badge>
                     </div>
-                    <p className="text-sm text-fg-muted">{t.description}</p>
+                    <p className="text-sm text-fg-muted">{tpl.description}</p>
                     <div className="flex flex-wrap gap-1.5 text-xs">
-                      <Badge variant="neutral">{triggerSummary(t.trigger)}</Badge>
+                      <Badge variant="neutral">{triggerSummary(tpl.trigger, t)}</Badge>
                       <Badge variant="neutral">
-                        {t.steps.length} {t.steps.length === 1 ? 'step' : 'steps'}
+                        {tpl.steps.length}{' '}
+                        {tpl.steps.length === 1 ? t('automations.step') : t('automations.steps')}
                       </Badge>
-                      {t.requires.map((r) => (
+                      {tpl.requires.map((r) => (
                         <Badge key={r} variant="warning">
-                          Needs {r}
+                          {t('automations.needs', { r })}
                         </Badge>
                       ))}
                     </div>
@@ -99,10 +105,10 @@ export function TemplatesView() {
                         <Button
                           variant="secondary"
                           size="sm"
-                          aria-label={`Use template ${t.name}`}
-                          onClick={() => setSelected(t)}
+                          aria-label={t('automations.useTemplate2', { name: tpl.name })}
+                          onClick={() => setSelected(tpl)}
                         >
-                          Use template
+                          {t('automations.useTemplate')}
                         </Button>
                       ) : null}
                     </div>
@@ -127,9 +133,10 @@ export function UseTemplateDialog({
   template: WorkflowTemplate;
   onClose: () => void;
 }) {
+  const t = useT();
   const router = useRouter();
   const create = useCreateWorkflow();
-  const placeholders = React.useMemo(() => findPlaceholders(template.steps), [template]);
+  const placeholders = React.useMemo(() => findPlaceholders(template.steps, t), [template, t]);
   const [name, setName] = React.useState(template.name);
   const [values, setValues] = React.useState<Record<string, string>>({});
   const [errors, setErrors] = React.useState<Record<string, string>>({});
@@ -143,7 +150,8 @@ export function UseTemplateDialog({
     for (const p of placeholders) {
       const v = values[p.key]?.trim();
       if (!v || v === PLACEHOLDER_ID)
-        next[p.key] = p.kind === 'agent' ? 'Choose an agent' : 'Choose a person';
+        next[p.key] =
+          p.kind === 'agent' ? t('automations.chooseAnAgent') : t('automations.chooseAPerson');
     }
     setErrors(next);
     if (Object.keys(next).length > 0) return;
@@ -155,7 +163,7 @@ export function UseTemplateDialog({
         trigger: template.trigger,
         steps: applyPlaceholders(template.steps, values),
       });
-      toast.success(`Workflow “${created.name}” created`);
+      toast.success(t('common.workflowCreated', { name: created.name }));
       onClose();
       router.push(`/automations/${created.id}`);
     } catch (error) {
@@ -172,18 +180,22 @@ export function UseTemplateDialog({
       <DialogContent size="lg">
         <form onSubmit={submit} noValidate className="flex min-h-0 flex-col">
           <DialogHeader>
-            <DialogTitle>Use template: {template.name}</DialogTitle>
+            <DialogTitle>{t('automations.useTemplate3', { name: template.name })}</DialogTitle>
             <DialogDescription>{template.description}</DialogDescription>
           </DialogHeader>
           <DialogBody className="flex flex-col gap-4 pb-2">
             {formError ? <Alert tone="danger">{formError}</Alert> : null}
             {nonPlaceholderNeeds.length > 0 ? (
               <Alert tone="warning">
-                This template also needs: {nonPlaceholderNeeds.join(', ')}. It can be saved without
-                it, but won’t do anything useful until that is set up.
+                {t('automations.templateNeeds', { needs: nonPlaceholderNeeds.join(', ') })}
               </Alert>
             ) : null}
-            <FormField id="tpl-name" label="Workflow name" required error={errors.name}>
+            <FormField
+              id="tpl-name"
+              label={t('automations.workflowName')}
+              required
+              error={errors.name}
+            >
               <Input value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
             </FormField>
             {placeholders.map((p) => (
@@ -220,10 +232,10 @@ export function UseTemplateDialog({
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" loading={create.isPending}>
-              Create workflow
+              {t('common.createWorkflow')}
             </Button>
           </DialogFooter>
         </form>

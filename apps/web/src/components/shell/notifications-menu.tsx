@@ -3,7 +3,6 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { formatDistanceToNow } from 'date-fns';
 import { Bell, CheckCheck, Settings2, TriangleAlert, Wallet } from 'lucide-react';
 import { Permission, type Notification } from '@hilatech/contracts';
 import {
@@ -26,6 +25,7 @@ import {
 import { useCan } from '@/hooks/use-can';
 import { budgetAlertInfo } from '@/lib/billing';
 import { isSafeAppPath } from '@/lib/navigation';
+import { useT, useFormat } from '@/i18n/provider';
 
 const PAGE_SIZE = 20;
 
@@ -42,6 +42,8 @@ export function NotificationsMenu() {
 }
 
 function NotificationsMenuInner() {
+  const fmt = useFormat();
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const count = useUnreadNotificationCount();
@@ -65,13 +67,15 @@ function NotificationsMenuInner() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <IconButton
-          label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+          label={
+            unread > 0 ? t('shell.notificationsUnread', { unread }) : t('common.notifications')
+          }
           className="relative"
         >
           <Bell aria-hidden />
           {unread > 0 ? (
             <span
-              className="absolute top-1 right-1 flex min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[0.625rem] leading-4 font-semibold text-accent-fg"
+              className="absolute top-1 end-1 flex min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[0.625rem] leading-4 font-semibold text-accent-fg"
               aria-hidden
               data-testid="notifications-badge"
             >
@@ -83,10 +87,10 @@ function NotificationsMenuInner() {
       <PopoverContent align="end" className="w-[22rem] p-0">
         <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
           <h2 className="text-sm font-semibold">
-            Notifications
+            {t('common.notifications')}
             {unread > 0 ? (
-              <span className="ml-1.5 text-xs font-normal text-fg-muted tabular">
-                {unread} unread
+              <span className="ms-1.5 text-xs font-normal text-fg-muted tabular">
+                {t('shell.unread', { unread })}
               </span>
             ) : null}
           </h2>
@@ -98,7 +102,7 @@ function NotificationsMenuInner() {
               loading={markAll.isPending}
               onClick={() => markAll.mutate()}
             >
-              Mark all read
+              {t('shell.markAllRead')}
             </Button>
           ) : null}
         </div>
@@ -112,16 +116,18 @@ function NotificationsMenuInner() {
           ) : list.isError ? (
             <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
               <p className="text-sm text-fg-muted">
-                {getErrorMessage(list.error, 'Notifications could not be loaded.')}
+                {getErrorMessage(list.error, t('shell.notificationsLoadFailed'))}
               </p>
               <Button variant="secondary" size="sm" onClick={() => void list.refetch()}>
-                Try again
+                {t('common.tryAgain')}
               </Button>
             </div>
           ) : items.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-fg-muted">You’re all caught up.</p>
+            <p className="px-4 py-8 text-center text-sm text-fg-muted">
+              {t('shell.youReAllCaughtUp')}
+            </p>
           ) : (
-            <ul className="divide-y divide-border" aria-label="Unread notifications">
+            <ul className="divide-y divide-border" aria-label={t('shell.unreadNotifications')}>
               {items.map((n) => {
                 const budget = budgetAlertInfo(n);
                 return (
@@ -130,7 +136,7 @@ function NotificationsMenuInner() {
                       type="button"
                       onClick={() => openItem(n)}
                       className={cn(
-                        'flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-muted',
+                        'flex w-full items-start gap-3 px-4 py-3 text-start transition-colors hover:bg-surface-muted',
                         'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
                       )}
                     >
@@ -156,7 +162,7 @@ function NotificationsMenuInner() {
                             className="mb-0.5 w-fit"
                             data-testid="notification-budget-badge"
                           >
-                            {budget.label}
+                            {t(budget.label)}
                           </Badge>
                         ) : null}
                         <span className="flex items-start justify-between gap-2">
@@ -165,7 +171,7 @@ function NotificationsMenuInner() {
                             dateTime={n.createdAt}
                             className="shrink-0 text-xs text-fg-subtle tabular"
                           >
-                            {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                            {fmt.relative(new Date(n.createdAt))}
                           </time>
                         </span>
                         {n.body ? (
@@ -178,7 +184,7 @@ function NotificationsMenuInner() {
               })}
               {unread > items.length ? (
                 <li className="px-4 py-2 text-center text-xs text-fg-subtle">
-                  {unread - items.length} more unread
+                  {t('shell.moreUnread', { value: unread - items.length })}
                 </li>
               ) : null}
             </ul>
@@ -193,7 +199,7 @@ function NotificationsMenuInner() {
             leadingIcon={<Settings2 aria-hidden />}
           >
             <Link href="/settings/profile#notifications" onClick={() => setOpen(false)}>
-              Notification settings
+              {t('shell.notificationSettings')}
             </Link>
           </Button>
         </div>

@@ -5,15 +5,26 @@ import { usePathname } from 'next/navigation';
 import { Permission } from '@hilatech/contracts';
 import { cn } from '@hilatech/ui';
 import { useCan } from '@/hooks/use-can';
+import { useT } from '@/i18n/provider';
+import { msg } from '@/i18n/msg';
 
 const TABS = [
-  { href: '/settings/organization', label: 'Organization', permission: Permission.ORG_READ },
-  { href: '/settings/billing', label: 'Billing', permission: Permission.ORG_BILLING_MANAGE },
-  { href: '/settings/ai', label: 'AI', permission: Permission.AI_CONFIG_READ },
-  { href: '/settings/profile', label: 'Your profile' },
+  {
+    href: '/settings/organization',
+    label: msg('common.organization'),
+    permission: Permission.ORG_READ,
+  },
+  {
+    href: '/settings/billing',
+    label: msg('common.billing'),
+    permission: Permission.ORG_BILLING_MANAGE,
+  },
+  { href: '/settings/ai', label: msg('common.ai'), permission: Permission.AI_CONFIG_READ },
+  { href: '/settings/profile', label: msg('settings.yourProfile') },
 ] as const;
 
 export function SettingsTabs() {
+  const t = useT();
   const pathname = usePathname();
   const canOrg = useCan(Permission.ORG_READ);
   const canBilling = useCan(Permission.ORG_BILLING_MANAGE);
@@ -25,7 +36,10 @@ export function SettingsTabs() {
     return canBilling;
   });
   return (
-    <nav aria-label="Settings sections" className="flex items-center gap-1 border-b border-border">
+    <nav
+      aria-label={t('settings.settingsSections')}
+      className="flex items-center gap-1 border-b border-border"
+    >
       {visible.map((tab) => {
         const active = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
         return (
@@ -39,7 +53,7 @@ export function SettingsTabs() {
               active ? 'border-accent text-fg' : 'border-transparent text-fg-muted hover:text-fg',
             )}
           >
-            {tab.label}
+            {t(tab.label)}
           </Link>
         );
       })}

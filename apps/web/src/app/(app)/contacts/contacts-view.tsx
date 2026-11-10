@@ -3,7 +3,6 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { format, formatDistanceToNow } from 'date-fns';
 import { Contact as ContactIcon, FilterX, Plus } from 'lucide-react';
 import { Permission, type Contact, type ListContactsQuery } from '@hilatech/contracts';
 import {
@@ -35,11 +34,13 @@ import { useCan } from '@/hooks/use-can';
 import { contactName, fullName } from '@/lib/crm';
 import { PermissionGate } from '@/components/common/permission-gate';
 import { ContactDialog } from './contact-dialog';
+import { useT, useFormat } from '@/i18n/provider';
 
 const PAGE_SIZE = 20;
 type SortKey = ListContactsQuery['sortBy'];
 
 export function ContactsView() {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const canCreate = useCan(Permission.CONTACTS_CREATE);
@@ -69,8 +70,8 @@ export function ContactsView() {
   const ownerName = React.useMemo(() => {
     const map = new Map<string, string>();
     for (const m of members.data?.data ?? []) map.set(m.userId, fullName(m.user));
-    return (id: string | null) => (id ? (map.get(id) ?? 'Former member') : null);
-  }, [members.data]);
+    return (id: string | null) => (id ? (map.get(id) ?? t('audit.formerMember')) : null);
+  }, [members.data, t]);
 
   const hasFilters = !!(search || tag || ownerId);
   const reset = () => {
@@ -89,12 +90,12 @@ export function ContactsView() {
     <PermissionGate anyOf={[Permission.CONTACTS_READ]}>
       <div className="flex flex-col gap-6">
         <PageHeader
-          title="Contacts"
-          description="The people and companies your business talks to."
+          title={t('common.contacts')}
+          description={t('contacts.thePeopleAndCompaniesYour')}
           actions={
             canCreate ? (
               <Button leadingIcon={<Plus aria-hidden />} onClick={() => setCreateOpen(true)}>
-                New contact
+                {t('contacts.newContact')}
               </Button>
             ) : undefined
           }
@@ -104,7 +105,7 @@ export function ContactsView() {
           <CardContent className="flex flex-col gap-4 py-4">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_auto] lg:items-end">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="contacts-search">Search</Label>
+                <Label htmlFor="contacts-search">{t('common.search')}</Label>
                 <SearchInput
                   id="contacts-search"
                   value={search}
@@ -112,11 +113,11 @@ export function ContactsView() {
                     setSearch(v);
                     setPage(1);
                   }}
-                  placeholder="Name, email, phone or company"
+                  placeholder={t('contacts.nameEmailPhoneOrCompany')}
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="contacts-tag">Tag</Label>
+                <Label htmlFor="contacts-tag">{t('common.tag')}</Label>
                 <NativeSelect
                   id="contacts-tag"
                   value={tag}
@@ -125,7 +126,7 @@ export function ContactsView() {
                     setPage(1);
                   }}
                 >
-                  <option value="">All tags</option>
+                  <option value="">{t('contacts.allTags')}</option>
                   {(tags.data ?? []).map((t) => (
                     <option key={t} value={t}>
                       {t}
@@ -134,7 +135,7 @@ export function ContactsView() {
                 </NativeSelect>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="contacts-owner">Owner</Label>
+                <Label htmlFor="contacts-owner">{t('contacts.owner')}</Label>
                 <NativeSelect
                   id="contacts-owner"
                   value={ownerId}
@@ -144,7 +145,7 @@ export function ContactsView() {
                     setPage(1);
                   }}
                 >
-                  <option value="">Anyone</option>
+                  <option value="">{t('common.anyone')}</option>
                   {(members.data?.data ?? []).map((m) => (
                     <option key={m.userId} value={m.userId}>
                       {fullName(m.user)}
@@ -158,7 +159,7 @@ export function ContactsView() {
                 disabled={!hasFilters}
                 leadingIcon={<FilterX aria-hidden />}
               >
-                Clear
+                {t('common.clear')}
               </Button>
             </div>
           </CardContent>
@@ -225,21 +226,22 @@ function ContactsTable({
   onCreate: () => void;
   onOpen: (id: string) => void;
 }) {
+  const t = useT();
   const columns = 5;
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <SortableHead sortKey="firstName" sort={sort} onSortChange={onSortChange}>
-            Contact
+            {t('common.contact')}
           </SortableHead>
           <SortableHead sortKey="company" sort={sort} onSortChange={onSortChange}>
-            Company
+            {t('common.company')}
           </SortableHead>
-          <TableHead>Tags</TableHead>
-          <TableHead>Owner</TableHead>
+          <TableHead>{t('common.tags')}</TableHead>
+          <TableHead>{t('contacts.owner')}</TableHead>
           <SortableHead sortKey="updatedAt" sort={sort} onSortChange={onSortChange}>
-            Updated
+            {t('common.updated')}
           </SortableHead>
         </TableRow>
       </TableHeader>
@@ -251,7 +253,7 @@ function ContactsTable({
             <div className="flex flex-col items-center gap-2">
               <span>{getErrorMessage(query.error)}</span>
               <Button variant="secondary" size="sm" onClick={() => void query.refetch()}>
-                Try again
+                {t('common.tryAgain')}
               </Button>
             </div>
           </TableEmptyRow>
@@ -260,20 +262,22 @@ function ContactsTable({
             <EmptyState
               compact
               icon={<ContactIcon />}
-              title={hasFilters ? 'No contacts match these filters' : 'No contacts yet'}
+              title={
+                hasFilters ? t('contacts.noContactsMatchTheseFilters') : t('contacts.noContactsYet')
+              }
               description={
                 hasFilters
-                  ? 'Try another search term, tag or owner.'
-                  : 'Add the people you work with, or convert a lead to create one.'
+                  ? t('contacts.tryAnotherSearchTermTag')
+                  : t('contacts.addThePeopleYouWork')
               }
               action={
                 hasFilters ? (
                   <Button variant="secondary" size="sm" onClick={onClear}>
-                    Clear filters
+                    {t('common.clearFilters')}
                   </Button>
                 ) : canCreate ? (
                   <Button size="sm" leadingIcon={<Plus aria-hidden />} onClick={onCreate}>
-                    New contact
+                    {t('contacts.newContact')}
                   </Button>
                 ) : undefined
               }
@@ -303,6 +307,7 @@ function ContactRow({
   owner: string | null;
   onOpen: (id: string) => void;
 }) {
+  const fmt = useFormat();
   return (
     <TableRow
       className="cursor-pointer"
@@ -357,8 +362,11 @@ function ContactRow({
         {owner ?? <span className="text-fg-subtle">—</span>}
       </TableCell>
       <TableCell className="whitespace-nowrap text-fg-muted tabular">
-        <time dateTime={contact.updatedAt} title={format(new Date(contact.updatedAt), 'PPpp')}>
-          {formatDistanceToNow(new Date(contact.updatedAt), { addSuffix: true })}
+        <time
+          dateTime={contact.updatedAt}
+          title={fmt.dateTime(new Date(contact.updatedAt), 'long')}
+        >
+          {fmt.relative(new Date(contact.updatedAt))}
         </time>
       </TableCell>
     </TableRow>

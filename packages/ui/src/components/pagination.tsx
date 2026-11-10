@@ -4,6 +4,7 @@ import * as React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { Button } from './button';
+import { useUiStrings } from '../lib/ui-strings';
 
 export interface PaginationProps extends React.HTMLAttributes<HTMLElement> {
   page: number;
@@ -23,17 +24,18 @@ export function Pagination({
   onPageChange,
   pageSizeOptions,
   onPageSizeChange,
-  itemLabel = 'items',
+  itemLabel,
   className,
   ...props
 }: PaginationProps) {
+  const ui = useUiStrings();
   const totalPages = Math.max(1, Math.ceil(total / Math.max(1, pageSize)));
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min(total, page * pageSize);
 
   return (
     <nav
-      aria-label="Pagination"
+      aria-label={ui.pagination}
       className={cn(
         'flex flex-col gap-3 text-sm text-fg-muted sm:flex-row sm:items-center sm:justify-between',
         className,
@@ -41,12 +43,14 @@ export function Pagination({
       {...props}
     >
       <p className="tabular">
-        {total === 0 ? `No ${itemLabel}` : `${start}–${end} of ${total} ${itemLabel}`}
+        {total === 0
+          ? ui.noItems(itemLabel ?? ui.items)
+          : ui.itemsRange(start, end, total, itemLabel ?? ui.items)}
       </p>
       <div className="flex items-center gap-3">
         {pageSizeOptions && onPageSizeChange ? (
           <label className="flex items-center gap-2">
-            <span className="text-xs">Rows</span>
+            <span className="text-xs">{ui.rows}</span>
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
@@ -64,19 +68,19 @@ export function Pagination({
           <Button
             variant="secondary"
             size="sm"
-            aria-label="Previous page"
+            aria-label={ui.previousPage}
             disabled={page <= 1}
             onClick={() => onPageChange(page - 1)}
           >
             <ChevronLeft aria-hidden />
           </Button>
           <span className="min-w-[5.5rem] text-center text-xs tabular">
-            Page {page} of {totalPages}
+            {ui.pageOf(page, totalPages)}
           </span>
           <Button
             variant="secondary"
             size="sm"
-            aria-label="Next page"
+            aria-label={ui.nextPage}
             disabled={page >= totalPages}
             onClick={() => onPageChange(page + 1)}
           >

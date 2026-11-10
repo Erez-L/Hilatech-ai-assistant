@@ -4,6 +4,7 @@ import * as React from 'react';
 import { ALL_DOMAIN_EVENTS, type DomainEvent } from '@hilatech/contracts';
 import { Button, Checkbox, Label } from '@hilatech/ui';
 import { eventLabel } from '@/lib/automation';
+import { useT } from '@/i18n/provider';
 
 /** Multi-select of domain events as a checkbox grid (every box has its own accessible name). */
 export function EventPicker({
@@ -17,6 +18,7 @@ export function EventPicker({
   onChange: (next: DomainEvent[]) => void;
   error?: string;
 }) {
+  const t = useT();
   const all = value.length === ALL_DOMAIN_EVENTS.length;
   return (
     <fieldset
@@ -25,7 +27,7 @@ export function EventPicker({
     >
       <div className="flex items-center justify-between gap-2">
         <legend className="text-sm font-medium">
-          Events <span aria-hidden>*</span>
+          {t('automation.events')} <span aria-hidden>*</span>
         </legend>
         <Button
           type="button"
@@ -33,7 +35,7 @@ export function EventPicker({
           size="sm"
           onClick={() => onChange(all ? [] : [...ALL_DOMAIN_EVENTS])}
         >
-          {all ? 'Clear all' : 'Select all'}
+          {all ? t('automation.clearAll') : t('automation.selectAll')}
         </Button>
       </div>
       <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
@@ -43,14 +45,14 @@ export function EventPicker({
             <div key={ev} className="flex items-center gap-2">
               <Checkbox
                 id={id}
-                aria-label={`Event ${ev}`}
+                aria-label={t('automation.event', { ev })}
                 checked={value.includes(ev)}
                 onCheckedChange={(checked) =>
                   onChange(checked ? [...value, ev] : value.filter((v) => v !== ev))
                 }
               />
               <Label htmlFor={id} className="font-normal">
-                {eventLabel(ev)} <span className="font-mono text-xs text-fg-muted">{ev}</span>
+                {eventLabel(ev, t)} <span className="font-mono text-xs text-fg-muted">{ev}</span>
               </Label>
             </div>
           );

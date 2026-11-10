@@ -1,3 +1,6 @@
+'use client';
+
+import { useUiStrings } from '../lib/ui-strings';
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../lib/cn';
@@ -73,10 +76,11 @@ export interface StatusBadgeProps extends Omit<BadgeProps, 'variant'> {
 
 /** Badge whose tone is derived from a well-known status string (member, invitation, subscription…). */
 export function StatusBadge({ status, tone, label, ...props }: StatusBadgeProps) {
+  const ui = useUiStrings();
   const variant = tone ?? STATUS_TONES[status] ?? 'neutral';
   return (
     <Badge variant={variant} dot {...props}>
-      {label ?? humanize(status)}
+      {label ?? ui.statusLabel(status)}
     </Badge>
   );
 }

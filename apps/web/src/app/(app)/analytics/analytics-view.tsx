@@ -30,13 +30,15 @@ import { BusinessTab } from './business-tab';
 import { SalesTab } from './sales-tab';
 import { UsageTab } from './usage-tab';
 import type { ReportContext } from './report-parts';
+import { useT, useFormat } from '@/i18n/provider';
+import { msg } from '@/i18n/msg';
 
 const TABS = [
-  { value: 'business', label: 'Business' },
-  { value: 'sales', label: 'Sales' },
-  { value: 'agents', label: 'Agent performance' },
-  { value: 'automation', label: 'Automation' },
-  { value: 'usage', label: 'Usage' },
+  { value: 'business', label: msg('analytics.business') },
+  { value: 'sales', label: msg('analytics.sales') },
+  { value: 'agents', label: msg('analytics.agentPerformance') },
+  { value: 'automation', label: msg('analytics.automation') },
+  { value: 'usage', label: msg('analytics.usage') },
 ] as const;
 type TabValue = (typeof TABS)[number]['value'];
 
@@ -53,6 +55,8 @@ export function AnalyticsView() {
 }
 
 function AnalyticsBody() {
+  const t = useT();
+  const fmt = useFormat();
   const [tab, setTab] = React.useState<TabValue>('business');
   const [preset, setPreset] = React.useState<RangePreset>('30d');
   const [granularity, setGranularity] = React.useState<AnalyticsGranularity>('day');
@@ -78,7 +82,7 @@ function AnalyticsBody() {
 
   const applyCustom = (event: React.FormEvent) => {
     event.preventDefault();
-    const result = customRange(fromDate, toDate);
+    const result = customRange(fromDate, toDate, t);
     if (!result.ok) {
       setCustomError(result.error);
       return;
@@ -100,29 +104,29 @@ function AnalyticsBody() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Analytics"
-        description="Leads, sales, agents, automations and AI usage for this organization, computed from live data."
+        title={t('analytics.analytics')}
+        description={t('analytics.leadsSalesAgentsAutomationsAnd')}
       />
 
       <section
-        aria-label="Report range"
+        aria-label={t('analytics.reportRange')}
         className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4"
       >
         <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
           <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">Date range</span>
+            <span className="text-sm font-medium">{t('analytics.dateRange')}</span>
             <SegmentedControl
-              aria-label="Date range"
-              options={RANGE_PRESETS.map((p) => ({ value: p.value, label: p.label }))}
+              aria-label={t('analytics.dateRange')}
+              options={RANGE_PRESETS.map((p) => ({ value: p.value, label: t(p.label) }))}
               value={preset}
               onValueChange={choosePreset}
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">Group by</span>
+            <span className="text-sm font-medium">{t('analytics.groupBy')}</span>
             <SegmentedControl
-              aria-label="Granularity"
-              options={GRANULARITY_OPTIONS}
+              aria-label={t('analytics.granularity')}
+              options={GRANULARITY_OPTIONS.map((o) => ({ value: o.value, label: t(o.label) }))}
               value={granularity}
               onValueChange={setGranularity}
             />
@@ -133,9 +137,9 @@ function AnalyticsBody() {
               size="sm"
               leadingIcon={<RefreshCw aria-hidden />}
               onClick={refresh}
-              aria-label="Refresh reports"
+              aria-label={t('analytics.refreshReports')}
             >
-              Refresh
+              {t('common.refresh')}
             </Button>
           ) : null}
         </div>
@@ -144,10 +148,10 @@ function AnalyticsBody() {
           <form
             onSubmit={applyCustom}
             noValidate
-            aria-label="Custom date range"
+            aria-label={t('analytics.customDateRange')}
             className="flex flex-wrap items-start gap-3"
           >
-            <FormField id="analytics-from" label="From date">
+            <FormField id="analytics-from" label={t('analytics.fromDate')}>
               <Input
                 type="date"
                 value={fromDate}
@@ -156,7 +160,7 @@ function AnalyticsBody() {
                 className="w-44"
               />
             </FormField>
-            <FormField id="analytics-to" label="To date" error={customError}>
+            <FormField id="analytics-to" label={t('analytics.toDate')} error={customError}>
               <Input
                 type="date"
                 value={toDate}
@@ -166,22 +170,25 @@ function AnalyticsBody() {
               />
             </FormField>
             <Button type="submit" variant="secondary" className="mt-[1.625rem]">
-              Apply range
+              {t('analytics.applyRange')}
             </Button>
           </form>
         ) : null}
 
         <p className="text-xs text-fg-muted" data-testid="analytics-range-summary">
-          Showing {formatRangeSummary(range)}, grouped by {granularity}. Dates and buckets use UTC.
+          {t('analytics.showingGroupedByDatesAnd', {
+            formatRangeSummary: formatRangeSummary(range, fmt),
+            granularity: t(`analytics.granularity.${granularity}`).toLowerCase(),
+          })}
         </p>
       </section>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
         <div className="overflow-x-auto scrollbar-thin">
-          <TabsList aria-label="Analytics reports" className="min-w-max">
-            {TABS.map((t) => (
-              <TabsTrigger key={t.value} value={t.value}>
-                {t.label}
+          <TabsList aria-label={t('analytics.analyticsReports')} className="min-w-max">
+            {TABS.map((tab) => (
+              <TabsTrigger key={tab.value} value={tab.value}>
+                {t(tab.label)}
               </TabsTrigger>
             ))}
           </TabsList>

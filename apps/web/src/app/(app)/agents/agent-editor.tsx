@@ -19,8 +19,10 @@ import {
   type AgentFormValues,
 } from './agent-form';
 import { RunAgentDialog } from './run-agent-dialog';
+import { useT } from '@/i18n/provider';
 
 export function AgentEditor({ id }: { id?: string }) {
+  const t = useT();
   const agent = useAgent(id ?? null);
   return (
     <PermissionGate anyOf={[Permission.AGENTS_READ]}>
@@ -28,7 +30,7 @@ export function AgentEditor({ id }: { id?: string }) {
         <QueryState
           query={agent}
           loading={<EditorSkeleton />}
-          errorTitle="This agent couldn’t be loaded"
+          errorTitle={t('agents.thisAgentCouldnTBe')}
         >
           {(data) => <EditorBody agent={data} />}
         </QueryState>
@@ -50,6 +52,7 @@ function EditorSkeleton() {
 }
 
 function EditorBody({ agent }: { agent: Agent | null }) {
+  const t = useT();
   const router = useRouter();
   const canManage = useCan(Permission.AGENTS_MANAGE);
   const canExecute = useCan(Permission.AGENTS_EXECUTE);
@@ -69,10 +72,10 @@ function EditorBody({ agent }: { agent: Agent | null }) {
       if (agent) {
         const saved = await update.mutateAsync({ id: agent.id, body });
         form.reset(form.getValues());
-        toast.success(`Agent “${saved.name}” saved`);
+        toast.success(t('agents.agentSaved', { name: saved.name }));
       } else {
         const created = await create.mutateAsync(body);
-        toast.success(`Agent “${created.name}” created`);
+        toast.success(t('agents.agentCreated', { name: created.name }));
         router.replace(`/agents/${created.id}`);
       }
     } catch (error) {
@@ -86,29 +89,31 @@ function EditorBody({ agent }: { agent: Agent | null }) {
         breadcrumb={
           <Link href="/agents" className="inline-flex items-center gap-1 hover:text-fg">
             <ArrowLeft className="size-3.5" aria-hidden />
-            Agents
+            {t('agents.agents')}
           </Link>
         }
-        title={agent ? agent.name : 'New agent'}
+        title={agent ? agent.name : t('agents.newAgent')}
         description={
           agent
-            ? 'Edit instructions, tools, permissions and limits.'
-            : 'Define what the agent does, which tools it may use and how far it may go.'
+            ? t('agents.editInstructionsToolsPermissionsAnd')
+            : t('agents.defineWhatTheAgentDoes')
         }
         actions={
           agent ? (
             <>
               <Button asChild variant="secondary" leadingIcon={<History aria-hidden />}>
-                <Link href={`/agents/executions?agentId=${agent.id}`}>Run history</Link>
+                <Link href={`/agents/executions?agentId=${agent.id}`}>
+                  {t('agents.runHistory')}
+                </Link>
               </Button>
               {canExecute ? (
                 <Button
                   leadingIcon={<Play aria-hidden />}
                   disabled={!agent.isEnabled}
-                  title={agent.isEnabled ? undefined : 'Enable the agent to run it'}
+                  title={agent.isEnabled ? undefined : t('agents.enableTheAgentToRun')}
                   onClick={() => setRunOpen(true)}
                 >
-                  Run
+                  {t('common.run')}
                 </Button>
               ) : null}
               {canManage ? (
@@ -117,7 +122,7 @@ function EditorBody({ agent }: { agent: Agent | null }) {
                   leadingIcon={<Trash2 aria-hidden />}
                   onClick={() => setDeleteOpen(true)}
                 >
-                  Delete
+                  {t('common.delete')}
                 </Button>
               ) : null}
             </>
@@ -125,9 +130,7 @@ function EditorBody({ agent }: { agent: Agent | null }) {
         }
       />
 
-      {readOnly ? (
-        <Alert tone="neutral">Your role can view this agent but not change it.</Alert>
-      ) : null}
+      {readOnly ? <Alert tone="neutral">{t('agents.yourRoleCanViewThis')}</Alert> : null}
       {!agent && readOnly ? null : (
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
           {formError ? <Alert tone="danger">{formError}</Alert> : null}
@@ -141,11 +144,11 @@ function EditorBody({ agent }: { agent: Agent | null }) {
                   disabled={!form.formState.isDirty || form.formState.isSubmitting}
                   onClick={() => form.reset()}
                 >
-                  Discard
+                  {t('common.discard')}
                 </Button>
               ) : (
                 <Button asChild variant="ghost">
-                  <Link href="/agents">Cancel</Link>
+                  <Link href="/agents">{t('common.cancel')}</Link>
                 </Button>
               )}
               <Button
@@ -153,7 +156,7 @@ function EditorBody({ agent }: { agent: Agent | null }) {
                 loading={form.formState.isSubmitting}
                 disabled={agent ? !form.formState.isDirty : false}
               >
-                {agent ? 'Save changes' : 'Create agent'}
+                {agent ? t('common.saveChanges') : t('agents.createAgent')}
               </Button>
             </div>
           )}
@@ -166,15 +169,15 @@ function EditorBody({ agent }: { agent: Agent | null }) {
           <ConfirmDialog
             open={deleteOpen}
             onOpenChange={setDeleteOpen}
-            title="Delete this agent?"
-            description="Past runs are kept. An agent with queued or running executions cannot be deleted."
-            confirmLabel="Delete agent"
+            title={t('agents.deleteThisAgent')}
+            description={t('agents.pastRunsAreKeptAn')}
+            confirmLabel={t('agents.deleteAgent')}
             tone="danger"
             loading={remove.isPending}
             onConfirm={() => {
               remove.mutate(agent.id, {
                 onSuccess: () => {
-                  toast.success(`Agent “${agent.name}” deleted`);
+                  toast.success(t('agents.agentDeleted', { name: agent.name }));
                   router.replace('/agents');
                 },
                 onError: (e) => {

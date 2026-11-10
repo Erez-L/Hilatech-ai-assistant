@@ -17,7 +17,7 @@ import {
   toast,
 } from '@hilatech/ui';
 import { getErrorMessage } from '@/lib/api';
-import { useCreateLead } from '@/hooks/queries';
+import { useCreateLead, useOrganizationSettings } from '@/hooks/queries';
 import { useCan } from '@/hooks/use-can';
 import { applyServerErrors } from '@/lib/forms/server-errors';
 import {
@@ -29,6 +29,7 @@ import {
   type LeadFormInput,
   type LeadFormValues,
 } from './lead-form';
+import { useT } from '@/i18n/provider';
 
 export interface LeadDialogProps {
   open: boolean;
@@ -62,20 +63,30 @@ function LeadCreateForm({
   contact: ContactSummary | null;
   onDone: (lead?: LeadWithRelations) => void;
 }) {
+  const t = useT();
   const create = useCreateLead();
   const canAssign = useCan(Permission.LEADS_ASSIGN);
   const [formError, setFormError] = React.useState<string | null>(null);
+  const orgCurrency = useOrganizationSettings().data?.currency;
 
   const form = useForm<LeadFormInput, unknown, LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
-    defaultValues: leadFormDefaults(null, { contactId: contact?.id ?? '' }),
+    defaultValues: leadFormDefaults(null, {
+      contactId: contact?.id ?? '',
+      ...(orgCurrency ? { currency: orgCurrency } : {}),
+    }),
   });
+  // New leads default to the organization's reporting currency (settings load asynchronously).
+  React.useEffect(() => {
+    if (orgCurrency && !form.getFieldState('currency').isDirty)
+      form.setValue('currency', orgCurrency);
+  }, [orgCurrency, form]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     setFormError(null);
     try {
       const lead = await create.mutateAsync(toCreateLeadRequest(values));
-      toast.success(`Lead “${lead.title}” created`);
+      toast.success(t('leads.leadCreated', { title: lead.title }));
       onDone(lead);
     } catch (error) {
       if (!applyServerErrors(error, form.setError, LEAD_FORM_FIELDS))
@@ -86,10 +97,8 @@ function LeadCreateForm({
   return (
     <form onSubmit={onSubmit} noValidate className="flex min-h-0 flex-col">
       <DialogHeader>
-        <DialogTitle>New lead</DialogTitle>
-        <DialogDescription>
-          Capture the opportunity now; you can refine details, notes and ownership later.
-        </DialogDescription>
+        <DialogTitle>{t('common.newLead')}</DialogTitle>
+        <DialogDescription>{t('leads.captureTheOpportunityNowYou')}</DialogDescription>
       </DialogHeader>
       <DialogBody className="flex flex-col gap-5 pb-2">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
@@ -103,10 +112,10 @@ function LeadCreateForm({
       </DialogBody>
       <DialogFooter>
         <Button variant="secondary" onClick={() => onDone()}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" loading={form.formState.isSubmitting}>
-          Create lead
+          {t('leads.createLead')}
         </Button>
       </DialogFooter>
     </form>

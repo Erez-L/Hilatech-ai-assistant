@@ -13,31 +13,30 @@ import {
   JsonViewer,
   Skeleton,
   cn,
-  humanize,
 } from '@hilatech/ui';
 import { useAiTools } from '@/hooks/queries';
 import { QueryState } from '@/components/common/query-state';
 import { RiskBadge } from '@/components/ai/badges';
+import { enumLabel } from '@/i18n/enums';
+import { useT } from '@/i18n/provider';
 
 export function ToolsCard() {
+  const t = useT();
   const tools = useAiTools();
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Tool catalogue</CardTitle>
-        <CardDescription>
-          What the assistant and agents can do. Each tool runs only when the acting user or agent
-          holds its required permission; dangerous tools never run unattended.
-        </CardDescription>
+        <CardTitle>{t('settings.toolCatalogue')}</CardTitle>
+        <CardDescription>{t('settings.whatTheAssistantAndAgents')}</CardDescription>
       </CardHeader>
       <CardContent>
         <QueryState
           query={tools}
           compact
-          errorTitle="The tool catalogue couldn’t be loaded"
+          errorTitle={t('settings.theToolCatalogueCouldnT')}
           loading={<Skeleton className="h-40 w-full" />}
           isEmpty={(d) => d.length === 0}
-          empty={<EmptyState compact icon={<Wrench />} title="No tools available" />}
+          empty={<EmptyState compact icon={<Wrench />} title={t('settings.noToolsAvailable')} />}
         >
           {(list) => <ToolList tools={list} />}
         </QueryState>
@@ -47,17 +46,22 @@ export function ToolsCard() {
 }
 
 function ToolList({ tools }: { tools: ToolDefinition[] }) {
+  const t = useT();
   const groups = React.useMemo(() => {
     const map = new Map<string, ToolDefinition[]>();
-    for (const t of tools) map.set(t.category, [...(map.get(t.category) ?? []), t]);
+    for (const tool of tools) map.set(tool.category, [...(map.get(tool.category) ?? []), tool]);
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
   }, [tools]);
   return (
     <div className="flex flex-col gap-5">
       {groups.map(([category, items]) => (
-        <section key={category} aria-label={humanize(category)} className="flex flex-col gap-2">
-          <h3 className="text-xs font-semibold tracking-wide text-fg-muted uppercase">
-            {humanize(category)}
+        <section
+          key={category}
+          aria-label={enumLabel(t, 'toolCategory', category)}
+          className="flex flex-col gap-2"
+        >
+          <h3 className="text-xs font-semibold tracking-wide rtl:tracking-normal text-fg-muted uppercase">
+            {enumLabel(t, 'toolCategory', category)}
           </h3>
           <ul className="divide-y divide-border rounded-lg border border-border">
             {items.map((t) => (
@@ -71,6 +75,7 @@ function ToolList({ tools }: { tools: ToolDefinition[] }) {
 }
 
 function ToolRow({ tool }: { tool: ToolDefinition }) {
+  const t = useT();
   const [open, setOpen] = React.useState(false);
   return (
     <li className="px-4 py-3">
@@ -83,22 +88,24 @@ function ToolRow({ tool }: { tool: ToolDefinition }) {
           </span>
           <span className="text-xs text-fg-muted">{tool.description}</span>
           <span className="text-2xs text-fg-subtle">
-            Requires{' '}
+            {t('settings.requires')}{' '}
             {tool.requiredPermission ? (
               <code className="font-mono">{tool.requiredPermission}</code>
             ) : (
-              'no permission'
+              t('settings.noPermission')
             )}
           </span>
         </div>
         <button
           type="button"
           aria-expanded={open}
-          aria-label={`${open ? 'Hide' : 'Show'} input schema for ${tool.name}`}
+          aria-label={t(open ? 'settings.hideInputSchema' : 'settings.showInputSchema', {
+            name: tool.name,
+          })}
           onClick={() => setOpen((v) => !v)}
           className="flex shrink-0 items-center gap-1 rounded-xs text-xs text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          Schema
+          {t('settings.schema')}
           <ChevronRight
             className={cn('size-3.5 transition-transform', open && 'rotate-90')}
             aria-hidden

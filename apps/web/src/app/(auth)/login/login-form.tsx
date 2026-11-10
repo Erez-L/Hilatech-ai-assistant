@@ -13,16 +13,15 @@ import { safeNextPath } from '@/lib/navigation';
 import { useSession } from '@/stores/session';
 import { AuthCard } from '@/components/auth/auth-card';
 import { PasswordInput } from '@/components/auth/password-input';
+import { useT } from '@/i18n/provider';
 
 export function LoginForm() {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get('next'));
   const [formError, setFormError] = React.useState<string | null>(null);
-  const notice =
-    searchParams.get('reset') === '1'
-      ? 'Your password was changed. Sign in with the new one.'
-      : null;
+  const notice = searchParams.get('reset') === '1' ? t('auth.passwordChangedNotice') : null;
 
   const form = useForm<LoginRequest>({
     resolver: zodResolver(loginSchema),
@@ -39,7 +38,7 @@ export function LoginForm() {
       if (!applyServerErrors(error, form.setError, ['email', 'password'])) {
         setFormError(
           isApiError(error) && error.code === 'INVALID_CREDENTIALS'
-            ? 'That email and password don’t match. Check both and try again.'
+            ? t('auth.invalidCredentialsHint')
             : getErrorMessage(error),
         );
       }
@@ -48,13 +47,13 @@ export function LoginForm() {
 
   return (
     <AuthCard
-      title="Welcome back"
-      description="Sign in to your workspace."
+      title={t('auth.welcomeBack')}
+      description={t('auth.signInToYourWorkspace')}
       footer={
         <>
-          New to HilaTech?{' '}
+          {t('auth.newToHilatech')}{' '}
           <Link href="/register" className="font-medium text-accent hover:underline">
-            Create an account
+            {t('auth.createAnAccount')}
           </Link>
         </>
       }
@@ -62,7 +61,12 @@ export function LoginForm() {
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
         {notice ? <Alert tone="success">{notice}</Alert> : null}
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
-        <FormField id="email" label="Email" error={form.formState.errors.email?.message} required>
+        <FormField
+          id="email"
+          label={t('common.email')}
+          error={form.formState.errors.email?.message}
+          required
+        >
           <Input
             type="email"
             autoComplete="email"
@@ -73,7 +77,7 @@ export function LoginForm() {
         </FormField>
         <FormField
           id="password"
-          label="Password"
+          label={t('common.password')}
           error={form.formState.errors.password?.message}
           required
         >
@@ -84,11 +88,11 @@ export function LoginForm() {
             href="/forgot-password"
             className="text-sm text-fg-muted hover:text-fg hover:underline"
           >
-            Forgot your password?
+            {t('auth.forgotYourPassword')}
           </Link>
         </div>
         <Button type="submit" size="lg" loading={form.formState.isSubmitting} className="w-full">
-          Sign in
+          {t('common.signIn')}
         </Button>
       </form>
     </AuthCard>

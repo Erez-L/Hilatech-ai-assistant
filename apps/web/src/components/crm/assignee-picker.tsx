@@ -5,6 +5,7 @@ import { NativeSelect } from '@hilatech/ui';
 import { useMembers } from '@/hooks/queries';
 import { useSession } from '@/stores/session';
 import { fullName } from '@/lib/crm';
+import { useT } from '@/i18n/provider';
 
 export interface AssigneePickerProps {
   id?: string;
@@ -22,10 +23,11 @@ export function AssigneePicker({
   id,
   value,
   onValueChange,
-  emptyLabel = 'Unassigned',
+  emptyLabel,
   disabled,
   ...aria
 }: AssigneePickerProps) {
+  const t = useT();
   const me = useSession((s) => s.user);
   const members = useMembers({ page: 1, pageSize: 100 });
   const active = React.useMemo(
@@ -45,14 +47,16 @@ export function AssigneePicker({
       aria-invalid={aria['aria-invalid']}
       aria-required={aria['aria-required']}
     >
-      <option value="">{members.isPending ? 'Loading members…' : emptyLabel}</option>
+      <option value="">
+        {members.isPending ? t('common.loadingMembers') : (emptyLabel ?? t('common.unassigned'))}
+      </option>
       {active.map((m) => (
         <option key={m.userId} value={m.userId}>
           {fullName(m.user)}
-          {m.userId === me?.id ? ' (you)' : ''}
+          {m.userId === me?.id ? t('crm.you') : ''}
         </option>
       ))}
-      {missing ? <option value={value}>Former member</option> : null}
+      {missing ? <option value={value}>{t('common.formerMember')}</option> : null}
     </NativeSelect>
   );
 }

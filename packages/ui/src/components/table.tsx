@@ -70,7 +70,7 @@ export const TableHead = React.forwardRef<
       ref={ref}
       scope="col"
       className={cn(
-        'h-10 px-3 text-left align-middle text-xs font-medium whitespace-nowrap text-fg-muted first:pl-5 last:pr-5',
+        'h-10 px-3 text-start align-middle text-xs font-medium whitespace-nowrap text-fg-muted first:ps-5 last:pe-5',
         className,
       )}
       {...props}
@@ -85,7 +85,7 @@ export const TableCell = React.forwardRef<
   return (
     <td
       ref={ref}
-      className={cn('px-3 py-3 align-middle first:pl-5 last:pr-5', className)}
+      className={cn('px-3 py-3 align-middle first:ps-5 last:pe-5', className)}
       {...props}
     />
   );
@@ -123,7 +123,7 @@ export function SortableHead<K extends string>({
   return (
     <TableHead
       aria-sort={active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'}
-      className={cn('p-0 first:pl-2 last:pr-2', className)}
+      className={cn('p-0 first:ps-2 last:pe-2', className)}
       {...props}
     >
       <button

@@ -3,7 +3,6 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { History } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import { WorkflowRunStatus } from '@hilatech/contracts';
 import {
   Button,
@@ -26,16 +25,19 @@ import { useWorkflowExecutions, useWorkflows } from '@/hooks/automation';
 import { RunStatusBadge } from '@/components/automation/run-status-badge';
 import { RUN_STATUS_LABELS, triggerSummary } from '@/lib/automation';
 import type { WorkflowTrigger } from '@hilatech/contracts';
+import type { Formatter } from '@/i18n/format';
+import { useT, useFormat } from '@/i18n/provider';
 
 const PAGE_SIZE = 20;
 
-export function formatDuration(ms: number | null): string {
+export function formatDuration(ms: number | null, fmt: Formatter): string {
   if (ms === null) return '—';
-  if (ms < 1000) return `${ms} ms`;
-  return `${(ms / 1000).toFixed(1)} s`;
+  return fmt.duration(ms);
 }
 
 export function ExecutionsView() {
+  const fmt = useFormat();
+  const t = useT();
   const [page, setPage] = React.useState(1);
   const [status, setStatus] = React.useState<WorkflowRunStatus | ''>('');
   const [workflowId, setWorkflowId] = React.useState('');
@@ -55,14 +57,14 @@ export function ExecutionsView() {
         <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center">
           <div className="sm:w-60">
             <NativeSelect
-              aria-label="Filter by workflow"
+              aria-label={t('automations.filterByWorkflow')}
               value={workflowId}
               onChange={(e) => {
                 setWorkflowId(e.target.value);
                 setPage(1);
               }}
             >
-              <option value="">All workflows</option>
+              <option value="">{t('common.allWorkflows')}</option>
               {(workflows.data?.data ?? []).map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name}
@@ -72,17 +74,17 @@ export function ExecutionsView() {
           </div>
           <div className="sm:w-48">
             <NativeSelect
-              aria-label="Filter by status"
+              aria-label={t('common.filterByStatus')}
               value={status}
               onChange={(e) => {
                 setStatus(e.target.value as WorkflowRunStatus | '');
                 setPage(1);
               }}
             >
-              <option value="">All statuses</option>
+              <option value="">{t('common.allStatuses')}</option>
               {WorkflowRunStatus.options.map((s) => (
                 <option key={s} value={s}>
-                  {RUN_STATUS_LABELS[s]}
+                  {t(RUN_STATUS_LABELS[s])}
                 </option>
               ))}
             </NativeSelect>
@@ -92,15 +94,15 @@ export function ExecutionsView() {
 
       <Card>
         <CardContent className="p-0">
-          <Table aria-label="Workflow executions">
+          <Table aria-label={t('automations.workflowExecutions')}>
             <TableHeader>
               <TableRow>
-                <TableHead>Workflow</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Trigger</TableHead>
-                <TableHead>Steps</TableHead>
-                <TableHead>Started</TableHead>
-                <TableHead className="text-right">Duration</TableHead>
+                <TableHead>{t('common.workflow')}</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
+                <TableHead>{t('common.trigger')}</TableHead>
+                <TableHead>{t('common.steps')}</TableHead>
+                <TableHead>{t('common.started')}</TableHead>
+                <TableHead className="text-end">{t('common.duration')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -111,7 +113,7 @@ export function ExecutionsView() {
                   <div className="flex flex-col items-center gap-2">
                     <span>{getErrorMessage(executions.error)}</span>
                     <Button variant="secondary" size="sm" onClick={() => void executions.refetch()}>
-                      Try again
+                      {t('common.tryAgain')}
                     </Button>
                   </div>
                 </TableEmptyRow>
@@ -120,11 +122,15 @@ export function ExecutionsView() {
                   <EmptyState
                     compact
                     icon={<History />}
-                    title={filtered ? 'No executions match' : 'No executions yet'}
+                    title={
+                      filtered
+                        ? t('automations.noExecutionsMatch')
+                        : t('automations.noExecutionsYet')
+                    }
                     description={
                       filtered
-                        ? 'Try different filters.'
-                        : 'Run a workflow, or wait for its trigger, and the run shows up here.'
+                        ? t('common.tryDifferentFilters')
+                        : t('automations.runAWorkflowOrWait')
                     }
                   />
                 </TableEmptyRow>
@@ -135,9 +141,11 @@ export function ExecutionsView() {
                       <Link
                         href={`/automations/executions/${e.id}`}
                         className="font-medium hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                        aria-label={`Open execution of ${e.workflow?.name ?? 'deleted workflow'}`}
+                        aria-label={t('automations.openExecutionOf', {
+                          name: e.workflow?.name ?? t('automations.deletedWorkflow'),
+                        })}
                       >
-                        {e.workflow?.name ?? 'Deleted workflow'}
+                        {e.workflow?.name ?? t('automations.deletedWorkflow')}
                       </Link>
                     </TableCell>
                     <TableCell>
@@ -145,15 +153,15 @@ export function ExecutionsView() {
                     </TableCell>
                     <TableCell className="text-fg-muted">
                       {typeof e.trigger?.type === 'string'
-                        ? triggerSummary(e.trigger as unknown as WorkflowTrigger)
+                        ? triggerSummary(e.trigger as unknown as WorkflowTrigger, t)
                         : '—'}
                     </TableCell>
                     <TableCell className="tabular">{e.stepResults.length}</TableCell>
                     <TableCell className="text-fg-muted">
-                      {formatDistanceToNow(new Date(e.createdAt), { addSuffix: true })}
+                      {fmt.relative(new Date(e.createdAt))}
                     </TableCell>
-                    <TableCell className="text-right tabular">
-                      {formatDuration(e.durationMs)}
+                    <TableCell className="text-end tabular">
+                      {formatDuration(e.durationMs, fmt)}
                     </TableCell>
                   </TableRow>
                 ))

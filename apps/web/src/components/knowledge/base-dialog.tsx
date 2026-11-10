@@ -28,6 +28,7 @@ import { useAiProviders } from '@/hooks/queries';
 import { useCreateKnowledgeBase, useUpdateKnowledgeBase } from '@/hooks/knowledge';
 import { useCan } from '@/hooks/use-can';
 import { serverFieldErrors, zodFieldErrors } from '@/lib/forms/zod-errors';
+import { useT } from '@/i18n/provider';
 
 export function BaseDialog({
   base,
@@ -59,6 +60,7 @@ function BaseForm({
   onClose: () => void;
   onSaved?: (base: KnowledgeBase) => void;
 }) {
+  const t = useT();
   const editing = !!base;
   const create = useCreateKnowledgeBase();
   const update = useUpdateKnowledgeBase();
@@ -94,7 +96,7 @@ function BaseForm({
         }
         setErrors({});
         const saved = await update.mutateAsync({ id: base.id, body: parsed.data });
-        toast.success(`Knowledge base “${saved.name}” saved`);
+        toast.success(t('knowledge.knowledgeBaseSaved', { name: saved.name }));
         onSaved?.(saved);
         onClose();
         return;
@@ -111,7 +113,7 @@ function BaseForm({
       }
       setErrors({});
       const saved = await create.mutateAsync(parsed.data);
-      toast.success(`Knowledge base “${saved.name}” created`);
+      toast.success(t('knowledge.knowledgeBaseCreated', { name: saved.name }));
       onSaved?.(saved);
       onClose();
     } catch (error) {
@@ -124,42 +126,44 @@ function BaseForm({
   return (
     <form onSubmit={submit} noValidate className="flex min-h-0 flex-col">
       <DialogHeader>
-        <DialogTitle>{editing ? 'Edit knowledge base' : 'New knowledge base'}</DialogTitle>
+        <DialogTitle>
+          {editing ? t('knowledge.editKnowledgeBase') : t('knowledge.newKnowledgeBase')}
+        </DialogTitle>
         <DialogDescription>
           {editing
-            ? 'Rename or re-describe this knowledge base.'
-            : 'A knowledge base groups documents that are searched together.'}
+            ? t('knowledge.renameOrReDescribeThis')
+            : t('knowledge.aKnowledgeBaseGroupsDocuments')}
         </DialogDescription>
       </DialogHeader>
       <DialogBody className="flex flex-col gap-4 pb-2">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
-        <FormField id="kb-name" label="Name" required error={errors.name}>
+        <FormField id="kb-name" label={t('common.name')} required error={errors.name}>
           <Input
             value={name}
             maxLength={120}
             autoFocus
             onChange={(e) => setName(e.target.value)}
-            placeholder="Product handbook"
+            placeholder={t('knowledge.productHandbook')}
           />
         </FormField>
-        <FormField id="kb-description" label="Description" error={errors.description}>
+        <FormField id="kb-description" label={t('common.description')} error={errors.description}>
           <Textarea
             rows={3}
             value={description}
             maxLength={2000}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="What these documents cover"
+            placeholder={t('knowledge.whatTheseDocumentsCover')}
           />
         </FormField>
         {!editing && canReadConfig ? (
           <FormField
             id="kb-provider"
-            label="Embedding provider"
-            description="Used to embed documents and search queries. Defaults to the organization’s default provider."
+            label={t('knowledge.embeddingProvider')}
+            description={t('knowledge.usedToEmbedDocumentsAnd')}
             error={errors.embeddingProviderConfigId}
           >
             <NativeSelect value={providerId} onChange={(e) => setProviderId(e.target.value)}>
-              <option value="">Organization default</option>
+              <option value="">{t('common.organizationDefault')}</option>
               {embeddingProviders.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -171,10 +175,10 @@ function BaseForm({
       </DialogBody>
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" loading={pending}>
-          {editing ? 'Save changes' : 'Create knowledge base'}
+          {editing ? t('common.saveChanges') : t('knowledge.createKnowledgeBase')}
         </Button>
       </DialogFooter>
     </form>

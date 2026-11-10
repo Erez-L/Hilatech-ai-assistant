@@ -5,15 +5,18 @@ import { usePathname } from 'next/navigation';
 import { Permission } from '@hilatech/contracts';
 import { PageHeader, cn } from '@hilatech/ui';
 import { PermissionGate } from '@/components/common/permission-gate';
+import { useT } from '@/i18n/provider';
+import { msg } from '@/i18n/msg';
 
 const TABS = [
-  { href: '/automations', label: 'Workflows', exact: true },
-  { href: '/automations/templates', label: 'Templates' },
-  { href: '/automations/executions', label: 'Executions' },
-  { href: '/automations/webhooks', label: 'Webhooks' },
+  { href: '/automations', label: msg('automations.workflows'), exact: true },
+  { href: '/automations/templates', label: msg('automations.templates') },
+  { href: '/automations/executions', label: msg('automations.executions') },
+  { href: '/automations/webhooks', label: msg('automations.webhooks') },
 ] as const;
 
 export function AutomationsShell({ children }: { children: React.ReactNode }) {
+  const t = useT();
   const pathname = usePathname();
   const editing =
     pathname === '/automations/new' || /^\/automations\/[0-9a-f-]{36}$/.test(pathname);
@@ -21,11 +24,11 @@ export function AutomationsShell({ children }: { children: React.ReactNode }) {
     <PermissionGate anyOf={[Permission.AUTOMATIONS_READ]}>
       <div className="flex flex-col gap-6">
         <PageHeader
-          title="Automations"
-          description="Workflows that react to events, schedules and webhooks, plus the webhooks that connect them to the outside world."
+          title={t('automations.automations')}
+          description={t('automations.workflowsThatReactToEvents')}
         />
         <nav
-          aria-label="Automation sections"
+          aria-label={t('automations.automationSections')}
           className="flex items-center gap-1 overflow-x-auto border-b border-border"
         >
           {TABS.map((tab) => {
@@ -46,7 +49,7 @@ export function AutomationsShell({ children }: { children: React.ReactNode }) {
                     : 'border-transparent text-fg-muted hover:text-fg',
                 )}
               >
-                {tab.label}
+                {t(tab.label)}
               </Link>
             );
           })}

@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { SendAssistantMessageRequest } from '@hilatech/contracts';
 import { assistantApi, isApiError, keys } from '@/lib/api';
 import { useSession } from '@/stores/session';
+import { useT } from '@/i18n/provider';
 
 export interface StreamingTool {
   id: string;
@@ -31,6 +32,7 @@ const IDLE: StreamState = { status: 'idle', userContent: null, text: '', tools: 
  * tool calls). When the turn ends the persisted messages are refetched and the live state clears.
  */
 export function useAssistantStream(threadId: string | null) {
+  const t = useT();
   const qc = useQueryClient();
   const orgId = useSession((s) => s.activeOrganizationId);
   const [state, setState] = React.useState<StreamState>(IDLE);
@@ -124,11 +126,11 @@ export function useAssistantStream(threadId: string | null) {
           status: 'error',
           error: isApiError(error)
             ? { code: error.code, message: error.message, details: error.details }
-            : { code: 'NETWORK_ERROR', message: 'The connection was interrupted. Try again.' },
+            : { code: 'NETWORK_ERROR', message: t('misc.theConnectionWasInterruptedTry') },
         }));
       }
     },
-    [threadId, qc, orgId],
+    [threadId, qc, orgId, t],
   );
 
   const dismissError = React.useCallback(() => setState(IDLE), []);

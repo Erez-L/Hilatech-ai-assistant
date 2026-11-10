@@ -3,7 +3,6 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { format, formatDistanceToNow } from 'date-fns';
 import { FilterX, Plus, Target, X } from 'lucide-react';
 import {
   Permission,
@@ -33,7 +32,6 @@ import {
   TableHeader,
   TableRow,
   TableSkeletonRows,
-  formatCurrency,
   type SortState,
 } from '@hilatech/ui';
 import { getErrorMessage } from '@/lib/api';
@@ -51,11 +49,13 @@ import { PermissionGate } from '@/components/common/permission-gate';
 import { LeadStatusBadge } from '@/components/crm/badges';
 import { UserChip } from '@/components/crm/user-chip';
 import { LeadDialog } from './lead-dialog';
+import { useT, useFormat } from '@/i18n/provider';
 
 const PAGE_SIZE = 20;
 type SortKey = ListLeadsQuery['sortBy'];
 
 export function LeadsView() {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const canCreate = useCan(Permission.LEADS_CREATE);
@@ -128,12 +128,12 @@ export function LeadsView() {
     <PermissionGate anyOf={[Permission.LEADS_READ]}>
       <div className="flex flex-col gap-6">
         <PageHeader
-          title="Leads"
-          description="Every opportunity, from first contact to won or lost."
+          title={t('common.leads')}
+          description={t('leads.everyOpportunityFromFirstContact')}
           actions={
             canCreate ? (
               <Button leadingIcon={<Plus aria-hidden />} onClick={() => setCreateOpen(true)}>
-                New lead
+                {t('common.newLead')}
               </Button>
             ) : undefined
           }
@@ -143,7 +143,7 @@ export function LeadsView() {
           <CardContent className="flex flex-col gap-4 py-4">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_auto] xl:items-end">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="leads-search">Search</Label>
+                <Label htmlFor="leads-search">{t('common.search')}</Label>
                 <SearchInput
                   id="leads-search"
                   value={search}
@@ -151,11 +151,11 @@ export function LeadsView() {
                     setSearch(v);
                     setPage(1);
                   }}
-                  placeholder="Title, contact or description"
+                  placeholder={t('leads.titleContactOrDescription')}
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="leads-status">Stage</Label>
+                <Label htmlFor="leads-status">{t('common.stage')}</Label>
                 <NativeSelect
                   id="leads-status"
                   value={status}
@@ -164,16 +164,16 @@ export function LeadsView() {
                     setPage(1);
                   }}
                 >
-                  <option value="">All stages</option>
+                  <option value="">{t('leads.allStages')}</option>
                   {LEAD_STATUSES.map((s) => (
                     <option key={s} value={s}>
-                      {LEAD_STATUS_LABELS[s]}
+                      {t(LEAD_STATUS_LABELS[s])}
                     </option>
                   ))}
                 </NativeSelect>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="leads-source">Source</Label>
+                <Label htmlFor="leads-source">{t('common.source')}</Label>
                 <NativeSelect
                   id="leads-source"
                   value={source}
@@ -182,16 +182,16 @@ export function LeadsView() {
                     setPage(1);
                   }}
                 >
-                  <option value="">All sources</option>
+                  <option value="">{t('leads.allSources')}</option>
                   {LEAD_SOURCES.map((s) => (
                     <option key={s} value={s}>
-                      {LEAD_SOURCE_LABELS[s]}
+                      {t(LEAD_SOURCE_LABELS[s])}
                     </option>
                   ))}
                 </NativeSelect>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="leads-assignee">Assignee</Label>
+                <Label htmlFor="leads-assignee">{t('common.assignee')}</Label>
                 <NativeSelect
                   id="leads-assignee"
                   value={assigneeId}
@@ -201,7 +201,7 @@ export function LeadsView() {
                     setPage(1);
                   }}
                 >
-                  <option value="">Anyone</option>
+                  <option value="">{t('common.anyone')}</option>
                   {(members.data?.data ?? []).map((m) => (
                     <option key={m.userId} value={m.userId}>
                       {fullName(m.user)}
@@ -210,12 +210,12 @@ export function LeadsView() {
                 </NativeSelect>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="leads-tag">Tag</Label>
+                <Label htmlFor="leads-tag">{t('common.tag')}</Label>
                 <Input
                   id="leads-tag"
                   value={tagDraft}
                   list="leads-known-tags"
-                  placeholder="Any tag"
+                  placeholder={t('leads.anyTag')}
                   onChange={(e) => setTagDraft(e.target.value)}
                 />
                 <datalist id="leads-known-tags">
@@ -230,17 +230,17 @@ export function LeadsView() {
                 disabled={!hasFilters}
                 leadingIcon={<FilterX aria-hidden />}
               >
-                Clear
+                {t('common.clear')}
               </Button>
             </div>
             {contactId ? (
               <div className="flex items-center gap-2 text-sm text-fg-muted">
-                <span>Showing leads for</span>
-                <Badge variant="accent" className="gap-1.5 pr-1">
-                  {contactFilter.data ? contactName(contactFilter.data) : 'one contact'}
+                <span>{t('leads.showingLeadsFor')}</span>
+                <Badge variant="accent" className="gap-1.5 pe-1">
+                  {contactFilter.data ? contactName(contactFilter.data) : t('leads.oneContact')}
                   <button
                     type="button"
-                    aria-label="Remove contact filter"
+                    aria-label={t('leads.removeContactFilter')}
                     className="flex size-4 items-center justify-center rounded-full hover:bg-accent/20"
                     onClick={() => {
                       setContactId('');
@@ -316,23 +316,24 @@ function LeadsTable({
   onCreate: () => void;
   onOpen: (id: string) => void;
 }) {
+  const t = useT();
   const columns = 7;
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <SortableHead sortKey="title" sort={sort} onSortChange={onSortChange}>
-            Lead
+            {t('common.lead')}
           </SortableHead>
-          <TableHead>Contact</TableHead>
-          <TableHead>Stage</TableHead>
+          <TableHead>{t('common.contact')}</TableHead>
+          <TableHead>{t('common.stage')}</TableHead>
           <SortableHead sortKey="value" sort={sort} onSortChange={onSortChange}>
-            Value
+            {t('common.value')}
           </SortableHead>
-          <TableHead>Source</TableHead>
-          <TableHead>Assignee</TableHead>
+          <TableHead>{t('common.source')}</TableHead>
+          <TableHead>{t('common.assignee')}</TableHead>
           <SortableHead sortKey="updatedAt" sort={sort} onSortChange={onSortChange}>
-            Updated
+            {t('common.updated')}
           </SortableHead>
         </TableRow>
       </TableHeader>
@@ -344,7 +345,7 @@ function LeadsTable({
             <div className="flex flex-col items-center gap-2">
               <span>{getErrorMessage(query.error)}</span>
               <Button variant="secondary" size="sm" onClick={() => void query.refetch()}>
-                Try again
+                {t('common.tryAgain')}
               </Button>
             </div>
           </TableEmptyRow>
@@ -353,20 +354,18 @@ function LeadsTable({
             <EmptyState
               compact
               icon={<Target />}
-              title={hasFilters ? 'No leads match these filters' : 'No leads yet'}
+              title={hasFilters ? t('leads.noLeadsMatchTheseFilters') : t('common.noLeadsYet')}
               description={
-                hasFilters
-                  ? 'Try a different stage, source or search term.'
-                  : 'Add your first lead to start tracking the pipeline.'
+                hasFilters ? t('leads.tryADifferentStageSource') : t('leads.addYourFirstLeadTo')
               }
               action={
                 hasFilters ? (
                   <Button variant="secondary" size="sm" onClick={onClear}>
-                    Clear filters
+                    {t('common.clearFilters')}
                   </Button>
                 ) : canCreate ? (
                   <Button size="sm" leadingIcon={<Plus aria-hidden />} onClick={onCreate}>
-                    New lead
+                    {t('common.newLead')}
                   </Button>
                 ) : undefined
               }
@@ -381,6 +380,8 @@ function LeadsTable({
 }
 
 function LeadRow({ lead, onOpen }: { lead: LeadWithRelations; onOpen: (id: string) => void }) {
+  const fmt = useFormat();
+  const t = useT();
   return (
     <TableRow
       className="cursor-pointer"
@@ -434,18 +435,18 @@ function LeadRow({ lead, onOpen }: { lead: LeadWithRelations; onOpen: (id: strin
       </TableCell>
       <TableCell className="tabular whitespace-nowrap">
         {lead.value != null ? (
-          formatCurrency(lead.value, lead.currency)
+          fmt.currency(lead.value, lead.currency)
         ) : (
           <span className="text-fg-subtle">—</span>
         )}
       </TableCell>
-      <TableCell className="text-fg-muted">{LEAD_SOURCE_LABELS[lead.source]}</TableCell>
+      <TableCell className="text-fg-muted">{t(LEAD_SOURCE_LABELS[lead.source])}</TableCell>
       <TableCell>
         <UserChip user={lead.assignee} />
       </TableCell>
       <TableCell className="whitespace-nowrap text-fg-muted tabular">
-        <time dateTime={lead.updatedAt} title={format(new Date(lead.updatedAt), 'PPpp')}>
-          {formatDistanceToNow(new Date(lead.updatedAt), { addSuffix: true })}
+        <time dateTime={lead.updatedAt} title={fmt.dateTime(new Date(lead.updatedAt), 'long')}>
+          {fmt.relative(new Date(lead.updatedAt))}
         </time>
       </TableCell>
     </TableRow>

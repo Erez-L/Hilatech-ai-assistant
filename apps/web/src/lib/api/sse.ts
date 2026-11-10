@@ -1,5 +1,6 @@
 import { assistantStreamEventSchema, type AssistantStreamEvent } from '@hilatech/contracts';
 import { api, ApiError, type RequestOptions } from './client';
+import { vm } from '@/i18n/validation';
 
 export interface RawSseEvent {
   event: string;
@@ -88,7 +89,7 @@ export async function* streamSse(
     throw new ApiError({
       status: res.status,
       code: 'STREAM_UNAVAILABLE',
-      message: 'The server did not return a stream.',
+      message: vm('errors.STREAM_UNAVAILABLE'),
     });
   }
   const reader = res.body.getReader();

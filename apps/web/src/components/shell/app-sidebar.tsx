@@ -3,7 +3,6 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LifeBuoy } from 'lucide-react';
 import {
   Badge,
   Sidebar,
@@ -15,6 +14,7 @@ import {
 import { useSession } from '@/stores/session';
 import { NAV_SECTIONS } from './nav';
 import { OrgSwitcher } from './org-switcher';
+import { useT } from '@/i18n/provider';
 
 export function AppSidebar({
   onNavigate,
@@ -23,6 +23,7 @@ export function AppSidebar({
   onNavigate?: () => void;
   className?: string;
 }) {
+  const t = useT();
   const pathname = usePathname();
   const permissions = useSession((s) => s.permissions);
 
@@ -41,12 +42,6 @@ export function AppSidebar({
           <OrgSwitcher />
         </>
       }
-      footer={
-        <p className="flex items-center gap-2 px-2.5 text-xs text-fg-subtle">
-          <LifeBuoy className="size-3.5" aria-hidden />
-          Foundation milestone
-        </p>
-      }
     >
       {NAV_SECTIONS.map((section, index) => {
         const items = section.items.filter(
@@ -54,7 +49,10 @@ export function AppSidebar({
         );
         if (items.length === 0) return null;
         return (
-          <SidebarSection key={section.label ?? index} label={section.label}>
+          <SidebarSection
+            key={section.label?.key ?? index}
+            label={section.label ? t(section.label) : undefined}
+          >
             {items.map((item) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               const Icon = item.icon;
@@ -70,12 +68,12 @@ export function AppSidebar({
                             variant="outline"
                             className="px-1.5 py-0 text-[0.625rem] leading-4"
                           >
-                            Soon
+                            {t('shell.soon')}
                           </Badge>
                         ) : undefined
                       }
                     >
-                      {item.label}
+                      {t(item.label)}
                     </SidebarNavItemContent>
                   </Link>
                 </SidebarNavItem>

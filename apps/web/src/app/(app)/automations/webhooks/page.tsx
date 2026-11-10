@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
 import { WebhooksView } from './webhooks-view';
+import { getT } from '@/i18n/server';
 
-export const metadata: Metadata = { title: 'Webhooks' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getT();
+  return { title: t('meta.webhooks') };
+}
 
 export default function WebhooksPage() {
   return <WebhooksView />;

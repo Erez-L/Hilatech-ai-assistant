@@ -176,3 +176,8 @@ export {
 export type { SeriesDef, ValueFormatter } from './charts/chart-shared';
 export { Sheet, SheetClose, SheetContent, SheetTrigger } from './components/sheet';
 export type { SheetContentProps } from './components/sheet';
+
+// Direction (RTL/LTR) context for Radix primitives; mount once near the app root.
+export { DirectionProvider, useDirection } from '@radix-ui/react-direction';
+export { UiStringsProvider, useUiStrings, defaultUiStrings } from './lib/ui-strings';
+export type { UiStrings } from './lib/ui-strings';

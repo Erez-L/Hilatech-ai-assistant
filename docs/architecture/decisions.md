@@ -150,3 +150,25 @@ Node tooling do not affect the app builds. Stateful and stateless resources are 
 (AwsSolutions) is enforced in synth with reasoned acknowledgements. CI only synthesises and tests; deployment is a
 manual, approval-gated, OIDC-based workflow that is disabled by default. BullMQ stays on Redis (SQS migration path
 documented, not built).
+
+## ADR-019 — Hebrew/English UI with an in-repo typed dictionary, no locale in the URL (2026-11-11)
+
+Accepted. The web app supports Hebrew (RTL) and English (LTR). Translations live in `apps/web/src/i18n/messages/{en,he}`
+as flat, dotted keys; `he` is typed `Record<MessageKey, Message>`, so a missing or extra key is a compile error
+(plus a parity test for placeholders and plural forms). `useT()` (client) and `getT()` (server) translate; messages
+support `{param}` interpolation and `one/two/other` plural tables via `Intl.PluralRules` (Hebrew needs a dual form).
+Module-scope data uses `msg(key)`/`vm(key)` references that are translated at render time, so there is no global
+translator and no cross-request bleed during SSR.
+
+- **Why not next-intl / i18next:** the app needs two locales, no URL locale segment and no message-format features
+  beyond plurals. A small in-repo layer gives compile-time key safety, no runtime dependency, no routing/middleware
+  changes and works unchanged in server and client components. Revisit if a third language, ICU select/gender
+  formatting or a translation-management service is required.
+- **No locale in the URL.** Resolution order: saved user preference (profile preferences API) -> `hta_locale` cookie ->
+  `Accept-Language` -> `en`. The server sets `<html lang dir>` on every render, so there is no flash of the wrong
+  direction. A choice made while signed out is pushed to the profile on sign-in.
+- **RTL by construction:** logical Tailwind utilities only (enforced by a test), mirrored directional icons, Radix
+  `DirectionProvider`, charts and identifiers (email, URL, numbers) stay LTR, free-text inputs use `dir=auto`.
+- **Formatting** uses `Intl` with the `Asia/Jerusalem` zone and honours each record's stored currency.
+- **Consequences:** every user-visible string must be a dictionary key (a guard test fails on hardcoded JSX text);
+  API error codes map to `errors.<CODE>` keys; the server still returns English text for some messages.

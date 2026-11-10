@@ -1,11 +1,14 @@
+'use client';
+
 import type { UserSummary } from '@hilatech/contracts';
 import { Avatar, cn } from '@hilatech/ui';
 import { fullName } from '@/lib/crm';
+import { useT } from '@/i18n/provider';
 
 /** Avatar + name for an assignee/owner/author; renders a muted "Unassigned" when null. */
 export function UserChip({
   user,
-  emptyLabel = 'Unassigned',
+  emptyLabel,
   size = 'xs',
   className,
   nameClassName,
@@ -16,6 +19,7 @@ export function UserChip({
   className?: string;
   nameClassName?: string;
 }) {
+  const t = useT();
   if (!user) {
     return (
       <span className={cn('inline-flex items-center gap-2 text-fg-subtle', className)}>
@@ -26,7 +30,9 @@ export function UserChip({
             size === 'xs' ? 'size-6' : size === 'sm' ? 'size-7' : 'size-8',
           )}
         />
-        <span className={cn('truncate text-sm', nameClassName)}>{emptyLabel}</span>
+        <span className={cn('truncate text-sm', nameClassName)}>
+          {emptyLabel ?? t('common.unassigned')}
+        </span>
       </span>
     );
   }

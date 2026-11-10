@@ -5,6 +5,7 @@ import type { LeadWithRelations } from '@hilatech/contracts';
 import { Combobox, type ComboboxItem } from '@hilatech/ui';
 import { useLeads } from '@/hooks/queries';
 import { LEAD_STATUS_LABELS, contactName } from '@/lib/crm';
+import { useT } from '@/i18n/provider';
 
 export interface LeadPickerProps {
   id?: string;
@@ -30,11 +31,12 @@ export function LeadPicker({
   onValueChange,
   selectedLabel,
   contactId,
-  placeholder = 'Search leads',
+  placeholder,
   disabled,
   clearable = true,
   ...aria
 }: LeadPickerProps) {
+  const t = useT();
   const [search, setSearch] = React.useState('');
   const [debounced, setDebounced] = React.useState('');
   React.useEffect(() => {
@@ -73,14 +75,14 @@ export function LeadPicker({
       search={search}
       onSearchChange={setSearch}
       loading={query.isFetching}
-      placeholder={placeholder}
-      searchPlaceholder="Type a lead title"
+      placeholder={placeholder ?? t('crm.searchLeads')}
+      searchPlaceholder={t('crm.typeALeadTitle')}
       emptyMessage={
         query.isError
-          ? 'Leads could not be loaded.'
+          ? t('crm.leadsCouldNotLoad')
           : debounced
-            ? 'No leads match.'
-            : 'No leads yet.'
+            ? t('crm.noLeadsMatch')
+            : t('crm.noLeadsYet')
       }
       disabled={disabled}
       clearable={clearable}

@@ -13,7 +13,6 @@ import {
   CardHeader,
   CardTitle,
   Skeleton,
-  humanize,
   toast,
 } from '@hilatech/ui';
 import { getErrorMessage, isApiError } from '@/lib/api';
@@ -21,19 +20,24 @@ import { useCheckout, useUpgradeOptions } from '@/hooks/billing';
 import { useCan } from '@/hooks/use-can';
 import { QueryState } from '@/components/common/query-state';
 import { describeLimitDelta } from '@/lib/billing';
+import { humanizeValue } from '@/i18n/enums';
+import { msg, tm, type Msg } from '@/i18n/msg';
+import { useT, useFormat } from '@/i18n/provider';
 
-const ENTITLEMENT_NAMES: Record<string, string> = {
-  seats: 'seats',
-  ai_tokens: 'AI tokens',
-  documents: 'documents',
-  storage_mb: 'storage',
-  agents: 'agents',
-  automations: 'automations',
-  agent_executions: 'agent runs',
-  automation_runs: 'automation runs',
+const ENTITLEMENT_NAMES: Record<string, Msg> = {
+  seats: msg('billing.noun.seats'),
+  ai_tokens: msg('billing.noun.ai_tokens'),
+  documents: msg('billing.noun.documents'),
+  storage_mb: msg('billing.noun.storage_mb'),
+  agents: msg('billing.noun.agents'),
+  automations: msg('billing.noun.automations'),
+  agent_executions: msg('billing.noun.agent_executions'),
+  automation_runs: msg('billing.noun.automation_runs'),
 };
 
 export function UpgradeCard() {
+  const t = useT();
+  const fmt = useFormat();
   const query = useUpgradeOptions();
   const canManage = useCan(Permission.ORG_BILLING_MANAGE);
   const checkout = useCheckout();
@@ -48,7 +52,7 @@ export function UpgradeCard() {
     setNotConfigured(null);
     try {
       await checkout.mutateAsync(option.plan.key);
-      toast.success('Checkout started');
+      toast.success(t('settings.checkoutStarted'));
     } catch (error) {
       if (
         isApiError(error) &&
@@ -56,7 +60,7 @@ export function UpgradeCard() {
       ) {
         setNotConfigured({ plan: option.plan.name, message: error.message });
       } else {
-        toast.error(getErrorMessage(error, 'Checkout could not be started.'));
+        toast.error(getErrorMessage(error, t('settings.checkoutCouldNotStart')));
       }
     } finally {
       setPending(null);
@@ -66,43 +70,45 @@ export function UpgradeCard() {
   return (
     <Card id="upgrade" role="region" aria-labelledby="upgrade-title">
       <CardHeader>
-        <CardTitle id="upgrade-title">Upgrade options</CardTitle>
-        <CardDescription>
-          Higher plans, what they add compared with your current plan, and which pressure they
-          resolve.
-        </CardDescription>
+        <CardTitle id="upgrade-title">{t('settings.upgradeOptions')}</CardTitle>
+        <CardDescription>{t('settings.higherPlansWhatTheyAdd')}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         {notConfigured ? (
           <Alert
             tone="warning"
-            title="Payment is not configured"
+            title={t('settings.paymentIsNotConfigured')}
             data-testid="payment-not-configured"
           >
-            Checkout for {notConfigured.plan} is unavailable: no payment provider is connected to
-            this deployment. No charge was made and your plan has not changed.
+            {t('settings.checkoutUnavailable', { plan: notConfigured.plan })}
             {notConfigured.message ? ` (${notConfigured.message})` : ''}
           </Alert>
         ) : null}
         <QueryState
           query={query}
           compact
-          errorTitle="Upgrade options couldn’t be loaded"
+          errorTitle={t('settings.upgradeOptionsCouldnTBe')}
           loading={<Skeleton className="h-32 w-full" />}
         >
           {(data) => (
             <>
-              <Alert tone="neutral" title="Payments are not switched on yet">
+              <Alert tone="neutral" title={t('settings.paymentsAreNotSwitchedOn')}>
                 {data.payment.message}
               </Alert>
               {data.pressure.length > 0 ? (
                 <div className="flex flex-col gap-2">
-                  <p className="text-sm font-medium">Needs attention</p>
-                  <ul className="flex flex-wrap gap-2" aria-label="Entitlements under pressure">
+                  <p className="text-sm font-medium">{t('settings.needsAttention')}</p>
+                  <ul
+                    className="flex flex-wrap gap-2"
+                    aria-label={t('settings.entitlementsUnderPressure')}
+                  >
                     {data.pressure.map((p) => (
                       <li key={p.key}>
                         <Badge variant={p.state === 'exceeded' ? 'danger' : 'warning'} dot>
-                          {p.label}: {p.state === 'exceeded' ? 'limit reached' : 'nearing limit'}
+                          {p.label}:{' '}
+                          {p.state === 'exceeded'
+                            ? t('settings.limitReached')
+                            : t('settings.nearingLimit')}
                         </Badge>
                       </li>
                     ))}
@@ -110,14 +116,15 @@ export function UpgradeCard() {
                 </div>
               ) : null}
               {data.options.length === 0 ? (
-                <p className="text-sm text-fg-muted">
-                  You are on the highest self-service plan. Contact sales for custom limits.
-                </p>
+                <p className="text-sm text-fg-muted">{t('settings.youAreOnTheHighest')}</p>
               ) : (
-                <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label="Higher plans">
+                <ul
+                  className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+                  aria-label={t('settings.higherPlans')}
+                >
                   {data.options.map((option) => {
                     const deltas = Object.entries(option.limitDeltas)
-                      .map(([k, v]) => describeLimitDelta(k, v))
+                      .map(([k, v]) => describeLimitDelta(k, v, t, fmt))
                       .filter((x): x is string => !!x);
                     return (
                       <li
@@ -127,10 +134,12 @@ export function UpgradeCard() {
                       >
                         <div className="flex items-baseline justify-between gap-2">
                           <h3 className="text-base font-semibold">{option.plan.name}</h3>
-                          <span className="text-xs text-fg-muted">Pricing not configured</span>
+                          <span className="text-xs text-fg-muted">
+                            {t('settings.pricingNotConfigured')}
+                          </span>
                         </div>
                         <ul className="flex flex-col gap-1 text-sm text-fg-muted">
-                          {deltas.length === 0 ? <li>Same limits as today</li> : null}
+                          {deltas.length === 0 ? <li>{t('settings.sameLimitsAsToday')}</li> : null}
                           {deltas.map((d) => (
                             <li key={d} className="tabular">
                               {d}
@@ -139,9 +148,9 @@ export function UpgradeCard() {
                         </ul>
                         {option.resolves.length > 0 ? (
                           <p className="text-xs text-success-soft-fg">
-                            Resolves:{' '}
+                            {t('settings.resolves')}{' '}
                             {option.resolves
-                              .map((k) => ENTITLEMENT_NAMES[k] ?? humanize(k))
+                              .map((k) => tm(t, ENTITLEMENT_NAMES[k] ?? humanizeValue(k)))
                               .join(', ')}
                           </p>
                         ) : null}
@@ -152,11 +161,11 @@ export function UpgradeCard() {
                           trailingIcon={<ArrowUpRight aria-hidden />}
                           loading={pending === option.plan.key}
                           disabled={!canManage || pending !== null}
-                          title={canManage ? undefined : 'Requires the billing permission'}
-                          aria-label={`Upgrade to ${option.plan.name}`}
+                          title={canManage ? undefined : t('settings.requiresTheBillingPermission')}
+                          aria-label={t('settings.upgradeTo', { name: option.plan.name })}
                           onClick={() => void upgrade(option)}
                         >
-                          Upgrade
+                          {t('settings.upgrade')}
                         </Button>
                       </li>
                     );
@@ -164,9 +173,7 @@ export function UpgradeCard() {
                 </ul>
               )}
               {!canManage ? (
-                <p className="text-xs text-fg-muted">
-                  Only members with the billing permission can start an upgrade.
-                </p>
+                <p className="text-xs text-fg-muted">{t('settings.onlyMembersWithTheBilling')}</p>
               ) : null}
             </>
           )}

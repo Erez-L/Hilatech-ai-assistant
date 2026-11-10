@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { format } from 'date-fns';
 import { BellRing } from 'lucide-react';
 import { Permission } from '@hilatech/contracts';
 import {
@@ -20,10 +19,13 @@ import { useCan } from '@/hooks/use-can';
 import { QueryState } from '@/components/common/query-state';
 import { ALERT_SCOPE_LABEL, formatAlertAmount } from '@/lib/billing';
 import { DataTable } from '@/components/common/data-table';
+import { useT, useFormat } from '@/i18n/provider';
 
 const PAGE_SIZE = 10;
 
 export function AlertsCard() {
+  const fmt = useFormat();
+  const t = useT();
   const canManage = useCan(Permission.ORG_BILLING_MANAGE);
   const [page, setPage] = React.useState(1);
   const query = useBudgetAlerts({ page, pageSize: PAGE_SIZE }, canManage);
@@ -31,26 +33,28 @@ export function AlertsCard() {
   return (
     <Card role="region" aria-labelledby="alerts-title">
       <CardHeader>
-        <CardTitle id="alerts-title">Budget alerts</CardTitle>
-        <CardDescription>
-          Warnings and exceeded notices, one per budget, level and month.
-        </CardDescription>
+        <CardTitle id="alerts-title">{t('settings.budgetAlerts')}</CardTitle>
+        <CardDescription>{t('settings.warningsAndExceededNoticesOne')}</CardDescription>
       </CardHeader>
       <CardContent className="p-0">
         {!canManage ? (
           <EmptyState
             compact
             icon={<BellRing />}
-            title="Alerts are restricted"
-            description="Budget alerts are visible to members with the billing permission."
+            title={t('settings.alertsAreRestricted')}
+            description={t('settings.budgetAlertsAreVisibleTo')}
           />
         ) : (
           <QueryState
             query={query}
             compact
-            errorTitle="Alerts couldn’t be loaded"
+            errorTitle={t('settings.alertsCouldnTBeLoaded')}
             loading={
-              <div className="flex flex-col gap-3 p-5" aria-busy="true" aria-label="Loading alerts">
+              <div
+                className="flex flex-col gap-3 p-5"
+                aria-busy="true"
+                aria-label={t('settings.loadingAlerts')}
+              >
                 {Array.from({ length: 3 }).map((_, i) => (
                   <Skeleton key={i} className="h-6 w-full" />
                 ))}
@@ -61,42 +65,44 @@ export function AlertsCard() {
               <EmptyState
                 compact
                 icon={<BellRing />}
-                title="No budget alerts yet"
-                description="An alert is created when a token or cost budget, or your plan’s AI allowance, reaches its warning threshold or is used up."
+                title={t('settings.noBudgetAlertsYet')}
+                description={t('settings.anAlertIsCreatedWhen')}
               />
             }
           >
             {(r) => (
               <div className="flex flex-col gap-3 pb-4">
                 <DataTable
-                  caption="Budget alerts"
+                  caption={t('settings.budgetAlerts')}
                   rows={r.data}
                   rowKey={(a) => a.id}
                   columns={[
                     {
-                      header: 'When',
+                      header: t('common.when'),
                       render: (a) => (
-                        <time dateTime={a.createdAt}>
-                          {format(new Date(a.createdAt), 'd MMM yyyy, HH:mm')}
-                        </time>
+                        <time dateTime={a.createdAt}>{fmt.dateTime(new Date(a.createdAt))}</time>
                       ),
                     },
-                    { header: 'Budget', render: (a) => ALERT_SCOPE_LABEL[a.scope] },
+                    { header: t('settings.budget'), render: (a) => t(ALERT_SCOPE_LABEL[a.scope]) },
                     {
-                      header: 'Level',
+                      header: t('settings.level'),
                       render: (a) => (
                         <Badge variant={a.kind === 'exceeded' ? 'danger' : 'warning'} dot>
-                          {a.kind === 'exceeded' ? 'Exceeded' : 'Warning'}
+                          {a.kind === 'exceeded' ? t('common.exceeded') : t('common.warning')}
                         </Badge>
                       ),
                     },
                     {
-                      header: 'Used / limit',
+                      header: t('settings.usedLimit'),
                       align: 'right',
                       render: (a) =>
-                        `${formatAlertAmount(a.scope, a.used)} / ${formatAlertAmount(a.scope, a.limit)}`,
+                        `${formatAlertAmount(a.scope, a.used, fmt)} / ${formatAlertAmount(a.scope, a.limit, fmt)}`,
                     },
-                    { header: 'Threshold', align: 'right', render: (a) => `${a.thresholdPct}%` },
+                    {
+                      header: t('settings.threshold'),
+                      align: 'right',
+                      render: (a) => `${a.thresholdPct}%`,
+                    },
                   ]}
                 />
                 {r.meta.totalPages > 1 ? (

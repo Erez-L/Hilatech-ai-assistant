@@ -20,7 +20,7 @@ describe('UploadZone', () => {
         n++ === 0
           ? json({ data: { id: 'd1', status: 'uploaded' } }, 201)
           : json(
-              { error: { code: 'PAYLOAD_TOO_LARGE', message: 'File too large for the server' } },
+              { error: { code: 'PAYLOAD_TOO_LARGE', message: 'The request is too large.' } },
               413,
             ),
     });
@@ -32,7 +32,7 @@ describe('UploadZone', () => {
     expect(init.body).toBeInstanceOf(FormData);
     expect((init.headers as Record<string, string>)['Content-Type']).toBeUndefined();
     await userEvent.upload(input, new File(['x'], 'b.md'));
-    expect(await screen.findByText('File too large for the server')).toBeInTheDocument();
+    expect(await screen.findByText('The request is too large.')).toBeInTheDocument();
   });
 
   it('rejects unsupported types client-side without calling the API', async () => {

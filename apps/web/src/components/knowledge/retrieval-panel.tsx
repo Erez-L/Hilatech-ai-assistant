@@ -26,6 +26,8 @@ import { getErrorMessage, isApiError } from '@/lib/api';
 import { useKnowledgeSearch } from '@/hooks/knowledge';
 import { AiNotConfigured } from '@/components/ai/ai-not-configured';
 import { zodFieldErrors } from '@/lib/forms/zod-errors';
+import { rich } from '@/i18n/rich';
+import { useT } from '@/i18n/provider';
 
 export function formatScore(score: number): string {
   return score.toFixed(3);
@@ -43,6 +45,7 @@ export function RetrievalPanel({
   bases?: KnowledgeBase[];
   idPrefix?: string;
 }) {
+  const t = useT();
   const search = useKnowledgeSearch();
   const [query, setQuery] = React.useState('');
   const [limit, setLimit] = React.useState('5');
@@ -86,25 +89,27 @@ export function RetrievalPanel({
     <div className="flex flex-col gap-4">
       <Card>
         <CardHeader>
-          <CardTitle>Retrieval test</CardTitle>
-          <CardDescription>
-            Run the same semantic search the assistant and agents use. Only documents that are ready
-            are searched.
-          </CardDescription>
+          <CardTitle>{t('knowledge.retrievalTest')}</CardTitle>
+          <CardDescription>{t('knowledge.runTheSameSemanticSearch')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-            <FormField id={`${idPrefix}-query`} label="Query" required error={errors.query}>
+            <FormField
+              id={`${idPrefix}-query`}
+              label={t('knowledge.query')}
+              required
+              error={errors.query}
+            >
               <Textarea
                 rows={2}
                 value={query}
                 maxLength={1000}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="What is our refund policy?"
+                placeholder={t('knowledge.whatIsOurRefundPolicy')}
               />
             </FormField>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <FormField id={`${idPrefix}-limit`} label="Number of results">
+              <FormField id={`${idPrefix}-limit`} label={t('knowledge.numberOfResults')}>
                 <NativeSelect value={limit} onChange={(e) => setLimit(e.target.value)}>
                   {[3, 5, 10, 20].map((n) => (
                     <option key={n} value={n}>
@@ -115,8 +120,8 @@ export function RetrievalPanel({
               </FormField>
               <FormField
                 id={`${idPrefix}-min-score`}
-                label="Minimum score"
-                description="Cosine similarity from 0 to 1."
+                label={t('knowledge.minimumScore')}
+                description={t('knowledge.cosineSimilarityFrom0To')}
                 error={errors.minScore}
               >
                 <Input
@@ -136,7 +141,7 @@ export function RetrievalPanel({
                 loading={search.isPending}
                 leadingIcon={<SearchCheck aria-hidden />}
               >
-                Run search
+                {t('knowledge.runSearch')}
               </Button>
             </div>
           </form>
@@ -147,20 +152,28 @@ export function RetrievalPanel({
       {error ? <Alert tone="danger">{error}</Alert> : null}
 
       {result && !notConfigured ? (
-        <section aria-label="Search results" className="flex flex-col gap-3">
+        <section aria-label={t('knowledge.searchResults')} className="flex flex-col gap-3">
           <p className="text-sm text-fg-muted" role="status">
-            {result.hits.length} {result.hits.length === 1 ? 'result' : 'results'} · model{' '}
-            <span className="font-mono text-xs">{result.model}</span> · {result.tookMs} ms
+            {rich(
+              t,
+              'knowledge.searchSummary',
+              { model: <span className="font-mono text-xs">{result.model}</span> },
+              {
+                count: result.hits.length,
+                noun: result.hits.length === 1 ? t('knowledge.result') : t('knowledge.results'),
+                tookMs: result.tookMs,
+              },
+            )}
           </p>
           {result.hits.length === 0 ? (
             <EmptyState
               compact
               icon={<FileText />}
-              title="No matching passages"
-              description="Nothing scored above the minimum score. Lower it, rephrase the query, or check that documents are ready."
+              title={t('knowledge.noMatchingPassages')}
+              description={t('knowledge.nothingScoredAboveTheMinimum')}
             />
           ) : (
-            <ol aria-label="Hits" className="flex flex-col gap-3">
+            <ol aria-label={t('knowledge.hits')} className="flex flex-col gap-3">
               {result.hits.map((hit, i) => (
                 <HitCard
                   key={hit.chunkId}
@@ -186,6 +199,7 @@ function HitCard({
   rank: number;
   baseName?: string;
 }) {
+  const t = useT();
   const pct = Math.max(0, Math.min(1, hit.score)) * 100;
   return (
     <li className="rounded-lg border border-border bg-surface p-4">
@@ -196,11 +210,15 @@ function HitCard({
             <FileText className="size-4 text-fg-muted" aria-hidden />
             {hit.documentTitle}
           </span>
-          <Badge variant="outline">Chunk {hit.index + 1}</Badge>
+          <Badge variant="outline">{t('knowledge.chunk2', { value: hit.index + 1 })}</Badge>
           {baseName ? <Badge variant="neutral">{baseName}</Badge> : null}
         </div>
-        <Badge variant="accent" className="tabular" aria-label={`Score ${formatScore(hit.score)}`}>
-          Score {formatScore(hit.score)}
+        <Badge
+          variant="accent"
+          className="tabular"
+          aria-label={t('knowledge.score', { formatScore: formatScore(hit.score) })}
+        >
+          {t('knowledge.score', { formatScore: formatScore(hit.score) })}
         </Badge>
       </div>
       <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface-muted" aria-hidden>

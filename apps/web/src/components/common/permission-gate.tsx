@@ -4,6 +4,7 @@ import * as React from 'react';
 import { ShieldOff } from 'lucide-react';
 import { EmptyState } from '@hilatech/ui';
 import { useCanAny } from '@/hooks/use-can';
+import { useT } from '@/i18n/provider';
 
 /** Renders children only when the session holds one of the permissions; otherwise a clear notice. */
 export function PermissionGate({
@@ -15,6 +16,7 @@ export function PermissionGate({
   children: React.ReactNode;
   fallback?: React.ReactNode;
 }) {
+  const t = useT();
   const allowed = useCanAny(...anyOf);
   if (allowed) return <>{children}</>;
   return (
@@ -22,8 +24,8 @@ export function PermissionGate({
       {fallback ?? (
         <EmptyState
           icon={<ShieldOff />}
-          title="You don’t have access to this page"
-          description="Ask an organization admin to grant your role the required permission."
+          title={t('common.youDonTHaveAccess')}
+          description={t('common.askAnOrganizationAdminTo')}
         />
       )}
     </>

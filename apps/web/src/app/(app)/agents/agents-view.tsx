@@ -31,10 +31,12 @@ import { useCan } from '@/hooks/use-can';
 import { PermissionGate } from '@/components/common/permission-gate';
 import { ExecutionStatusBadge } from '@/components/ai/badges';
 import { RunAgentDialog } from './run-agent-dialog';
+import { useT } from '@/i18n/provider';
 
 const PAGE_SIZE = 20;
 
 export function AgentsView() {
+  const t = useT();
   const router = useRouter();
   const canManage = useCan(Permission.AGENTS_MANAGE);
   const canExecute = useCan(Permission.AGENTS_EXECUTE);
@@ -56,23 +58,25 @@ export function AgentsView() {
     return map;
   }, [runs.data]);
   const providerName = (id: string | null) =>
-    id ? (providers.data?.find((p) => p.id === id)?.name ?? 'Custom provider') : 'Default provider';
+    id
+      ? (providers.data?.find((p) => p.id === id)?.name ?? t('agents.customProvider'))
+      : t('agents.defaultProvider');
 
   const columns = 6;
   return (
     <PermissionGate anyOf={[Permission.AGENTS_READ]}>
       <div className="flex flex-col gap-6">
         <PageHeader
-          title="Agents"
-          description="Autonomous workers with clear instructions, a limited set of tools and hard limits."
+          title={t('agents.agents')}
+          description={t('agents.autonomousWorkersWithClearInstructions')}
           actions={
             <>
               <Button asChild variant="secondary" leadingIcon={<History aria-hidden />}>
-                <Link href="/agents/executions">Run history</Link>
+                <Link href="/agents/executions">{t('agents.runHistory')}</Link>
               </Button>
               {canManage ? (
                 <Button asChild leadingIcon={<Plus aria-hidden />}>
-                  <Link href="/agents/new">New agent</Link>
+                  <Link href="/agents/new">{t('agents.newAgent')}</Link>
                 </Button>
               ) : null}
             </>
@@ -87,8 +91,8 @@ export function AgentsView() {
                 setSearch(v);
                 setPage(1);
               }}
-              placeholder="Search agents"
-              aria-label="Search agents"
+              placeholder={t('agents.searchAgents')}
+              aria-label={t('agents.searchAgents')}
               className="max-w-sm"
             />
           </CardContent>
@@ -99,13 +103,13 @@ export function AgentsView() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Agent</TableHead>
-                  <TableHead>Model</TableHead>
-                  <TableHead>Tools</TableHead>
-                  <TableHead>Last run</TableHead>
-                  <TableHead>Enabled</TableHead>
-                  <TableHead className="text-right">
-                    <span className="sr-only">Actions</span>
+                  <TableHead>{t('common.agent')}</TableHead>
+                  <TableHead>{t('common.model')}</TableHead>
+                  <TableHead>{t('agents.tools')}</TableHead>
+                  <TableHead>{t('common.lastRun')}</TableHead>
+                  <TableHead>{t('common.enabled')}</TableHead>
+                  <TableHead className="text-end">
+                    <span className="sr-only">{t('common.actions')}</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -117,7 +121,7 @@ export function AgentsView() {
                     <div className="flex flex-col items-center gap-2">
                       <span>{getErrorMessage(agents.error)}</span>
                       <Button variant="secondary" size="sm" onClick={() => void agents.refetch()}>
-                        Try again
+                        {t('common.tryAgain')}
                       </Button>
                     </div>
                   </TableEmptyRow>
@@ -126,16 +130,16 @@ export function AgentsView() {
                     <EmptyState
                       compact
                       icon={<Bot />}
-                      title={search ? 'No agents match' : 'No agents yet'}
+                      title={search ? t('agents.noAgentsMatch') : t('agents.noAgentsYet')}
                       description={
                         search
-                          ? 'Try a different search term.'
-                          : 'Create an agent to automate research, follow-ups and triage.'
+                          ? t('common.tryADifferentSearchTerm')
+                          : t('agents.createAnAgentToAutomate')
                       }
                       action={
                         !search && canManage ? (
                           <Button asChild size="sm" leadingIcon={<Plus aria-hidden />}>
-                            <Link href="/agents/new">New agent</Link>
+                            <Link href="/agents/new">{t('agents.newAgent')}</Link>
                           </Button>
                         ) : undefined
                       }
@@ -200,6 +204,7 @@ function AgentRow({
   onRun: () => void;
   onOpen: () => void;
 }) {
+  const t = useT();
   const update = useUpdateAgent();
   return (
     <TableRow
@@ -224,13 +229,13 @@ function AgentRow({
       </TableCell>
       <TableCell>
         <div className="flex flex-col">
-          <span className="text-sm">{agent.model ?? 'Provider default'}</span>
+          <span className="text-sm">{agent.model ?? t('agents.providerDefault')}</span>
           <span className="text-xs text-fg-muted">{providerName}</span>
         </div>
       </TableCell>
       <TableCell>
         <Badge variant="outline" className="tabular">
-          {agent.tools.length} {agent.tools.length === 1 ? 'tool' : 'tools'}
+          {agent.tools.length} {agent.tools.length === 1 ? t('agents.tool') : t('agents.tools2')}
         </Badge>
       </TableCell>
       <TableCell>
@@ -238,42 +243,48 @@ function AgentRow({
           <Link
             href={`/agents/executions/${lastRun.id}`}
             className="inline-flex"
-            aria-label={`Last run ${lastRun.status}`}
+            aria-label={t('agents.lastRun', { status: lastRun.status })}
           >
             <ExecutionStatusBadge status={lastRun.status} />
           </Link>
         ) : (
-          <span className="text-fg-subtle">No runs</span>
+          <span className="text-fg-subtle">{t('agents.noRuns')}</span>
         )}
       </TableCell>
       <TableCell>
         <Switch
           checked={agent.isEnabled}
           disabled={!canManage || update.isPending}
-          aria-label={`${agent.isEnabled ? 'Disable' : 'Enable'} ${agent.name}`}
+          aria-label={t(agent.isEnabled ? 'common.disableName' : 'common.enableName', {
+            name: agent.name,
+          })}
           onCheckedChange={(isEnabled) =>
             update.mutate(
               { id: agent.id, body: { isEnabled } },
               {
                 onSuccess: () =>
-                  toast.success(`${agent.name} ${isEnabled ? 'enabled' : 'disabled'}`),
+                  toast.success(
+                    t(isEnabled ? 'agents.agentEnabled' : 'agents.agentDisabled', {
+                      name: agent.name,
+                    }),
+                  ),
                 onError: (e) => toast.error(getErrorMessage(e)),
               },
             )
           }
         />
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-end">
         {canExecute ? (
           <Button
             size="sm"
             variant="secondary"
             leadingIcon={<Play aria-hidden />}
             disabled={!agent.isEnabled}
-            aria-label={`Run ${agent.name}`}
+            aria-label={t('common.run2', { name: agent.name })}
             onClick={onRun}
           >
-            Run
+            {t('common.run')}
           </Button>
         ) : null}
       </TableCell>

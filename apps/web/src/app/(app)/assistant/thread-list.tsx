@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { formatDistanceToNowStrict } from 'date-fns';
 import { MessageSquare, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
 import type { AssistantThread } from '@hilatech/contracts';
 import {
@@ -31,8 +30,10 @@ import {
   useDeleteAssistantThread,
   useUpdateAssistantThread,
 } from '@/hooks/queries';
+import { useT, useFormat, type T } from '@/i18n/provider';
 
-export const threadTitle = (t: Pick<AssistantThread, 'title'>) => t.title?.trim() || 'New thread';
+export const threadTitle = (thread: Pick<AssistantThread, 'title'>, t: T) =>
+  thread.title?.trim() || t('assistant.newThread');
 
 export function ThreadList({
   selectedId,
@@ -43,6 +44,8 @@ export function ThreadList({
   onSelect: (id: string | null) => void;
   onNew: () => void;
 }) {
+  const fmt = useFormat();
+  const t = useT();
   const [search, setSearch] = React.useState('');
   const threads = useAssistantThreads({ page: 1, pageSize: 100 });
   const rename = useUpdateAssistantThread();
@@ -51,8 +54,8 @@ export function ThreadList({
   const [deleting, setDeleting] = React.useState<AssistantThread | null>(null);
 
   // The API has no thread search; filter the loaded page by title.
-  const items = (threads.data?.data ?? []).filter((t) =>
-    threadTitle(t).toLowerCase().includes(search.trim().toLowerCase()),
+  const items = (threads.data?.data ?? []).filter((thread) =>
+    threadTitle(thread, t).toLowerCase().includes(search.trim().toLowerCase()),
   );
 
   return (
@@ -61,8 +64,8 @@ export function ThreadList({
         <SearchInput
           value={search}
           onValueChange={setSearch}
-          placeholder="Search threads"
-          aria-label="Search threads"
+          placeholder={t('assistant.searchThreads')}
+          aria-label={t('assistant.searchThreads')}
         />
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
@@ -79,70 +82,71 @@ export function ThreadList({
           <div className="flex flex-col items-center gap-2 px-4 py-10 text-center text-sm text-fg-muted">
             <span>{getErrorMessage(threads.error)}</span>
             <Button size="sm" variant="secondary" onClick={() => void threads.refetch()}>
-              Try again
+              {t('common.tryAgain')}
             </Button>
           </div>
         ) : items.length === 0 ? (
           <EmptyState
             compact
             icon={<MessageSquare />}
-            title={search ? 'No threads match' : 'No threads yet'}
+            title={search ? t('assistant.noThreadsMatch') : t('assistant.noThreadsYet')}
             description={
-              search ? 'Try a different search.' : 'Start a thread to ask the assistant.'
+              search ? t('assistant.tryADifferentSearch') : t('assistant.startAThreadToAsk')
             }
             action={
               search ? undefined : (
                 <Button size="sm" leadingIcon={<Plus aria-hidden />} onClick={onNew}>
-                  New thread
+                  {t('assistant.newThread')}
                 </Button>
               )
             }
             className="py-14"
           />
         ) : (
-          <ul className="divide-y divide-border" aria-label="Threads">
-            {items.map((t) => {
-              const selected = t.id === selectedId;
-              const when = t.lastMessageAt ?? t.updatedAt;
+          <ul className="divide-y divide-border" aria-label={t('assistant.threads')}>
+            {items.map((thread) => {
+              const selected = thread.id === selectedId;
+              const when = thread.lastMessageAt ?? thread.updatedAt;
               return (
                 <li
-                  key={t.id}
+                  key={thread.id}
                   className={cn('group flex items-center', selected && 'bg-accent-soft/60')}
                 >
                   <button
                     type="button"
-                    onClick={() => onSelect(t.id)}
+                    onClick={() => onSelect(thread.id)}
                     aria-current={selected ? 'true' : undefined}
-                    className="flex min-w-0 flex-1 flex-col gap-0.5 px-4 py-3 text-left hover:bg-surface-muted/70 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+                    className="flex min-w-0 flex-1 flex-col gap-0.5 px-4 py-3 text-start hover:bg-surface-muted/70 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
                   >
                     <span
                       className={cn('truncate text-sm', selected ? 'font-semibold' : 'font-medium')}
                     >
-                      {threadTitle(t)}
+                      {threadTitle(thread, t)}
                     </span>
                     <span className="text-2xs text-fg-subtle tabular">
-                      {t.messageCount} {t.messageCount === 1 ? 'message' : 'messages'} ·{' '}
-                      {formatDistanceToNowStrict(new Date(when), { addSuffix: true })}
+                      {thread.messageCount}{' '}
+                      {thread.messageCount === 1 ? t('assistant.message') : t('assistant.messages')}{' '}
+                      · {fmt.relative(new Date(when))}
                     </span>
                   </button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <IconButton
-                        label={`Actions for ${threadTitle(t)}`}
+                        label={t('assistant.actionsFor', { threadTitle: threadTitle(thread, t) })}
                         size="sm"
-                        className="mr-2"
+                        className="me-2"
                       >
                         <MoreHorizontal aria-hidden />
                       </IconButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-40">
-                      <DropdownMenuItem onSelect={() => setRenaming(t)}>
+                      <DropdownMenuItem onSelect={() => setRenaming(thread)}>
                         <Pencil aria-hidden />
-                        Rename
+                        {t('assistant.rename')}
                       </DropdownMenuItem>
-                      <DropdownMenuItem tone="danger" onSelect={() => setDeleting(t)}>
+                      <DropdownMenuItem tone="danger" onSelect={() => setDeleting(thread)}>
                         <Trash2 aria-hidden />
-                        Delete
+                        {t('common.delete')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -168,9 +172,9 @@ export function ThreadList({
       <ConfirmDialog
         open={!!deleting}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title="Delete this thread?"
-        description="The thread and all of its messages are deleted. This cannot be undone."
-        confirmLabel="Delete thread"
+        title={t('assistant.deleteThisThread')}
+        description={t('assistant.theThreadAndAllOf')}
+        confirmLabel={t('assistant.deleteThread')}
         tone="danger"
         loading={remove.isPending}
         onConfirm={() => {
@@ -178,7 +182,7 @@ export function ThreadList({
           remove.mutate(deleting.id, {
             onSuccess: () => {
               if (deleting.id === selectedId) onSelect(null);
-              toast.success('Thread deleted');
+              toast.success(t('assistant.threadDeleted'));
               setDeleting(null);
             },
           });
@@ -227,6 +231,7 @@ function RenameForm({
   onSave: (title: string) => void;
   onClose: () => void;
 }) {
+  const t = useT();
   const [title, setTitle] = React.useState(thread.title ?? '');
   return (
     <form
@@ -236,11 +241,11 @@ function RenameForm({
       }}
     >
       <DialogHeader>
-        <DialogTitle>Rename thread</DialogTitle>
+        <DialogTitle>{t('assistant.renameThread')}</DialogTitle>
       </DialogHeader>
       <DialogBody className="pb-2">
         <Input
-          aria-label="Thread title"
+          aria-label={t('assistant.threadTitle')}
           value={title}
           maxLength={200}
           autoFocus
@@ -249,10 +254,10 @@ function RenameForm({
       </DialogBody>
       <DialogFooter>
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" loading={pending} disabled={!title.trim()}>
-          Save
+          {t('common.save')}
         </Button>
       </DialogFooter>
     </form>

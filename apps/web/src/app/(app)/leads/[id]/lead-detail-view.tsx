@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format, formatDistanceToNow } from 'date-fns';
 import {
   ArrowLeft,
   Calendar,
@@ -36,7 +35,6 @@ import {
   IconButton,
   PageHeader,
   Skeleton,
-  formatCurrency,
   toast,
 } from '@hilatech/ui';
 import { getErrorMessage, isApiError } from '@/lib/api';
@@ -68,22 +66,24 @@ import { LeadStatusPipeline } from '../lead-status-pipeline';
 import { ConvertLeadDialog } from './convert-lead-dialog';
 import { LeadActivity } from './lead-activity';
 import { LeadNotes } from './lead-notes';
+import { useT, useFormat } from '@/i18n/provider';
 
 export function LeadDetailView({ id }: { id: string }) {
+  const t = useT();
   const lead = useLead(id);
   return (
     <PermissionGate anyOf={[Permission.LEADS_READ]}>
       <QueryState
         query={lead}
         loading={<LeadDetailSkeleton />}
-        errorTitle="This lead couldn’t be loaded"
+        errorTitle={t('leads.thisLeadCouldnTBe')}
       >
         {(data) => <LeadDetail lead={data} />}
       </QueryState>
       {lead.isError && isApiError(lead.error) && lead.error.isNotFound ? (
         <div className="mt-4 flex justify-center">
           <Button asChild variant="secondary" leadingIcon={<ArrowLeft aria-hidden />}>
-            <Link href="/leads">Back to leads</Link>
+            <Link href="/leads">{t('leads.backToLeads')}</Link>
           </Button>
         </div>
       ) : null}
@@ -111,6 +111,8 @@ function LeadDetailSkeleton() {
 // ---------------------------------------------------------------------------
 
 function LeadDetail({ lead }: { lead: LeadWithRelations }) {
+  const fmt = useFormat();
+  const t = useT();
   const router = useRouter();
   const canUpdate = useCan(Permission.LEADS_UPDATE);
   const canAssign = useCan(Permission.LEADS_ASSIGN);
@@ -129,7 +131,9 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
       { id: lead.id, body: status === 'lost' ? { status, lostReason } : { status } },
       {
         onSuccess: () =>
-          toast.success(`Lead marked as ${LEAD_STATUS_LABELS[status].toLowerCase()}`),
+          toast.success(
+            t('leads.leadMarkedAs', { name: t(LEAD_STATUS_LABELS[status]).toLowerCase() }),
+          ),
         onError: (e) => toast.error(getErrorMessage(e)),
       },
     );
@@ -138,7 +142,7 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
   const onDelete = () => {
     remove.mutate(lead.id, {
       onSuccess: () => {
-        toast.success(`Lead “${lead.title}” deleted`);
+        toast.success(t('leads.leadDeleted', { title: lead.title }));
         router.replace('/leads');
       },
       onError: (e) => toast.error(getErrorMessage(e)),
@@ -153,7 +157,7 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
         breadcrumb={
           <Link href="/leads" className="inline-flex items-center gap-1 hover:text-fg">
             <ArrowLeft className="size-3.5" aria-hidden />
-            Leads
+            {t('common.leads')}
           </Link>
         }
         title={
@@ -164,17 +168,15 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
         }
         description={
           <>
-            {LEAD_SOURCE_LABELS[lead.source]} · created{' '}
-            <time dateTime={lead.createdAt} title={format(new Date(lead.createdAt), 'PPpp')}>
-              {formatDistanceToNow(new Date(lead.createdAt), { addSuffix: true })}
+            {t('leads.created', { value: t(LEAD_SOURCE_LABELS[lead.source]) })}{' '}
+            <time dateTime={lead.createdAt} title={fmt.dateTime(new Date(lead.createdAt), 'long')}>
+              {fmt.relative(new Date(lead.createdAt))}
             </time>
             {lead.convertedAt ? (
               <>
                 {' '}
-                · converted{' '}
-                <time dateTime={lead.convertedAt}>
-                  {format(new Date(lead.convertedAt), 'd MMM yyyy')}
-                </time>
+                {t('leads.converted')}{' '}
+                <time dateTime={lead.convertedAt}>{fmt.date(new Date(lead.convertedAt))}</time>
               </>
             ) : null}
           </>
@@ -193,8 +195,10 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
                     onSuccess: (l) =>
                       toast.success(
                         l.assignee
-                          ? `Assigned to ${l.assignee.firstName} ${l.assignee.lastName}`.trim()
-                          : 'Assignee removed',
+                          ? t('conversations.assignedTo', {
+                              name: `${l.assignee.firstName} ${l.assignee.lastName}`.trim(),
+                            })
+                          : t('conversations.assigneeRemoved'),
                       ),
                   },
                 )
@@ -203,7 +207,7 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
             {canAskAssistant ? (
               <Button asChild variant="secondary" leadingIcon={<Sparkles aria-hidden />}>
                 <Link href={`/assistant?leadId=${encodeURIComponent(lead.id)}`}>
-                  Ask the assistant
+                  {t('common.askTheAssistant')}
                 </Link>
               </Button>
             ) : null}
@@ -213,20 +217,20 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
                 leadingIcon={<Repeat aria-hidden />}
                 onClick={() => setConvertOpen(true)}
               >
-                {lead.convertedAt ? 'Convert again' : 'Convert'}
+                {lead.convertedAt ? t('leads.convertAgain') : t('leads.convert')}
               </Button>
             ) : null}
             {canDelete ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <IconButton label="More actions" variant="secondary">
+                  <IconButton label={t('common.moreActions')} variant="secondary">
                     <MoreHorizontal aria-hidden />
                   </IconButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem tone="danger" onSelect={() => setDeleteOpen(true)}>
                     <Trash2 aria-hidden />
-                    Delete lead
+                    {t('leads.deleteLead')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -245,13 +249,13 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
             />
           ) : (
             <div className="flex items-center gap-3 text-sm text-fg-muted">
-              <span>Stage</span>
+              <span>{t('common.stage')}</span>
               <LeadStatusBadge status={lead.status} />
             </div>
           )}
           {lead.status === 'lost' && lead.lostReason ? (
             <p className="mt-3 text-sm text-fg-muted">
-              <span className="font-medium text-fg">Lost reason:</span> {lead.lostReason}
+              <span className="font-medium text-fg">{t('leads.lostReason')}</span> {lead.lostReason}
             </p>
           ) : null}
         </CardContent>
@@ -266,26 +270,26 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
         <div className="flex min-w-0 flex-col gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Summary</CardTitle>
+              <CardTitle>{t('leads.summary')}</CardTitle>
             </CardHeader>
             <CardContent>
               <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
-                <dt className="text-fg-muted">Value</dt>
+                <dt className="text-fg-muted">{t('common.value')}</dt>
                 <dd className="font-medium tabular">
-                  {lead.value != null ? formatCurrency(lead.value, lead.currency) : '—'}
+                  {lead.value != null ? fmt.currency(lead.value, lead.currency) : '—'}
                 </dd>
-                <dt className="text-fg-muted">Expected close</dt>
+                <dt className="text-fg-muted">{t('leads.expectedClose')}</dt>
                 <dd className="flex items-center gap-1.5">
                   {lead.expectedCloseDate ? (
                     <>
                       <Calendar className="size-3.5 text-fg-subtle" aria-hidden />
-                      {format(new Date(lead.expectedCloseDate), 'd MMM yyyy')}
+                      {fmt.date(new Date(lead.expectedCloseDate))}
                     </>
                   ) : (
                     '—'
                   )}
                 </dd>
-                <dt className="text-fg-muted">Contact</dt>
+                <dt className="text-fg-muted">{t('common.contact')}</dt>
                 <dd className="min-w-0">
                   {lead.contact ? (
                     canReadContacts ? (
@@ -304,10 +308,10 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
                       contactName(lead.contact)
                     )
                   ) : (
-                    <span className="text-fg-subtle">Not linked</span>
+                    <span className="text-fg-subtle">{t('leads.notLinked')}</span>
                   )}
                 </dd>
-                <dt className="text-fg-muted">Tags</dt>
+                <dt className="text-fg-muted">{t('common.tags')}</dt>
                 <dd className="flex flex-wrap gap-1">
                   {lead.tags.length > 0 ? (
                     lead.tags.map((t) => (
@@ -319,14 +323,12 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
                     <span className="text-fg-subtle">—</span>
                   )}
                 </dd>
-                <dt className="text-fg-muted">Updated</dt>
-                <dd className="tabular">
-                  {formatDistanceToNow(new Date(lead.updatedAt), { addSuffix: true })}
-                </dd>
+                <dt className="text-fg-muted">{t('common.updated')}</dt>
+                <dd className="tabular">{fmt.relative(new Date(lead.updatedAt))}</dd>
               </dl>
               {closed && !lead.contactId && canUpdate ? (
                 <Alert tone="info" className="mt-4">
-                  Convert this lead to keep the customer in your contacts.
+                  {t('leads.convertThisLeadToKeep')}
                 </Alert>
               ) : null}
             </CardContent>
@@ -336,7 +338,7 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
             leadId={lead.id}
             lead={{ id: lead.id, title: lead.title }}
             contact={lead.contact}
-            description="Threads linked to this lead."
+            description={t('leads.threadsLinkedToThisLead')}
           />
         </div>
       </div>
@@ -346,9 +348,12 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
         onOpenChange={setConvertOpen}
         lead={lead}
         onConverted={({ contact }) =>
-          toast.success(`Lead converted — ${contactName(contact)} is now a contact`, {
+          toast.success(t('leads.leadConvertedIsNowA', { contactName: contactName(contact) }), {
             action: canReadContacts
-              ? { label: 'View contact', onClick: () => router.push(`/contacts/${contact.id}`) }
+              ? {
+                  label: t('leads.viewContact'),
+                  onClick: () => router.push(`/contacts/${contact.id}`),
+                }
               : undefined,
           })
         }
@@ -356,9 +361,9 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title="Delete this lead?"
-        description="Notes and activity are deleted with it. Linked contacts and conversations are kept."
-        confirmLabel="Delete lead"
+        title={t('leads.deleteThisLead')}
+        description={t('leads.notesAndActivityAreDeleted')}
+        confirmLabel={t('leads.deleteLead')}
         tone="danger"
         loading={remove.isPending}
         onConfirm={onDelete}
@@ -370,6 +375,7 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
 // ---------------------------------------------------------------------------
 
 function LeadDetailsForm({ lead, canUpdate }: { lead: LeadWithRelations; canUpdate: boolean }) {
+  const t = useT();
   const update = useUpdateLead();
   const [formError, setFormError] = React.useState<string | null>(null);
   const defaults = React.useMemo(() => leadFormDefaults(lead), [lead]);
@@ -386,7 +392,7 @@ function LeadDetailsForm({ lead, canUpdate }: { lead: LeadWithRelations; canUpda
     try {
       const updated = await update.mutateAsync({ id: lead.id, body: toUpdateLeadRequest(values) });
       form.reset(leadFormDefaults(updated));
-      toast.success('Lead saved');
+      toast.success(t('leads.leadSaved'));
     } catch (error) {
       if (!applyServerErrors(error, form.setError, LEAD_FORM_FIELDS))
         setFormError(getErrorMessage(error));
@@ -397,7 +403,7 @@ function LeadDetailsForm({ lead, canUpdate }: { lead: LeadWithRelations; canUpda
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Details</CardTitle>
+          <CardTitle>{t('common.details')}</CardTitle>
         </CardHeader>
         <CardContent>
           {lead.description ? (
@@ -406,8 +412,8 @@ function LeadDetailsForm({ lead, canUpdate }: { lead: LeadWithRelations; canUpda
             <EmptyState
               compact
               icon={<Target />}
-              title="No description"
-              description="Your role can view this lead but not edit it."
+              title={t('common.noDescription')}
+              description={t('leads.yourRoleCanViewThis')}
             />
           )}
         </CardContent>
@@ -419,10 +425,8 @@ function LeadDetailsForm({ lead, canUpdate }: { lead: LeadWithRelations; canUpda
     <Card>
       <form onSubmit={onSubmit} noValidate>
         <CardHeader>
-          <CardTitle>Details</CardTitle>
-          <CardDescription>
-            Keep the essentials current; the stage is managed above.
-          </CardDescription>
+          <CardTitle>{t('common.details')}</CardTitle>
+          <CardDescription>{t('leads.keepTheEssentialsCurrentThe')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           {formError ? <Alert tone="danger">{formError}</Alert> : null}
@@ -430,7 +434,7 @@ function LeadDetailsForm({ lead, canUpdate }: { lead: LeadWithRelations; canUpda
           {lead.contact ? (
             <p className="flex items-center gap-1.5 text-xs text-fg-subtle">
               <ContactIcon className="size-3.5" aria-hidden />
-              Clearing the contact here keeps the current link; use Convert to change it.
+              {t('leads.clearingTheContactHereKeeps')}
             </p>
           ) : null}
         </CardContent>
@@ -441,14 +445,14 @@ function LeadDetailsForm({ lead, canUpdate }: { lead: LeadWithRelations; canUpda
             disabled={!form.formState.isDirty || form.formState.isSubmitting}
             onClick={() => form.reset(defaults)}
           >
-            Discard
+            {t('common.discard')}
           </Button>
           <Button
             type="submit"
             loading={form.formState.isSubmitting}
             disabled={!form.formState.isDirty}
           >
-            Save changes
+            {t('common.saveChanges')}
           </Button>
         </CardFooter>
       </form>

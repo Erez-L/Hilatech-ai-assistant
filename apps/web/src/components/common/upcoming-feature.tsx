@@ -1,7 +1,10 @@
+'use client';
+
 import type { LucideIcon } from 'lucide-react';
 import { ArrowRight, Construction } from 'lucide-react';
 import Link from 'next/link';
 import { Button, EmptyState, PageHeader } from '@hilatech/ui';
+import { useT } from '@/i18n/provider';
 
 export interface UpcomingFeatureProps {
   title: string;
@@ -20,16 +23,17 @@ export function UpcomingFeature({
   icon: Icon,
   milestone,
 }: UpcomingFeatureProps) {
+  const t = useT();
   return (
     <div className="flex flex-col gap-8">
       <PageHeader title={title} description={description} />
       <EmptyState
         icon={<Construction />}
-        title="Available in an upcoming milestone"
-        description={`${title} is scheduled for the ${milestone} milestone. Nothing here is live yet.`}
+        title={t('common.availableInAnUpcomingMilestone')}
+        description={t('common.isScheduledForTheMilestone', { title, milestone })}
         action={
           <Button asChild variant="secondary" trailingIcon={<ArrowRight aria-hidden />}>
-            <Link href="/dashboard">Back to dashboard</Link>
+            <Link href="/dashboard">{t('common.backToDashboard')}</Link>
           </Button>
         }
       />
@@ -37,7 +41,7 @@ export function UpcomingFeature({
         <div className="flex items-center gap-2 border-b border-border px-5 py-3">
           <Icon className="size-4 text-fg-muted" aria-hidden />
           <h2 id="planned" className="text-sm font-semibold">
-            What this area will do
+            {t('common.whatThisAreaWillDo')}
           </h2>
         </div>
         <ul className="divide-y divide-border">

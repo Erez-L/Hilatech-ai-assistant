@@ -13,15 +13,18 @@ import {
   SectionCard,
   type ReportContext,
 } from './report-parts';
+import { useT, useFormat } from '@/i18n/provider';
 
 export function AutomationTab({ ctx }: { ctx: ReportContext }) {
+  const t = useT();
+  const fmt = useFormat();
   const query = useAutomationAnalytics(ctx.params);
   return (
     <div className="flex flex-col gap-6" aria-busy={query.isFetching}>
       <QueryState
         query={query}
         loading={<ReportSkeleton />}
-        errorTitle="Automation analytics couldn’t be loaded"
+        errorTitle={t('analytics.automationAnalyticsCouldnTBe')}
       >
         {(d) => {
           const w = d.workflows;
@@ -30,24 +33,26 @@ export function AutomationTab({ ctx }: { ctx: ReportContext }) {
           return (
             <>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <StatCard label="Workflow runs" value={w.runs} />
+                <StatCard label={t('analytics.workflowRuns')} value={w.runs} />
                 <StatCard
-                  label="Workflow success rate"
-                  value={pct(w.successRate)}
+                  label={t('analytics.workflowSuccessRate')}
+                  value={pct(w.successRate, fmt)}
                   hint={
                     w.successRate == null
-                      ? 'No finished runs'
-                      : `median ${formatDuration(w.durationMs.p50)}`
+                      ? t('analytics.noFinishedRuns')
+                      : t('analytics.median', {
+                          formatDuration: formatDuration(w.durationMs.p50, fmt),
+                        })
                   }
                 />
-                <StatCard label="Webhook deliveries" value={h.deliveries} />
+                <StatCard label={t('analytics.webhookDeliveries')} value={h.deliveries} />
                 <StatCard
-                  label="Delivery success rate"
-                  value={pct(h.successRate)}
+                  label={t('analytics.deliverySuccessRate')}
+                  value={pct(h.successRate, fmt)}
                   hint={
                     h.avgAttempts == null
-                      ? 'No finished deliveries'
-                      : `${Math.round(h.avgAttempts * 10) / 10} attempts avg.`
+                      ? t('analytics.noFinishedDeliveries')
+                      : t('analytics.attemptsAvg', { value: Math.round(h.avgAttempts * 10) / 10 })
                   }
                 />
               </div>
@@ -55,121 +60,129 @@ export function AutomationTab({ ctx }: { ctx: ReportContext }) {
               {none ? (
                 <EmptyState
                   icon={<Workflow />}
-                  title="No automation activity in this range"
-                  description="Workflow runs and webhook deliveries show up here once automations fire. Widen the date range or run a workflow."
+                  title={t('analytics.noAutomationActivityInThis')}
+                  description={t('analytics.workflowRunsAndWebhookDeliveries')}
                 />
               ) : (
                 <>
                   <SectionCard
-                    title="Workflow runs over time"
-                    description="Successful and failed runs per period (UTC)."
+                    title={t('analytics.workflowRunsOverTime')}
+                    description={t('analytics.successfulAndFailedRunsPer2')}
                   >
                     <AreaChart
                       data={w.series.map((p) => ({ ...p }))}
                       xKey="bucket"
                       height={220}
-                      labelFormatter={(l) => bucketLabel(l, ctx.granularity)}
+                      labelFormatter={(l) => bucketLabel(l, ctx.granularity, fmt, t)}
                       series={[
-                        { key: 'succeeded', label: 'Succeeded' },
-                        { key: 'failed', label: 'Failed' },
+                        { key: 'succeeded', label: t('analytics.succeeded') },
+                        { key: 'failed', label: t('common.failed') },
                       ]}
                     />
                   </SectionCard>
                   <div className="grid gap-6 lg:grid-cols-2">
-                    <SectionCard title="By workflow" flush>
+                    <SectionCard title={t('analytics.byWorkflow')} flush>
                       <DataTable
-                        caption="Runs by workflow"
+                        caption={t('analytics.runsByWorkflow')}
                         rows={w.byWorkflow}
                         rowKey={(r) => r.workflowId}
-                        emptyText="No workflow runs in this range."
+                        emptyText={t('analytics.noWorkflowRunsInThis')}
                         columns={[
-                          { header: 'Workflow', render: (r) => r.name },
-                          { header: 'Runs', align: 'right', render: (r) => r.runs },
-                          { header: 'Failed', align: 'right', render: (r) => r.failed },
-                          { header: 'Success', align: 'right', render: (r) => pct(r.successRate) },
+                          { header: t('common.workflow'), render: (r) => r.name },
+                          { header: t('common.runs'), align: 'right', render: (r) => r.runs },
+                          { header: t('common.failed'), align: 'right', render: (r) => r.failed },
+                          {
+                            header: t('analytics.success'),
+                            align: 'right',
+                            render: (r) => pct(r.successRate, fmt),
+                          },
                         ]}
                       />
                     </SectionCard>
-                    <SectionCard title="Top workflow failure reasons" flush>
+                    <SectionCard title={t('analytics.topWorkflowFailureReasons')} flush>
                       <DataTable
-                        caption="Workflow failure reasons"
+                        caption={t('analytics.workflowFailureReasons')}
                         rows={w.failureReasons}
                         rowKey={(r, i) => `${i}-${r.reason}`}
-                        emptyText="No workflow failures in this range."
+                        emptyText={t('analytics.noWorkflowFailuresInThis')}
                         columns={[
                           {
-                            header: 'Reason',
+                            header: t('common.reason'),
                             render: (r) => (
                               <span className="break-words whitespace-normal">{r.reason}</span>
                             ),
                           },
-                          { header: 'Count', align: 'right', render: (r) => r.count },
+                          { header: t('analytics.count'), align: 'right', render: (r) => r.count },
                         ]}
                       />
                     </SectionCard>
                   </div>
 
                   <SectionCard
-                    title="Webhook deliveries over time"
-                    description="Delivered and failed per period (UTC); pending deliveries are not counted in the success rate."
+                    title={t('analytics.webhookDeliveriesOverTime')}
+                    description={t('analytics.deliveredAndFailedPerPeriod')}
                   >
                     <AreaChart
                       data={h.series.map((p) => ({ ...p }))}
                       xKey="bucket"
                       height={200}
-                      labelFormatter={(l) => bucketLabel(l, ctx.granularity)}
+                      labelFormatter={(l) => bucketLabel(l, ctx.granularity, fmt, t)}
                       series={[
-                        { key: 'succeeded', label: 'Delivered' },
-                        { key: 'failed', label: 'Failed' },
+                        { key: 'succeeded', label: t('common.delivered') },
+                        { key: 'failed', label: t('common.failed') },
                       ]}
                     />
                   </SectionCard>
                   <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
-                    <SectionCard title="Deliveries by status">
+                    <SectionCard title={t('analytics.deliveriesByStatus')}>
                       <BreakdownList
-                        label="Deliveries by status"
+                        label={t('analytics.deliveriesByStatus')}
                         items={recordToRows(h.byStatus).map((s) => ({
                           key: s.key,
                           label: s.key.replace(/_/g, ' '),
                           count: s.count,
                         }))}
-                        emptyText="No webhook deliveries in this range."
+                        emptyText={t('analytics.noWebhookDeliveriesInThis')}
                       />
                     </SectionCard>
-                    <SectionCard title="By event" flush>
+                    <SectionCard title={t('analytics.byEvent')} flush>
                       <DataTable
-                        caption="Webhook deliveries by event"
+                        caption={t('analytics.webhookDeliveriesByEvent')}
                         rows={h.byEvent}
                         rowKey={(r) => r.event}
-                        emptyText="No webhook deliveries in this range."
+                        emptyText={t('analytics.noWebhookDeliveriesInThis')}
                         columns={[
-                          { header: 'Event', render: (r) => r.event },
-                          { header: 'Total', align: 'right', render: (r) => r.total },
-                          { header: 'Delivered', align: 'right', render: (r) => r.delivered },
-                          { header: 'Failed', align: 'right', render: (r) => r.failed },
+                          { header: t('common.event'), render: (r) => r.event },
+                          { header: t('analytics.total'), align: 'right', render: (r) => r.total },
+                          {
+                            header: t('common.delivered'),
+                            align: 'right',
+                            render: (r) => r.delivered,
+                          },
+                          { header: t('common.failed'), align: 'right', render: (r) => r.failed },
                         ]}
                       />
                     </SectionCard>
                   </div>
                   {h.failureReasons.length > 0 ? (
-                    <SectionCard title="Top webhook failure reasons" flush>
+                    <SectionCard title={t('analytics.topWebhookFailureReasons')} flush>
                       <DataTable
-                        caption="Webhook failure reasons"
+                        caption={t('analytics.webhookFailureReasons')}
                         rows={h.failureReasons}
                         rowKey={(r, i) => `${i}-${r.reason}`}
                         columns={[
                           {
-                            header: 'Reason',
+                            header: t('common.reason'),
                             render: (r) => (
                               <span className="break-words whitespace-normal">{r.reason}</span>
                             ),
                           },
-                          { header: 'Count', align: 'right', render: (r) => r.count },
+                          { header: t('analytics.count'), align: 'right', render: (r) => r.count },
                         ]}
                       />
                     </SectionCard>
                   ) : null}
-                  <InlineHint>Failure reasons are truncated to 200 characters.</InlineHint>
+                  <InlineHint>{t('analytics.failureReasonsAreTruncatedTo')}</InlineHint>
                 </>
               )}
             </>

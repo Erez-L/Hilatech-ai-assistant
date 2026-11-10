@@ -1,20 +1,23 @@
 import { ANALYTICS_MAX_RANGE_DAYS, type AnalyticsGranularity } from '@hilatech/contracts';
 import type { AnalyticsRangeParams } from '@/lib/api/analytics';
+import { msg, type Msg } from '@/i18n/msg';
+import type { Formatter } from '@/i18n/format';
+import type { T } from '@/i18n/provider';
 
 export type RangePreset = '7d' | '30d' | '90d' | '365d' | 'custom';
 
-export const RANGE_PRESETS: { value: RangePreset; label: string; days?: number }[] = [
-  { value: '7d', label: '7 days', days: 7 },
-  { value: '30d', label: '30 days', days: 30 },
-  { value: '90d', label: '90 days', days: 90 },
-  { value: '365d', label: '12 months', days: 365 },
-  { value: 'custom', label: 'Custom' },
+export const RANGE_PRESETS: { value: RangePreset; label: Msg; days?: number }[] = [
+  { value: '7d', label: msg('analytics.range.7d'), days: 7 },
+  { value: '30d', label: msg('analytics.range.30d'), days: 30 },
+  { value: '90d', label: msg('analytics.range.90d'), days: 90 },
+  { value: '365d', label: msg('analytics.range.365d'), days: 365 },
+  { value: 'custom', label: msg('analytics.range.custom') },
 ];
 
-export const GRANULARITY_OPTIONS: { value: AnalyticsGranularity; label: string }[] = [
-  { value: 'day', label: 'Day' },
-  { value: 'week', label: 'Week' },
-  { value: 'month', label: 'Month' },
+export const GRANULARITY_OPTIONS: { value: AnalyticsGranularity; label: Msg }[] = [
+  { value: 'day', label: msg('analytics.granularity.day') },
+  { value: 'week', label: msg('analytics.granularity.week') },
+  { value: 'month', label: msg('analytics.granularity.month') },
 ];
 
 const DAY_MS = 86_400_000;
@@ -36,18 +39,22 @@ export function presetRange(days: number, now: Date = new Date()): { from: strin
 export function customRange(
   fromDate: string,
   toDate: string,
+  t: T,
 ): { ok: true; from: string; to: string } | { ok: false; error: string } {
   const re = /^\d{4}-\d{2}-\d{2}$/;
-  if (!re.test(fromDate) || !re.test(toDate)) return { ok: false, error: 'Choose both dates' };
+  if (!re.test(fromDate) || !re.test(toDate))
+    return { ok: false, error: t('analytics.chooseBothDates') };
   const from = Date.parse(`${fromDate}T00:00:00.000Z`);
   const lastDay = Date.parse(`${toDate}T00:00:00.000Z`);
   if (Number.isNaN(from) || Number.isNaN(lastDay))
-    return { ok: false, error: 'Choose valid dates' };
-  if (lastDay < from)
-    return { ok: false, error: 'The end date must be on or after the start date' };
+    return { ok: false, error: t('analytics.chooseValidDates') };
+  if (lastDay < from) return { ok: false, error: t('analytics.endBeforeStart') };
   const to = lastDay + DAY_MS;
   if ((to - from) / DAY_MS > ANALYTICS_MAX_RANGE_DAYS)
-    return { ok: false, error: `Choose a range of at most ${ANALYTICS_MAX_RANGE_DAYS} days` };
+    return {
+      ok: false,
+      error: t('analytics.rangeTooLong', { days: ANALYTICS_MAX_RANGE_DAYS }),
+    };
   return { ok: true, from: new Date(from).toISOString(), to: new Date(to).toISOString() };
 }
 
@@ -59,52 +66,41 @@ export function toRangeParams(
 }
 
 /** Axis / tooltip label for a UTC bucket start. */
-export function bucketLabel(iso: string | number, granularity: AnalyticsGranularity): string {
+export function bucketLabel(
+  iso: string | number,
+  granularity: AnalyticsGranularity,
+  fmt: Formatter,
+  t: T,
+): string {
   const d = new Date(typeof iso === 'number' ? iso : iso);
   if (Number.isNaN(d.getTime())) return String(iso);
-  if (granularity === 'month')
-    return d.toLocaleDateString('en', { month: 'short', year: 'numeric', timeZone: 'UTC' });
-  const day = d.toLocaleDateString('en', { day: 'numeric', month: 'short', timeZone: 'UTC' });
-  return granularity === 'week' ? `Week of ${day}` : day;
+  if (granularity === 'month') return fmt.utcMonthYear(d);
+  const day = fmt.utcDayMonth(d);
+  return granularity === 'week' ? t('analytics.weekOf', { day }) : day;
 }
 
-export function formatRangeSummary(range: { from: string; to: string }): string {
-  const fmt = (ms: number) =>
-    new Date(ms).toLocaleDateString('en', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      timeZone: 'UTC',
-    });
+export function formatRangeSummary(range: { from: string; to: string }, fmt: Formatter): string {
   const from = Date.parse(range.from);
   const lastDay = Date.parse(range.to) - DAY_MS;
-  return `${fmt(from)} – ${fmt(Math.max(from, lastDay))} (UTC)`;
+  return `${fmt.utcDate(from)} – ${fmt.utcDate(Math.max(from, lastDay))} (UTC)`;
 }
 
-/** 0.4286 → "43%"; null → "—". */
-export function pct(ratio: number | null | undefined): string {
+/** 0.4286 -> "42.9%"; null -> an em dash. */
+export function pct(ratio: number | null | undefined, fmt: Formatter): string {
   if (ratio == null || !Number.isFinite(ratio)) return '—';
-  return `${Math.round(ratio * 1000) / 10}%`;
+  return fmt.percent(ratio, 1);
 }
 
-/** Milliseconds → "850 ms" / "4.2 s" / "2.1 min"; null → "—". */
-export function formatDuration(ms: number | null | undefined): string {
+/** Milliseconds -> "850 ms" / "4.2 sec" / "2.1 min"; null -> an em dash. */
+export function formatDuration(ms: number | null | undefined, fmt: Formatter): string {
   if (ms == null || !Number.isFinite(ms)) return '—';
-  if (ms < 1000) return `${Math.round(ms)} ms`;
-  if (ms < 60_000) return `${(ms / 1000).toFixed(1)} s`;
-  return `${(ms / 60_000).toFixed(1)} min`;
+  return fmt.duration(ms);
 }
 
-/** USD with enough precision for sub-cent AI spend; null → "—" (never a made-up zero). */
-export function formatUsd(value: number | null | undefined): string {
+/** USD with enough precision for sub-cent AI spend; null -> an em dash (never a made-up zero). */
+export function formatUsd(value: number | null | undefined, fmt: Formatter): string {
   if (value == null || !Number.isFinite(value)) return '—';
-  const digits = Math.abs(value) < 1 ? 4 : 2;
-  return new Intl.NumberFormat('en', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: digits,
-  }).format(value);
+  return fmt.preciseCurrency(value, 'USD');
 }
 
 /** Record → sorted rows (largest first), dropping nothing so zero counts stay visible when asked. */

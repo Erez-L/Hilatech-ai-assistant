@@ -3,8 +3,10 @@
 import * as React from 'react';
 import { TriangleAlert } from 'lucide-react';
 import type { ToolDefinition } from '@hilatech/contracts';
-import { Checkbox, humanize } from '@hilatech/ui';
+import { Checkbox } from '@hilatech/ui';
 import { RiskBadge } from './badges';
+import { enumLabel } from '@/i18n/enums';
+import { useT } from '@/i18n/provider';
 
 export interface ToolsPickerProps {
   tools: readonly ToolDefinition[];
@@ -23,6 +25,7 @@ export function ToolsPicker({
   disabled,
   allowWrite = true,
 }: ToolsPickerProps) {
+  const t = useT();
   const groups = React.useMemo(() => {
     const map = new Map<string, ToolDefinition[]>();
     for (const t of tools) map.set(t.category, [...(map.get(t.category) ?? []), t]);
@@ -40,8 +43,8 @@ export function ToolsPicker({
     <div className="flex flex-col gap-4">
       {groups.map(([category, items]) => (
         <fieldset key={category} className="flex flex-col gap-1.5" disabled={disabled}>
-          <legend className="mb-1 text-xs font-semibold tracking-wide text-fg-muted uppercase">
-            {humanize(category)}
+          <legend className="mb-1 text-xs font-semibold tracking-wide rtl:tracking-normal text-fg-muted uppercase">
+            {enumLabel(t, 'toolCategory', category)}
           </legend>
           {items.map((tool) => {
             const id = `tool-${tool.key}`;
@@ -69,13 +72,11 @@ export function ToolsPicker({
                   {tool.riskLevel === 'dangerous' ? (
                     <p className="flex items-center gap-1 text-xs text-danger">
                       <TriangleAlert className="size-3.5" aria-hidden />
-                      Dangerous: never runs without authorization.
+                      {t('ai.dangerousNeverRunsWithoutAuthorization')}
                     </p>
                   ) : null}
                   {tool.riskLevel === 'write' && !allowWrite && selected.has(tool.key) ? (
-                    <p className="text-xs text-warning">
-                      Needs “Allow write actions” below, otherwise calls are denied.
-                    </p>
+                    <p className="text-xs text-warning">{t('ai.needsAllowWriteActionsBelow')}</p>
                   ) : null}
                 </div>
               </div>

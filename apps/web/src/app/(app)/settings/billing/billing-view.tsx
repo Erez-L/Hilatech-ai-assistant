@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { format } from 'date-fns';
 import { ArrowDown, Check, Mail } from 'lucide-react';
 import { Permission, type PlanKey, type PlanLimits, type Subscription } from '@hilatech/contracts';
 import {
@@ -22,7 +21,6 @@ import {
   TableHeader,
   TableRow,
   cn,
-  humanize,
 } from '@hilatech/ui';
 import { usePlans, useSubscription } from '@/hooks/queries';
 import { QueryState } from '@/components/common/query-state';
@@ -33,17 +31,22 @@ import { AlertsCard } from './alerts-card';
 import { BudgetCard } from './budget-card';
 import { EntitlementsCard } from './entitlements-card';
 import { UpgradeCard } from './upgrade-card';
+import { enumLabel } from '@/i18n/enums';
+import { msg, type Msg } from '@/i18n/msg';
+import { useT, useFormat } from '@/i18n/provider';
+import { formatLimit } from '@/lib/billing';
 
 const PLAN_ORDER: PlanKey[] = ['free', 'starter', 'pro', 'enterprise'];
-const PLAN_BLURB: Record<PlanKey, string> = {
-  free: 'Try the assistant with a small team.',
-  starter: 'For a growing business with one or two agents in production.',
-  pro: 'Several teams, many agents, a large knowledge base.',
-  enterprise: 'Custom limits, dedicated support and contractual commitments.',
+const PLAN_BLURB: Record<PlanKey, Msg> = {
+  free: msg('settings.planBlurbFree'),
+  starter: msg('settings.planBlurbStarter'),
+  pro: msg('settings.planBlurbPro'),
+  enterprise: msg('settings.planBlurbEnterprise'),
 };
 const LIMIT_ROWS = PLAN_LIMIT_ROWS;
 
 export function BillingView() {
+  const t = useT();
   const subscription = useSubscription();
   const plans = usePlans();
 
@@ -51,8 +54,8 @@ export function BillingView() {
     <PermissionGate anyOf={[Permission.ORG_READ, Permission.ORG_BILLING_MANAGE]}>
       <div className="flex flex-col gap-6">
         <PageHeader
-          title="Settings"
-          description="Your plan, what it includes, how much you use, and your AI budget."
+          title={t('settings.settings')}
+          description={t('settings.yourPlanWhatItIncludes')}
         >
           <SettingsTabs />
         </PageHeader>
@@ -61,7 +64,7 @@ export function BillingView() {
           <QueryState
             query={subscription}
             loading={<PlanSkeleton />}
-            errorTitle="Your subscription couldn’t be loaded"
+            errorTitle={t('settings.yourSubscriptionCouldnTBe')}
           >
             {(sub) => <CurrentPlanCard subscription={sub} />}
           </QueryState>
@@ -74,10 +77,8 @@ export function BillingView() {
 
         <Card role="region" aria-labelledby="compare-title">
           <CardHeader>
-            <CardTitle id="compare-title">Compare plans</CardTitle>
-            <CardDescription>
-              Limits per organization. Enterprise limits are negotiated.
-            </CardDescription>
+            <CardTitle id="compare-title">{t('settings.comparePlans')}</CardTitle>
+            <CardDescription>{t('settings.limitsPerOrganizationEnterpriseLimits')}</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <QueryState
@@ -117,14 +118,16 @@ function PlanSkeleton() {
 }
 
 function CurrentPlanCard({ subscription }: { subscription: Subscription }) {
+  const fmt = useFormat();
+  const t = useT();
   return (
     <Card>
       <CardHeader className="flex-row items-start justify-between">
         <div className="flex flex-col gap-1">
-          <CardTitle>Current plan</CardTitle>
+          <CardTitle>{t('settings.currentPlan')}</CardTitle>
           <CardDescription>
-            Renews {format(new Date(subscription.currentPeriodEnd), 'd MMM yyyy')}
-            {subscription.cancelAtPeriodEnd ? ' · cancels at period end' : ''}
+            {t('settings.renewsOn', { date: fmt.date(new Date(subscription.currentPeriodEnd)) })}
+            {subscription.cancelAtPeriodEnd ? t('settings.cancelsAtPeriodEnd') : ''}
           </CardDescription>
         </div>
         <StatusBadge status={subscription.status} />
@@ -132,30 +135,34 @@ function CurrentPlanCard({ subscription }: { subscription: Subscription }) {
       <CardContent className="flex flex-col gap-5">
         <div className="flex items-baseline gap-3">
           <span className="text-3xl font-semibold tracking-tight">
-            {humanize(subscription.plan)}
+            {enumLabel(t, 'plan', subscription.plan)}
           </span>
-          <span className="text-sm text-fg-muted">{PLAN_BLURB[subscription.plan]}</span>
+          <span className="text-sm text-fg-muted">{t(PLAN_BLURB[subscription.plan])}</span>
         </div>
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
           {LIMIT_ROWS.map((row) => (
             <div key={row.key} className="flex flex-col">
-              <dt className="text-xs text-fg-muted">{row.label}</dt>
-              <dd className="font-medium tabular">{row.format(subscription.limits[row.key])}</dd>
+              <dt className="text-xs text-fg-muted">{t(row.label)}</dt>
+              <dd className="font-medium tabular">
+                {formatLimit(row, subscription.limits[row.key], fmt)}
+              </dd>
             </div>
           ))}
         </dl>
         <div className="flex flex-col gap-2 border-t border-border pt-4 sm:flex-row">
           <Button asChild variant="secondary" leadingIcon={<Mail aria-hidden />}>
             <a href="mailto:sales@hilatech.dev?subject=HilaTech%20AI%20Assistant%20plan%20change">
-              Contact sales
+              {t('settings.contactSales')}
             </a>
           </Button>
           <Button asChild variant="ghost" leadingIcon={<ArrowDown aria-hidden />}>
-            <a href="#upgrade">See upgrade options</a>
+            <a href="#upgrade">{t('settings.seeUpgradeOptions')}</a>
           </Button>
         </div>
         {subscription.provider ? (
-          <p className="text-xs text-fg-subtle">Managed by {subscription.provider}.</p>
+          <p className="text-xs text-fg-subtle">
+            {t('settings.managedBy', { provider: subscription.provider })}
+          </p>
         ) : null}
       </CardContent>
     </Card>
@@ -169,20 +176,22 @@ function PlansTable({
   plans: Partial<Record<PlanKey, PlanLimits>>;
   current?: PlanKey;
 }) {
+  const fmt = useFormat();
+  const t = useT();
   const available = PLAN_ORDER.filter((k): k is PlanKey => !!plans[k]);
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-48">Limit</TableHead>
+          <TableHead className="w-48">{t('settings.limit')}</TableHead>
           {available.map((k) => (
-            <TableHead key={k} className="text-right">
+            <TableHead key={k} className="text-end">
               <span className="inline-flex items-center gap-1.5">
-                {humanize(k)}
+                {enumLabel(t, 'plan', k)}
                 {k === current ? (
                   <Badge variant="accent" className="px-1.5 py-0 text-[0.625rem] leading-4">
                     <Check aria-hidden />
-                    Current
+                    {t('settings.current')}
                   </Badge>
                 ) : null}
               </span>
@@ -193,16 +202,13 @@ function PlansTable({
       <TableBody>
         {LIMIT_ROWS.map((row) => (
           <TableRow key={row.key}>
-            <TableCell className="text-fg-muted">{row.label}</TableCell>
+            <TableCell className="text-fg-muted">{t(row.label)}</TableCell>
             {available.map((k) => (
               <TableCell
                 key={k}
-                className={cn(
-                  'text-right tabular',
-                  k === current && 'bg-accent-soft/30 font-medium',
-                )}
+                className={cn('text-end tabular', k === current && 'bg-accent-soft/30 font-medium')}
               >
-                {row.format(plans[k]![row.key])}
+                {formatLimit(row, plans[k]![row.key], fmt)}
               </TableCell>
             ))}
           </TableRow>

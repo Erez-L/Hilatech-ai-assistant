@@ -3,6 +3,8 @@
 import * as React from 'react';
 import { ChevronRight, Wrench } from 'lucide-react';
 import { Badge, JsonViewer, Spinner, cn } from '@hilatech/ui';
+import { useT } from '@/i18n/provider';
+import { msg, type Msg } from '@/i18n/msg';
 
 export type ToolOutcome = 'running' | 'ok' | 'denied' | 'error';
 
@@ -15,11 +17,11 @@ export interface ToolChipProps {
   result?: unknown;
 }
 
-const OUTCOME_LABEL: Record<ToolOutcome, string> = {
-  running: 'Running',
-  ok: 'OK',
-  denied: 'Denied',
-  error: 'Failed',
+const OUTCOME_LABEL: Record<ToolOutcome, Msg> = {
+  running: msg('ai.toolRunning'),
+  ok: msg('ai.toolOk'),
+  denied: msg('ai.toolDenied'),
+  error: msg('ai.toolFailed'),
 };
 const OUTCOME_VARIANT = {
   running: 'info',
@@ -50,6 +52,7 @@ export function outcomeFromResult(
 
 /** Compact, collapsible chip describing one tool call: name, outcome and (expandable) details. */
 export function ToolChip({ name, outcome, summary, input, result }: ToolChipProps) {
+  const t = useT();
   const [open, setOpen] = React.useState(false);
   const hasDetails = !!summary || (input && Object.keys(input).length > 0) || result != null;
   return (
@@ -59,16 +62,16 @@ export function ToolChip({ name, outcome, summary, input, result }: ToolChipProp
         aria-expanded={open}
         disabled={!hasDetails}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring disabled:cursor-default"
-        aria-label={`Tool ${name}: ${OUTCOME_LABEL[outcome]}`}
+        className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-start focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring disabled:cursor-default"
+        aria-label={t('ai.tool', { name, value: t(OUTCOME_LABEL[outcome]) })}
       >
         <Wrench className="size-3.5 shrink-0 text-fg-subtle" aria-hidden />
         <span className="font-mono font-medium">{name}</span>
         {outcome === 'running' ? (
-          <Spinner size="sm" label="Running" />
+          <Spinner size="sm" label={t('ai.running')} />
         ) : (
           <Badge variant={OUTCOME_VARIANT[outcome]} className="px-1.5 py-0 text-[0.625rem]">
-            {OUTCOME_LABEL[outcome]}
+            {t(OUTCOME_LABEL[outcome])}
           </Badge>
         )}
         {summary ? (
@@ -88,13 +91,15 @@ export function ToolChip({ name, outcome, summary, input, result }: ToolChipProp
           {summary ? <p className="text-fg-muted">{summary}</p> : null}
           {input && Object.keys(input).length > 0 ? (
             <div>
-              <p className="mb-1 text-2xs font-medium text-fg-subtle uppercase">Input</p>
+              <p className="mb-1 text-2xs font-medium text-fg-subtle uppercase">
+                {t('common.input')}
+              </p>
               <JsonViewer value={input} allowRaw={false} maxHeight={200} />
             </div>
           ) : null}
           {result != null ? (
             <div>
-              <p className="mb-1 text-2xs font-medium text-fg-subtle uppercase">Result</p>
+              <p className="mb-1 text-2xs font-medium text-fg-subtle uppercase">{t('ai.result')}</p>
               <JsonViewer value={result} allowRaw={false} maxHeight={200} />
             </div>
           ) : null}
