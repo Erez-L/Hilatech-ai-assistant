@@ -33,6 +33,26 @@ export const Permission = {
   CONVERSATIONS_UPDATE: 'conversations:update',
   CONVERSATIONS_ASSIGN: 'conversations:assign',
 
+  // Tasks, companies, deals & pipelines
+  TASKS_READ: 'tasks:read',
+  TASKS_CREATE: 'tasks:create',
+  TASKS_UPDATE: 'tasks:update',
+  TASKS_DELETE: 'tasks:delete',
+  TASKS_ASSIGN: 'tasks:assign',
+  COMPANIES_READ: 'companies:read',
+  COMPANIES_CREATE: 'companies:create',
+  COMPANIES_UPDATE: 'companies:update',
+  COMPANIES_DELETE: 'companies:delete',
+  DEALS_READ: 'deals:read',
+  DEALS_CREATE: 'deals:create',
+  DEALS_UPDATE: 'deals:update',
+  DEALS_DELETE: 'deals:delete',
+  PIPELINES_MANAGE: 'pipelines:manage',
+
+  // Bulk data (CSV import/export; also requires the matching read/create/update permission of the entity)
+  DATA_IMPORT: 'data:import',
+  DATA_EXPORT: 'data:export',
+
   // AI
   AI_ASSISTANT_USE: 'ai:assistant:use',
   AI_CONFIG_READ: 'ai:config:read',
@@ -85,6 +105,15 @@ export const SYSTEM_ROLE_PERMISSIONS: Record<SystemRole, readonly Permission[]> 
     Permission.CONVERSATIONS_READ,
     Permission.CONVERSATIONS_CREATE,
     Permission.CONVERSATIONS_UPDATE,
+    Permission.TASKS_READ,
+    Permission.TASKS_CREATE,
+    Permission.TASKS_UPDATE,
+    Permission.COMPANIES_READ,
+    Permission.COMPANIES_CREATE,
+    Permission.COMPANIES_UPDATE,
+    Permission.DEALS_READ,
+    Permission.DEALS_CREATE,
+    Permission.DEALS_UPDATE,
     Permission.AI_ASSISTANT_USE,
     Permission.AGENTS_READ,
     Permission.AGENTS_EXECUTE,

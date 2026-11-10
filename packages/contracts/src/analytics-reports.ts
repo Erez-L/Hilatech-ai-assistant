@@ -56,6 +56,19 @@ export type DurationStats = z.infer<typeof percentileSchema>;
 
 const notModelledSchema = z.object({ modelled: z.literal(false), reason: z.string() });
 
+/** Task statistics (the Task model exists): current stock plus completions in the range. */
+export const taskStatsSchema = z.object({
+  modelled: z.literal(true),
+  open: z.number().int(),
+  overdue: z.number().int(),
+  dueToday: z.number().int(),
+  createdInRange: z.number().int(),
+  completedInRange: z.number().int(),
+  byStatus: z.record(z.string(), z.number().int()),
+  byPriority: z.record(z.string(), z.number().int()),
+});
+export type TaskStats = z.infer<typeof taskStatsSchema>;
+
 // ----- business --------------------------------------------------------------------------------
 
 export const businessAnalyticsSchema = z.object({
@@ -91,7 +104,7 @@ export const businessAnalyticsSchema = z.object({
     byChannel: z.record(ConversationChannel, z.number().int()),
     series: z.array(countPointSchema),
   }),
-  tasks: notModelledSchema,
+  tasks: z.union([taskStatsSchema, notModelledSchema]),
 });
 export type BusinessAnalytics = z.infer<typeof businessAnalyticsSchema>;
 
@@ -100,11 +113,15 @@ export type BusinessAnalytics = z.infer<typeof businessAnalyticsSchema>;
 export const salesAnalyticsSchema = z.object({
   generatedAt: z.string().datetime(),
   range: analyticsRangeSchema,
-  /** There is no Deal/Opportunity model; sales figures are derived from leads that carry a `value`. */
-  dealsModelled: z.literal(false),
-  basis: z.literal('leads_with_value'),
-  /** Closing date of a won/lost lead = `convertedAt`, else `updatedAt` (no `closedAt` column). */
-  closeDateBasis: z.literal('convertedAt_or_updatedAt'),
+  /**
+   * `true` when the organization has deals: every figure then comes from the Deal model (`basis: 'deals'`,
+   * `closeDateBasis: 'closedAt'`) and `stages` lists the open pipeline by stage. `false` = no deals exist yet, the
+   * figures are derived from leads that carry a `value` (`basis: 'leads_with_value'`).
+   */
+  dealsModelled: z.boolean(),
+  basis: z.enum(['deals', 'leads_with_value']),
+  /** Lead basis: `convertedAt`, else `updatedAt`. Deal basis: `closedAt`. */
+  closeDateBasis: z.enum(['closedAt', 'convertedAt_or_updatedAt']),
   /** Values are never summed across currencies. */
   pipeline: z.array(
     z.object({
@@ -136,6 +153,26 @@ export const salesAnalyticsSchema = z.object({
     }),
   ),
   wonSeries: z.array(countPointSchema),
+  /**
+   * Deal basis only (omitted otherwise): open deals per stage and currency across all pipelines, ordered by pipeline then stage order. `pipeline` is empty on the deal basis; `bySource` is empty
+   * because deals carry no lead source.
+   */
+  stages: z
+    .array(
+      z.object({
+        pipelineId: z.string().uuid(),
+        pipelineName: z.string(),
+        stageId: z.string().uuid(),
+        stageName: z.string(),
+        order: z.number().int(),
+        probability: z.number().int(),
+        currency: z.string().length(3),
+        count: z.number().int(),
+        value: z.number(),
+        weightedValue: z.number(),
+      }),
+    )
+    .optional(),
 });
 export type SalesAnalytics = z.infer<typeof salesAnalyticsSchema>;
 

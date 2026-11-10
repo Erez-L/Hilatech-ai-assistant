@@ -13,3 +13,7 @@ export * from './integrations';
 export * from './queues';
 export * from './billing';
 export * from './analytics-reports';
+export * from './tasks';
+export * from './deal-rules';
+export * from './deals';
+export * from './import-export';

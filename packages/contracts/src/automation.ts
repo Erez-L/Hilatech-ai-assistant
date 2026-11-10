@@ -12,6 +12,12 @@ export const DomainEvent = z.enum([
   'lead.assigned',
   'lead.converted',
   'contact.created',
+  'task.created',
+  'task.completed',
+  'deal.created',
+  'deal.stage_changed',
+  'deal.won',
+  'deal.lost',
   'conversation.created',
   'conversation.message_received',
   'conversation.assigned',
@@ -128,6 +134,32 @@ export const workflowStepSchema = z.discriminatedUnion('type', [
     type: z.literal('outbound_webhook'),
     event: z.string().trim().min(1).max(80),
     payload: z.record(z.string(), z.unknown()).default({}),
+  }),
+  /**
+   * Creates a task (source `automation`). Related ids default to the trigger payload's `leadId` / `contactId` /
+   * `dealId` / `conversationId` when left empty. `assignee` `{ kind: 'assignee' }` resolves the lead / deal /
+   * conversation owner from the payload.
+   */
+  z.object({
+    id: z.string().trim().min(1).max(40),
+    type: z.literal('create_task'),
+    title: templateString,
+    description: templateString.optional(),
+    priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
+    assignee: z
+      .discriminatedUnion('kind', [
+        z.object({ kind: z.literal('user'), userId: idSchema }),
+        z.object({ kind: z.literal('assignee') }),
+      ])
+      .optional(),
+    /** Due date = run time + this many hours. */
+    dueInHours: z.number().int().min(0).max(24 * 365).optional(),
+    /** Reminder = due date - this many hours (requires `dueInHours`); 0 = at the due date. */
+    reminderBeforeHours: z.number().int().min(0).max(24 * 365).optional(),
+    leadId: templateString.optional(),
+    contactId: templateString.optional(),
+    dealId: templateString.optional(),
+    conversationId: templateString.optional(),
   }),
   /** Stores a value readable by later steps as `{{ vars.<name> }}`. */
   z.object({

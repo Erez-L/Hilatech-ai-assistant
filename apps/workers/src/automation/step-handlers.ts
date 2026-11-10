@@ -125,6 +125,7 @@ export class StepHandlerFactory {
       http_request: (s, r) => this.httpRequest(s, r),
       update_lead: (s, r) => this.updateLead(scope, s, r),
       create_lead_note: (s, r) => this.createLeadNote(scope, s, r),
+      create_task: (s, r) => this.createTask(scope, s, r),
       n8n_trigger: (s, r) => this.n8nTrigger(scope, s, r),
       outbound_webhook: (s, r) => this.outboundWebhook(scope, s, r),
       agent_run: (s, r) => this.agentRun(scope, s, r),
@@ -217,6 +218,12 @@ export class StepHandlerFactory {
     let userId = candidate;
     const leadId = asString(payload.leadId);
     const conversationId = asString(payload.conversationId);
+    const dealId = asString(payload.dealId);
+    const ownerId = asString(payload.ownerId);
+    if (!userId && ownerId && UUID_RE.test(ownerId)) userId = ownerId;
+    if (!userId && dealId && UUID_RE.test(dealId)) {
+      userId = (await db.deal.findFirst({ where: { id: dealId, organizationId }, select: { ownerId: true } }))?.ownerId ?? null;
+    }
     if (!userId && leadId && UUID_RE.test(leadId)) {
       userId = (await db.lead.findFirst({ where: { id: leadId, organizationId }, select: { assigneeId: true } }))?.assigneeId ?? null;
     }
@@ -359,6 +366,140 @@ export class StepHandlerFactory {
     });
     await this.audit(scope, 'create_lead_note', 'lead', lead.id, { noteId: note.id, stepId: step.id });
     return { noteId: note.id, leadId: lead.id };
+  }
+
+  // -------------------------------------------------------------------------------------------
+  // create_task
+  // -------------------------------------------------------------------------------------------
+
+  /**
+   * Creates a task (source `automation`). The id is derived from execution + step, so a retried step returns the task
+   * it already created instead of duplicating it. Related ids default to the trigger payload and must belong to the
+   * organization; the assignee must be an active member (`kind: assignee` = the lead / conversation / deal owner).
+   */
+  private async createTask(
+    scope: ExecutionScope,
+    step: StepOf<'create_task'>,
+    runtime: StepRuntime,
+  ): Promise<unknown> {
+    const { organizationId } = scope;
+    const db = this.prisma.client;
+    const title = truncate(runtime.render(step.title).trim(), 200);
+    if (!title) throw new StepError('Task title rendered empty');
+    const description = step.description ? runtime.render(step.description).trim() || null : null;
+    const payload = payloadOf(runtime);
+
+    const resolveRef = async (
+      explicit: string | undefined,
+      payloadKey: string,
+      lookup: (id: string) => Promise<{ id: string } | null>,
+      label: string,
+    ): Promise<string | null> => {
+      if (explicit !== undefined) {
+        const id = runtime.render(explicit).trim();
+        if (!id) return null;
+        if (!UUID_RE.test(id)) throw new StepError(`Invalid ${label} id "${truncate(id, 60)}"`);
+        const found = await lookup(id);
+        if (!found) throw new StepError(`${label} not found in this organization`);
+        return found.id;
+      }
+      const fromPayload = asString(payload[payloadKey]);
+      if (!fromPayload || !UUID_RE.test(fromPayload)) return null;
+      return (await lookup(fromPayload))?.id ?? null;
+    };
+    const leadId = await resolveRef(
+      step.leadId,
+      'leadId',
+      (id) => db.lead.findFirst({ where: { id, organizationId, deletedAt: null }, select: { id: true } }),
+      'Lead',
+    );
+    const contactId = await resolveRef(
+      step.contactId,
+      'contactId',
+      (id) => db.contact.findFirst({ where: { id, organizationId, deletedAt: null }, select: { id: true } }),
+      'Contact',
+    );
+    const dealId = await resolveRef(
+      step.dealId,
+      'dealId',
+      (id) => db.deal.findFirst({ where: { id, organizationId }, select: { id: true } }),
+      'Deal',
+    );
+    const conversationId = await resolveRef(
+      step.conversationId,
+      'conversationId',
+      (id) => db.conversation.findFirst({ where: { id, organizationId }, select: { id: true } }),
+      'Conversation',
+    );
+
+    let assigneeId: string | null = null;
+    if (step.assignee?.kind === 'user') {
+      const member = await db.organizationMember.findFirst({
+        where: { organizationId, userId: step.assignee.userId, status: 'active' },
+        select: { userId: true },
+      });
+      if (!member) throw new StepError('Assignee is not an active member of this organization');
+      assigneeId = member.userId;
+    } else if (step.assignee?.kind === 'assignee') {
+      assigneeId = await this.resolveAssignee(organizationId, {
+        ...payload,
+        ...(leadId ? { leadId } : {}),
+        ...(dealId ? { dealId } : {}),
+        ...(conversationId ? { conversationId } : {}),
+      });
+    }
+
+    const now = new Date();
+    const dueAt = step.dueInHours !== undefined ? new Date(now.getTime() + step.dueInHours * 3_600_000) : null;
+    const reminderAt =
+      dueAt && step.reminderBeforeHours !== undefined
+        ? new Date(dueAt.getTime() - step.reminderBeforeHours * 3_600_000)
+        : null;
+    const id = deterministicUuid('task', scope.executionId, step.id);
+    // Attributed to the run's human actor, else the workflow creator; never silently to the assignee.
+    const createdById = scope.actorUserId ?? scope.createdById ?? null;
+    let created = false;
+    try {
+      await db.task.create({
+        data: {
+          id,
+          organizationId,
+          title,
+          description,
+          priority: step.priority,
+          source: 'automation',
+          dueAt,
+          reminderAt,
+          assigneeId,
+          createdById,
+          leadId,
+          contactId,
+          dealId,
+          conversationId,
+        },
+      });
+      created = true;
+    } catch (err) {
+      if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')) throw err;
+    }
+    if (created) {
+      await this.audit(scope, 'create_task', 'task', id, { stepId: step.id, assigneeId });
+      if (assigneeId && assigneeId !== createdById) {
+        await db.notification
+          .create({
+            data: {
+              organizationId,
+              userId: assigneeId,
+              type: 'task_assigned',
+              title: truncate(title, 200),
+              link: '/tasks',
+              data: { idempotencyKey: `task-assigned:${id}`, taskId: id },
+            },
+          })
+          .catch((err: unknown) => this.logger.warn({ err, taskId: id }, 'Could not notify the task assignee'));
+      }
+    }
+    return { taskId: id, created, assigneeId, dueAt: dueAt?.toISOString() ?? null };
   }
 
   /** Notes need a human author: the run's actor, the workflow creator, the lead assignee, else the oldest owner. */

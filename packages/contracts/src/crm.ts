@@ -25,6 +25,8 @@ export const contactSchema = z
     notes: z.string().nullable(),
     customFields: z.record(z.string(), z.unknown()),
     ownerId: idSchema.nullable(),
+    /** Linked Company record (optional; `company` stays a free-text name). */
+    companyId: idSchema.nullable().optional(),
   })
   .merge(timestampsSchema);
 export type Contact = z.infer<typeof contactSchema>;
@@ -59,15 +61,19 @@ export const createContactSchema = z.object({
   notes: z.string().trim().max(5000).optional(),
   customFields: z.record(z.string(), z.unknown()).default({}),
   ownerId: idSchema.optional(),
+  companyId: idSchema.optional(),
 });
 export type CreateContactRequest = z.infer<typeof createContactSchema>;
-export const updateContactSchema = createContactSchema.partial();
+export const updateContactSchema = createContactSchema
+  .partial()
+  .extend({ companyId: idSchema.nullable().optional() });
 export type UpdateContactRequest = z.infer<typeof updateContactSchema>;
 
 export const listContactsQuerySchema = paginationQuerySchema.extend({
   search: z.string().trim().max(200).optional(),
   tag: z.string().trim().max(40).optional(),
   ownerId: idSchema.optional(),
+  companyId: idSchema.optional(),
   sortBy: z.enum(['createdAt', 'updatedAt', 'firstName', 'company']).default('createdAt'),
   sortOrder: sortOrderSchema.default('desc'),
 });

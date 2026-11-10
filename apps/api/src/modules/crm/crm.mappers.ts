@@ -72,6 +72,7 @@ export function toContact(row: Contact): ContactDto {
     notes: row.notes,
     customFields: jsonObject(row.customFields),
     ownerId: row.ownerId,
+    companyId: row.companyId,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

@@ -28,8 +28,11 @@ import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
 import { BillingModule } from './modules/billing/billing.module';
+import { CompaniesModule } from './modules/companies/companies.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
+import { DataExchangeModule } from './modules/data-exchange/data-exchange.module';
+import { DealsModule } from './modules/deals/deals.module';
 import { DomainEventsModule } from './modules/events/domain-events.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { KnowledgeModule } from './modules/knowledge/knowledge.module';
@@ -39,6 +42,7 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
 import { OrganizationGuard } from './modules/tenancy/organization.guard';
 import { PermissionsGuard } from './modules/tenancy/permissions.guard';
 import { TenancyModule } from './modules/tenancy/tenancy.module';
+import { TasksModule } from './modules/tasks/tasks.module';
 import { UsersModule } from './modules/users/users.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { WorkflowsModule } from './modules/workflows/workflows.module';
@@ -87,6 +91,10 @@ import { WorkflowsModule } from './modules/workflows/workflows.module';
     NotificationsModule,
     ContactsModule,
     LeadsModule,
+    TasksModule,
+    CompaniesModule,
+    DealsModule,
+    DataExchangeModule,
     ConversationsModule,
     AnalyticsModule,
     // Priority 3 — AI platform (engine bindings, provider config/usage/prompts/tools, assistant, agents)

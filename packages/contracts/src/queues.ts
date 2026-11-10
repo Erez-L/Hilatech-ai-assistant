@@ -15,6 +15,10 @@ export const QueueName = {
   AUTOMATION: 'automation',
   ANALYTICS: 'analytics',
   WEBHOOK_DELIVERY: 'webhook-delivery',
+  /** Repeatable maintenance ticks for task features (reminders). */
+  TASKS: 'tasks',
+  /** CSV import execution (contacts, leads, companies, deals). */
+  IMPORTS: 'imports',
 } as const;
 export type QueueName = (typeof QueueName)[keyof typeof QueueName];
 export const ALL_QUEUES: readonly QueueName[] = Object.values(QueueName);
@@ -122,6 +126,26 @@ export const webhookDeliveryJobSchema = baseJobSchema.extend({
 });
 export type WebhookDeliveryJob = z.infer<typeof webhookDeliveryJobSchema>;
 
+/**
+ * `tasks` queue: `reminder_tick` scans for tasks whose `reminderAt` has passed and creates the in-app reminder
+ * notification (idempotent: each task/reminder pair is claimed once).
+ */
+export const tasksJobSchema = z.discriminatedUnion('kind', [
+  baseJobSchema.extend({
+    kind: z.literal('reminder_tick'),
+    organizationId: idSchema.nullable(),
+    at: z.string().datetime(),
+  }),
+]);
+export type TasksJob = z.infer<typeof tasksJobSchema>;
+
+/** Runs one `ImportJob` (the row holds the stored file, mapping, strategy and receives progress/result). */
+export const importQueueJobSchema = baseJobSchema.extend({
+  organizationId: idSchema,
+  importId: idSchema,
+});
+export type ImportQueueJob = z.infer<typeof importQueueJobSchema>;
+
 export const JOB_SCHEMAS = {
   [QueueName.EMAIL]: emailJobSchema,
   [QueueName.NOTIFICATIONS]: notificationJobSchema,
@@ -131,6 +155,8 @@ export const JOB_SCHEMAS = {
   [QueueName.AUTOMATION]: automationJobSchema,
   [QueueName.ANALYTICS]: analyticsJobSchema,
   [QueueName.WEBHOOK_DELIVERY]: webhookDeliveryJobSchema,
+  [QueueName.TASKS]: tasksJobSchema,
+  [QueueName.IMPORTS]: importQueueJobSchema,
 } as const;
 
 /** Default BullMQ job options per queue. Exponential backoff; failed jobs are kept for inspection. */

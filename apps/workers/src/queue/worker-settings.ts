@@ -36,6 +36,11 @@ export function resolveWorkerSettings(queue: QueueName, baseConcurrency: number)
       return { ...defaults, concurrency: heavy, lockDuration: 2 * MINUTE };
     case QueueName.AUTOMATION:
       return { ...defaults, lockDuration: 2 * MINUTE };
+    case QueueName.IMPORTS:
+      // Large CSVs: batches are transactional; keep one import per worker slot at a time.
+      return { ...defaults, concurrency: heavy, lockDuration: 10 * MINUTE };
+    case QueueName.TASKS:
+      return { ...defaults, concurrency: 1, lockDuration: 2 * MINUTE };
     case QueueName.ANALYTICS:
       // Rollups are batch-y and rarely parallel.
       return { ...defaults, concurrency: 1, lockDuration: 5 * MINUTE };

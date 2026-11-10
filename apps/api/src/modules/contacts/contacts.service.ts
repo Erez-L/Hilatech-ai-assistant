@@ -33,6 +33,7 @@ export class ContactsService {
       organizationId: tenant.organizationId,
       deletedAt: null,
       ...(query.ownerId ? { ownerId: query.ownerId } : {}),
+      ...(query.companyId ? { companyId: query.companyId } : {}),
       ...(query.tag ? { tags: { has: query.tag } } : {}),
       ...(query.search ? { OR: searchClauses(query.search) } : {}),
     };
@@ -53,6 +54,7 @@ export class ContactsService {
     meta: RequestMeta,
   ): Promise<ContactDto> {
     if (dto.ownerId) await this.refs.assertActiveMember(tenant, dto.ownerId, 'ownerId');
+    if (dto.companyId) await this.refs.assertCompany(tenant, dto.companyId, 'companyId');
     const contact = await this.prisma.client.contact.create({
       data: {
         organizationId: tenant.organizationId,
@@ -66,6 +68,7 @@ export class ContactsService {
         notes: dto.notes ?? null,
         customFields: dto.customFields as Prisma.InputJsonObject,
         ownerId: dto.ownerId ?? null,
+        companyId: dto.companyId ?? null,
       },
     });
     await this.audit.log({
@@ -120,7 +123,9 @@ export class ContactsService {
     if (dto.ownerId !== undefined && dto.ownerId !== existing.ownerId) {
       await this.refs.assertActiveMember(tenant, dto.ownerId, 'ownerId');
     }
+    if (dto.companyId) await this.refs.assertCompany(tenant, dto.companyId, 'companyId');
     const data: Prisma.ContactUncheckedUpdateInput = {};
+    if (dto.companyId !== undefined) data.companyId = dto.companyId;
     if (dto.firstName !== undefined) data.firstName = dto.firstName;
     if (dto.lastName !== undefined) data.lastName = dto.lastName;
     if (dto.email !== undefined) data.email = dto.email;

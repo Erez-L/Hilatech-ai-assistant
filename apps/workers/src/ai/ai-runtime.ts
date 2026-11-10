@@ -11,6 +11,7 @@ import {
   ToolRegistry,
   createKnowledgeSearchTool,
   crmTools,
+  salesTools,
   timeNowTool,
   type AgentDefinition,
   type CancellationSignal,
@@ -67,6 +68,7 @@ export function createProviderResolver(prisma: PrismaService, env: AiRuntimeEnv)
 export function createToolRegistry(knowledge: KnowledgeSearcher | null = null): ToolRegistry {
   return new ToolRegistry().registerAll([
     ...crmTools,
+    ...salesTools,
     timeNowTool,
     createKnowledgeSearchTool(knowledge),
   ]);

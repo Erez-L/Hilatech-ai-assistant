@@ -21,6 +21,8 @@ import { EmailProcessor } from './email/email.processor';
 import { NotificationsProcessor } from './notifications/notifications.processor';
 import { DocumentEvents } from './document-processing/document-events';
 import { DocumentProcessingProcessor } from './document-processing/document-processing.processor';
+import { ImportsProcessor } from './imports/imports.processor';
+import { TasksProcessor } from './tasks/tasks.processor';
 import { EmbeddingsProcessor } from './stubs/not-implemented.processor';
 
 const PROCESSOR_CLASSES = [
@@ -32,6 +34,8 @@ const PROCESSOR_CLASSES = [
   AiTasksProcessor,
   AutomationProcessor,
   WebhookDeliveryProcessor,
+  TasksProcessor,
+  ImportsProcessor,
 ];
 
 @Module({

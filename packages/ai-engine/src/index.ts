@@ -96,6 +96,7 @@ export {
   type ToolOutcome,
 } from './tools/executor';
 export { crmTools } from './tools/builtin/crm';
+export { salesTools } from './tools/builtin/sales';
 export {
   createKnowledgeSearchTool,
   timeNowTool,
@@ -142,6 +143,11 @@ export const ASSISTANT_DEFAULT_TOOLS: readonly string[] = [
   'crm.add_lead_note',
   'crm.list_conversations',
   'crm.get_conversation_messages',
+  'tasks.list',
+  'tasks.create',
+  'deals.list',
+  'deals.create',
+  'deals.move',
   'knowledge.search',
 ];
 

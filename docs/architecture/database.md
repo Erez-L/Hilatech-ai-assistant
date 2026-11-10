@@ -15,6 +15,8 @@ PostgreSQL 16 with the `vector` (pgvector) and `citext` extensions. Schema lives
 | AI (Priority 3)         | `AiProviderConfig`, `Agent`, `AgentExecution`, `AiUsageLog`, prompt templates | Added by later migrations                                                     |
 | Knowledge (Priority 4)  | `KnowledgeBase`, `Document`, `DocumentChunk` (vector)                         | pgvector columns via `Unsupported("vector(…)")`                               |
 | Automation (Priority 4) | `Workflow`, `WorkflowExecution`, `WebhookEndpoint`, `Integration`             |                                                                               |
+| Sales (Phase 7)         | `Task`, `Company`, `Pipeline`, `PipelineStage`, `Deal`, `DealNote`, `DealActivity`, `DealStageChange` | Hard delete. Deals keep contiguous Kanban `position` per stage; `Deal.status` follows the stage `kind`; `DealStageChange` feeds the conversion report. `Contact.companyId` links a Company (the free-text `company` column stays) |
+| Data exchange (Phase 7) | `ImportJob`                                                                   | CSV file lives in the storage driver (`storageKey`); row results kept as counters + a capped JSON report |
 
 ## Rules
 
@@ -22,6 +24,11 @@ PostgreSQL 16 with the `vector` (pgvector) and `citext` extensions. Schema lives
 - UUID primary keys, `createdAt`/`updatedAt` on mutable rows.
 - Soft deletion (`deletedAt`) only on Contact, Lead and Organization.
 - No binary documents in Postgres — files go to the storage driver; the database keeps metadata.
+- A default `Sales` pipeline (Lead, Qualified, Proposal, Negotiation, Won, Lost) is created with every organization
+  (`createDefaultPipeline`, used by the API, the seed and the Phase 7 migration backfill; `ensureDefaultPipeline` heals
+  organizations that lack one). Money is never summed across currencies.
+- Tasks: `reminderSentAt` is the idempotency marker of the reminder job (cleared when `reminderAt` changes); the
+  notification additionally carries `data.idempotencyKey = task-reminder:<taskId>:<reminderAt ms>`.
 - Schema changes only through `prisma migrate dev --name <change>`; migrations are committed.
 
 ## Local workflow

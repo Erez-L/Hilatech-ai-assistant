@@ -215,3 +215,84 @@ budget minus calls still running (atomic Redis reservation) and refuses with `40
 run, when real usage is already recorded. A cost budget is only measurable/enforceable when pricing is configured
 (`cost.enforceable`, `cost.note`). Alerts create in-app `system` notifications (`data.kind = "budget_alert"`) for members
 holding `organization:billing:manage`.
+
+## Phase 7 — tasks, deals & pipelines, companies, CSV import/export (2026-11-11)
+
+Schemas live in `packages/contracts/src/{tasks,deals,deal-rules,import-export}.ts`. Everything is tenant-scoped
+(`x-organization-id`; a forged header answers `403 NOT_A_MEMBER`), foreign ids answer `404` (or `400` when sent inside a
+payload/query as a reference), mutations are audit-logged, and lists are paginated (`?page&pageSize` → `meta`).
+
+New permission keys: `tasks:read|create|update|delete|assign`, `companies:read|create|update|delete`,
+`deals:read|create|update|delete`, `pipelines:manage`, `data:import`, `data:export`. Owner/admin get all; `member` gets
+read/create/update of tasks, companies and deals. Migration `20261110222218_tasks_deals_companies_imports` adds the keys to
+existing system roles and creates the default pipeline for existing organizations.
+
+### Tasks
+
+| Endpoint | Permission | Notes |
+| -------- | ---------- | ----- |
+| `GET /tasks` | `tasks:read` | filters `status` (comma list), `priority`, `assigneeId` (uuid or `me`), `unassigned`, `dueFrom`/`dueTo`, `overdue`, `leadId`, `contactId`, `dealId`, `conversationId`, `search`; `sortBy` = `dueAt` \| `createdAt` \| `updatedAt` \| `priority` \| `title` + `sortOrder`. Rows are `TaskWithRelations` (assignee, createdBy, lead/contact/deal/conversation summaries, `isOverdue`) |
+| `POST /tasks` | `tasks:create` | `{ title, description?, priority, dueAt?, reminderAt?, assigneeId?, leadId?, contactId?, dealId?, conversationId?, status? }`; `reminderAt` must not be after `dueAt`; giving the task to someone else needs `tasks:assign`; emits `task.created` |
+| `GET/PATCH/DELETE /tasks/:id` | read / `tasks:update` / `tasks:delete` | PATCH fields are nullable to clear; `status` accepts `todo`, `in_progress`, `cancelled` (use complete/reopen for `done`); changing `reminderAt` re-arms the reminder |
+| `POST /tasks/:id/complete`, `POST /tasks/:id/reopen` | `tasks:update` | complete is idempotent and emits `task.completed` once |
+| `POST /tasks/bulk-assign` | `tasks:assign` | `{ taskIds[1..100], assigneeId \| null }` → `{ updated, unchanged[], notFound[] }`; the assignee is notified |
+
+Reminders: the workers' `tasks` queue runs `reminder_tick` every minute (`TASK_REMINDER_SCHEDULER_ENABLED`); each open task
+whose `reminderAt` passed gets exactly one in-app `task_reminder` notification (assignee, else creator; honours the user's
+notification preferences).
+
+### Companies
+
+`GET/POST /companies`, `GET/PATCH/DELETE /companies/:id` (read / create / update / delete permissions of `companies:*`),
+`GET /companies/:id/contacts`, `POST /companies/:id/contacts` `{ contactIds }` → `{ associated, notFound[] }`,
+`DELETE /companies/:id/contacts/:contactId`. Search matches name and domain. Contacts accept `companyId` (create/update/list filter).
+
+### Pipelines and deals
+
+| Endpoint | Permission | Notes |
+| -------- | ---------- | ----- |
+| `GET /pipelines`, `GET /pipelines/:id` | `deals:read` | pipelines with ordered stages (`id, name, order, probability, kind open\|won\|lost`) and `dealCount`; the default pipeline is created on demand |
+| `POST /pipelines`, `PATCH/DELETE /pipelines/:id` | `pipelines:manage` | needs one open, one won and one lost stage; delete only empty non-default pipelines |
+| `POST /pipelines/:id/stages`, `PATCH/DELETE /pipelines/:id/stages/:stageId`, `PUT /pipelines/:id/stages/order` | `pipelines:manage` | return the updated pipeline; deleting a stage with deals needs `?moveDealsToStageId=` (same pipeline); reorder takes `{ stageIds }` (a permutation) |
+| `GET /deals` | `deals:read` | filters `pipelineId`, `stageId`, `status`, `ownerId` (uuid or `me`), `contactId`, `companyId`, `tag`, `minValue`/`maxValue`, `expectedCloseFrom`/`To`, `search`; sort `createdAt\|updatedAt\|value\|expectedCloseAt\|title` |
+| `POST /deals` | `deals:create` | `{ title, value?, currency, pipelineId?, stageId?, ownerId?, contactId?, companyId?, expectedCloseAt?, tags }`; defaults to the default pipeline / first open stage; emits `deal.created` |
+| `GET/PATCH/DELETE /deals/:id` | read / `deals:update` / `deals:delete` | PATCH records `value_changed` / `owner_changed` / `updated` activities; stage changes use move |
+| `POST /deals/:id/move` | `deals:update` | `{ stageId, position?, lostReason? }`: Kanban drop. Keeps both columns contiguous; won/lost stages set `status` + `closedAt`, moving back reopens. Emits `deal.stage_changed` (+ `deal.won` / `deal.lost`) |
+| `GET /deals/board?pipelineId&ownerId&search&includeClosed&limitPerColumn` | `deals:read` | `{ pipeline, columns: [{ stage, deals[], count, hasMore, totals[] }], totals[] }`; totals per currency with `weightedValue` (value x stage probability) |
+| `GET /deals/reports/conversion?pipelineId&from&to` | `deals:read` + `analytics:read` | `{ deals { created, open, won, lost }, winRate, avgCycleDays, stages[] (reached, rateFromPrevious, rateFromTop), valueByStage[], wonValue[], lostReasons[] }`; default range 90 days; cohort = deals created in range |
+| `GET/POST /deals/:id/notes`, `DELETE /deals/:id/notes/:noteId`, `GET /deals/:id/activities` | read / `deals:update` | notes can be deleted by their author or `deals:delete` |
+
+`/analytics/sales` switches to the real deals once an organization has any (`dealsModelled: true`, `basis: 'deals'`,
+`closeDateBasis: 'closedAt'`, `stages[]` = open pipeline per stage and currency; `pipeline` and `bySource` are empty);
+otherwise the lead-based report is unchanged. `/analytics/dashboard` gains `deals` and `tasks` blocks and
+`leads.valueBasis`; `pipelineValue` / `wonValueInPeriod` then come from deals in the reporting currency
+(other currencies are listed in `deals.otherCurrencies`). `/analytics/business` returns task statistics.
+
+Workflow engine: new events `task.created`, `task.completed`, `deal.created`, `deal.stage_changed`, `deal.won`,
+`deal.lost` (payloads carry `assigneeId` = deal owner); new step `create_task` (title/description templates, `priority`,
+`assignee` user or `assignee`-of-trigger, `dueInHours`, `reminderBeforeHours`, related ids default to the trigger
+payload; idempotent per execution+step). AI engine tools: `tasks.list`, `tasks.create`, `deals.list`, `deals.create`,
+`deals.move` (writes are permission-gated and audited by the tool outcome hook; tools do not emit domain events).
+
+### CSV import (`data:import` + the create permission of the entity)
+
+Flow: upload -> (optional, repeatable) validate -> execute -> poll -> report. Entities: `contacts`, `leads`, `companies`, `deals`.
+
+| Endpoint | Notes |
+| -------- | ----- |
+| `POST /imports` (multipart `file`, `entity`) | detects encoding (UTF-8 with/without BOM, UTF-16, Windows-1255 fallback) and delimiter (`, ; tab \|`); caps: 10 MB (and `MAX_UPLOAD_MB`), 50 000 rows, 100 columns, plan row limits (free 500, starter 5 000, pro 20 000, enterprise 50 000 -> `402 ENTITLEMENT_EXCEEDED`); active subscription required; at most 2 queued/running imports per organization. Returns the job plus `sampleRows`, `suggestedMapping` (English and Hebrew headers) and `fields` |
+| `POST /imports/:id/validate` `{ mapping, duplicateStrategy }` | dry run: `validation { total, valid, invalid, duplicates, rows[] (capped 200, `duplicateOf { source existing\|file, row, matchedBy }`) }`; nothing is written |
+| `POST /imports/:id/execute` `{ mapping, duplicateStrategy: skip\|update\|create }` | `202`, status `queued`; the workers' `imports` queue applies rows in batches of 200 (row failures isolated), updating `progress` |
+| `POST /imports/:id/cancel`, `GET /imports`, `GET /imports/:id` | job: `status` uploaded/validated/queued/running/completed/failed/cancelled, `progress { processed, total, percent }`, `result { created, updated, skipped, failed }`, `error` |
+| `GET /imports/:id/report`, `GET /imports/:id/report.csv` | skipped/failed rows with reasons (capped 1 000; counts are exact) |
+
+Duplicates: contacts and leads by email, then phone (last 9 digits); companies by name; deals by title. Existing records
+and earlier rows of the same file both count. All lookups are organization-scoped; owner/contact/company/pipeline/stage
+references in the file are resolved by e-mail/name inside the organization only.
+
+### CSV export (`data:export` + the read permission of the entity)
+
+`GET /export/contacts|leads|companies|deals|tasks` accept the filters of the matching list endpoint (no pagination) and stream a
+`text/csv` attachment: UTF-8 with BOM (Hebrew opens correctly in Excel), RFC 4180 quoting, cells starting with
+`= + - @ tab CR` are apostrophe-prefixed (CSV injection), keyset-batched (flat memory), capped at 100 000 rows. Each export
+writes a `data.exported` audit entry (entity, filters, row count). Import unescapes the apostrophe so exports round-trip.

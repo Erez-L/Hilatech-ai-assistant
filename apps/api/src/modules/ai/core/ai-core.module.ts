@@ -10,6 +10,7 @@ import {
   ToolRegistry,
   createKnowledgeSearchTool,
   crmTools,
+  salesTools,
   timeNowTool,
 } from '@hilatech/ai-engine';
 import { Global, Module } from '@nestjs/common';
@@ -75,6 +76,7 @@ import { ENGINE_LOGGER, createEngineLogger } from './engine-logger';
       useFactory: (searcher: PgVectorKnowledgeSearcher) =>
         new ToolRegistry().registerAll([
           ...crmTools,
+          ...salesTools,
           timeNowTool,
           // Permission-gated (knowledge:read) semantic search; passages are returned as untrusted <data>.
           createKnowledgeSearchTool(searcher),

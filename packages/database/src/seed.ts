@@ -14,6 +14,7 @@ import {
 } from '@hilatech/contracts';
 
 import { createPrismaClient } from './index';
+import { createDefaultPipeline } from './domain/pipelines';
 
 const prisma = createPrismaClient();
 
@@ -83,6 +84,7 @@ async function seedDemo() {
         currentPeriodEnd: periodEnd,
       },
     });
+    await createDefaultPipeline(tx, org.id);
     const contact = await tx.contact.create({
       data: {
         organizationId: org.id,

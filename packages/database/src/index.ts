@@ -29,3 +29,7 @@ export function createPrismaClient(options: CreatePrismaClientOptions = {}): Pri
   const adapter = new PrismaPg({ connectionString, max: options.maxConnections ?? 10 });
   return new PrismaClient({ adapter, log: options.log ?? ['warn', 'error'] });
 }
+
+export * from './domain/pipelines';
+export * from './domain/deals';
+export * from './domain/import-engine';

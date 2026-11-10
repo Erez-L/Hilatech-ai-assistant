@@ -9,7 +9,7 @@ import {
   SystemRole,
   type UpdateOrganizationRequest,
 } from '@hilatech/contracts';
-import { type Prisma } from '@hilatech/database';
+import { type Prisma, createDefaultPipeline } from '@hilatech/database';
 import { slugify, withRandomSuffix } from '@hilatech/shared';
 import { type Principal, type TenantContext } from '@hilatech/types';
 import { Injectable } from '@nestjs/common';
@@ -93,6 +93,7 @@ export class OrganizationsService {
           currentPeriodEnd: periodEnd,
         },
       });
+      await createDefaultPipeline(tx, created.id);
       return created;
     });
 

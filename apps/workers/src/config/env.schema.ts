@@ -90,6 +90,8 @@ export const envSchema = z
     ),
     /** Register the every-minute `schedule_tick` job (disable in tests / secondary deployments). */
     AUTOMATION_SCHEDULER_ENABLED: z.preprocess(emptyToUndefined, booleanFromEnv.default(true)),
+    /** Register the every-minute task `reminder_tick` job (disable in tests / secondary deployments). */
+    TASK_REMINDER_SCHEDULER_ENABLED: z.preprocess(emptyToUndefined, booleanFromEnv.default(true)),
     /** Timeout of one outbound webhook delivery request. */
     WEBHOOK_DELIVERY_TIMEOUT_MS: z.preprocess(
       emptyToUndefined,

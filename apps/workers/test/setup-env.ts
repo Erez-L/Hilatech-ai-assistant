@@ -56,5 +56,6 @@ process.env.STORAGE_LOCAL_PATH = join(tmpdir(), 'hilatech-workers-int-uploads');
 // Automation: tick() is driven by the tests, so the every-minute scheduler stays off; the credentials
 // key lets the delivery processor decrypt webhook signing secrets (test-only value).
 process.env.AUTOMATION_SCHEDULER_ENABLED = 'false';
+process.env.TASK_REMINDER_SCHEDULER_ENABLED = 'false';
 process.env.CREDENTIALS_ENCRYPTION_KEY =
   process.env.CREDENTIALS_ENCRYPTION_KEY ?? Buffer.alloc(32, 7).toString('base64');

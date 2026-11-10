@@ -64,4 +64,47 @@ export class CrmReferencesService {
       ]);
     }
   }
+
+  /** The referenced deal must exist in the organization. */
+  async assertDeal(tenant: TenantContext, dealId: string, field: string): Promise<void> {
+    const deal = await this.prisma.client.deal.findFirst({
+      where: { id: dealId, organizationId: tenant.organizationId },
+      select: { id: true },
+    });
+    if (!deal) {
+      throw AppException.validation('Referenced deal not found in this organization', [
+        { path: field, message: 'Deal not found in this organization', code: 'custom' },
+      ]);
+    }
+  }
+
+  /** The referenced conversation must exist in the organization. */
+  async assertConversation(
+    tenant: TenantContext,
+    conversationId: string,
+    field: string,
+  ): Promise<void> {
+    const conversation = await this.prisma.client.conversation.findFirst({
+      where: { id: conversationId, organizationId: tenant.organizationId },
+      select: { id: true },
+    });
+    if (!conversation) {
+      throw AppException.validation('Referenced conversation not found in this organization', [
+        { path: field, message: 'Conversation not found in this organization', code: 'custom' },
+      ]);
+    }
+  }
+
+  /** The referenced company must exist in the organization. */
+  async assertCompany(tenant: TenantContext, companyId: string, field: string): Promise<void> {
+    const company = await this.prisma.client.company.findFirst({
+      where: { id: companyId, organizationId: tenant.organizationId },
+      select: { id: true },
+    });
+    if (!company) {
+      throw AppException.validation('Referenced company not found in this organization', [
+        { path: field, message: 'Company not found in this organization', code: 'custom' },
+      ]);
+    }
+  }
 }

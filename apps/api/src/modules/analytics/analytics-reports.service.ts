@@ -12,6 +12,7 @@ import {
   LeadSource,
   LeadStatus,
   type SalesAnalytics,
+  type TaskStats,
   type UsageAnalytics,
 } from '@hilatech/contracts';
 import { Prisma } from '@hilatech/database';
@@ -154,12 +155,51 @@ export class AnalyticsReportsService {
         byChannel: convChannel,
         series: countSeries(convSeries),
       },
-      tasks: { modelled: false, reason: 'The data model has no Task entity; there is nothing to aggregate.' },
+      tasks: await this.taskStats(org, range),
+    };
+  }
+
+  /** Task stock (open / overdue / due today, by status and priority) plus creations and completions in the range. */
+  private async taskStats(org: string, range: ResolvedRange): Promise<TaskStats> {
+    const db = this.prisma.client;
+    const now = new Date();
+    const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const dayEnd = new Date(dayStart.getTime() + 86_400_000);
+    const open = { in: ['todo', 'in_progress'] as Array<'todo' | 'in_progress'> };
+    const [byStatus, byPriority, overdue, dueToday, createdInRange, completedInRange] = await Promise.all([
+      db.task.groupBy({ by: ['status'], where: { organizationId: org }, _count: { _all: true } }),
+      db.task.groupBy({
+        by: ['priority'],
+        where: { organizationId: org, status: open },
+        _count: { _all: true },
+      }),
+      db.task.count({ where: { organizationId: org, status: open, dueAt: { lt: now } } }),
+      db.task.count({
+        where: { organizationId: org, status: open, dueAt: { gte: dayStart, lt: dayEnd } },
+      }),
+      db.task.count({ where: { organizationId: org, createdAt: { gte: range.from, lt: range.to } } }),
+      db.task.count({
+        where: { organizationId: org, status: 'done', completedAt: { gte: range.from, lt: range.to } },
+      }),
+    ]);
+    const statusCounts = zeroRecord(['todo', 'in_progress', 'done', 'cancelled'] as const);
+    for (const r of byStatus) statusCounts[r.status] = r._count._all;
+    const priorityCounts = zeroRecord(['low', 'medium', 'high', 'urgent'] as const);
+    for (const r of byPriority) priorityCounts[r.priority] = r._count._all;
+    return {
+      modelled: true,
+      open: statusCounts.todo + statusCounts.in_progress,
+      overdue,
+      dueToday,
+      createdInRange,
+      completedInRange,
+      byStatus: statusCounts,
+      byPriority: priorityCounts,
     };
   }
 
   // ---------------------------------------------------------------------------------------------
-  // Sales (derived from leads that carry a value — there is no Deal model)
+  // Sales (real deals when the organization has any, otherwise derived from leads that carry a value)
   // ---------------------------------------------------------------------------------------------
 
   async sales(tenant: TenantContext, query: AnalyticsRangeQuery): Promise<SalesAnalytics> {
@@ -167,6 +207,9 @@ export class AnalyticsReportsService {
     const org = tenant.organizationId;
     const unit = this.unit(range);
     const db = this.prisma.client;
+    if ((await db.deal.count({ where: { organizationId: org } })) > 0) {
+      return this.salesFromDeals(org, range, unit);
+    }
     // Closing moment of a won/lost lead: convertedAt, else updatedAt (there is no closedAt column).
     const [pipeline, closed, cycle, sourceRows, wonSeries] = await Promise.all([
       db.$queryRaw<Array<{ status: LeadStatus; currency: string; n: number; value: number }>>`
@@ -268,6 +311,105 @@ export class AnalyticsReportsService {
         wonSeries,
         (row) => ({ count: row?.n ?? 0 }),
       ),
+    };
+  }
+
+  private async salesFromDeals(org: string, range: ResolvedRange, unit: Prisma.Sql): Promise<SalesAnalytics> {
+    const db = this.prisma.client;
+    const [stageRows, closed, cycle, wonSeries] = await Promise.all([
+      db.$queryRaw<
+        Array<{
+          pipelineId: string;
+          pipelineName: string;
+          stageId: string;
+          stageName: string;
+          order: number;
+          probability: number;
+          currency: string;
+          n: number;
+          value: number;
+        }>
+      >`
+        SELECT p."id" AS "pipelineId", p."name" AS "pipelineName", s."id" AS "stageId", s."name" AS "stageName",
+               s."order" AS "order", s."probability" AS probability, d."currency" AS currency,
+               COUNT(*)::int AS n, COALESCE(SUM(d."value"), 0)::float8 AS value
+        FROM "Deal" d
+        JOIN "PipelineStage" s ON s."id" = d."stageId"
+        JOIN "Pipeline" p ON p."id" = d."pipelineId"
+        WHERE d."organizationId" = ${org}::uuid AND d."status" = 'open'
+        GROUP BY p."id", p."name", p."isDefault", s."id", s."name", s."order", s."probability", d."currency"
+        ORDER BY p."isDefault" DESC, p."name", s."order", d."currency"`,
+      db.$queryRaw<Array<{ status: 'won' | 'lost'; currency: string; n: number; value: number }>>`
+        SELECT "status"::text AS status, "currency" AS currency, COUNT(*)::int AS n,
+               COALESCE(SUM("value"), 0)::float8 AS value
+        FROM "Deal"
+        WHERE "organizationId" = ${org}::uuid AND "status" IN ('won', 'lost')
+          AND "closedAt" >= ${range.from} AND "closedAt" < ${range.to}
+        GROUP BY 1, 2 ORDER BY 2, 1`,
+      db.$queryRaw<Array<{ days: number | null }>>`
+        SELECT AVG(EXTRACT(EPOCH FROM ("closedAt" - "createdAt")) / 86400)::float8 AS days
+        FROM "Deal"
+        WHERE "organizationId" = ${org}::uuid AND "status" = 'won'
+          AND "closedAt" >= ${range.from} AND "closedAt" < ${range.to}`,
+      db.$queryRaw<Array<{ bucket: Date; n: number }>>`
+        SELECT date_trunc(${unit}, "closedAt") AS bucket, COUNT(*)::int AS n
+        FROM "Deal"
+        WHERE "organizationId" = ${org}::uuid AND "status" = 'won'
+          AND "closedAt" >= ${range.from} AND "closedAt" < ${range.to}
+        GROUP BY 1`,
+    ]);
+    const currencies = new Map<string, { wonCount: number; wonValue: number; lostCount: number; lostValue: number }>();
+    let won = 0;
+    let lost = 0;
+    for (const row of closed) {
+      const entry = currencies.get(row.currency) ?? { wonCount: 0, wonValue: 0, lostCount: 0, lostValue: 0 };
+      if (row.status === 'won') {
+        entry.wonCount += row.n;
+        entry.wonValue += num(row.value);
+        won += row.n;
+      } else {
+        entry.lostCount += row.n;
+        entry.lostValue += num(row.value);
+        lost += row.n;
+      }
+      currencies.set(row.currency, entry);
+    }
+    const cycleDays = numOrNull(cycle[0]?.days);
+    return {
+      generatedAt: new Date().toISOString(),
+      range: this.rangeDto(range),
+      dealsModelled: true,
+      basis: 'deals',
+      closeDateBasis: 'closedAt',
+      pipeline: [],
+      closedInRange: [...currencies.entries()].map(([currency, v]) => ({
+        currency,
+        ...v,
+        avgWonValue: v.wonCount > 0 ? Math.round((v.wonValue / v.wonCount) * 100) / 100 : null,
+      })),
+      winRate: rate(won, won + lost),
+      avgSalesCycleDays: cycleDays === null ? null : Math.round(cycleDays * 10) / 10,
+      bySource: [],
+      wonSeries: fillSeries<{ bucket: Date; n: number }, { bucket: string; count: number }>(
+        range.buckets,
+        wonSeries,
+        (row) => ({ count: row?.n ?? 0 }),
+      ),
+      stages: stageRows.map((r) => {
+        const value = Math.round(num(r.value) * 100) / 100;
+        return {
+          pipelineId: r.pipelineId,
+          pipelineName: r.pipelineName,
+          stageId: r.stageId,
+          stageName: r.stageName,
+          order: r.order,
+          probability: r.probability,
+          currency: r.currency,
+          count: r.n,
+          value,
+          weightedValue: Math.round(((value * r.probability) / 100) * 100) / 100,
+        };
+      }),
     };
   }
 

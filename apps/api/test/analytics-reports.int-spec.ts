@@ -291,7 +291,7 @@ describe('Analytics reports', () => {
       expect(data.conversations.created).toBe(3);
       expect(data.conversations.byStatus).toMatchObject({ open: 2, resolved: 1, pending: 0 });
       expect(data.conversations.byChannel).toMatchObject({ web: 2, email: 1 });
-      expect(data.tasks).toMatchObject({ modelled: false });
+      expect(data.tasks).toMatchObject({ modelled: true, open: 0, overdue: 0, dueToday: 0 });
     });
 
     it('computes the funnel from current status (reached = at or beyond) and the conversion rate', async () => {

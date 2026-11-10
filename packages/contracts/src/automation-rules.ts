@@ -387,6 +387,17 @@ export function validateWorkflowDefinition(
         add(step.id, p, 'update_lead needs at least one of status, assigneeId or addTags');
       }
     }
+    if (step.type === 'create_task') {
+      if (step.reminderBeforeHours !== undefined && step.dueInHours === undefined) {
+        add(step.id, `${p}.reminderBeforeHours`, 'reminderBeforeHours requires dueInHours');
+      } else if (
+        step.reminderBeforeHours !== undefined &&
+        step.dueInHours !== undefined &&
+        step.reminderBeforeHours > step.dueInHours
+      ) {
+        add(step.id, `${p}.reminderBeforeHours`, 'The reminder cannot be earlier than the run time');
+      }
+    }
     if (step.type === 'http_request' && !step.url.includes('{{')) {
       if (!/^https:\/\//i.test(step.url) && !/^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(step.url)) {
         add(step.id, `${p}.url`, 'URL must start with https:// (http only for localhost)');

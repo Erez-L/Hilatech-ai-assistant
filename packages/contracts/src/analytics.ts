@@ -33,7 +33,25 @@ export const dashboardSummarySchema = z.object({
     pipelineValue: z.number(),
     wonValueInPeriod: z.number(),
     currency: z.string().length(3),
+    /** `deals` when the organization has deals (then `pipelineValue` / `wonValueInPeriod` come from them), else `leads`. */
+    valueBasis: z.enum(['deals', 'leads']).optional(),
   }),
+  /** Present when the organization has at least one deal. Sums are in the reporting currency only (other currencies are listed separately). */
+  deals: z
+    .object({
+      open: z.number().int(),
+      wonInPeriod: z.number().int(),
+      lostInPeriod: z.number().int(),
+      pipelineValue: z.number(),
+      weightedPipelineValue: z.number(),
+      wonValueInPeriod: z.number(),
+      currency: z.string().length(3),
+      otherCurrencies: z.array(z.object({ currency: z.string().length(3), pipelineValue: z.number() })),
+    })
+    .optional(),
+  tasks: z
+    .object({ open: z.number().int(), overdue: z.number().int(), dueToday: z.number().int() })
+    .optional(),
   conversations: z.object({
     total: z.number().int(),
     open: z.number().int(),

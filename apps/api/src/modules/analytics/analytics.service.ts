@@ -164,6 +164,12 @@ export class AnalyticsService {
     const leadsTotal = Object.values(byStatus).reduce((sum, n) => sum + n, 0);
     const conversationsTotal = Object.values(conversationStatus).reduce((sum, n) => sum + n, 0);
 
+    const currency = reportingCurrency(organization?.settings);
+    const [dealStats, taskCounts] = await Promise.all([
+      this.dealStats(organizationId, period, currency),
+      this.taskCounts(organizationId, period.to),
+    ]);
+
     return {
       generatedAt: period.to.toISOString(),
       period: { key: period.key, from: period.from.toISOString(), to: period.to.toISOString() },
@@ -178,10 +184,14 @@ export class AnalyticsService {
         lostInPeriod: leadsLost,
         byStatus,
         bySource,
-        pipelineValue: roundMoney(pipelineValue),
-        wonValueInPeriod: roundMoney(wonValue),
-        currency: reportingCurrency(organization?.settings),
+        // With deals, the pipeline money comes from them (see `deals`); leads keep counts and their own sums.
+        pipelineValue: dealStats ? dealStats.pipelineValue : roundMoney(pipelineValue),
+        wonValueInPeriod: dealStats ? dealStats.wonValueInPeriod : roundMoney(wonValue),
+        currency,
+        valueBasis: dealStats ? 'deals' : 'leads',
       },
+      ...(dealStats ? { deals: dealStats } : {}),
+      tasks: taskCounts,
       conversations: {
         total: conversationsTotal,
         open: conversationStatus.open,
@@ -211,6 +221,65 @@ export class AnalyticsService {
         lastMessageAt: isoOrNull(c.lastMessageAt),
       })),
     };
+  }
+
+  /** Deal figures (reporting currency only; the other currencies are listed apart). Null when there are no deals. */
+  private async dealStats(
+    organizationId: string,
+    period: { from: Date; to: Date },
+    currency: string,
+  ): Promise<NonNullable<DashboardSummary['deals']> | null> {
+    const db = this.prisma.client;
+    const [total, openRows, closedRows] = await Promise.all([
+      db.deal.count({ where: { organizationId } }),
+      db.$queryRaw<Array<{ currency: string; n: number; value: number; weighted: number }>>`
+        SELECT d."currency" AS currency, COUNT(*)::int AS n,
+               COALESCE(SUM(d."value"), 0)::float8 AS value,
+               COALESCE(SUM(d."value" * s."probability" / 100.0), 0)::float8 AS weighted
+        FROM "Deal" d JOIN "PipelineStage" s ON s."id" = d."stageId"
+        WHERE d."organizationId" = ${organizationId}::uuid AND d."status" = 'open'
+        GROUP BY 1`,
+      db.$queryRaw<Array<{ status: string; currency: string; n: number; value: number }>>`
+        SELECT "status"::text AS status, "currency" AS currency, COUNT(*)::int AS n,
+               COALESCE(SUM("value"), 0)::float8 AS value
+        FROM "Deal"
+        WHERE "organizationId" = ${organizationId}::uuid AND "status" IN ('won', 'lost')
+          AND "closedAt" >= ${period.from} AND "closedAt" < ${period.to}
+        GROUP BY 1, 2`,
+    ]);
+    if (total === 0) return null;
+    const main = openRows.find((r) => r.currency === currency);
+    return {
+      open: openRows.reduce((n, r) => n + r.n, 0),
+      wonInPeriod: closedRows.filter((r) => r.status === 'won').reduce((n, r) => n + r.n, 0),
+      lostInPeriod: closedRows.filter((r) => r.status === 'lost').reduce((n, r) => n + r.n, 0),
+      pipelineValue: roundMoney(main?.value ?? 0),
+      weightedPipelineValue: roundMoney(main?.weighted ?? 0),
+      wonValueInPeriod: roundMoney(
+        closedRows.find((r) => r.status === 'won' && r.currency === currency)?.value ?? 0,
+      ),
+      currency,
+      otherCurrencies: openRows
+        .filter((r) => r.currency !== currency)
+        .map((r) => ({ currency: r.currency, pipelineValue: roundMoney(r.value) }))
+        .sort((a, b) => a.currency.localeCompare(b.currency)),
+    };
+  }
+
+  private async taskCounts(
+    organizationId: string,
+    now: Date,
+  ): Promise<NonNullable<DashboardSummary['tasks']>> {
+    const db = this.prisma.client;
+    const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const dayEnd = new Date(dayStart.getTime() + 86_400_000);
+    const open = { in: ['todo', 'in_progress'] as Array<'todo' | 'in_progress'> };
+    const [openCount, overdue, dueToday] = await Promise.all([
+      db.task.count({ where: { organizationId, status: open } }),
+      db.task.count({ where: { organizationId, status: open, dueAt: { lt: now } } }),
+      db.task.count({ where: { organizationId, status: open, dueAt: { gte: dayStart, lt: dayEnd } } }),
+    ]);
+    return { open: openCount, overdue, dueToday };
   }
 
   /** One scan of the organization's live leads: counts and sums per (status, source), period filters via FILTER. */
