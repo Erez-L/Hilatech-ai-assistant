@@ -8,6 +8,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { JwtStrategy } from './jwt.strategy';
+import { LoginThrottleService } from './login-throttle.service';
 import { TokenService } from './token.service';
 
 @Module({
@@ -27,7 +28,7 @@ import { TokenService } from './token.service';
     OrganizationsModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, TokenService, JwtStrategy, JwtAuthGuard],
+  providers: [AuthService, TokenService, JwtStrategy, JwtAuthGuard, LoginThrottleService],
   exports: [AuthService, TokenService, JwtAuthGuard],
 })
 export class AuthModule {}

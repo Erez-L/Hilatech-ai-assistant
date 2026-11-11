@@ -17,6 +17,7 @@ import {
   uniqueEmail,
   PASSWORD,
 } from './setup/test-app';
+import { RedisService } from '../src/infrastructure/redis/redis.service';
 
 describe('Auth journey', () => {
   let ctx: TestContext;
@@ -372,6 +373,54 @@ describe('Auth journey', () => {
         .send({ theme: 'neon' });
       expect(invalid.status).toBe(400);
       expect(invalid.body.error.code).toBe(ErrorCode.VALIDATION_ERROR);
+    });
+  });
+  describe('per-account login lockout', () => {
+    it('locks an account after 10 failed logins (even with the right password), other accounts keep working, and expiry unlocks it', async () => {
+      const victim = await register(ctx, { email: uniqueEmail('lockout') });
+      const other = await register(ctx, { email: uniqueEmail('lockout-other') });
+
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        const bad = await anon(ctx)
+          .post('/api/v1/auth/login')
+          .send({ email: victim.email, password: 'Wrong-password-1!' });
+        expect(bad.status).toBe(401);
+      }
+
+      const locked = await anon(ctx)
+        .post('/api/v1/auth/login')
+        .send({ email: victim.email, password: PASSWORD });
+      expect(locked.status).toBe(429);
+      expect(locked.body.error.code).toBe(ErrorCode.RATE_LIMITED);
+      const audit = await ctx.prisma.client.auditLog.findFirst({
+        where: {
+          action: AuditAction.AUTH_LOGIN_FAILED,
+          metadata: { path: ['reason'], equals: 'locked' },
+        },
+      });
+      expect(audit).not.toBeNull();
+
+      // Another account is unaffected, and a session that already exists keeps working.
+      await login(ctx, other.email);
+      expect((await as(ctx, victim).get('/api/v1/auth/me')).status).toBe(200);
+
+      // The window expiring (simulated by dropping the counters) unlocks the account.
+      const redis = await ctx.app.get(RedisService).ensureConnected();
+      const keys = await redis.keys('auth:login-failures:*');
+      if (keys.length) await redis.del(...keys);
+      await login(ctx, victim.email);
+    });
+
+    it('a successful login clears the failure count', async () => {
+      const actor = await register(ctx, { email: uniqueEmail('lockout-reset') });
+      for (let round = 0; round < 3; round += 1) {
+        for (let attempt = 0; attempt < 6; attempt += 1) {
+          await anon(ctx)
+            .post('/api/v1/auth/login')
+            .send({ email: actor.email, password: 'Wrong-password-1!' });
+        }
+        await login(ctx, actor.email);
+      }
     });
   });
 });

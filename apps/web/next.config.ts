@@ -4,6 +4,41 @@ import type { NextConfig } from 'next';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Content-Security-Policy for every page.
+ *
+ * Scripts and styles still allow 'unsafe-inline': Next.js injects inline bootstrap/hydration scripts
+ * and the theme script, and a nonce-based policy would force every page to render dynamically. The
+ * policy therefore does NOT stop inline-script XSS on its own; it restricts where code, frames,
+ * forms and network calls can go (no third-party script hosts, no framing, no plugin content).
+ * 'unsafe-eval' is only present in development (React refresh).
+ */
+function contentSecurityPolicy(): string {
+  const isDev = process.env.NODE_ENV === 'development';
+  const apiOrigin = (() => {
+    try {
+      return new URL(process.env.NEXT_PUBLIC_API_URL ?? '').origin;
+    } catch {
+      return '';
+    }
+  })();
+  const connect = ["'self'", apiOrigin, isDev ? 'ws:' : ''].filter(Boolean).join(' ');
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+    "style-src 'self' 'unsafe-inline'",
+    // Avatars and organization logos are user-supplied https URLs.
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    `connect-src ${connect}`,
+    "frame-ancestors 'none'",
+    "frame-src 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; ');
+}
+
 const nextConfig: NextConfig = {
   output: 'standalone',
   reactStrictMode: true,
@@ -21,6 +56,7 @@ const nextConfig: NextConfig = {
     {
       source: '/:path*',
       headers: [
+        { key: 'Content-Security-Policy', value: contentSecurityPolicy() },
         { key: 'X-Content-Type-Options', value: 'nosniff' },
         { key: 'X-Frame-Options', value: 'DENY' },
         { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

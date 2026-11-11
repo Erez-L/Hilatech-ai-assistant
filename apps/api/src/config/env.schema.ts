@@ -119,6 +119,9 @@ export const envSchema = z
     PASSWORD_RESET_TTL: durationVar('1h'),
     EMAIL_VERIFICATION_TTL: durationVar('24h'),
     INVITATION_TTL: durationVar('7d'),
+    /** Failed logins per email before that account is locked for LOGIN_LOCKOUT_WINDOW (0 disables). */
+    LOGIN_MAX_FAILED_ATTEMPTS: intVar(10, 0),
+    LOGIN_LOCKOUT_WINDOW: durationVar('15m'),
     COOKIE_SECURE: boolVar(false),
     /** Block everything except the session/profile/verification routes until the email address is verified. */
     REQUIRE_EMAIL_VERIFICATION: boolVar(false),
@@ -265,6 +268,7 @@ export const envSchema = z
     refreshTtlMs: parseDuration(env.JWT_REFRESH_TTL),
     passwordResetTtlMs: parseDuration(env.PASSWORD_RESET_TTL),
     emailVerificationTtlMs: parseDuration(env.EMAIL_VERIFICATION_TTL),
+    loginLockoutWindowMs: parseDuration(env.LOGIN_LOCKOUT_WINDOW),
     emailVerificationResendCooldownMs: parseDuration(env.EMAIL_VERIFICATION_RESEND_COOLDOWN),
     invitationTtlMs: parseDuration(env.INVITATION_TTL),
   }));

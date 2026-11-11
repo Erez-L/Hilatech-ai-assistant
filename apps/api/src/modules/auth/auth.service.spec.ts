@@ -9,6 +9,7 @@ import { type InvitationsService } from '../organizations/invitations.service';
 import { type OrganizationsService } from '../organizations/organizations.service';
 import { type TenancyService } from '../tenancy/tenancy.service';
 import { AuthService } from './auth.service';
+import { type LoginThrottleService } from './login-throttle.service';
 import { type TokenService } from './token.service';
 
 const meta = { ipAddress: '127.0.0.1', userAgent: 'jest', requestId: 'req-1' };
@@ -48,6 +49,11 @@ function build() {
     passwordResetTtlMs: 3_600_000,
     emailVerificationTtlMs: 86_400_000,
   });
+  const loginThrottle = {
+    isLocked: jest.fn().mockResolvedValue(false),
+    recordFailure: jest.fn().mockResolvedValue(undefined),
+    reset: jest.fn().mockResolvedValue(undefined),
+  };
   const service = new AuthService(
     prisma,
     tokens as unknown as TokenService,
@@ -57,6 +63,7 @@ function build() {
     organizations as unknown as OrganizationsService,
     tenancy as unknown as TenancyService,
     config as unknown as AppConfig,
+    loginThrottle as unknown as LoginThrottleService,
   );
   return { service, client, audit, tokens, organizations, tenancy };
 }

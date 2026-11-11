@@ -1,4 +1,4 @@
-// eslint-disable-next-line import/order -- must run before the app module is imported
+// Must stay the first import: it sets the environment before the app module (and its ConfigModule) loads.
 import './setup/require-email-verification';
 
 import { AuditAction, ErrorCode } from '@hilatech/contracts';

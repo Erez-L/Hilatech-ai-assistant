@@ -29,6 +29,7 @@ import { OrganizationsService } from '../organizations/organizations.service';
 import { TenancyService } from '../tenancy/tenancy.service';
 import { toAuthUser } from './auth.mappers';
 import { type AuthResult, type AuthSession } from './auth.types';
+import { LoginThrottleService } from './login-throttle.service';
 import { TokenService } from './token.service';
 
 const ARGON2_OPTIONS: argon2.HashOptions = {
@@ -56,6 +57,7 @@ export class AuthService {
     private readonly organizations: OrganizationsService,
     private readonly tenancy: TenancyService,
     private readonly config: AppConfig,
+    private readonly loginThrottle: LoginThrottleService,
   ) {
     this.dummyHash = hashPassword(generateOpaqueToken(24));
   }
@@ -103,12 +105,23 @@ export class AuthService {
   }
 
   async login(dto: LoginRequest, meta: RequestMeta): Promise<AuthResult> {
+    // Per-account lockout: refuse before touching the password hash, so a locked account costs nothing.
+    if (await this.loginThrottle.isLocked(dto.email)) {
+      await this.audit.log({
+        action: AuditAction.AUTH_LOGIN_FAILED,
+        actorUserId: null,
+        metadata: { email: dto.email, reason: 'locked' },
+        request: meta,
+      });
+      throw AppException.rateLimited();
+    }
     const user = await this.prisma.client.user.findUnique({ where: { email: dto.email } });
     const valid = user
       ? await argon2.verify(user.passwordHash, dto.password)
       : await this.burnVerify(dto.password);
 
     if (!user || !valid || !user.isActive) {
+      await this.loginThrottle.recordFailure(dto.email);
       await this.audit.log({
         action: AuditAction.AUTH_LOGIN_FAILED,
         actorUserId: user?.id ?? null,
@@ -125,6 +138,7 @@ export class AuthService {
       );
     }
 
+    await this.loginThrottle.reset(dto.email);
     await this.prisma.client.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
