@@ -21,7 +21,7 @@ import { AppException } from '../../common/errors/app.exception';
 import { type RequestMeta } from '../../common/request';
 import { humanizeDuration } from '../../common/utils/duration';
 import { AppConfig } from '../../config/app-config.service';
-import { EmailService } from '../../infrastructure/email/email.service';
+import { EmailService, savedLocaleOf } from '../../infrastructure/email/email.service';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { InvitationRules, InvitationsService } from '../organizations/invitations.service';
@@ -320,8 +320,13 @@ export class AuthService {
         token: raw,
         firstName: user.firstName,
         expiresIn: humanizeDuration(this.config.get('passwordResetTtlMs')),
+        expiresInMs: this.config.get('passwordResetTtlMs'),
       },
-      { idempotencyKey: `email-password-reset-${token.id}`, requestId: meta.requestId },
+      {
+        idempotencyKey: `email-password-reset-${token.id}`,
+        requestId: meta.requestId,
+        locale: savedLocaleOf(user) ?? meta.locale,
+      },
     );
     await this.audit.log({
       action: AuditAction.AUTH_PASSWORD_RESET_REQUESTED,
@@ -538,8 +543,13 @@ export class AuthService {
         token: raw,
         firstName: user.firstName,
         expiresIn: humanizeDuration(this.config.get('emailVerificationTtlMs')),
+        expiresInMs: this.config.get('emailVerificationTtlMs'),
       },
-      { idempotencyKey: `email-verify-${token.id}`, requestId: meta.requestId },
+      {
+        idempotencyKey: `email-verify-${token.id}`,
+        requestId: meta.requestId,
+        locale: savedLocaleOf(user) ?? meta.locale,
+      },
     );
   }
 

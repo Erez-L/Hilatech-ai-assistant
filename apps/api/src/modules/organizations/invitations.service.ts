@@ -27,7 +27,7 @@ import { type RequestMeta } from '../../common/request';
 import { type PageResult, page, skipTake } from '../../common/utils/pagination';
 import { humanizeDuration } from '../../common/utils/duration';
 import { AppConfig } from '../../config/app-config.service';
-import { EmailService } from '../../infrastructure/email/email.service';
+import { EmailService, savedLocaleOf } from '../../infrastructure/email/email.service';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { QueueService } from '../../infrastructure/queue/queue.service';
 import { AuditService } from '../audit/audit.service';
@@ -166,11 +166,11 @@ export class InvitationsService {
     const [organization, inviter] = await Promise.all([
       this.prisma.client.organization.findUniqueOrThrow({
         where: { id: tenant.organizationId },
-        select: { name: true },
+        select: { name: true, locale: true },
       }),
       this.prisma.client.user.findUniqueOrThrow({
         where: { id: tenant.userId },
-        select: { firstName: true, lastName: true },
+        select: { firstName: true, lastName: true, preferences: true },
       }),
     ]);
 
@@ -196,11 +196,14 @@ export class InvitationsService {
         roleName: role.name,
         inviterName: `${inviter.firstName} ${inviter.lastName}`.trim(),
         expiresIn: humanizeDuration(this.ttlMs),
+        expiresInMs: this.ttlMs,
       },
       {
         idempotencyKey: `invite-${invitation.id}`,
         organizationId: tenant.organizationId,
         requestId: meta.requestId,
+        // The invitee may not have an account yet: use the inviter's language, then the organization's.
+        locale: savedLocaleOf(inviter) ?? organization.locale,
       },
     );
 

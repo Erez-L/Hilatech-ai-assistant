@@ -17,6 +17,8 @@ export interface RequestMeta {
   ipAddress: string | null;
   userAgent: string | null;
   requestId: string | null;
+  /** First language of the request's `Accept-Language` header (used to pick the language of emails). */
+  locale?: string | null;
 }
 
 export function requestIdOf(
@@ -32,9 +34,14 @@ export function requestMeta(
 ): RequestMeta {
   if (!req) return { ipAddress: null, userAgent: null, requestId: null };
   const ua = req.headers['user-agent'];
+  const language = req.headers['accept-language'];
   return {
     ipAddress: req.ip ? String(req.ip).slice(0, 64) : null,
     userAgent: typeof ua === 'string' ? ua.slice(0, 512) : null,
     requestId: requestIdOf(req) ?? null,
+    locale:
+      typeof language === 'string' && language.trim()
+        ? (language.split(',')[0] ?? '').split(';')[0]!.trim().slice(0, 16) || null
+        : null,
   };
 }

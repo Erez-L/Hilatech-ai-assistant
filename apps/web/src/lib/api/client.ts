@@ -294,6 +294,9 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
       if (token) headers.Authorization = `Bearer ${token}`;
       const orgId = organization ? config.getOrganizationId() : null;
       if (orgId) headers[ORGANIZATION_HEADER] = orgId;
+      // Tell the API which UI language is active (it picks the language of emails it sends).
+      const uiLanguage = typeof document === 'undefined' ? '' : document.documentElement.lang;
+      if (uiLanguage && !('Accept-Language' in headers)) headers['Accept-Language'] = uiLanguage;
       try {
         return await fetchImpl(url, {
           method,

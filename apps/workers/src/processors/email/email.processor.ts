@@ -30,11 +30,11 @@ export class EmailProcessor implements JobProcessor<typeof QueueName.EMAIL> {
     job: Job<JobPayload<typeof QueueName.EMAIL>>,
     context: JobContext,
   ): Promise<JobOutcome> {
-    const { to, template, variables, idempotencyKey, organizationId } = job.data;
+    const { to, template, variables, idempotencyKey, organizationId, locale } = job.data;
 
     let rendered;
     try {
-      rendered = renderEmail(template, variables, { appUrl: this.env.APP_URL });
+      rendered = renderEmail(template, variables, { appUrl: this.env.APP_URL, locale });
     } catch (err) {
       if (err instanceof EmailTemplateRenderError) {
         this.logger.error(

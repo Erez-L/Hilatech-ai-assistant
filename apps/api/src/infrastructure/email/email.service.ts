@@ -12,14 +12,20 @@ export type EmailTemplate = EmailJob['template'];
  * mismatch. Links are built by the worker from `APP_URL`; the API passes raw tokens only.
  */
 export interface EmailTemplateVariables {
-  verify_email: { token: string; firstName?: string; expiresIn?: string };
-  password_reset: { token: string; firstName?: string; expiresIn?: string };
+  verify_email: { token: string; firstName?: string; expiresIn?: string; expiresInMs?: number };
+  password_reset: {
+    token: string;
+    firstName?: string;
+    expiresIn?: string;
+    expiresInMs?: number;
+  };
   invitation: {
     token: string;
     organizationName: string;
     inviterName?: string;
     roleName?: string;
     expiresIn?: string;
+    expiresInMs?: number;
   };
   notification_digest: {
     notifications: Array<{ title: string; body?: string; link?: string }>;
@@ -42,6 +48,23 @@ export interface SendEmailOptions {
   idempotencyKey: string;
   organizationId?: string | null;
   requestId?: string | null;
+  /** Recipient's language (a saved UI locale such as `he` or `he-IL`); anything else renders in English. */
+  locale?: string | null;
+}
+
+/** Maps a stored UI locale to a language the email templates support. */
+export function emailLocale(locale: string | null | undefined): 'en' | 'he' {
+  return typeof locale === 'string' && locale.toLowerCase().startsWith('he') ? 'he' : 'en';
+}
+
+/** The UI locale a user saved in their preferences, if any. */
+export function savedLocaleOf(user: { preferences?: unknown } | null | undefined): string | null {
+  const prefs = user?.preferences;
+  if (prefs && typeof prefs === 'object' && 'locale' in prefs) {
+    const value = (prefs as { locale?: unknown }).locale;
+    return typeof value === 'string' ? value : null;
+  }
+  return null;
 }
 
 /**
@@ -83,6 +106,7 @@ export class EmailService {
       to,
       template,
       variables: variables as Record<string, unknown>,
+      locale: emailLocale(options.locale),
     } satisfies Omit<EmailJob, 'requestId'> & { requestId?: string };
 
     const result = await this.queue.enqueue(QueueName.EMAIL, payload);

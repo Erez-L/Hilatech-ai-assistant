@@ -194,3 +194,64 @@ describe('log driver preview', () => {
     expect(preview.preview.length).toBeLessThanOrEqual(600);
   });
 });
+
+describe('renderEmail — Hebrew', () => {
+  const options = { appUrl: 'https://app.example.com', locale: 'he' };
+
+  it('renders the verification email right-to-left with Hebrew copy and a localized duration', () => {
+    const email = renderEmail(
+      'verify_email',
+      { token: 'tok_1234567890abcdef', firstName: 'דנה', expiresInMs: 86_400_000 },
+      options,
+    );
+    expect(email.subject).toBe('אימות כתובת האימייל שלכם ב-HilaTech AI Assistant');
+    expect(email.html).toContain('<html lang="he" dir="rtl">');
+    expect(email.html).toContain('שלום דנה,');
+    expect(email.text).toContain('הקישור תקף למשך יום אחד.');
+    expect(email.text).toContain('https://app.example.com/verify-email?token=tok_1234567890abcdef');
+    expect(email.text).not.toMatch(/Please confirm|expires in/);
+  });
+
+  it('formats Hebrew durations (one, dual, plural) and falls back to the English text when only expiresIn is given', () => {
+    const at = (expiresInMs: number) =>
+      renderEmail('password_reset', { token: 'tok_1234567890abcdef', expiresInMs }, options).text;
+    expect(at(3_600_000)).toContain('למשך שעה אחת.');
+    expect(at(2 * 86_400_000)).toContain('למשך יומיים.');
+    expect(at(7 * 86_400_000)).toContain('למשך 7 ימים.');
+    const legacy = renderEmail(
+      'password_reset',
+      { token: 'tok_1234567890abcdef', expiresIn: '1 hour' },
+      options,
+    ).text;
+    expect(legacy).toContain('למשך 1 hour.');
+  });
+
+  it('renders the invitation in Hebrew and escapes the supplied names', () => {
+    const email = renderEmail(
+      'invitation',
+      {
+        token: 'tok_1234567890abcdef',
+        organizationName: 'אקמה <b>בע"מ</b>',
+        inviterName: 'נועה לוי',
+        roleName: 'מנהל',
+        expiresInMs: 7 * 86_400_000,
+      },
+      options,
+    );
+    expect(email.subject).toContain('הוזמנתם להצטרף אל');
+    expect(email.text).toContain('נועה לוי הזמין/ה אתכם להצטרף אל');
+    expect(email.text).toContain('בתפקיד מנהל');
+    expect(email.html).toContain('&lt;b&gt;');
+    expect(email.html).not.toContain('<b>בע');
+  });
+
+  it('unknown locales render in English (left-to-right)', () => {
+    const email = renderEmail(
+      'verify_email',
+      { token: 'tok_1234567890abcdef', expiresInMs: 3_600_000 },
+      { appUrl: 'https://app.example.com', locale: 'fr' },
+    );
+    expect(email.html).toContain('<html lang="en" dir="ltr">');
+    expect(email.text).toContain('The link expires in 1 hour.');
+  });
+});

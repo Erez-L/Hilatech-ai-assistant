@@ -423,4 +423,34 @@ describe('Auth journey', () => {
       }
     });
   });
+  describe('email language', () => {
+    it('queues emails in Hebrew for a Hebrew UI (Accept-Language) and in English otherwise; a saved preference wins', async () => {
+      const hebrew = uniqueEmail('lang-he');
+      const res = await anon(ctx)
+        .post('/api/v1/auth/register')
+        .set('Accept-Language', 'he-IL,he;q=0.9,en;q=0.8')
+        .send({ email: hebrew, password: PASSWORD, firstName: 'Dana', lastName: 'Levi' });
+      expect(res.status).toBe(201);
+      const [verification] = await emailJobsTo(ctx, hebrew, 'verify_email');
+      expect(verification!.data.locale).toBe('he');
+      expect(verification!.data.variables).toMatchObject({ expiresInMs: expect.any(Number) });
+
+      const english = await register(ctx, { email: uniqueEmail('lang-en') });
+      const [plain] = await emailJobsTo(ctx, english.email, 'verify_email');
+      expect(plain!.data.locale).toBe('en');
+
+      // The saved UI language beats the request header.
+      await ctx.prisma.client.user.update({
+        where: { email: english.email },
+        data: { preferences: { locale: 'he' } },
+      });
+      const forgot = await anon(ctx)
+        .post('/api/v1/auth/forgot-password')
+        .set('Accept-Language', 'en-US')
+        .send({ email: english.email });
+      expect(forgot.status).toBe(202);
+      const [reset] = await emailJobsTo(ctx, english.email, 'password_reset');
+      expect(reset!.data.locale).toBe('he');
+    });
+  });
 });

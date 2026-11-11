@@ -13,7 +13,7 @@ import { Logger } from 'nestjs-pino';
 
 import { AppException } from '../../common/errors/app.exception';
 import { type PageResult, page, skipTake } from '../../common/utils/pagination';
-import { EmailService } from '../../infrastructure/email/email.service';
+import { EmailService, savedLocaleOf } from '../../infrastructure/email/email.service';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { DEFAULT_PREFERENCES, userPreferencesSchema } from '../users/users.schemas';
 import { jsonObject } from '../crm/crm.mappers';
@@ -113,6 +113,7 @@ export class NotificationsService {
           idempotencyKey: `notif-email-${key}`,
           organizationId: input.organizationId,
           requestId: input.requestId ?? null,
+          locale: savedLocaleOf(user),
         },
       );
     }

@@ -40,6 +40,8 @@ export const emailJobSchema = baseJobSchema.extend({
     'generic',
   ]),
   variables: z.record(z.string(), z.unknown()),
+  /** Language of the rendered email; English when absent. */
+  locale: z.enum(['en', 'he']).optional(),
 });
 export type EmailJob = z.infer<typeof emailJobSchema>;
 
