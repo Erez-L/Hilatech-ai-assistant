@@ -19,8 +19,10 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 FROM deps AS build
 COPY packages ./packages
 COPY apps/workers ./apps/workers
-# `prisma generate` only needs the variable to exist; no database is contacted at build time.
-RUN DATABASE_URL=postgresql://build:build@localhost:5432/build pnpm --filter @hilatech/database generate \
+# `prisma generate` only needs the variable to exist; no database is contacted at build time,
+# and this stage's environment is not carried into the runtime image.
+ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
+RUN pnpm --filter @hilatech/database generate \
  && pnpm --filter @hilatech/workers... build \
  && pnpm --filter @hilatech/workers deploy --legacy --prod /out
 
