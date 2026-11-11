@@ -10,7 +10,7 @@ export class UuidPipe implements PipeTransform<unknown, string> {
     const result = idSchema.safeParse(value);
     if (!result.success) {
       throw AppException.validation('Invalid identifier', [
-        { path: 'id', message: 'Expected a UUID', code: 'invalid_string' },
+        { path: 'id', message: 'Expected a UUID', code: 'invalid_format' },
       ]);
     }
     return result.data;

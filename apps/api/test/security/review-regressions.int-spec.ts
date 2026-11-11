@@ -232,15 +232,13 @@ describe('Security review regressions', () => {
     });
 
     it('also blocks a stored endpoint at use time (rows written before the guard / directly in the DB)', async () => {
-      const created = await as(ctx, owner, orgId)
-        .post('/api/v1/ai/providers')
-        .send({
-          provider: 'openai',
-          name: 'legacy-ssrf',
-          apiKey: 'sk-test-0123456789',
-          baseUrl: 'http://localhost:9/v1', // loopback is only allowed outside production
-          defaultModel: 'gpt-4o-mini',
-        });
+      const created = await as(ctx, owner, orgId).post('/api/v1/ai/providers').send({
+        provider: 'openai',
+        name: 'legacy-ssrf',
+        apiKey: 'sk-test-0123456789',
+        baseUrl: 'http://localhost:9/v1', // loopback is only allowed outside production
+        defaultModel: 'gpt-4o-mini',
+      });
       expect(created.status).toBe(201);
       await ctx.prisma.client.aiProviderConfig.update({
         where: { id: created.body.data.id },
@@ -255,15 +253,13 @@ describe('Security review regressions', () => {
     });
 
     it('never honours a stored endpoint override for Bedrock', async () => {
-      const res = await as(ctx, owner, orgId)
-        .post('/api/v1/ai/providers')
-        .send({
-          provider: 'bedrock',
-          name: 'bedrock-x',
-          baseUrl: 'https://10.0.0.5',
-          region: 'us-east-1',
-          defaultModel: 'anthropic.claude-3-haiku-20240307-v1:0',
-        });
+      const res = await as(ctx, owner, orgId).post('/api/v1/ai/providers').send({
+        provider: 'bedrock',
+        name: 'bedrock-x',
+        baseUrl: 'https://10.0.0.5',
+        region: 'us-east-1',
+        defaultModel: 'anthropic.claude-3-haiku-20240307-v1:0',
+      });
       // 400 when Bedrock is disabled on the server, otherwise created with baseUrl discarded
       if (res.status === 201) expect(res.body.data.baseUrl).toBeNull();
       else expect(res.status).toBe(400);
@@ -294,7 +290,9 @@ describe('Security review regressions', () => {
       const other = (sessions.body.data as Array<{ familyId: string; current: boolean }>).find(
         (s) => !s.current,
       )!;
-      expect((await as(ctx, user).delete(`/api/v1/auth/sessions/${other.familyId}`)).status).toBe(204);
+      expect((await as(ctx, user).delete(`/api/v1/auth/sessions/${other.familyId}`)).status).toBe(
+        204,
+      );
       expect((await as(ctx, user).get('/api/v1/users/me')).status).toBe(200);
       expect((await as(ctx, { accessToken: secondToken }).get('/api/v1/users/me')).status).toBe(
         401,
@@ -311,9 +309,7 @@ describe('Security review regressions', () => {
         .post('/api/v1/auth/change-password')
         .send({ currentPassword: user.password, newPassword: 'An0therStrongPassw0rd!' });
       expect(change.status).toBe(204);
-      expect((await as(ctx, { accessToken: otherToken }).get('/api/v1/users/me')).status).toBe(
-        401,
-      );
+      expect((await as(ctx, { accessToken: otherToken }).get('/api/v1/users/me')).status).toBe(401);
       expect((await as(ctx, user).get('/api/v1/users/me')).status).toBe(200);
     });
   });
@@ -321,9 +317,8 @@ describe('Security review regressions', () => {
   // -------------------------------------------------------------------------------------------
   describe('SEC-05: notification links cannot leave the application origin', () => {
     it('drops protocol-relative and backslash links before persisting', async () => {
-      const { NotificationsService } = await import(
-        '../../src/modules/notifications/notifications.service'
-      );
+      const { NotificationsService } =
+        await import('../../src/modules/notifications/notifications.service');
       const notifications = ctx.app.get(NotificationsService);
       const link = async (value: string) => {
         const n = await notifications.notify({

@@ -11,13 +11,17 @@ describe('workflow templates', () => {
 
   it('are structurally valid definitions', () => {
     for (const t of WORKFLOW_TEMPLATES) {
-      expect({ key: t.key, issues: validateWorkflowDefinition(t.trigger, t.steps) }).toEqual({ key: t.key, issues: [] });
+      expect({ key: t.key, issues: validateWorkflowDefinition(t.trigger, t.steps) }).toEqual({
+        key: t.key,
+        issues: [],
+      });
     }
   });
 
   it('declare what the user must fill in whenever they use the placeholder id', () => {
     for (const t of WORKFLOW_TEMPLATES) {
-      if (JSON.stringify(t.steps).includes(PLACEHOLDER_ID)) expect(t.requires.length).toBeGreaterThan(0);
+      if (JSON.stringify(t.steps).includes(PLACEHOLDER_ID))
+        expect(t.requires.length).toBeGreaterThan(0);
     }
   });
 });

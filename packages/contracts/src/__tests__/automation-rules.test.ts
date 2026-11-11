@@ -26,12 +26,18 @@ describe('cron', () => {
   it('treats 7 as Sunday', () => {
     expect([...parseCron('0 0 * * 7').dayOfWeek]).toEqual([0]);
   });
-  it.each(['* * * *', '60 * * * *', '* 24 * * *', '*/0 * * * *', '5-1 * * * *', 'a b c d e', '* * 0 * *', '1//2 * * * *'])(
-    'rejects %s',
-    (expr) => {
-      expect(isValidCron(expr)).toBe(false);
-    },
-  );
+  it.each([
+    '* * * *',
+    '60 * * * *',
+    '* 24 * * *',
+    '*/0 * * * *',
+    '5-1 * * * *',
+    'a b c d e',
+    '* * 0 * *',
+    '1//2 * * * *',
+  ])('rejects %s', (expr) => {
+    expect(isValidCron(expr)).toBe(false);
+  });
   it('throws CronParseError', () => {
     expect(() => parseCron('x')).toThrow(CronParseError);
   });
@@ -50,7 +56,9 @@ describe('cron', () => {
     expect(cronIsDue('0 9 * * *', new Date('2026-07-15T07:00:00Z'), 'Asia/Jerusalem')).toBe(false);
     // Day rollover: 23:30 UTC is already the next weekday in Jerusalem.
     expect(zonedParts(new Date('2026-03-09T23:30:00Z'), 'Asia/Jerusalem').weekday).toBe(2); // Tuesday
-    expect(cronIsDue('30 1 * * tue', new Date('2026-03-09T23:30:00Z'), 'Asia/Jerusalem')).toBe(true);
+    expect(cronIsDue('30 1 * * tue', new Date('2026-03-09T23:30:00Z'), 'Asia/Jerusalem')).toBe(
+      true,
+    );
   });
   it('applies POSIX day-of-month / day-of-week OR semantics', () => {
     // 2026-03-13 is a Friday, 13th. "0 0 13 * fri" fires on either.
@@ -72,7 +80,9 @@ describe('templates', () => {
   it('renders paths, indexes and objects', () => {
     expect(renderTemplate('Lead {{ trigger.payload.leadId }}!', ctx)).toBe('Lead L1!');
     expect(renderTemplate('{{trigger.payload.tags[1]}}', ctx)).toBe('b');
-    expect(renderTemplate('{{ steps.s1.output.text }} / {{ trigger.payload.n }}', ctx)).toBe('hello / 5');
+    expect(renderTemplate('{{ steps.s1.output.text }} / {{ trigger.payload.n }}', ctx)).toBe(
+      'hello / 5',
+    );
     expect(renderTemplate('{{ trigger.payload.tags }}', ctx)).toBe('["a","b"]');
   });
   it('renders missing values as empty and ignores unsafe paths', () => {
@@ -92,7 +102,9 @@ describe('templates', () => {
     expect(renderTemplateValue('n={{ trigger.payload.n }}', ctx)).toBe('n=5');
   });
   it('renderDeep walks objects/arrays', () => {
-    expect(renderDeep({ a: ['{{ trigger.payload.leadId }}'], b: { c: 1 }, __proto__: null }, ctx)).toEqual({
+    expect(
+      renderDeep({ a: ['{{ trigger.payload.leadId }}'], b: { c: 1 }, __proto__: null }, ctx),
+    ).toEqual({
       a: ['L1'],
       b: { c: 1 },
     });
@@ -123,9 +135,16 @@ describe('evaluateCondition', () => {
 });
 
 describe('validateWorkflowDefinition', () => {
-  const note: WorkflowStep = { id: 'n1', type: 'create_lead_note', leadId: '{{ trigger.payload.leadId }}', body: 'hi' };
+  const note: WorkflowStep = {
+    id: 'n1',
+    type: 'create_lead_note',
+    leadId: '{{ trigger.payload.leadId }}',
+    body: 'hi',
+  };
   it('accepts a valid definition', () => {
-    expect(validateWorkflowDefinition({ type: 'event', event: 'lead.created' }, [note])).toEqual([]);
+    expect(validateWorkflowDefinition({ type: 'event', event: 'lead.created' }, [note])).toEqual(
+      [],
+    );
   });
   it('flags duplicate ids, bad cron and unknown roots', () => {
     const issues = validateWorkflowDefinition({ type: 'schedule', cron: '99 * * * *' }, [
@@ -140,7 +159,15 @@ describe('validateWorkflowDefinition', () => {
   it('validates condition branches (unknown, backwards, overlapping)', () => {
     const steps: WorkflowStep[] = [
       note,
-      { id: 'c', type: 'condition', left: '1', operator: 'eq', right: '1', then: ['n1', 'zz', 'd'], else: ['d'] },
+      {
+        id: 'c',
+        type: 'condition',
+        left: '1',
+        operator: 'eq',
+        right: '1',
+        then: ['n1', 'zz', 'd'],
+        else: ['d'],
+      },
       { id: 'd', type: 'delay', seconds: 5 },
     ];
     const msgs = validateWorkflowDefinition({ type: 'manual' }, steps).map((i) => i.message);
@@ -158,7 +185,14 @@ describe('validateWorkflowDefinition', () => {
   });
   it('checks http urls, update_lead emptiness, outbound events, variable names, unbalanced templates', () => {
     const steps: WorkflowStep[] = [
-      { id: 'h', type: 'http_request', method: 'GET', url: 'http://example.com', headers: {}, timeoutMs: 1000 },
+      {
+        id: 'h',
+        type: 'http_request',
+        method: 'GET',
+        url: 'http://example.com',
+        headers: {},
+        timeoutMs: 1000,
+      },
       { id: 'u', type: 'update_lead', leadId: 'x', addTags: [] },
       { id: 'o', type: 'outbound_webhook', event: 'custom.thing', payload: {} },
       { id: 'v', type: 'set_variable', name: '1bad', value: 'x' },
@@ -181,6 +215,10 @@ describe('validateWorkflowDefinition', () => {
       type: 'delay' as const,
       seconds: 86_400,
     }));
-    expect(validateWorkflowDefinition({ type: 'manual' }, steps).some((i) => i.message.includes('7 days'))).toBe(true);
+    expect(
+      validateWorkflowDefinition({ type: 'manual' }, steps).some((i) =>
+        i.message.includes('7 days'),
+      ),
+    ).toBe(true);
   });
 });

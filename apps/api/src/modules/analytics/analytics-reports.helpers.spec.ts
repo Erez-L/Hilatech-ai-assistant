@@ -15,20 +15,41 @@ const d = (iso: string) => new Date(iso);
 
 describe('bucketStart / buildBuckets', () => {
   it('aligns to UTC midnight, Monday and the first of the month', () => {
-    expect(bucketStart(d('2026-11-09T15:30:00Z'), 'day').toISOString()).toBe('2026-11-09T00:00:00.000Z');
+    expect(bucketStart(d('2026-11-09T15:30:00Z'), 'day').toISOString()).toBe(
+      '2026-11-09T00:00:00.000Z',
+    );
     // 2026-11-09 is a Monday; Sunday 2026-11-08 belongs to the week of Monday 2026-11-02
-    expect(bucketStart(d('2026-11-09T15:30:00Z'), 'week').toISOString()).toBe('2026-11-09T00:00:00.000Z');
-    expect(bucketStart(d('2026-11-08T23:59:59Z'), 'week').toISOString()).toBe('2026-11-02T00:00:00.000Z');
-    expect(bucketStart(d('2026-11-30T23:59:59Z'), 'month').toISOString()).toBe('2026-11-01T00:00:00.000Z');
+    expect(bucketStart(d('2026-11-09T15:30:00Z'), 'week').toISOString()).toBe(
+      '2026-11-09T00:00:00.000Z',
+    );
+    expect(bucketStart(d('2026-11-08T23:59:59Z'), 'week').toISOString()).toBe(
+      '2026-11-02T00:00:00.000Z',
+    );
+    expect(bucketStart(d('2026-11-30T23:59:59Z'), 'month').toISOString()).toBe(
+      '2026-11-01T00:00:00.000Z',
+    );
   });
 
   it('covers [from, to) with one bucket per period, including partial first/last ones', () => {
     const days = buildBuckets(d('2026-11-01T10:00:00Z'), d('2026-11-04T00:00:00Z'), 'day');
-    expect(days.map((b) => b.toISOString().slice(0, 10))).toEqual(['2026-11-01', '2026-11-02', '2026-11-03']);
+    expect(days.map((b) => b.toISOString().slice(0, 10))).toEqual([
+      '2026-11-01',
+      '2026-11-02',
+      '2026-11-03',
+    ]);
     const weeks = buildBuckets(d('2026-11-04T00:00:00Z'), d('2026-11-17T00:00:00Z'), 'week');
-    expect(weeks.map((b) => b.toISOString().slice(0, 10))).toEqual(['2026-11-02', '2026-11-09', '2026-11-16']);
+    expect(weeks.map((b) => b.toISOString().slice(0, 10))).toEqual([
+      '2026-11-02',
+      '2026-11-09',
+      '2026-11-16',
+    ]);
     const months = buildBuckets(d('2026-10-15T00:00:00Z'), d('2027-01-02T00:00:00Z'), 'month');
-    expect(months.map((b) => b.toISOString().slice(0, 7))).toEqual(['2026-10', '2026-11', '2026-12', '2027-01']);
+    expect(months.map((b) => b.toISOString().slice(0, 7))).toEqual([
+      '2026-10',
+      '2026-11',
+      '2026-12',
+      '2027-01',
+    ]);
   });
 });
 
@@ -41,10 +62,18 @@ describe('resolveRange', () => {
     expect(r.buckets).toHaveLength(31);
   });
   it('rejects inverted and over-long ranges with a validation error', () => {
-    expect(() => resolveRange({ granularity: 'day', from: '2026-11-09T00:00:00Z', to: '2026-11-01T00:00:00Z' }, now))
-      .toThrow(expect.objectContaining({ code: ErrorCode.VALIDATION_ERROR }));
-    expect(() => resolveRange({ granularity: 'day', from: '2024-01-01T00:00:00Z', to: '2026-01-01T00:00:00Z' }, now))
-      .toThrow(expect.objectContaining({ code: ErrorCode.VALIDATION_ERROR }));
+    expect(() =>
+      resolveRange(
+        { granularity: 'day', from: '2026-11-09T00:00:00Z', to: '2026-11-01T00:00:00Z' },
+        now,
+      ),
+    ).toThrow(expect.objectContaining({ code: ErrorCode.VALIDATION_ERROR }));
+    expect(() =>
+      resolveRange(
+        { granularity: 'day', from: '2024-01-01T00:00:00Z', to: '2026-01-01T00:00:00Z' },
+        now,
+      ),
+    ).toThrow(expect.objectContaining({ code: ErrorCode.VALIDATION_ERROR }));
   });
 });
 
@@ -63,12 +92,24 @@ describe('fillSeries', () => {
 
 describe('buildFunnel', () => {
   const counts = (over: Partial<Record<LeadStatus, number>>): Record<LeadStatus, number> => ({
-    new: 0, contacted: 0, qualified: 0, proposal: 0, won: 0, lost: 0, ...over,
+    new: 0,
+    contacted: 0,
+    qualified: 0,
+    proposal: 0,
+    won: 0,
+    lost: 0,
+    ...over,
   });
   it('counts "reached" as current status at or beyond the stage; top stage = all leads', () => {
-    const f = buildFunnel(counts({ new: 4, contacted: 3, qualified: 2, proposal: 1, won: 2, lost: 3 }));
+    const f = buildFunnel(
+      counts({ new: 4, contacted: 3, qualified: 2, proposal: 1, won: 2, lost: 3 }),
+    );
     expect(f.stages.map((s) => [s.status, s.reached])).toEqual([
-      ['new', 15], ['contacted', 8], ['qualified', 5], ['proposal', 3], ['won', 2],
+      ['new', 15],
+      ['contacted', 8],
+      ['qualified', 5],
+      ['proposal', 3],
+      ['won', 2],
     ]);
     expect(f.stages[1]?.rateFromPrevious).toBeCloseTo(8 / 15, 3);
     expect(f.stages[4]?.rateFromTop).toBeCloseTo(2 / 15, 3);
@@ -104,6 +145,14 @@ describe('CSV', () => {
     expect(csvCell(-5)).toBe('-5');
   });
   it('joins rows with CRLF and ends with a newline', () => {
-    expect(toCsv(['a', 'b'], [[1, 'x'], [2, null]])).toBe('a,b\r\n1,x\r\n2,\r\n');
+    expect(
+      toCsv(
+        ['a', 'b'],
+        [
+          [1, 'x'],
+          [2, null],
+        ],
+      ),
+    ).toBe('a,b\r\n1,x\r\n2,\r\n');
   });
 });

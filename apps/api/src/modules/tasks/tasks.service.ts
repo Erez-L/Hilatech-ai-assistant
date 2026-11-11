@@ -94,7 +94,11 @@ export class TasksService {
       actorUserId: tenant.userId,
       targetType: 'task',
       targetId: created.id,
-      metadata: { title: truncate(created.title, 120), priority: created.priority, source: 'human' },
+      metadata: {
+        title: truncate(created.title, 120),
+        priority: created.priority,
+        source: 'human',
+      },
       request: meta,
     });
     if (created.assigneeId) await this.notifyAssigned(tenant, created, created.assigneeId, meta);
@@ -115,9 +119,14 @@ export class TasksService {
       TaskRules.assertCanSetAssignee(tenant, dto.assigneeId, existing.assigneeId);
     }
     // Cross-field rule must also hold against stored values: reminder never after due.
-    const nextDue = dto.dueAt !== undefined ? (dto.dueAt ? new Date(dto.dueAt) : null) : existing.dueAt;
+    const nextDue =
+      dto.dueAt !== undefined ? (dto.dueAt ? new Date(dto.dueAt) : null) : existing.dueAt;
     const nextReminder =
-      dto.reminderAt !== undefined ? (dto.reminderAt ? new Date(dto.reminderAt) : null) : existing.reminderAt;
+      dto.reminderAt !== undefined
+        ? dto.reminderAt
+          ? new Date(dto.reminderAt)
+          : null
+        : existing.reminderAt;
     if (nextDue && nextReminder && nextReminder.getTime() > nextDue.getTime()) {
       throw AppException.validation('reminderAt must not be after dueAt', [
         { path: 'reminderAt', message: 'reminderAt must not be after dueAt', code: 'custom' },
@@ -136,20 +145,25 @@ export class TasksService {
       changed.push(key);
     };
     if (dto.title !== undefined) set('title', dto.title, dto.title !== existing.title);
-    if (dto.description !== undefined) set('description', dto.description, dto.description !== existing.description);
-    if (dto.priority !== undefined) set('priority', dto.priority, dto.priority !== existing.priority);
+    if (dto.description !== undefined)
+      set('description', dto.description, dto.description !== existing.description);
+    if (dto.priority !== undefined)
+      set('priority', dto.priority, dto.priority !== existing.priority);
     if (dto.status !== undefined && dto.status !== existing.status) {
       set('status', dto.status, true);
       data.completedAt = null; // cancelled/open statuses never carry a completion time
     }
-    if (dto.dueAt !== undefined) set('dueAt', nextDue, (nextDue?.getTime() ?? null) !== (existing.dueAt?.getTime() ?? null));
+    if (dto.dueAt !== undefined)
+      set('dueAt', nextDue, (nextDue?.getTime() ?? null) !== (existing.dueAt?.getTime() ?? null));
     if (dto.reminderAt !== undefined) {
       set('reminderAt', nextReminder, TaskRules.shouldResetReminder(existing, nextReminder));
       if (TaskRules.shouldResetReminder(existing, nextReminder)) data.reminderSentAt = null;
     }
-    if (dto.assigneeId !== undefined) set('assigneeId', dto.assigneeId, dto.assigneeId !== existing.assigneeId);
+    if (dto.assigneeId !== undefined)
+      set('assigneeId', dto.assigneeId, dto.assigneeId !== existing.assigneeId);
     if (dto.leadId !== undefined) set('leadId', dto.leadId, dto.leadId !== existing.leadId);
-    if (dto.contactId !== undefined) set('contactId', dto.contactId, dto.contactId !== existing.contactId);
+    if (dto.contactId !== undefined)
+      set('contactId', dto.contactId, dto.contactId !== existing.contactId);
     if (dto.dealId !== undefined) set('dealId', dto.dealId, dto.dealId !== existing.dealId);
     if (dto.conversationId !== undefined) {
       set('conversationId', dto.conversationId, dto.conversationId !== existing.conversationId);
@@ -267,7 +281,11 @@ export class TasksService {
         organizationId: tenant.organizationId,
         actorUserId: tenant.userId,
         targetType: 'task',
-        metadata: { assigneeId: dto.assigneeId, count: toChange.length, taskIds: toChange.slice(0, 100) },
+        metadata: {
+          assigneeId: dto.assigneeId,
+          count: toChange.length,
+          taskIds: toChange.slice(0, 100),
+        },
         request: meta,
       });
       if (dto.assigneeId && dto.assigneeId !== tenant.userId) {
@@ -303,12 +321,18 @@ export class TasksService {
 
   private async assertReferences(
     tenant: TenantContext,
-    dto: { leadId?: string | null; contactId?: string | null; dealId?: string | null; conversationId?: string | null },
+    dto: {
+      leadId?: string | null;
+      contactId?: string | null;
+      dealId?: string | null;
+      conversationId?: string | null;
+    },
   ): Promise<void> {
     if (dto.leadId) await this.refs.assertLead(tenant, dto.leadId, 'leadId');
     if (dto.contactId) await this.refs.assertContact(tenant, dto.contactId, 'contactId');
     if (dto.dealId) await this.refs.assertDeal(tenant, dto.dealId, 'dealId');
-    if (dto.conversationId) await this.refs.assertConversation(tenant, dto.conversationId, 'conversationId');
+    if (dto.conversationId)
+      await this.refs.assertConversation(tenant, dto.conversationId, 'conversationId');
   }
 
   private async emit(
@@ -353,7 +377,17 @@ export class TasksService {
 export function taskEventPayload(
   task: Pick<
     Task,
-    'id' | 'title' | 'priority' | 'status' | 'assigneeId' | 'dueAt' | 'source' | 'leadId' | 'contactId' | 'dealId' | 'conversationId'
+    | 'id'
+    | 'title'
+    | 'priority'
+    | 'status'
+    | 'assigneeId'
+    | 'dueAt'
+    | 'source'
+    | 'leadId'
+    | 'contactId'
+    | 'dealId'
+    | 'conversationId'
   >,
 ): Record<string, unknown> {
   return {

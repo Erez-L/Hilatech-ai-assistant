@@ -2,11 +2,7 @@ import { PricingTable } from '@hilatech/ai-engine';
 import { ALL_PERMISSIONS, ErrorCode, PLAN_LIMITS } from '@hilatech/contracts';
 
 import { AppException } from '../../common/errors/app.exception';
-import {
-  createAuditMock,
-  createLoggerMock,
-  createPrismaMock,
-} from '../../test-utils/prisma.mock';
+import { createAuditMock, createLoggerMock, createPrismaMock } from '../../test-utils/prisma.mock';
 import { InMemoryReservationStore } from './budget-reservations';
 import { BudgetService, alertText } from './budget.service';
 import { EntitlementsService } from './entitlements.service';
@@ -81,7 +77,12 @@ describe('BudgetService.admit', () => {
     expect(error).toBeInstanceOf(AppException);
     expect(error.getStatus()).toBe(402);
     expect(error.code).toBe(ErrorCode.BUDGET_EXCEEDED);
-    expect(error.details).toMatchObject({ scope: 'budget_tokens', reason: 'exhausted', used: 10_000, budget: 10_000 });
+    expect(error.details).toMatchObject({
+      scope: 'budget_tokens',
+      reason: 'exhausted',
+      used: 10_000,
+      budget: 10_000,
+    });
   });
 
   it('reserves headroom: a second concurrent request that no longer fits is refused until the first releases', async () => {
@@ -142,7 +143,12 @@ describe('BudgetService.status / update', () => {
     client.organizationBudget.findUnique.mockResolvedValue(budgetRow());
     client.usageRecord.aggregate.mockResolvedValue({ _sum: { quantity: BigInt(8_500) } });
     const warn = await service.status(ORG);
-    expect(warn.tokens).toMatchObject({ used: 8_500, budget: 10_000, percent: 85, level: 'warning' });
+    expect(warn.tokens).toMatchObject({
+      used: 8_500,
+      budget: 10_000,
+      percent: 85,
+      level: 'warning',
+    });
     expect(warn.blocked).toBe(false);
     client.usageRecord.aggregate.mockResolvedValue({ _sum: { quantity: BigInt(10_001) } });
     expect((await service.status(ORG)).blocked).toBe(true);
@@ -158,7 +164,11 @@ describe('BudgetService.status / update', () => {
     expect(client.organizationBudget.upsert).toHaveBeenCalledTimes(1);
     const arg = client.organizationBudget.upsert.mock.calls[0]?.[0];
     expect(arg.where).toEqual({ organizationId: ORG });
-    expect(arg.create).toMatchObject({ organizationId: ORG, monthlyTokenBudget: BigInt(5_000), hardStopEnabled: true });
+    expect(arg.create).toMatchObject({
+      organizationId: ORG,
+      monthlyTokenBudget: BigInt(5_000),
+      hardStopEnabled: true,
+    });
     expect(audit.log).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'billing.budget_updated', organizationId: ORG }),
     );
@@ -196,7 +206,10 @@ describe('BudgetService alerts', () => {
     client.budgetAlert.createManyAndReturn.mockResolvedValue([
       created('budget_tokens', 'warning', 8100, 10000, 80),
     ]);
-    client.organizationMember.findMany.mockResolvedValue([{ userId: 'owner' }, { userId: 'admin' }]);
+    client.organizationMember.findMany.mockResolvedValue([
+      { userId: 'owner' },
+      { userId: 'admin' },
+    ]);
 
     await service.evaluate(ORG);
 
@@ -249,7 +262,9 @@ describe('BudgetService alerts', () => {
     client.budgetAlert.createManyAndReturn.mockResolvedValue([]);
     await service.evaluate(ORG);
     const rows = client.budgetAlert.createManyAndReturn.mock.calls[0]?.[0].data;
-    expect(rows).toEqual([expect.objectContaining({ scope: 'plan_tokens', kind: 'warning', limit: 100_000 })]);
+    expect(rows).toEqual([
+      expect.objectContaining({ scope: 'plan_tokens', kind: 'warning', limit: 100_000 }),
+    ]);
   });
 
   it('never throws from reconcile (alert failure must not fail the AI request)', async () => {
@@ -259,7 +274,11 @@ describe('BudgetService alerts', () => {
   });
 
   it('alertText describes warning vs exceeded', () => {
-    expect(alertText({ scope: 'budget_cost', kind: 'warning', thresholdPct: 80 }).title).toMatch(/80%/);
-    expect(alertText({ scope: 'plan_tokens', kind: 'exceeded', thresholdPct: 100 }).title).toMatch(/used up/);
+    expect(alertText({ scope: 'budget_cost', kind: 'warning', thresholdPct: 80 }).title).toMatch(
+      /80%/,
+    );
+    expect(alertText({ scope: 'plan_tokens', kind: 'exceeded', thresholdPct: 100 }).title).toMatch(
+      /used up/,
+    );
   });
 });

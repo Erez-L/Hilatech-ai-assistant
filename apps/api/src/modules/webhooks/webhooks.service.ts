@@ -31,11 +31,7 @@ import { SecretBoxService } from '../../infrastructure/crypto/secret-box.service
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { QueueService } from '../../infrastructure/queue/queue.service';
 import { AuditService } from '../audit/audit.service';
-import {
-  toWebhook,
-  toWebhookDelivery,
-  toWebhookEndpoint,
-} from './webhooks.mappers';
+import { toWebhook, toWebhookDelivery, toWebhookEndpoint } from './webhooks.mappers';
 
 @Injectable()
 export class WebhooksService {
@@ -123,7 +119,11 @@ export class WebhooksService {
   }
 
   /** New signing secret, returned exactly once. */
-  async rotateSecret(tenant: TenantContext, id: string, meta: RequestMeta): Promise<WebhookWithSecret> {
+  async rotateSecret(
+    tenant: TenantContext,
+    id: string,
+    meta: RequestMeta,
+  ): Promise<WebhookWithSecret> {
     const existing = await this.requireWebhook(tenant, id);
     const secret = `whsec_${generateOpaqueToken(24)}`;
     const updated = await this.prisma.client.webhook.update({
@@ -161,7 +161,11 @@ export class WebhooksService {
   }
 
   /** Queues a signed `webhook.test` delivery to the subscription URL (visible in the deliveries list). */
-  async sendTest(tenant: TenantContext, id: string, meta: RequestMeta): Promise<WebhookDeliveryDto> {
+  async sendTest(
+    tenant: TenantContext,
+    id: string,
+    meta: RequestMeta,
+  ): Promise<WebhookDeliveryDto> {
     const webhook = await this.requireWebhook(tenant, id);
     const delivery = await this.prisma.client.webhookDelivery.create({
       data: {
@@ -272,7 +276,10 @@ export class WebhooksService {
       metadata: { slug: created.slug, workflowId: created.workflowId },
       request: meta,
     });
-    return { ...toWebhookEndpoint(created, await this.organizationSlug(tenant.organizationId)), secret };
+    return {
+      ...toWebhookEndpoint(created, await this.organizationSlug(tenant.organizationId)),
+      secret,
+    };
   }
 
   async updateEndpoint(
@@ -324,7 +331,10 @@ export class WebhooksService {
       targetId: existing.id,
       request: meta,
     });
-    return { ...toWebhookEndpoint(updated, await this.organizationSlug(tenant.organizationId)), secret };
+    return {
+      ...toWebhookEndpoint(updated, await this.organizationSlug(tenant.organizationId)),
+      secret,
+    };
   }
 
   async removeEndpoint(tenant: TenantContext, id: string, meta: RequestMeta): Promise<void> {
@@ -378,14 +388,16 @@ export class WebhooksService {
       select: { trigger: true },
     });
     if (!workflow) {
-      throw AppException.validation('workflowId does not reference a workflow of this organization', [
-        { path: 'workflowId', message: 'Workflow not found', code: 'custom' },
-      ]);
+      throw AppException.validation(
+        'workflowId does not reference a workflow of this organization',
+        [{ path: 'workflowId', message: 'Workflow not found', code: 'custom' }],
+      );
     }
     if ((workflow.trigger as { type?: string }).type !== 'webhook') {
-      throw AppException.validation('Only workflows with the "webhook" trigger can be bound to an endpoint', [
-        { path: 'workflowId', message: 'Workflow trigger must be "webhook"', code: 'custom' },
-      ]);
+      throw AppException.validation(
+        'Only workflows with the "webhook" trigger can be bound to an endpoint',
+        [{ path: 'workflowId', message: 'Workflow trigger must be "webhook"', code: 'custom' }],
+      );
     }
   }
 

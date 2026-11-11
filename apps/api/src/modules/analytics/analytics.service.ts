@@ -277,7 +277,9 @@ export class AnalyticsService {
     const [openCount, overdue, dueToday] = await Promise.all([
       db.task.count({ where: { organizationId, status: open } }),
       db.task.count({ where: { organizationId, status: open, dueAt: { lt: now } } }),
-      db.task.count({ where: { organizationId, status: open, dueAt: { gte: dayStart, lt: dayEnd } } }),
+      db.task.count({
+        where: { organizationId, status: open, dueAt: { gte: dayStart, lt: dayEnd } },
+      }),
     ]);
     return { open: openCount, overdue, dueToday };
   }

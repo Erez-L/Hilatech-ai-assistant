@@ -36,11 +36,18 @@ export class ImportsProcessor implements JobProcessor<typeof QueueName.IMPORTS> 
     @InjectPinoLogger(ImportsProcessor.name) private readonly logger: PinoLogger,
   ) {}
 
-  async process(job: Job<JobPayload<typeof QueueName.IMPORTS>>, context: JobContext): Promise<JobOutcome> {
+  async process(
+    job: Job<JobPayload<typeof QueueName.IMPORTS>>,
+    context: JobContext,
+  ): Promise<JobOutcome> {
     return this.run(job.data.organizationId, job.data.importId, context);
   }
 
-  async run(organizationId: string, importId: string, context?: Partial<JobContext>): Promise<JobOutcome> {
+  async run(
+    organizationId: string,
+    importId: string,
+    context?: Partial<JobContext>,
+  ): Promise<JobOutcome> {
     const db = this.prisma.client;
     const found = await db.importJob.findFirst({ where: { id: importId, organizationId } });
     if (!found) return { status: 'skipped', reason: 'not_found', importId };
@@ -58,7 +65,8 @@ export class ImportsProcessor implements JobProcessor<typeof QueueName.IMPORTS> 
     const entity = found.entity as ImportEntity;
     const mapping = found.mapping as ImportMapping | null;
     const strategy = found.duplicateStrategy as DuplicateStrategy;
-    if (!mapping) return this.fail(organizationId, importId, entity, 'The import has no column mapping');
+    if (!mapping)
+      return this.fail(organizationId, importId, entity, 'The import has no column mapping');
 
     let rows: string[][];
     try {
@@ -70,7 +78,12 @@ export class ImportsProcessor implements JobProcessor<typeof QueueName.IMPORTS> 
         maxColumns: IMPORT_MAX_COLUMNS,
       }).slice(1);
     } catch (err) {
-      return this.fail(organizationId, importId, entity, `Could not read the file: ${(err as Error).message}`);
+      return this.fail(
+        organizationId,
+        importId,
+        entity,
+        `Could not read the file: ${(err as Error).message}`,
+      );
     }
 
     const ctx = {
@@ -81,7 +94,9 @@ export class ImportsProcessor implements JobProcessor<typeof QueueName.IMPORTS> 
       strategy,
       importId,
     };
-    let report: ImportReportRow[] = Array.isArray(found.report) ? (found.report as unknown as ImportReportRow[]) : [];
+    let report: ImportReportRow[] = Array.isArray(found.report)
+      ? (found.report as unknown as ImportReportRow[])
+      : [];
     let processed = Math.min(found.processedRows, rows.length);
 
     try {
@@ -91,7 +106,10 @@ export class ImportsProcessor implements JobProcessor<typeof QueueName.IMPORTS> 
           select: { status: true },
         });
         if (!current || current.status !== 'running') {
-          this.logger.info({ ...context, importId, status: current?.status }, 'Import stopped (cancelled)');
+          this.logger.info(
+            { ...context, importId, status: current?.status },
+            'Import stopped (cancelled)',
+          );
           return { status: 'skipped', reason: 'cancelled', importId, processed };
         }
         const slice = rows.slice(processed, processed + IMPORT_BATCH_SIZE);
@@ -153,8 +171,15 @@ export class ImportsProcessor implements JobProcessor<typeof QueueName.IMPORTS> 
       data: { status: 'failed', error: message, finishedAt: new Date() },
     });
     if (updated.count > 0) {
-      const row = await db.importJob.findFirst({ where: { id: importId, organizationId }, select: { createdById: true } });
-      await this.audit(organizationId, row?.createdById ?? null, importId, { entity, status: 'failed', error: message });
+      const row = await db.importJob.findFirst({
+        where: { id: importId, organizationId },
+        select: { createdById: true },
+      });
+      await this.audit(organizationId, row?.createdById ?? null, importId, {
+        entity,
+        status: 'failed',
+        error: message,
+      });
     }
     return { status: 'completed', importId, importStatus: 'failed', error: message };
   }

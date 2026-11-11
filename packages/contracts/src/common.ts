@@ -14,6 +14,24 @@ export const REQUEST_ID_HEADER = 'x-request-id' as const;
 // Standard response envelope
 // ---------------------------------------------------------------------------
 
+/**
+ * `schema.partial()` for PATCH bodies derived from a create schema. zod 4 applies `.default()` /
+ * `.prefault()` even when the key is optional, so a plain `.partial()` would silently write the
+ * create-time defaults (status, tags, isEnabled, ...) on every update. This strips them first:
+ * an omitted key stays `undefined`.
+ */
+export function partialUpdate<T extends z.ZodObject>(schema: T): ReturnType<T['partial']> {
+  const shape: Record<string, z.ZodType> = {};
+  for (const [key, field] of Object.entries(schema.shape as Record<string, z.ZodType>)) {
+    let inner = field;
+    while (inner instanceof z.ZodDefault || inner instanceof z.ZodPrefault) {
+      inner = inner.unwrap() as z.ZodType;
+    }
+    shape[key] = inner.optional();
+  }
+  return z.object(shape) as unknown as ReturnType<T['partial']>;
+}
+
 export const paginationMetaSchema = z.object({
   page: z.number().int().min(1),
   pageSize: z.number().int().min(1),

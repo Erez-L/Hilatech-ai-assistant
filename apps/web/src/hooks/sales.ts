@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type QueryClient,
-} from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import type {
   BulkAssignTasksRequest,
   CreateCompanyRequest,
@@ -87,7 +82,8 @@ export function useUpdateTask() {
   const qc = useQueryClient();
   const orgId = useOrgId();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdateTaskRequest }) => tasksApi.update(id, body),
+    mutationFn: ({ id, body }: { id: string; body: UpdateTaskRequest }) =>
+      tasksApi.update(id, body),
     onSuccess: () => invalidateTaskViews(qc, orgId),
   });
 }
@@ -246,8 +242,15 @@ export function usePipelineMutations() {
       onSuccess: done,
     }),
     updateStage: useMutation({
-      mutationFn: ({ id, stageId, body }: { id: string; stageId: string; body: UpdateStageRequest }) =>
-        pipelinesApi.updateStage(id, stageId, body),
+      mutationFn: ({
+        id,
+        stageId,
+        body,
+      }: {
+        id: string;
+        stageId: string;
+        body: UpdateStageRequest;
+      }) => pipelinesApi.updateStage(id, stageId, body),
       onSuccess: done,
     }),
     deleteStage: useMutation({
@@ -316,7 +319,8 @@ export function useUpdateDeal() {
   const qc = useQueryClient();
   const orgId = useOrgId();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdateDealRequest }) => dealsApi.update(id, body),
+    mutationFn: ({ id, body }: { id: string; body: UpdateDealRequest }) =>
+      dealsApi.update(id, body),
     onSuccess: () => invalidateDealViews(qc, orgId),
   });
 }
@@ -399,7 +403,10 @@ export function useDealActivities(id: string) {
   });
 }
 
-export function useDealConversion(params: Partial<DealConversionQuery>, options?: { enabled?: boolean }) {
+export function useDealConversion(
+  params: Partial<DealConversionQuery>,
+  options?: { enabled?: boolean },
+) {
   const orgId = useOrgId();
   return useQuery({
     queryKey: keys.dealConversion(orgId, params),
@@ -422,7 +429,9 @@ export function useImports(params: ListImportsParams, options?: { enabled?: bool
     placeholderData: (prev) => prev,
     // Keep the history live while something is running.
     refetchInterval: (query) =>
-      query.state.data?.data.some((j) => !isTerminalImport(j.status) && j.status !== 'uploaded' && j.status !== 'validated')
+      query.state.data?.data.some(
+        (j) => !isTerminalImport(j.status) && j.status !== 'uploaded' && j.status !== 'validated',
+      )
         ? 2000
         : false,
   });
@@ -455,16 +464,23 @@ export function useImportMutations() {
   const refresh = () => void qc.invalidateQueries({ queryKey: keys.importsRoot(orgId) });
   return {
     upload: useMutation({
-      mutationFn: ({ entity, file }: { entity: Parameters<typeof importsApi.upload>[0]; file: File }) =>
-        importsApi.upload(entity, file),
+      mutationFn: ({
+        entity,
+        file,
+      }: {
+        entity: Parameters<typeof importsApi.upload>[0];
+        file: File;
+      }) => importsApi.upload(entity, file),
       onSuccess: refresh,
     }),
     validate: useMutation({
-      mutationFn: ({ id, body }: { id: string; body: ImportConfigBody }) => importsApi.validate(id, body),
+      mutationFn: ({ id, body }: { id: string; body: ImportConfigBody }) =>
+        importsApi.validate(id, body),
       onSuccess: refresh,
     }),
     execute: useMutation({
-      mutationFn: ({ id, body }: { id: string; body: ImportConfigBody }) => importsApi.execute(id, body),
+      mutationFn: ({ id, body }: { id: string; body: ImportConfigBody }) =>
+        importsApi.execute(id, body),
       onSuccess: () => {
         refresh();
         // Imports create records: every list may change once the job finishes.
@@ -480,5 +496,8 @@ export function useImportMutations() {
 
 /** Deals of one company (company detail page). */
 export function useDealsForCompany(companyId: string, enabled = true) {
-  return useDeals({ companyId, page: 1, pageSize: 20, sortBy: 'updatedAt', sortOrder: 'desc' }, { enabled });
+  return useDeals(
+    { companyId, page: 1, pageSize: 20, sortBy: 'updatedAt', sortOrder: 'desc' },
+    { enabled },
+  );
 }

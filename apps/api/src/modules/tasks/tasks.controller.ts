@@ -51,7 +51,9 @@ export class TasksController {
 
   @Get()
   @RequirePermissions(Permission.TASKS_READ)
-  @ApiOperation({ summary: 'List tasks (filters: status, assignee, due range, overdue, related entity)' })
+  @ApiOperation({
+    summary: 'List tasks (filters: status, assignee, due range, overdue, related entity)',
+  })
   @ApiZodQuery(listTasksQuerySchema)
   @ApiZodResponse(taskWithRelationsSchema, { paginated: true })
   @ApiErrors(...COMMON_TENANT_ERRORS)
@@ -104,7 +106,9 @@ export class TasksController {
 
   @Patch(':id')
   @RequirePermissions(Permission.TASKS_UPDATE)
-  @ApiOperation({ summary: 'Update a task; null clears dueAt, reminderAt, assignee and related ids' })
+  @ApiOperation({
+    summary: 'Update a task; null clears dueAt, reminderAt, assignee and related ids',
+  })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiZodBody(updateTaskSchema)
   @ApiZodResponse(taskWithRelationsSchema)

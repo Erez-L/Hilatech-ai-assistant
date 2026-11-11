@@ -36,7 +36,11 @@ import { vm } from '@/i18n/validation';
 import { useT } from '@/i18n/provider';
 
 export const dealFormSchema = z.object({
-  title: z.string().trim().min(1, vm('deals.enterATitle')).max(200, vm('deals.keepTheTitleUnder200')),
+  title: z
+    .string()
+    .trim()
+    .min(1, vm('deals.enterATitle'))
+    .max(200, vm('deals.keepTheTitleUnder200')),
   description: z.string().trim().max(5000),
   value: z
     .string()
@@ -44,10 +48,7 @@ export const dealFormSchema = z.object({
     .refine((v) => v === '' || (Number.isFinite(Number(v)) && Number(v) >= 0), {
       message: vm('leads.enterAValidAmount'),
     }),
-  currency: z
-    .string()
-    .trim()
-    .length(3, vm('deals.currencyMustBe3Letters')),
+  currency: z.string().trim().length(3, vm('deals.currencyMustBe3Letters')),
   pipelineId: z.string(),
   stageId: z.string(),
   ownerId: z.string(),
@@ -71,7 +72,10 @@ const FIELDS = [
   'tags',
 ] as const;
 
-export function dealFormDefaults(deal?: DealWithRelations | null, overrides: Partial<DealFormValues> = {}): DealFormValues {
+export function dealFormDefaults(
+  deal?: DealWithRelations | null,
+  overrides: Partial<DealFormValues> = {},
+): DealFormValues {
   return {
     title: deal?.title ?? '',
     description: deal?.description ?? '',
@@ -148,7 +152,8 @@ function DealForm({
   const errors = form.formState.errors;
   const pipelineId = form.watch('pipelineId');
   const list = React.useMemo(() => pipelines.data ?? [], [pipelines.data]);
-  const pipeline = list.find((p) => p.id === pipelineId) ?? list.find((p) => p.isDefault) ?? list[0];
+  const pipeline =
+    list.find((p) => p.id === pipelineId) ?? list.find((p) => p.isDefault) ?? list[0];
   const stages = React.useMemo(() => (pipeline ? orderedStages(pipeline.stages) : []), [pipeline]);
 
   // New deals start in the default pipeline's first open stage and in the organization's currency.
@@ -162,7 +167,8 @@ function DealForm({
     }
   }, [editing, pipeline, stages, form]);
   React.useEffect(() => {
-    if (!editing && orgCurrency && !form.getFieldState('currency').isDirty) form.setValue('currency', orgCurrency);
+    if (!editing && orgCurrency && !form.getFieldState('currency').isDirty)
+      form.setValue('currency', orgCurrency);
   }, [editing, orgCurrency, form]);
 
   const [contactLabel, setContactLabel] = React.useState<string | undefined>(
@@ -216,17 +222,29 @@ function DealForm({
     <form onSubmit={onSubmit} noValidate className="flex min-h-0 flex-col">
       <DialogHeader>
         <DialogTitle>{editing ? t('deals.editDeal') : t('deals.newDeal')}</DialogTitle>
-        <DialogDescription>{editing ? t('deals.editDealDescription') : t('deals.newDealDescription')}</DialogDescription>
+        <DialogDescription>
+          {editing ? t('deals.editDealDescription') : t('deals.newDealDescription')}
+        </DialogDescription>
       </DialogHeader>
       <DialogBody className="flex flex-col gap-5 pb-2">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
         <FormField id="deal-title" label={t('common.title')} error={errors.title?.message} required>
-          <Input autoFocus autoComplete="off" dir="auto" placeholder={t('deals.dealTitlePlaceholder')} {...form.register('title')} />
+          <Input
+            autoFocus
+            autoComplete="off"
+            dir="auto"
+            placeholder={t('deals.dealTitlePlaceholder')}
+            {...form.register('title')}
+          />
         </FormField>
 
         {!editing ? (
           <div className="grid gap-5 sm:grid-cols-2">
-            <FormField id="deal-pipelineId" label={t('deals.pipeline')} error={errors.pipelineId?.message}>
+            <FormField
+              id="deal-pipelineId"
+              label={t('deals.pipeline')}
+              error={errors.pipelineId?.message}
+            >
               <NativeSelect
                 {...form.register('pipelineId', {
                   onChange: () => form.setValue('stageId', ''),
@@ -253,19 +271,49 @@ function DealForm({
 
         <div className="grid gap-5 sm:grid-cols-[1fr_7rem_1fr]">
           <FormField id="deal-value" label={t('common.value')} error={errors.value?.message}>
-            <Input type="number" inputMode="decimal" min={0} step="0.01" placeholder="0" className="tabular" {...form.register('value')} />
+            <Input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="0.01"
+              placeholder="0"
+              className="tabular"
+              {...form.register('value')}
+            />
           </FormField>
-          <FormField id="deal-currency" label={t('common.currency')} error={errors.currency?.message}>
-            <Input maxLength={3} className="font-mono uppercase" autoCapitalize="characters" {...form.register('currency')} />
+          <FormField
+            id="deal-currency"
+            label={t('common.currency')}
+            error={errors.currency?.message}
+          >
+            <Input
+              maxLength={3}
+              className="font-mono uppercase"
+              autoCapitalize="characters"
+              {...form.register('currency')}
+            />
           </FormField>
-          <FormField id="deal-expectedCloseAt" label={t('deals.expectedClose')} error={errors.expectedCloseAt?.message}>
-            <Input type="date" dir="ltr" className="text-start" {...form.register('expectedCloseAt')} />
+          <FormField
+            id="deal-expectedCloseAt"
+            label={t('deals.expectedClose')}
+            error={errors.expectedCloseAt?.message}
+          >
+            <Input
+              type="date"
+              dir="ltr"
+              className="text-start"
+              {...form.register('expectedCloseAt')}
+            />
           </FormField>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
           {canCompanies ? (
-            <FormField id="deal-companyId" label={t('common.company')} error={errors.companyId?.message}>
+            <FormField
+              id="deal-companyId"
+              label={t('common.company')}
+              error={errors.companyId?.message}
+            >
               <Controller
                 control={form.control}
                 name="companyId"
@@ -284,7 +332,11 @@ function DealForm({
             </FormField>
           ) : null}
           {canContacts ? (
-            <FormField id="deal-contactId" label={t('common.contact')} error={errors.contactId?.message}>
+            <FormField
+              id="deal-contactId"
+              label={t('common.contact')}
+              error={errors.contactId?.message}
+            >
               <Controller
                 control={form.control}
                 name="contactId"
@@ -294,7 +346,14 @@ function DealForm({
                     value={field.value || null}
                     selected={
                       contactLabel
-                        ? { id: field.value, firstName: contactLabel, lastName: null, email: null, phone: null, company: null }
+                        ? {
+                            id: field.value,
+                            firstName: contactLabel,
+                            lastName: null,
+                            email: null,
+                            phone: null,
+                            company: null,
+                          }
                         : null
                     }
                     onValueChange={(next, contact) => {
@@ -307,7 +366,11 @@ function DealForm({
             </FormField>
           ) : null}
           {canMembers ? (
-            <FormField id="deal-ownerId" label={t('contacts.owner')} error={errors.ownerId?.message}>
+            <FormField
+              id="deal-ownerId"
+              label={t('contacts.owner')}
+              error={errors.ownerId?.message}
+            >
               <Controller
                 control={form.control}
                 name="ownerId"
@@ -324,14 +387,30 @@ function DealForm({
           ) : null}
         </div>
 
-        <FormField id="deal-tags" label={t('common.tags')} description={t('common.pressEnterOrCommaTo')} error={errors.tags?.message}>
+        <FormField
+          id="deal-tags"
+          label={t('common.tags')}
+          description={t('common.pressEnterOrCommaTo')}
+          error={errors.tags?.message}
+        >
           <Controller
             control={form.control}
             name="tags"
-            render={({ field }) => <TagInput id="deal-tags" value={field.value} onValueChange={field.onChange} maxTags={20} />}
+            render={({ field }) => (
+              <TagInput
+                id="deal-tags"
+                value={field.value}
+                onValueChange={field.onChange}
+                maxTags={20}
+              />
+            )}
           />
         </FormField>
-        <FormField id="deal-description" label={t('common.description')} error={errors.description?.message}>
+        <FormField
+          id="deal-description"
+          label={t('common.description')}
+          error={errors.description?.message}
+        >
           <Textarea rows={3} dir="auto" {...form.register('description')} />
         </FormField>
       </DialogBody>

@@ -15,7 +15,9 @@ vi.mock('@/lib/api/deals', async (orig) => {
 });
 
 function setup() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
   const key = keys.dealBoard('org-1', { pipelineId: 'p' });
   qc.setQueryData(key, makeBoard());
   const wrapper = ({ children }: { children: React.ReactNode }) => (

@@ -29,7 +29,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { deterministicUuid } from './deterministic-id';
 import { outboundPolicyFor } from './outbound-policy';
 import { QueueProducer } from './queue-producer.service';
-import { StepError, type StepHandler, type StepHandlers, type StepRuntime } from './workflow-runner';
+import {
+  StepError,
+  type StepHandler,
+  type StepHandlers,
+  type StepRuntime,
+} from './workflow-runner';
 
 /** Facts about the execution the handlers act within. Every query below filters by `organizationId`. */
 export interface ExecutionScope {
@@ -74,7 +79,8 @@ function httpFailure(error: unknown): StepError {
 }
 
 function responseOutput(res: SafeResponse): Record<string, unknown> {
-  const body = res.body.length > OUTPUT_BODY_CHARS ? res.body.slice(0, OUTPUT_BODY_CHARS) : res.body;
+  const body =
+    res.body.length > OUTPUT_BODY_CHARS ? res.body.slice(0, OUTPUT_BODY_CHARS) : res.body;
   let json: unknown;
   if (isJsonContent(res.headers) && !res.truncated) {
     try {
@@ -116,7 +122,9 @@ export class StepHandlerFactory {
     @Inject(WORKERS_ENV) private readonly env: WorkersEnv,
     @InjectPinoLogger(StepHandlerFactory.name) private readonly logger: PinoLogger,
   ) {
-    this.box = env.CREDENTIALS_ENCRYPTION_KEY ? new SecretBox(env.CREDENTIALS_ENCRYPTION_KEY) : null;
+    this.box = env.CREDENTIALS_ENCRYPTION_KEY
+      ? new SecretBox(env.CREDENTIALS_ENCRYPTION_KEY)
+      : null;
   }
 
   build(scope: ExecutionScope): StepHandlers {
@@ -211,7 +219,10 @@ export class StepHandlerFactory {
   }
 
   /** Assignee from the event payload: explicit `assigneeId`, else the lead's / conversation's assignee. */
-  private async resolveAssignee(organizationId: string, payload: Record<string, unknown>): Promise<string | null> {
+  private async resolveAssignee(
+    organizationId: string,
+    payload: Record<string, unknown>,
+  ): Promise<string | null> {
     const db = this.prisma.client;
     const direct = asString(payload.assigneeId);
     const candidate = direct && UUID_RE.test(direct) ? direct : null;
@@ -222,15 +233,31 @@ export class StepHandlerFactory {
     const ownerId = asString(payload.ownerId);
     if (!userId && ownerId && UUID_RE.test(ownerId)) userId = ownerId;
     if (!userId && dealId && UUID_RE.test(dealId)) {
-      userId = (await db.deal.findFirst({ where: { id: dealId, organizationId }, select: { ownerId: true } }))?.ownerId ?? null;
+      userId =
+        (
+          await db.deal.findFirst({
+            where: { id: dealId, organizationId },
+            select: { ownerId: true },
+          })
+        )?.ownerId ?? null;
     }
     if (!userId && leadId && UUID_RE.test(leadId)) {
-      userId = (await db.lead.findFirst({ where: { id: leadId, organizationId }, select: { assigneeId: true } }))?.assigneeId ?? null;
+      userId =
+        (
+          await db.lead.findFirst({
+            where: { id: leadId, organizationId },
+            select: { assigneeId: true },
+          })
+        )?.assigneeId ?? null;
     }
     if (!userId && conversationId && UUID_RE.test(conversationId)) {
       userId =
-        (await db.conversation.findFirst({ where: { id: conversationId, organizationId }, select: { assigneeId: true } }))
-          ?.assigneeId ?? null;
+        (
+          await db.conversation.findFirst({
+            where: { id: conversationId, organizationId },
+            select: { assigneeId: true },
+          })
+        )?.assigneeId ?? null;
     }
     if (!userId) return null;
     const member = await db.organizationMember.findFirst({
@@ -251,7 +278,9 @@ export class StepHandlerFactory {
     const hasBody = step.body !== undefined && !['GET', 'DELETE'].includes(step.method);
     const body = hasBody ? runtime.render(step.body!) : undefined;
     if (hasBody && !headers['content-type']) {
-      headers['content-type'] = /^\s*[{[]/.test(body ?? '') ? 'application/json' : 'text/plain; charset=utf-8';
+      headers['content-type'] = /^\s*[{[]/.test(body ?? '')
+        ? 'application/json'
+        : 'text/plain; charset=utf-8';
     }
     headers['user-agent'] ??= 'HilaTech-Automation/1.0';
     try {
@@ -283,7 +312,9 @@ export class StepHandlerFactory {
     const db = this.prisma.client;
     const leadId = runtime.render(step.leadId).trim();
     if (!UUID_RE.test(leadId)) throw new StepError(`Invalid lead id "${truncate(leadId, 60)}"`);
-    const lead = await db.lead.findFirst({ where: { id: leadId, organizationId, deletedAt: null } });
+    const lead = await db.lead.findFirst({
+      where: { id: leadId, organizationId, deletedAt: null },
+    });
     if (!lead) throw new StepError('Lead not found in this organization');
 
     const data: Prisma.LeadUncheckedUpdateInput = {};
@@ -293,7 +324,10 @@ export class StepHandlerFactory {
     if (step.status && step.status !== lead.status) {
       data.status = step.status;
       changed.push('status');
-      activities.push({ type: 'status_changed', payload: { from: lead.status, to: step.status, viaAutomation: true } });
+      activities.push({
+        type: 'status_changed',
+        payload: { from: lead.status, to: step.status, viaAutomation: true },
+      });
     }
     const assignee = step.assigneeId ? runtime.render(step.assigneeId).trim() : '';
     if (assignee && assignee !== lead.assigneeId) {
@@ -305,13 +339,21 @@ export class StepHandlerFactory {
       if (!member) throw new StepError('Assignee is not an active member of this organization');
       data.assigneeId = assignee;
       changed.push('assigneeId');
-      activities.push({ type: 'assigned', payload: { from: lead.assigneeId, to: assignee, viaAutomation: true } });
+      activities.push({
+        type: 'assigned',
+        payload: { from: lead.assigneeId, to: assignee, viaAutomation: true },
+      });
     }
-    const newTags = step.addTags.map((t) => runtime.render(t).trim()).filter((t) => t && !lead.tags.includes(t));
+    const newTags = step.addTags
+      .map((t) => runtime.render(t).trim())
+      .filter((t) => t && !lead.tags.includes(t));
     if (newTags.length > 0) {
       data.tags = [...lead.tags, ...new Set(newTags)];
       changed.push('tags');
-      activities.push({ type: 'updated', payload: { fields: ['tags'], addedTags: newTags, viaAutomation: true } });
+      activities.push({
+        type: 'updated',
+        payload: { fields: ['tags'], addedTags: newTags, viaAutomation: true },
+      });
     }
 
     if (changed.length > 0) {
@@ -364,7 +406,10 @@ export class StepHandlerFactory {
         payload: { noteId: note.id, preview: truncate(body, 120), viaAutomation: true },
       },
     });
-    await this.audit(scope, 'create_lead_note', 'lead', lead.id, { noteId: note.id, stepId: step.id });
+    await this.audit(scope, 'create_lead_note', 'lead', lead.id, {
+      noteId: note.id,
+      stepId: step.id,
+    });
     return { noteId: note.id, leadId: lead.id };
   }
 
@@ -410,13 +455,18 @@ export class StepHandlerFactory {
     const leadId = await resolveRef(
       step.leadId,
       'leadId',
-      (id) => db.lead.findFirst({ where: { id, organizationId, deletedAt: null }, select: { id: true } }),
+      (id) =>
+        db.lead.findFirst({ where: { id, organizationId, deletedAt: null }, select: { id: true } }),
       'Lead',
     );
     const contactId = await resolveRef(
       step.contactId,
       'contactId',
-      (id) => db.contact.findFirst({ where: { id, organizationId, deletedAt: null }, select: { id: true } }),
+      (id) =>
+        db.contact.findFirst({
+          where: { id, organizationId, deletedAt: null },
+          select: { id: true },
+        }),
       'Contact',
     );
     const dealId = await resolveRef(
@@ -450,7 +500,8 @@ export class StepHandlerFactory {
     }
 
     const now = new Date();
-    const dueAt = step.dueInHours !== undefined ? new Date(now.getTime() + step.dueInHours * 3_600_000) : null;
+    const dueAt =
+      step.dueInHours !== undefined ? new Date(now.getTime() + step.dueInHours * 3_600_000) : null;
     const reminderAt =
       dueAt && step.reminderBeforeHours !== undefined
         ? new Date(dueAt.getTime() - step.reminderBeforeHours * 3_600_000)
@@ -496,14 +547,19 @@ export class StepHandlerFactory {
               data: { idempotencyKey: `task-assigned:${id}`, taskId: id },
             },
           })
-          .catch((err: unknown) => this.logger.warn({ err, taskId: id }, 'Could not notify the task assignee'));
+          .catch((err: unknown) =>
+            this.logger.warn({ err, taskId: id }, 'Could not notify the task assignee'),
+          );
       }
     }
     return { taskId: id, created, assigneeId, dueAt: dueAt?.toISOString() ?? null };
   }
 
   /** Notes need a human author: the run's actor, the workflow creator, the lead assignee, else the oldest owner. */
-  private async resolveNoteAuthor(scope: ExecutionScope, assigneeId: string | null): Promise<string | null> {
+  private async resolveNoteAuthor(
+    scope: ExecutionScope,
+    assigneeId: string | null,
+  ): Promise<string | null> {
     const db = this.prisma.client;
     for (const candidate of [scope.actorUserId, scope.createdById, assigneeId]) {
       if (!candidate) continue;
@@ -566,7 +622,8 @@ export class StepHandlerFactory {
     });
     if (!integration) throw new StepError('No enabled n8n integration is connected');
     const config = integrationConfigSchema.safeParse(integration.config);
-    if (!config.success || config.data.kind !== 'n8n') throw new StepError('The n8n integration configuration is invalid');
+    if (!config.success || config.data.kind !== 'n8n')
+      throw new StepError('The n8n integration configuration is invalid');
     const secrets = this.decryptSecrets(scope.organizationId, integration.encryptedSecrets);
 
     const target = runtime.render(step.webhook).trim();
@@ -614,9 +671,12 @@ export class StepHandlerFactory {
 
   private decryptSecrets(organizationId: string, envelope: string | null): IntegrationSecrets {
     if (!envelope) return {};
-    if (!this.box) throw new StepError('CREDENTIALS_ENCRYPTION_KEY is not configured for the workers');
+    if (!this.box)
+      throw new StepError('CREDENTIALS_ENCRYPTION_KEY is not configured for the workers');
     try {
-      const parsed = integrationSecretsSchema.safeParse(JSON.parse(this.box.decrypt(envelope, organizationId)));
+      const parsed = integrationSecretsSchema.safeParse(
+        JSON.parse(this.box.decrypt(envelope, organizationId)),
+      );
       return parsed.success ? parsed.data : {};
     } catch {
       throw new StepError('Integration credentials could not be decrypted');
@@ -640,7 +700,10 @@ export class StepHandlerFactory {
     let created = 0;
     for (const webhook of webhooks) {
       const id = deterministicUuid('wf-step-delivery', scope.executionId, step.id, webhook.id);
-      const exists = await this.prisma.client.webhookDelivery.findUnique({ where: { id }, select: { id: true } });
+      const exists = await this.prisma.client.webhookDelivery.findUnique({
+        where: { id },
+        select: { id: true },
+      });
       if (!exists) {
         await this.prisma.client.webhookDelivery.create({
           data: {
@@ -648,7 +711,10 @@ export class StepHandlerFactory {
             organizationId: scope.organizationId,
             webhookId: webhook.id,
             event: step.event,
-            payload: { ...payload, _workflow: { workflowId: scope.workflowId, executionId: scope.executionId } },
+            payload: {
+              ...payload,
+              _workflow: { workflowId: scope.workflowId, executionId: scope.executionId },
+            },
             status: 'pending',
             nextAttemptAt: new Date(),
           },
@@ -683,7 +749,9 @@ export class StepHandlerFactory {
     const input = runtime.render(step.input);
 
     const executionId = deterministicUuid('wf-step-agent', scope.executionId, step.id);
-    const existing = await db.agentExecution.findFirst({ where: { id: executionId, organizationId } });
+    const existing = await db.agentExecution.findFirst({
+      where: { id: executionId, organizationId },
+    });
     if (existing && (existing.status === 'succeeded' || existing.status === 'failed')) {
       return this.agentOutput(existing.id, existing.status, existing.output, existing.error);
     }
@@ -715,7 +783,10 @@ export class StepHandlerFactory {
       return { executionId, status: 'queued', output: null, error: null };
     }
 
-    const org = await db.organization.findUnique({ where: { id: organizationId }, select: { name: true } });
+    const org = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    });
     const result = await this.runtime.runner.run({
       executionId,
       agent: toAgentDefinition(agentRow),
@@ -731,7 +802,9 @@ export class StepHandlerFactory {
     });
     const out = this.agentOutput(executionId, result.status, result.output, result.error);
     if (result.status !== 'succeeded') {
-      throw new StepError(`Agent run ${result.status}${result.error ? `: ${result.error}` : ''}`, { output: out });
+      throw new StepError(`Agent run ${result.status}${result.error ? `: ${result.error}` : ''}`, {
+        output: out,
+      });
     }
     return out;
   }
@@ -742,6 +815,11 @@ export class StepHandlerFactory {
     output: unknown,
     error: string | null,
   ): Record<string, unknown> {
-    return { executionId, status, output: typeof output === 'string' ? output : (output ?? null), error };
+    return {
+      executionId,
+      status,
+      output: typeof output === 'string' ? output : (output ?? null),
+      error,
+    };
   }
 }

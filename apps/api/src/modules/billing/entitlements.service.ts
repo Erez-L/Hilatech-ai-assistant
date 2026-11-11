@@ -110,12 +110,36 @@ export class EntitlementsService {
     });
     return [
       row('seats', 'Team seats', 'count', seats, limits.seats, 'stock', true),
-      row('ai_tokens', 'AI tokens this month', 'tokens', tokens, limits.aiTokensPerMonth, 'period', true),
-      row('documents', 'Knowledge documents', 'count', documents, limits.knowledgeDocuments, 'stock', true),
+      row(
+        'ai_tokens',
+        'AI tokens this month',
+        'tokens',
+        tokens,
+        limits.aiTokensPerMonth,
+        'period',
+        true,
+      ),
+      row(
+        'documents',
+        'Knowledge documents',
+        'count',
+        documents,
+        limits.knowledgeDocuments,
+        'stock',
+        true,
+      ),
       row('storage_mb', 'Document storage', 'mb', storage, limits.storageMb, 'stock', true),
       row('agents', 'Agents', 'count', agents, limits.agents, 'stock', false),
       row('automations', 'Automations', 'count', automations, limits.automations, 'stock', false),
-      row('agent_executions', 'Agent executions this month', 'count', executions, null, 'period', false),
+      row(
+        'agent_executions',
+        'Agent executions this month',
+        'count',
+        executions,
+        null,
+        'period',
+        false,
+      ),
       row('automation_runs', 'Automation runs this month', 'count', runs, null, 'period', false),
     ];
   }

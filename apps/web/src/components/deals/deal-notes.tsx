@@ -93,17 +93,36 @@ export function DealNotes({ dealId, canWrite }: { dealId: string; canWrite: bool
           compact
           loading={<Skeleton className="m-5 h-16" />}
           isEmpty={(r) => r.data.length === 0}
-          empty={<EmptyState compact icon={<StickyNote />} title={t('leads.noNotesYet')} description={canWrite ? t('leads.writeDownWhatYouLearned') : t('leads.notesAddedByTheTeam')} />}
+          empty={
+            <EmptyState
+              compact
+              icon={<StickyNote />}
+              title={t('leads.noNotesYet')}
+              description={
+                canWrite ? t('leads.writeDownWhatYouLearned') : t('leads.notesAddedByTheTeam')
+              }
+            />
+          }
         >
           {(r) => (
             <ul className="divide-y divide-border">
               {r.data.map((note) => (
                 <li key={note.id} className="flex gap-3 px-5 py-4" data-testid="deal-note">
-                  <Avatar size="sm" src={note.author?.avatarUrl} firstName={note.author?.firstName} lastName={note.author?.lastName} />
+                  <Avatar
+                    size="sm"
+                    src={note.author?.avatarUrl}
+                    firstName={note.author?.firstName}
+                    lastName={note.author?.lastName}
+                  />
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <div className="flex items-baseline justify-between gap-3">
-                      <span className="text-sm font-medium">{note.author ? fullName(note.author) : t('common.formerMember')}</span>
-                      <time dateTime={note.createdAt} className="shrink-0 text-xs text-fg-subtle tabular">
+                      <span className="text-sm font-medium">
+                        {note.author ? fullName(note.author) : t('common.formerMember')}
+                      </span>
+                      <time
+                        dateTime={note.createdAt}
+                        className="shrink-0 text-xs text-fg-subtle tabular"
+                      >
                         {fmt.relative(new Date(note.createdAt))}
                       </time>
                     </div>

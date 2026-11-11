@@ -155,19 +155,26 @@ export class ExportsService {
       ...(query.tag ? { tags: { has: query.tag } } : {}),
       ...(query.search ? { OR: companySearchClauses(query.search) } : {}),
     };
-    return this.build(tenant, meta, 'companies', EXPORT_COLUMNS.companies, query, async (cursor) => {
-      const rows = await db.company.findMany({
-        where,
-        include: { owner: { select: { email: true } } },
-        orderBy: [{ [query.sortBy]: query.sortOrder }, { id: 'asc' }],
-        take: EXPORT_BATCH_SIZE,
-        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-      });
-      return rows.map((r) => ({
-        id: r.id,
-        cells: [r.id, r.name, r.domain, r.notes, tags(r.tags), r.owner?.email, iso(r.createdAt)],
-      }));
-    });
+    return this.build(
+      tenant,
+      meta,
+      'companies',
+      EXPORT_COLUMNS.companies,
+      query,
+      async (cursor) => {
+        const rows = await db.company.findMany({
+          where,
+          include: { owner: { select: { email: true } } },
+          orderBy: [{ [query.sortBy]: query.sortOrder }, { id: 'asc' }],
+          take: EXPORT_BATCH_SIZE,
+          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+        });
+        return rows.map((r) => ({
+          id: r.id,
+          cells: [r.id, r.name, r.domain, r.notes, tags(r.tags), r.owner?.email, iso(r.createdAt)],
+        }));
+      },
+    );
   }
 
   deals(tenant: TenantContext, query: ExportDealsQuery, meta: RequestMeta): ExportStream {

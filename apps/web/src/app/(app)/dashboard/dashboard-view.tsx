@@ -403,9 +403,15 @@ function DashboardBody({
               data-testid="dashboard-deals"
               hint={[
                 t('dashboard.dealsWeighted', {
-                  value: fmt.currency(d.deals.weightedPipelineValue, d.deals.currency, { compact: true }),
+                  value: fmt.currency(d.deals.weightedPipelineValue, d.deals.currency, {
+                    compact: true,
+                  }),
                 }),
-                t('dashboard.dealsWonLost', { won: d.deals.wonInPeriod, lost: d.deals.lostInPeriod, words }),
+                t('dashboard.dealsWonLost', {
+                  won: d.deals.wonInPeriod,
+                  lost: d.deals.lostInPeriod,
+                  words,
+                }),
                 ...d.deals.otherCurrencies.map((o) =>
                   t('dashboard.dealsOtherCurrency', {
                     value: fmt.currency(o.pipelineValue, o.currency, { compact: true }),
@@ -420,7 +426,10 @@ function DashboardBody({
               value={d.tasks.open}
               icon={<ListChecks />}
               data-testid="dashboard-tasks"
-              hint={t('dashboard.tasksOverdueDueToday', { overdue: d.tasks.overdue, dueToday: d.tasks.dueToday })}
+              hint={t('dashboard.tasksOverdueDueToday', {
+                overdue: d.tasks.overdue,
+                dueToday: d.tasks.dueToday,
+              })}
             />
           ) : null}
           <StatCard

@@ -29,7 +29,12 @@ import { SecretBoxService } from '../../infrastructure/crypto/secret-box.service
 import { OutboundPolicyService } from '../../infrastructure/http/outbound-policy.service';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { INTEGRATION_CATALOGUE, catalogueEntry, isLiveKind, secretProblems } from './integrations.catalog';
+import {
+  INTEGRATION_CATALOGUE,
+  catalogueEntry,
+  isLiveKind,
+  secretProblems,
+} from './integrations.catalog';
 
 const TEST_TIMEOUT_MS = 8_000;
 
@@ -116,7 +121,8 @@ export class IntegrationsService {
       where: { organizationId: tenant.organizationId, kind: dto.config.kind, name: dto.name },
       select: { id: true },
     });
-    if (clash) throw AppException.conflict('An integration with this name already exists for this kind');
+    if (clash)
+      throw AppException.conflict('An integration with this name already exists for this kind');
 
     const created = await this.prisma.client.integration.create({
       data: {
@@ -164,22 +170,32 @@ export class IntegrationsService {
     if (dto.config) this.assertConfigUrl(dto.config);
     if (dto.name && dto.name !== existing.name) {
       const clash = await this.prisma.client.integration.findFirst({
-        where: { organizationId: tenant.organizationId, kind: existing.kind, name: dto.name, NOT: { id: existing.id } },
+        where: {
+          organizationId: tenant.organizationId,
+          kind: existing.kind,
+          name: dto.name,
+          NOT: { id: existing.id },
+        },
         select: { id: true },
       });
-      if (clash) throw AppException.conflict('An integration with this name already exists for this kind');
+      if (clash)
+        throw AppException.conflict('An integration with this name already exists for this kind');
     }
     const changedConnection = dto.config !== undefined || dto.secrets !== undefined;
     const updated = await this.prisma.client.integration.update({
       where: { id: existing.id },
       data: {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
-        ...(dto.config !== undefined ? { config: dto.config as unknown as Prisma.InputJsonObject } : {}),
+        ...(dto.config !== undefined
+          ? { config: dto.config as unknown as Prisma.InputJsonObject }
+          : {}),
         ...(dto.secrets !== undefined
           ? { encryptedSecrets: this.encryptSecrets(tenant.organizationId, nextSecrets) }
           : {}),
         ...(dto.isEnabled !== undefined ? { isEnabled: dto.isEnabled } : {}),
-        ...(changedConnection ? { status: 'unconfigured', lastError: null, lastCheckedAt: null } : {}),
+        ...(changedConnection
+          ? { status: 'unconfigured', lastError: null, lastCheckedAt: null }
+          : {}),
       },
     });
     await this.audit.log({
@@ -231,7 +247,10 @@ export class IntegrationsService {
   // -- Internals ----------------------------------------------------------------------------------
 
   /** Performs the kind-specific check and persists status/lastError. Never throws for network problems. */
-  private async runTest(row: Integration, secrets: IntegrationSecrets): Promise<IntegrationTestResult> {
+  private async runTest(
+    row: Integration,
+    secrets: IntegrationSecrets,
+  ): Promise<IntegrationTestResult> {
     const checkedAt = new Date();
     let result: Omit<IntegrationTestResult, 'checkedAt'>;
     if (!isLiveKind(row.kind)) {
@@ -261,11 +280,15 @@ export class IntegrationsService {
   ): Promise<Omit<IntegrationTestResult, 'checkedAt'>> {
     const config = integrationConfigSchema.safeParse(row.config);
     if (!config.success || (config.data.kind !== 'rest' && config.data.kind !== 'n8n')) {
-      return { ok: false, status: 'error', latencyMs: null, message: 'Stored configuration is invalid' };
+      return {
+        ok: false,
+        status: 'error',
+        latencyMs: null,
+        message: 'Stored configuration is invalid',
+      };
     }
     const cfg = config.data;
-    const headers =
-      cfg.kind === 'rest' ? buildRestHeaders(cfg, secrets) : buildN8nHeaders(secrets);
+    const headers = cfg.kind === 'rest' ? buildRestHeaders(cfg, secrets) : buildN8nHeaders(secrets);
     const url = cfg.kind === 'n8n' ? joinUrl(cfg.baseUrl, '/healthz') : cfg.baseUrl;
     try {
       const res = await safeRequest(url, {
@@ -277,10 +300,20 @@ export class IntegrationsService {
       });
       const s = res.status;
       if (s === 401 || s === 403) {
-        return { ok: false, status: 'error', latencyMs: res.durationMs, message: `Reachable, but the credentials were rejected (HTTP ${s})` };
+        return {
+          ok: false,
+          status: 'error',
+          latencyMs: res.durationMs,
+          message: `Reachable, but the credentials were rejected (HTTP ${s})`,
+        };
       }
       if (s >= 500) {
-        return { ok: false, status: 'error', latencyMs: res.durationMs, message: `The remote service answered HTTP ${s}` };
+        return {
+          ok: false,
+          status: 'error',
+          latencyMs: res.durationMs,
+          message: `The remote service answered HTTP ${s}`,
+        };
       }
       if (cfg.kind === 'n8n' && s === 404) {
         // Older/proxied n8n without /healthz: fall back to reachability of the base URL.
@@ -296,7 +329,9 @@ export class IntegrationsService {
           ok,
           status: ok ? 'connected' : 'error',
           latencyMs: base.durationMs,
-          message: ok ? `n8n base URL reachable (HTTP ${base.status}; /healthz not exposed)` : `n8n answered HTTP ${base.status}`,
+          message: ok
+            ? `n8n base URL reachable (HTTP ${base.status}; /healthz not exposed)`
+            : `n8n answered HTTP ${base.status}`,
         };
       }
       return {
@@ -312,7 +347,11 @@ export class IntegrationsService {
           : error instanceof Error
             ? error.message
             : 'Connection failed';
-      this.logger.warn({ integrationId: row.id, kind: row.kind, reason: message }, 'Integration test failed', IntegrationsService.name);
+      this.logger.warn(
+        { integrationId: row.id, kind: row.kind, reason: message },
+        'Integration test failed',
+        IntegrationsService.name,
+      );
       return { ok: false, status: 'error', latencyMs: null, message: message.slice(0, 300) };
     }
   }
@@ -320,20 +359,26 @@ export class IntegrationsService {
   private assertValid(config: IntegrationConfig, secrets: IntegrationSecrets): void {
     const problems = secretProblems(config, secrets);
     if (problems.length > 0) {
-      throw AppException.validation('Invalid integration credentials', problems.map((p) => ({ ...p, code: 'custom' })));
+      throw AppException.validation(
+        'Invalid integration credentials',
+        problems.map((p) => ({ ...p, code: 'custom' })),
+      );
     }
   }
 
   private assertConfigUrl(config: IntegrationConfig): void {
     const urls: Array<[string, string | undefined]> = [];
-    if (config.kind === 'rest' || config.kind === 'n8n') urls.push(['config.baseUrl', config.baseUrl]);
+    if (config.kind === 'rest' || config.kind === 'n8n')
+      urls.push(['config.baseUrl', config.baseUrl]);
     for (const [path, url] of urls) {
       if (!url) continue;
       try {
         assertSafeUrlShape(url, this.outbound.policy);
       } catch (error) {
         if (error instanceof SsrfError) {
-          throw AppException.validation(`Invalid URL: ${error.message}`, [{ path, message: error.message, code: 'custom' }]);
+          throw AppException.validation(`Invalid URL: ${error.message}`, [
+            { path, message: error.message, code: 'custom' },
+          ]);
         }
         throw error;
       }
@@ -341,7 +386,9 @@ export class IntegrationsService {
   }
 
   private encryptSecrets(organizationId: string, secrets: IntegrationSecrets): string | null {
-    const keys = Object.keys(secrets).filter((k) => secrets[k as keyof IntegrationSecrets] !== undefined);
+    const keys = Object.keys(secrets).filter(
+      (k) => secrets[k as keyof IntegrationSecrets] !== undefined,
+    );
     if (keys.length === 0) return null;
     return this.secrets.encrypt(organizationId, JSON.stringify(secrets));
   }
@@ -349,11 +396,17 @@ export class IntegrationsService {
   private decryptSecrets(organizationId: string, envelope: string | null): IntegrationSecrets {
     if (!envelope) return {};
     try {
-      const parsed = integrationSecretsSchema.safeParse(JSON.parse(this.secrets.decrypt(organizationId, envelope)));
+      const parsed = integrationSecretsSchema.safeParse(
+        JSON.parse(this.secrets.decrypt(organizationId, envelope)),
+      );
       return parsed.success ? parsed.data : {};
     } catch (error) {
       if (error instanceof AppException) throw error;
-      this.logger.error({ organizationId }, 'Could not decrypt integration secrets', IntegrationsService.name);
+      this.logger.error(
+        { organizationId },
+        'Could not decrypt integration secrets',
+        IntegrationsService.name,
+      );
       return {};
     }
   }

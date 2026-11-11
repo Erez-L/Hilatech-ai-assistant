@@ -24,5 +24,7 @@ export function DealStatusBadge({
 export function StageKindBadge({ kind }: { kind: StageKind }) {
   const t = useT();
   if (kind === 'open') return null;
-  return <Badge variant={kind === 'won' ? 'success' : 'danger'}>{t(STAGE_KIND_LABELS[kind])}</Badge>;
+  return (
+    <Badge variant={kind === 'won' ? 'success' : 'danger'}>{t(STAGE_KIND_LABELS[kind])}</Badge>
+  );
 }

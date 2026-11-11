@@ -36,7 +36,11 @@ import { useT } from '@/i18n/provider';
 
 /** Browser-side shape ('' = none); the domain is normalised by the API contract. */
 export const companyFormSchema = z.object({
-  name: z.string().trim().min(1, vm('companies.enterAName')).max(160, vm('companies.keepTheNameUnder160')),
+  name: z
+    .string()
+    .trim()
+    .min(1, vm('companies.enterAName'))
+    .max(160, vm('companies.keepTheNameUnder160')),
   domain: z.string().trim().max(160),
   notes: z.string().trim().max(5000),
   tags: z.array(z.string().trim().min(1).max(40)).max(20),
@@ -81,7 +85,13 @@ export function CompanyDialog({
   );
 }
 
-function CompanyForm({ company, onDone }: { company: Company | null; onDone: (c?: Company) => void }) {
+function CompanyForm({
+  company,
+  onDone,
+}: {
+  company: Company | null;
+  onDone: (c?: Company) => void;
+}) {
   const t = useT();
   const create = useCreateCompany();
   const update = useUpdateCompany();
@@ -130,7 +140,9 @@ function CompanyForm({ company, onDone }: { company: Company | null; onDone: (c?
   return (
     <form onSubmit={onSubmit} noValidate className="flex min-h-0 flex-col">
       <DialogHeader>
-        <DialogTitle>{company ? t('companies.editCompany') : t('companies.newCompany')}</DialogTitle>
+        <DialogTitle>
+          {company ? t('companies.editCompany') : t('companies.newCompany')}
+        </DialogTitle>
         <DialogDescription>
           {company ? t('companies.editCompanyDescription') : t('companies.newCompanyDescription')}
         </DialogDescription>
@@ -149,17 +161,31 @@ function CompanyForm({ company, onDone }: { company: Company | null; onDone: (c?
           <Input dir="ltr" className="text-start" autoComplete="off" {...form.register('domain')} />
         </FormField>
         <div className={canOwner ? 'grid gap-5 sm:grid-cols-2' : 'grid gap-5'}>
-          <FormField id="company-tags" label={t('common.tags')} description={t('common.pressEnterOrCommaTo')} error={errors.tags?.message}>
+          <FormField
+            id="company-tags"
+            label={t('common.tags')}
+            description={t('common.pressEnterOrCommaTo')}
+            error={errors.tags?.message}
+          >
             <Controller
               control={form.control}
               name="tags"
               render={({ field }) => (
-                <TagInput id="company-tags" value={field.value} onValueChange={field.onChange} maxTags={20} />
+                <TagInput
+                  id="company-tags"
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  maxTags={20}
+                />
               )}
             />
           </FormField>
           {canOwner ? (
-            <FormField id="company-ownerId" label={t('contacts.owner')} error={errors.ownerId?.message}>
+            <FormField
+              id="company-ownerId"
+              label={t('contacts.owner')}
+              error={errors.ownerId?.message}
+            >
               <Controller
                 control={form.control}
                 name="ownerId"

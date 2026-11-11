@@ -170,7 +170,9 @@ export function csvCell(value: string | number | boolean | null | undefined): st
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-export function csvLine(cells: ReadonlyArray<string | number | boolean | null | undefined>): string {
+export function csvLine(
+  cells: ReadonlyArray<string | number | boolean | null | undefined>,
+): string {
   return `${cells.map(csvCell).join(',')}\r\n`;
 }
 

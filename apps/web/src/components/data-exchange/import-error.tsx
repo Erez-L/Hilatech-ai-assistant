@@ -13,7 +13,11 @@ export function ImportError({ error }: { error: unknown }) {
   const t = useT();
   if (isApiError(error) && (error.status === 402 || error.code === 'ENTITLEMENT_EXCEEDED')) {
     return (
-      <Alert tone="warning" title={t('imports.planLimitReached')} data-testid="import-entitlement-error">
+      <Alert
+        tone="warning"
+        title={t('imports.planLimitReached')}
+        data-testid="import-entitlement-error"
+      >
         <p>{getErrorMessage(error)}</p>
         <p className="mt-1">
           <Link href="/settings/billing" className="font-medium underline">

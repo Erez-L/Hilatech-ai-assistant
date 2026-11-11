@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { idSchema, paginationQuerySchema, sortOrderSchema, timestampsSchema } from './common';
+import {
+  idSchema,
+  paginationQuerySchema,
+  sortOrderSchema,
+  timestampsSchema,
+  partialUpdate,
+} from './common';
 
 // ---------------------------------------------------------------------------
 // Knowledge bases
@@ -31,9 +37,9 @@ export const createKnowledgeBaseSchema = z.object({
   embeddingModel: z.string().trim().max(120).optional(),
 });
 export type CreateKnowledgeBaseRequest = z.infer<typeof createKnowledgeBaseSchema>;
-export const updateKnowledgeBaseSchema = createKnowledgeBaseSchema
-  .pick({ name: true, description: true })
-  .partial();
+export const updateKnowledgeBaseSchema = partialUpdate(
+  createKnowledgeBaseSchema.pick({ name: true, description: true }),
+);
 export type UpdateKnowledgeBaseRequest = z.infer<typeof updateKnowledgeBaseSchema>;
 
 // ---------------------------------------------------------------------------

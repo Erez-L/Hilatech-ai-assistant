@@ -50,7 +50,11 @@ export class WorkflowsService {
     tenant: TenantContext,
     definition: ValidateWorkflowRequest,
   ): Promise<WorkflowValidationResult> {
-    const issues = await this.collectIssues(tenant.organizationId, definition.trigger, definition.steps);
+    const issues = await this.collectIssues(
+      tenant.organizationId,
+      definition.trigger,
+      definition.steps,
+    );
     return { valid: issues.length === 0, issues };
   }
 
@@ -102,7 +106,12 @@ export class WorkflowsService {
       actorUserId: tenant.userId,
       targetType: 'workflow',
       targetId: created.id,
-      metadata: { name: created.name, trigger: dto.trigger.type, isEnabled: created.isEnabled, steps: dto.steps.length },
+      metadata: {
+        name: created.name,
+        trigger: dto.trigger.type,
+        isEnabled: created.isEnabled,
+        steps: dto.steps.length,
+      },
       request: meta,
     });
     return toWorkflow(created);
@@ -121,8 +130,10 @@ export class WorkflowsService {
       trigger: (dto.trigger ?? existing.trigger) as unknown as WorkflowTrigger,
       steps: (dto.steps ?? existing.steps) as unknown as WorkflowStep[],
     };
-    if (next.isEnabled) await this.assertActivatable(tenant.organizationId, next.trigger, next.steps);
-    if (dto.name && dto.name !== existing.name) await this.assertNameFree(tenant, dto.name, existing.id);
+    if (next.isEnabled)
+      await this.assertActivatable(tenant.organizationId, next.trigger, next.steps);
+    if (dto.name && dto.name !== existing.name)
+      await this.assertNameFree(tenant, dto.name, existing.id);
 
     const updated = await this.prisma.client.workflow.update({
       where: { id: existing.id },
@@ -130,8 +141,12 @@ export class WorkflowsService {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
         ...(dto.description !== undefined ? { description: dto.description } : {}),
         ...(dto.isEnabled !== undefined ? { isEnabled: dto.isEnabled } : {}),
-        ...(dto.trigger !== undefined ? { trigger: dto.trigger as unknown as Prisma.InputJsonObject } : {}),
-        ...(dto.steps !== undefined ? { steps: dto.steps as unknown as Prisma.InputJsonArray } : {}),
+        ...(dto.trigger !== undefined
+          ? { trigger: dto.trigger as unknown as Prisma.InputJsonObject }
+          : {}),
+        ...(dto.steps !== undefined
+          ? { steps: dto.steps as unknown as Prisma.InputJsonArray }
+          : {}),
       },
     });
     await this.audit.log({
@@ -261,7 +276,11 @@ export class WorkflowsService {
     return row;
   }
 
-  private async assertNameFree(tenant: TenantContext, name: string, exceptId?: string): Promise<void> {
+  private async assertNameFree(
+    tenant: TenantContext,
+    name: string,
+    exceptId?: string,
+  ): Promise<void> {
     const clash = await this.prisma.client.workflow.findFirst({
       where: {
         organizationId: tenant.organizationId,
@@ -295,7 +314,8 @@ export class WorkflowsService {
     steps: readonly WorkflowStep[],
   ): Promise<WorkflowValidationIssue[]> {
     const issues = validateWorkflowDefinition(trigger, steps);
-    const add = (stepId: string, path: string, message: string) => issues.push({ stepId, path, message });
+    const add = (stepId: string, path: string, message: string) =>
+      issues.push({ stepId, path, message });
 
     const literal = (v: string | undefined): string | null => (v && UUID_RE.test(v) ? v : null);
     const agentIds = new Set<string>();
@@ -335,7 +355,9 @@ export class WorkflowsService {
           })
         : [],
       needsN8n
-        ? this.prisma.client.integration.count({ where: { organizationId, kind: 'n8n', isEnabled: true } })
+        ? this.prisma.client.integration.count({
+            where: { organizationId, kind: 'n8n', isEnabled: true },
+          })
         : 1,
     ]);
     const agentById = new Map(agents.map((a) => [a.id, a]));
@@ -354,12 +376,17 @@ export class WorkflowsService {
           add(s.id, `${p}.to.userId`, 'User is not an active member of this organization');
         }
         if (s.to.kind === 'role' && !knownRoles.has(s.to.roleKey)) {
-          add(s.id, `${p}.to.roleKey`, `Role "${s.to.roleKey}" does not exist in this organization`);
+          add(
+            s.id,
+            `${p}.to.roleKey`,
+            `Role "${s.to.roleKey}" does not exist in this organization`,
+          );
         }
       }
       if (s.type === 'update_lead') {
         const a = literal(s.assigneeId);
-        if (a && !memberIds.has(a)) add(s.id, `${p}.assigneeId`, 'Assignee is not an active member');
+        if (a && !memberIds.has(a))
+          add(s.id, `${p}.assigneeId`, 'Assignee is not an active member');
       }
       if (s.type === 'n8n_trigger' && n8n === 0) {
         add(s.id, p, 'No enabled n8n integration is connected for this organization');

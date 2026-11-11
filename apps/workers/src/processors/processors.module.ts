@@ -51,9 +51,7 @@ const PROCESSOR_CLASSES = [
       inject: [WORKERS_ENV, LogEmailDriver, SmtpEmailDriver],
     },
     // Automation processors are provided (once) by AutomationModule and resolved through its exports.
-    ...PROCESSOR_CLASSES.filter(
-      (c) => c !== AutomationProcessor && c !== WebhookDeliveryProcessor,
-    ),
+    ...PROCESSOR_CLASSES.filter((c) => c !== AutomationProcessor && c !== WebhookDeliveryProcessor),
     {
       provide: JOB_PROCESSORS,
       useFactory: (...processors: AnyJobProcessor[]): AnyJobProcessor[] => processors,

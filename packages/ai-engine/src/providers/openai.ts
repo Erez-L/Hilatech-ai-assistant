@@ -1,6 +1,6 @@
 import type { AiModelInfo } from '@hilatech/contracts';
 import OpenAI from 'openai';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { zodToJsonSchema } from '../json-schema';
 
 import { AiProviderError, codeFromStatus, isAbortError } from '../errors';
 import { stripSchemaMeta } from './anthropic';
@@ -160,9 +160,7 @@ export class OpenAiProvider implements AiProvider {
 
   async generateStructured<T>(request: StructuredRequest<T>): Promise<StructuredResult<T>> {
     const name = request.schemaName ?? 'structured_output';
-    const schema = stripSchemaMeta(
-      zodToJsonSchema(request.schema, { $refStrategy: 'none' }) as Record<string, unknown>,
-    );
+    const schema = stripSchemaMeta(zodToJsonSchema(request.schema));
     const run = async (messages: AiMessage[]): Promise<StructuredResult<T>> => {
       let response: OpenAI.Chat.Completions.ChatCompletion;
       try {

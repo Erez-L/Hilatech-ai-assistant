@@ -73,10 +73,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
+      # The seed imports the built contracts package, so packages are built first.
+      - run: pnpm --filter "./packages/*" build
       - run: pnpm db:migrate
       - run: pnpm db:seed
-      - run: pnpm --filter "./packages/*" build
-      - run: pnpm test:integration
+      # API and workers suites share one database: run them one after the other.
+      - run: pnpm test:integration --concurrency=1
 
   security:
     name: Dependency audit

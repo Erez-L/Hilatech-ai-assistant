@@ -86,7 +86,11 @@ export class DealsService {
     dto: CreateDealRequest,
     meta: RequestMeta,
   ): Promise<DealWithRelations> {
-    const { pipelineId, stageId } = await this.resolvePipelineAndStage(tenant, dto.pipelineId, dto.stageId);
+    const { pipelineId, stageId } = await this.resolvePipelineAndStage(
+      tenant,
+      dto.pipelineId,
+      dto.stageId,
+    );
     if (dto.ownerId) await this.refs.assertActiveMember(tenant, dto.ownerId, 'ownerId');
     if (dto.contactId) await this.refs.assertContact(tenant, dto.contactId, 'contactId');
     if (dto.companyId) await this.refs.assertCompany(tenant, dto.companyId, 'companyId');
@@ -118,12 +122,22 @@ export class DealsService {
       actorUserId: tenant.userId,
       targetType: 'deal',
       targetId: created.id,
-      metadata: { title: truncate(created.title, 120), pipelineId, stageId, value: decimalToNumber(created.value) },
+      metadata: {
+        title: truncate(created.title, 120),
+        pipelineId,
+        stageId,
+        value: decimalToNumber(created.value),
+      },
       request: meta,
     });
     await this.emit(tenant, meta, 'deal.created', dealEventPayload(created));
     if (created.status !== 'open') {
-      await this.emit(tenant, meta, created.status === 'won' ? 'deal.won' : 'deal.lost', dealEventPayload(created));
+      await this.emit(
+        tenant,
+        meta,
+        created.status === 'won' ? 'deal.won' : 'deal.lost',
+        dealEventPayload(created),
+      );
     }
     return toDealWithRelations(created);
   }
@@ -170,7 +184,10 @@ export class DealsService {
     }
     if (dto.ownerId !== undefined && dto.ownerId !== existing.ownerId) {
       data.ownerId = dto.ownerId;
-      activities.push({ type: 'owner_changed', payload: { from: existing.ownerId, to: dto.ownerId } });
+      activities.push({
+        type: 'owner_changed',
+        payload: { from: existing.ownerId, to: dto.ownerId },
+      });
     }
     if (dto.contactId !== undefined && dto.contactId !== existing.contactId) {
       data.contactId = dto.contactId;
@@ -336,7 +353,9 @@ export class DealsService {
       _sum: { value: true },
     });
 
-    const stages = query.includeClosed ? pipelineRow.stages : pipelineRow.stages.filter((s) => s.kind === 'open');
+    const stages = query.includeClosed
+      ? pipelineRow.stages
+      : pipelineRow.stages.filter((s) => s.kind === 'open');
     const columns: BoardColumn[] = [];
     const overall = new Map<string, CurrencyTotal>();
     for (const stage of stages) {
@@ -373,7 +392,12 @@ export class DealsService {
         totals: totals.sort((a, b) => a.currency.localeCompare(b.currency)),
       });
       for (const t of totals) {
-        const acc = overall.get(t.currency) ?? { currency: t.currency, count: 0, value: 0, weightedValue: 0 };
+        const acc = overall.get(t.currency) ?? {
+          currency: t.currency,
+          count: 0,
+          value: 0,
+          weightedValue: 0,
+        };
         acc.count += t.count;
         acc.value = round2(acc.value + t.value);
         acc.weightedValue = round2(acc.weightedValue + t.weightedValue);
@@ -419,7 +443,12 @@ export class DealsService {
     const deal = await this.requireDeal(tenant, dealId);
     const note = await this.prisma.client.$transaction(async (tx) => {
       const created = await tx.dealNote.create({
-        data: { organizationId: tenant.organizationId, dealId: deal.id, authorId: tenant.userId, body },
+        data: {
+          organizationId: tenant.organizationId,
+          dealId: deal.id,
+          authorId: tenant.userId,
+          body,
+        },
         include: DEAL_NOTE_INCLUDE,
       });
       await tx.dealActivity.create({
@@ -457,7 +486,9 @@ export class DealsService {
     });
     if (!note) throw AppException.notFound('Note');
     if (note.authorId !== tenant.userId && !tenant.permissions.includes('deals:delete')) {
-      throw AppException.forbidden('Only the author (or a member with deals:delete) can delete this note');
+      throw AppException.forbidden(
+        'Only the author (or a member with deals:delete) can delete this note',
+      );
     }
     await this.prisma.client.dealNote.delete({ where: { id: note.id } });
     await this.audit.log({
@@ -488,7 +519,10 @@ export class DealsService {
     ]);
     const actorIds = [...new Set(rows.map((r) => r.actorId).filter((v): v is string => !!v))];
     const actors = actorIds.length
-      ? await this.prisma.client.user.findMany({ where: { id: { in: actorIds } }, select: USER_SUMMARY_SELECT })
+      ? await this.prisma.client.user.findMany({
+          where: { id: { in: actorIds } },
+          select: USER_SUMMARY_SELECT,
+        })
       : [];
     const byId = new Map<string, UserSummaryRow>(actors.map((a) => [a.id, a]));
     return page(
@@ -502,11 +536,16 @@ export class DealsService {
   // Conversion report
   // ---------------------------------------------------------------------------------------------
 
-  async conversion(tenant: TenantContext, query: DealConversionQuery): Promise<DealConversionReport> {
+  async conversion(
+    tenant: TenantContext,
+    query: DealConversionQuery,
+  ): Promise<DealConversionReport> {
     const org = tenant.organizationId;
     const db = this.prisma.client;
     const to = query.to ? new Date(query.to) : new Date();
-    const from = query.from ? new Date(query.from) : new Date(to.getTime() - DEFAULT_RANGE_DAYS * 86_400_000);
+    const from = query.from
+      ? new Date(query.from)
+      : new Date(to.getTime() - DEFAULT_RANGE_DAYS * 86_400_000);
     if (from.getTime() >= to.getTime()) {
       throw AppException.validation('from must be before to', [
         { path: 'from', message: 'from must be before to', code: 'custom' },
@@ -546,7 +585,12 @@ export class DealsService {
       }),
       db.deal.groupBy({
         by: ['currency'],
-        where: { organizationId: org, pipelineId: pipeline.id, status: 'won', closedAt: { gte: from, lt: to } },
+        where: {
+          organizationId: org,
+          pipelineId: pipeline.id,
+          status: 'won',
+          closedAt: { gte: from, lt: to },
+        },
         _count: { _all: true },
         _sum: { value: true },
       }),
@@ -602,7 +646,11 @@ export class DealsService {
         .sort((a, b) => a.order - b.order || a.currency.localeCompare(b.currency))
         .map(({ order: _order, ...rest }) => rest),
       wonValue: wonRows
-        .map((r) => ({ currency: r.currency, count: r._count._all, value: round2(Number(r._sum.value ?? 0)) }))
+        .map((r) => ({
+          currency: r.currency,
+          count: r._count._all,
+          value: round2(Number(r._sum.value ?? 0)),
+        }))
         .sort((a, b) => a.currency.localeCompare(b.currency)),
       lostReasons: lostReasons.map((r) => ({ reason: r.reason, count: r.n })),
     };
@@ -645,14 +693,22 @@ export class DealsService {
       });
       if (!exists) {
         throw AppException.validation('Pipeline not found in this organization', [
-          { path: 'pipelineId', message: 'Pipeline not found in this organization', code: 'custom' },
+          {
+            path: 'pipelineId',
+            message: 'Pipeline not found in this organization',
+            code: 'custom',
+          },
         ]);
       }
     } else {
       resolvedPipelineId = (await ensureDefaultPipeline(db, tenant.organizationId)).id;
     }
     const first = await db.pipelineStage.findFirst({
-      where: { pipelineId: resolvedPipelineId, organizationId: tenant.organizationId, kind: 'open' },
+      where: {
+        pipelineId: resolvedPipelineId,
+        organizationId: tenant.organizationId,
+        kind: 'open',
+      },
       orderBy: { order: 'asc' },
     });
     if (!first) throw AppException.conflict('The pipeline has no open stage');
@@ -674,7 +730,18 @@ export class DealsService {
 
 /** Domain-event payload. `assigneeId` mirrors the owner so the `assignee` notification target works for deals. */
 export function dealEventPayload(
-  deal: Pick<Deal, 'id' | 'title' | 'status' | 'currency' | 'pipelineId' | 'stageId' | 'ownerId' | 'contactId' | 'companyId'> & {
+  deal: Pick<
+    Deal,
+    | 'id'
+    | 'title'
+    | 'status'
+    | 'currency'
+    | 'pipelineId'
+    | 'stageId'
+    | 'ownerId'
+    | 'contactId'
+    | 'companyId'
+  > & {
     value: unknown;
     stage?: { name: string };
   },
@@ -731,7 +798,9 @@ export function buildDealWhere(
   };
 }
 
-export function dealOrderBy(query: Pick<ListDealsQuery, 'sortBy' | 'sortOrder'>): Prisma.DealOrderByWithRelationInput[] {
+export function dealOrderBy(
+  query: Pick<ListDealsQuery, 'sortBy' | 'sortOrder'>,
+): Prisma.DealOrderByWithRelationInput[] {
   if (query.sortBy === 'value' || query.sortBy === 'expectedCloseAt') {
     return [{ [query.sortBy]: { sort: query.sortOrder, nulls: 'last' } }, { id: 'asc' }];
   }

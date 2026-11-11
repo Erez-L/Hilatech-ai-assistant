@@ -1,6 +1,12 @@
 import type { AiProviderKind } from '@hilatech/contracts';
 import type { AiProviderConfig, PrismaClient } from '@hilatech/database';
-import { SecretBox, SsrfError, createGuardedFetch, assertSafeUrlShape, type OutboundPolicy } from '@hilatech/shared';
+import {
+  SecretBox,
+  SsrfError,
+  createGuardedFetch,
+  assertSafeUrlShape,
+  type OutboundPolicy,
+} from '@hilatech/shared';
 
 import { AiNotConfiguredError } from '../errors';
 import type { AgentDefinition, ResolvedModel } from '../orchestrator/types';
@@ -124,7 +130,8 @@ export class ProviderResolver {
     region: string | undefined,
   ) {
     const policy = this.options.outboundPolicy ?? {};
-    const effectiveBase = kind === 'bedrock' || kind === 'mock' ? undefined : (baseUrl ?? undefined);
+    const effectiveBase =
+      kind === 'bedrock' || kind === 'mock' ? undefined : (baseUrl ?? undefined);
     if (effectiveBase) {
       try {
         assertSafeUrlShape(effectiveBase, policy);

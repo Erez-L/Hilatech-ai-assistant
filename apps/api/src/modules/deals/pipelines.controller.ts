@@ -57,7 +57,9 @@ export class PipelinesController {
 
   @Get()
   @RequirePermissions(Permission.DEALS_READ)
-  @ApiOperation({ summary: 'List pipelines with their ordered stages and deal counts (default pipeline first)' })
+  @ApiOperation({
+    summary: 'List pipelines with their ordered stages and deal counts (default pipeline first)',
+  })
   @ApiZodResponse(z.array(pipelineSchema))
   @ApiErrors(...COMMON_TENANT_ERRORS)
   list(@Tenant() tenant: TenantContext) {
@@ -67,7 +69,10 @@ export class PipelinesController {
   @Post()
   @RequirePermissions(Permission.PIPELINES_MANAGE)
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a pipeline (default stages unless given; needs one open, one won, one lost stage)' })
+  @ApiOperation({
+    summary:
+      'Create a pipeline (default stages unless given; needs one open, one won, one lost stage)',
+  })
   @ApiZodBody(createPipelineSchema)
   @ApiZodResponse(pipelineSchema, { status: HttpStatus.CREATED })
   @ApiErrors(...COMMON_TENANT_ERRORS, CONFLICT)
@@ -155,7 +160,9 @@ export class PipelinesController {
 
   @Patch(':id/stages/:stageId')
   @RequirePermissions(Permission.PIPELINES_MANAGE)
-  @ApiOperation({ summary: 'Rename a stage or change its probability / kind (deals follow the kind)' })
+  @ApiOperation({
+    summary: 'Rename a stage or change its probability / kind (deals follow the kind)',
+  })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiParam({ name: 'stageId', format: 'uuid' })
   @ApiZodBody(updateStageSchema)
@@ -174,7 +181,8 @@ export class PipelinesController {
   @Delete(':id/stages/:stageId')
   @RequirePermissions(Permission.PIPELINES_MANAGE)
   @ApiOperation({
-    summary: 'Delete a stage; a stage holding deals needs ?moveDealsToStageId=<stage of the same pipeline>',
+    summary:
+      'Delete a stage; a stage holding deals needs ?moveDealsToStageId=<stage of the same pipeline>',
   })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiParam({ name: 'stageId', format: 'uuid' })

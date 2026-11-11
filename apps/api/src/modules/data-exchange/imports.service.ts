@@ -19,8 +19,19 @@ import {
   suggestMapping,
   validateMapping,
 } from '@hilatech/contracts';
-import { type ImportJob as ImportJobRow, type Prisma, validateImportRows } from '@hilatech/database';
-import { CsvError, UTF8_BOM, csvLine, decodeCsvBuffer, detectDelimiter, parseCsv } from '@hilatech/shared';
+import {
+  type ImportJob as ImportJobRow,
+  type Prisma,
+  validateImportRows,
+} from '@hilatech/database';
+import {
+  CsvError,
+  UTF8_BOM,
+  csvLine,
+  decodeCsvBuffer,
+  detectDelimiter,
+  parseCsv,
+} from '@hilatech/shared';
 import { type StorageDriver, buildObjectKey, sha256Hex } from '@hilatech/storage';
 import { type TenantContext } from '@hilatech/types';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
@@ -74,7 +85,12 @@ export function toImportJob(row: ImportJobRow): ImportJob {
     progress: {
       processed,
       total,
-      percent: total === 0 ? (row.status === 'completed' ? 100 : 0) : Math.round((processed / total) * 1000) / 10,
+      percent:
+        total === 0
+          ? row.status === 'completed'
+            ? 100
+            : 0
+          : Math.round((processed / total) * 1000) / 10,
     },
     result: {
       created: row.createdCount,
@@ -128,7 +144,9 @@ export class ImportsService {
       );
     }
     if (file.size === 0 || file.buffer.length === 0) {
-      throw AppException.validation('The file is empty', [{ path: 'file', message: 'Empty file', code: 'custom' }]);
+      throw AppException.validation('The file is empty', [
+        { path: 'file', message: 'Empty file', code: 'custom' },
+      ]);
     }
     if (file.buffer.length > this.maxBytes) {
       throw new AppException(
@@ -156,10 +174,13 @@ export class ImportsService {
     } catch (error) {
       if (error instanceof CsvError) {
         if (error.code === 'too_many_rows') {
-          throw AppException.entitlementExceeded(`A file can hold at most ${IMPORT_MAX_ROWS} rows`, {
-            metric: 'import_rows',
-            limit: IMPORT_MAX_ROWS,
-          });
+          throw AppException.entitlementExceeded(
+            `A file can hold at most ${IMPORT_MAX_ROWS} rows`,
+            {
+              metric: 'import_rows',
+              limit: IMPORT_MAX_ROWS,
+            },
+          );
         }
         throw AppException.validation(`Invalid CSV: ${error.message}`, [
           { path: 'file', message: error.message, code: 'custom' },
@@ -222,7 +243,13 @@ export class ImportsService {
       actorUserId: tenant.userId,
       targetType: 'import',
       targetId: row.id,
-      metadata: { entity, fileName, rows: dataRows.length, sizeBytes: file.buffer.length, encoding: decoded.encoding },
+      metadata: {
+        entity,
+        fileName,
+        rows: dataRows.length,
+        sizeBytes: file.buffer.length,
+        encoding: decoded.encoding,
+      },
       request: meta,
     });
     return {
@@ -259,7 +286,11 @@ export class ImportsService {
       rows,
     );
     const claimed = await this.prisma.client.importJob.updateMany({
-      where: { id: job.id, organizationId: tenant.organizationId, status: { in: ['uploaded', 'validated'] } },
+      where: {
+        id: job.id,
+        organizationId: tenant.organizationId,
+        status: { in: ['uploaded', 'validated'] },
+      },
       data: {
         status: 'validated',
         mapping: config.mapping as Prisma.InputJsonObject,
@@ -267,7 +298,8 @@ export class ImportsService {
         validation: validation as unknown as Prisma.InputJsonObject,
       },
     });
-    if (claimed.count === 0) throw AppException.conflict('The import changed while it was being validated');
+    if (claimed.count === 0)
+      throw AppException.conflict('The import changed while it was being validated');
     await this.audit.log({
       action: AuditAction.IMPORT_VALIDATED,
       organizationId: tenant.organizationId,
@@ -306,7 +338,11 @@ export class ImportsService {
       );
     }
     const claimed = await this.prisma.client.importJob.updateMany({
-      where: { id: job.id, organizationId: tenant.organizationId, status: { in: ['uploaded', 'validated'] } },
+      where: {
+        id: job.id,
+        organizationId: tenant.organizationId,
+        status: { in: ['uploaded', 'validated'] },
+      },
       data: {
         status: 'queued',
         mapping: config.mapping as Prisma.InputJsonObject,
@@ -340,7 +376,11 @@ export class ImportsService {
       actorUserId: tenant.userId,
       targetType: 'import',
       targetId: job.id,
-      metadata: { entity: job.entity, rows: job.totalRows, duplicateStrategy: config.duplicateStrategy },
+      metadata: {
+        entity: job.entity,
+        rows: job.totalRows,
+        duplicateStrategy: config.duplicateStrategy,
+      },
       request: meta,
     });
     return toImportJob(await this.requireRow(tenant, job.id));
@@ -438,7 +478,10 @@ export class ImportsService {
   }
 
   /** Subscription must be usable, the plan decides the row cap, and only a few imports may run at once. */
-  private async assertEntitled(tenant: TenantContext, excludeJobId?: string): Promise<{ rowLimit: number }> {
+  private async assertEntitled(
+    tenant: TenantContext,
+    excludeJobId?: string,
+  ): Promise<{ rowLimit: number }> {
     const subscription = await this.prisma.client.subscription.findUnique({
       where: { organizationId: tenant.organizationId },
       select: { status: true, plan: true },

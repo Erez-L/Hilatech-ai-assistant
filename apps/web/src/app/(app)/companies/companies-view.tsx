@@ -148,7 +148,12 @@ export function CompaniesView() {
                   onChange={(e) => setTagDraft(e.target.value)}
                 />
               </div>
-              <Button variant="ghost" onClick={reset} disabled={!hasFilters} leadingIcon={<FilterX aria-hidden />}>
+              <Button
+                variant="ghost"
+                onClick={reset}
+                disabled={!hasFilters}
+                leadingIcon={<FilterX aria-hidden />}
+              >
                 {t('common.clear')}
               </Button>
             </div>
@@ -160,13 +165,27 @@ export function CompaniesView() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableHead sortKey="name" sort={sort} onSortChange={(s) => { setSort(s); setPage(1); }}>
+                  <SortableHead
+                    sortKey="name"
+                    sort={sort}
+                    onSortChange={(s) => {
+                      setSort(s);
+                      setPage(1);
+                    }}
+                  >
                     {t('common.name')}
                   </SortableHead>
                   <TableHead>{t('companies.domain')}</TableHead>
                   <TableHead>{t('common.tags')}</TableHead>
                   <TableHead>{t('contacts.owner')}</TableHead>
-                  <SortableHead sortKey="updatedAt" sort={sort} onSortChange={(s) => { setSort(s); setPage(1); }}>
+                  <SortableHead
+                    sortKey="updatedAt"
+                    sort={sort}
+                    onSortChange={(s) => {
+                      setSort(s);
+                      setPage(1);
+                    }}
+                  >
                     {t('common.updated')}
                   </SortableHead>
                 </TableRow>
@@ -178,7 +197,11 @@ export function CompaniesView() {
                   <TableEmptyRow colSpan={5}>
                     <div className="flex flex-col items-center gap-2">
                       <span>{getErrorMessage(companies.error)}</span>
-                      <Button variant="secondary" size="sm" onClick={() => void companies.refetch()}>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => void companies.refetch()}
+                      >
                         {t('common.tryAgain')}
                       </Button>
                     </div>
@@ -188,15 +211,27 @@ export function CompaniesView() {
                     <EmptyState
                       compact
                       icon={<Building2 />}
-                      title={hasFilters ? t('companies.noCompaniesMatchTheseFilters') : t('companies.noCompaniesYet')}
-                      description={hasFilters ? t('common.tryDifferentFilters') : t('companies.addYourFirstCompany')}
+                      title={
+                        hasFilters
+                          ? t('companies.noCompaniesMatchTheseFilters')
+                          : t('companies.noCompaniesYet')
+                      }
+                      description={
+                        hasFilters
+                          ? t('common.tryDifferentFilters')
+                          : t('companies.addYourFirstCompany')
+                      }
                       action={
                         hasFilters ? (
                           <Button variant="secondary" size="sm" onClick={reset}>
                             {t('common.clearFilters')}
                           </Button>
                         ) : canCreate ? (
-                          <Button size="sm" leadingIcon={<Plus aria-hidden />} onClick={() => setCreateOpen(true)}>
+                          <Button
+                            size="sm"
+                            leadingIcon={<Plus aria-hidden />}
+                            onClick={() => setCreateOpen(true)}
+                          >
                             {t('companies.newCompany')}
                           </Button>
                         ) : undefined
@@ -205,7 +240,12 @@ export function CompaniesView() {
                   </TableEmptyRow>
                 ) : (
                   companies.data.data.map((company) => (
-                    <CompanyRow key={company.id} company={company} owner={company.ownerId ? owners.get(company.ownerId) : undefined} onOpen={(id) => router.push(`/companies/${id}`)} />
+                    <CompanyRow
+                      key={company.id}
+                      company={company}
+                      owner={company.ownerId ? owners.get(company.ownerId) : undefined}
+                      onOpen={(id) => router.push(`/companies/${id}`)}
+                    />
                   ))
                 )}
               </TableBody>
@@ -266,7 +306,11 @@ function CompanyRow({
         </Link>
       </TableCell>
       <TableCell className="text-fg-muted">
-        {company.domain ? <span dir="ltr">{company.domain}</span> : <span className="text-fg-subtle">—</span>}
+        {company.domain ? (
+          <span dir="ltr">{company.domain}</span>
+        ) : (
+          <span className="text-fg-subtle">—</span>
+        )}
       </TableCell>
       <TableCell>
         <div className="flex flex-wrap gap-1">
@@ -278,9 +322,14 @@ function CompanyRow({
           {company.tags.length === 0 ? <span className="text-fg-subtle">—</span> : null}
         </div>
       </TableCell>
-      <TableCell className="text-fg-muted">{owner ?? <span className="text-fg-subtle">—</span>}</TableCell>
+      <TableCell className="text-fg-muted">
+        {owner ?? <span className="text-fg-subtle">—</span>}
+      </TableCell>
       <TableCell className="whitespace-nowrap text-fg-muted tabular">
-        <time dateTime={company.updatedAt} title={fmt.dateTime(new Date(company.updatedAt), 'long')}>
+        <time
+          dateTime={company.updatedAt}
+          title={fmt.dateTime(new Date(company.updatedAt), 'long')}
+        >
           {fmt.relative(new Date(company.updatedAt))}
         </time>
       </TableCell>

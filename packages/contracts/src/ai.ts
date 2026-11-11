@@ -5,6 +5,7 @@ import {
   sortOrderSchema,
   timestampsSchema,
   userSummarySchema,
+  partialUpdate,
 } from './common';
 
 // ---------------------------------------------------------------------------
@@ -63,13 +64,12 @@ export const createAiProviderConfigSchema = z.object({
 });
 export type CreateAiProviderConfigRequest = z.infer<typeof createAiProviderConfigSchema>;
 
-export const updateAiProviderConfigSchema = createAiProviderConfigSchema
-  .omit({ provider: true })
-  .partial()
-  .extend({
-    /** Set to true to remove the stored key (the config becomes unusable until a new key is set). */
-    clearApiKey: z.boolean().optional(),
-  });
+export const updateAiProviderConfigSchema = partialUpdate(
+  createAiProviderConfigSchema.omit({ provider: true }),
+).extend({
+  /** Set to true to remove the stored key (the config becomes unusable until a new key is set). */
+  clearApiKey: z.boolean().optional(),
+});
 export type UpdateAiProviderConfigRequest = z.infer<typeof updateAiProviderConfigSchema>;
 
 export const aiModelInfoSchema = z.object({
@@ -198,7 +198,9 @@ export const createPromptTemplateSchema = z.object({
   content: z.string().min(1).max(50_000),
 });
 export type CreatePromptTemplateRequest = z.infer<typeof createPromptTemplateSchema>;
-export const updatePromptTemplateSchema = createPromptTemplateSchema.omit({ key: true }).partial();
+export const updatePromptTemplateSchema = partialUpdate(
+  createPromptTemplateSchema.omit({ key: true }),
+);
 export type UpdatePromptTemplateRequest = z.infer<typeof updatePromptTemplateSchema>;
 
 export const renderPromptTemplateSchema = z.object({
@@ -259,7 +261,7 @@ export const createAssistantThreadSchema = z.object({
   model: z.string().trim().max(120).optional(),
 });
 export type CreateAssistantThreadRequest = z.infer<typeof createAssistantThreadSchema>;
-export const updateAssistantThreadSchema = createAssistantThreadSchema.partial();
+export const updateAssistantThreadSchema = partialUpdate(createAssistantThreadSchema);
 export type UpdateAssistantThreadRequest = z.infer<typeof updateAssistantThreadSchema>;
 
 export const assistantMessageSchema = z.object({
@@ -371,17 +373,17 @@ export const createAgentSchema = z.object({
   temperature: z.number().min(0).max(2).optional(),
   maxOutputTokens: z.number().int().min(16).max(64_000).optional(),
   tools: z.array(z.string().trim().min(1).max(120)).max(50).default([]),
-  permissions: agentPermissionsSchema.default({}),
+  permissions: agentPermissionsSchema.prefault({}),
   knowledgeBaseIds: z.array(idSchema).max(20).default([]),
   maxSteps: z.number().int().min(1).max(50).default(12),
   maxDurationMs: z.number().int().min(1000).max(900_000).default(120_000),
   maxTokens: z.number().int().min(1000).max(2_000_000).default(150_000),
   maxDelegations: z.number().int().min(0).max(10).default(3),
-  retryPolicy: agentRetryPolicySchema.default({}),
+  retryPolicy: agentRetryPolicySchema.prefault({}),
   isEnabled: z.boolean().default(true),
 });
 export type CreateAgentRequest = z.infer<typeof createAgentSchema>;
-export const updateAgentSchema = createAgentSchema.partial();
+export const updateAgentSchema = partialUpdate(createAgentSchema);
 export type UpdateAgentRequest = z.infer<typeof updateAgentSchema>;
 
 export const listAgentsQuerySchema = paginationQuerySchema.extend({

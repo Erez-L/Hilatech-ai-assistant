@@ -528,7 +528,12 @@ export class LeadsService {
   private async emitEvent(
     tenant: TenantContext,
     meta: RequestMeta,
-    event: 'lead.created' | 'lead.status_changed' | 'lead.assigned' | 'lead.converted' | 'contact.created',
+    event:
+      | 'lead.created'
+      | 'lead.status_changed'
+      | 'lead.assigned'
+      | 'lead.converted'
+      | 'contact.created',
     payload: Record<string, unknown>,
   ): Promise<void> {
     await this.events?.emit(tenant.organizationId, event, payload, {
@@ -569,7 +574,10 @@ export class LeadsService {
 
 /** Domain-event payload for a lead (ids and scalar facts only; no PII beyond the lead title). */
 export function leadEventPayload(
-  lead: Pick<Lead, 'id' | 'title' | 'status' | 'source' | 'assigneeId' | 'contactId' | 'currency'> & {
+  lead: Pick<
+    Lead,
+    'id' | 'title' | 'status' | 'source' | 'assigneeId' | 'contactId' | 'currency'
+  > & {
     value: unknown;
   },
 ): Record<string, unknown> {

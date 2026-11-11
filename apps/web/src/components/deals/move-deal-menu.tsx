@@ -40,11 +40,19 @@ export function MoveDealMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         {variant === 'button' ? (
-          <Button variant="secondary" leadingIcon={<ArrowRightLeft aria-hidden />} disabled={disabled}>
+          <Button
+            variant="secondary"
+            leadingIcon={<ArrowRightLeft aria-hidden />}
+            disabled={disabled}
+          >
             {t('deals.moveTo')}
           </Button>
         ) : (
-          <IconButton size="sm" label={t('deals.moveDealTo', { title: dealTitle })} disabled={disabled}>
+          <IconButton
+            size="sm"
+            label={t('deals.moveDealTo', { title: dealTitle })}
+            disabled={disabled}
+          >
             <ArrowRightLeft aria-hidden />
           </IconButton>
         )}
@@ -61,7 +69,9 @@ export function MoveDealMenu({
             <span className="flex flex-1 items-center gap-2">
               <span dir="auto">{stage.name}</span>
             </span>
-            {stage.id === currentStageId ? <Check className="size-3.5" aria-label={t('deals.currentStage')} /> : null}
+            {stage.id === currentStageId ? (
+              <Check className="size-3.5" aria-label={t('deals.currentStage')} />
+            ) : null}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

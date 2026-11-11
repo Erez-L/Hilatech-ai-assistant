@@ -29,10 +29,29 @@ export interface ParsedCron {
   dayOfWeekAny: boolean;
 }
 
-const MONTH_NAMES = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const MONTH_NAMES = [
+  'jan',
+  'feb',
+  'mar',
+  'apr',
+  'may',
+  'jun',
+  'jul',
+  'aug',
+  'sep',
+  'oct',
+  'nov',
+  'dec',
+];
 const DOW_NAMES = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
-function parseCronValue(raw: string, min: number, max: number, names: string[] | null, label: string): number {
+function parseCronValue(
+  raw: string,
+  min: number,
+  max: number,
+  names: string[] | null,
+  label: string,
+): number {
   const lower = raw.toLowerCase();
   if (names) {
     const idx = names.indexOf(lower);
@@ -72,7 +91,8 @@ function parseCronField(
       end = max;
     } else if (rangePart!.includes('-')) {
       const [a, b, ...more] = rangePart!.split('-');
-      if (more.length > 0 || !a || !b) throw new CronParseError(`Invalid ${label} range "${rangePart}"`);
+      if (more.length > 0 || !a || !b)
+        throw new CronParseError(`Invalid ${label} range "${rangePart}"`);
       start = parseCronValue(a, min, max, names, label);
       end = parseCronValue(b, min, max, names, label);
       if (start > end) throw new CronParseError(`Invalid ${label} range "${rangePart}"`);
@@ -124,7 +144,15 @@ export interface ZonedParts {
   weekday: number;
 }
 
-const WEEKDAY_INDEX: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+const WEEKDAY_INDEX: Record<string, number> = {
+  Sun: 0,
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
+};
 const formatters = new Map<string, Intl.DateTimeFormat>();
 
 /** Wall-clock parts of `date` in `timeZone`. Falls back to UTC for an unknown zone. */
@@ -171,7 +199,8 @@ export function zonedParts(date: Date, timeZone: string): ZonedParts {
 export function cronIsDue(expression: string | ParsedCron, at: Date, timeZone = 'UTC'): boolean {
   const cron = typeof expression === 'string' ? parseCron(expression) : expression;
   const p = zonedParts(at, timeZone);
-  if (!cron.minute.has(p.minute) || !cron.hour.has(p.hour) || !cron.month.has(p.month)) return false;
+  if (!cron.minute.has(p.minute) || !cron.hour.has(p.hour) || !cron.month.has(p.month))
+    return false;
   const domMatch = cron.dayOfMonth.has(p.day);
   const dowMatch = cron.dayOfWeek.has(p.weekday);
   if (cron.dayOfMonthAny && cron.dayOfWeekAny) return true;
@@ -324,7 +353,11 @@ export const WORKFLOW_LIMITS = {
   maxTotalDelaySeconds: 7 * 86_400,
 } as const;
 
-function collectStrings(value: unknown, path: string, out: Array<{ path: string; text: string }>): void {
+function collectStrings(
+  value: unknown,
+  path: string,
+  out: Array<{ path: string; text: string }>,
+): void {
   if (typeof value === 'string') out.push({ path, text: value });
   else if (Array.isArray(value)) value.forEach((v, i) => collectStrings(v, `${path}[${i}]`, out));
   else if (value && typeof value === 'object') {
@@ -395,17 +428,28 @@ export function validateWorkflowDefinition(
         step.dueInHours !== undefined &&
         step.reminderBeforeHours > step.dueInHours
       ) {
-        add(step.id, `${p}.reminderBeforeHours`, 'The reminder cannot be earlier than the run time');
+        add(
+          step.id,
+          `${p}.reminderBeforeHours`,
+          'The reminder cannot be earlier than the run time',
+        );
       }
     }
     if (step.type === 'http_request' && !step.url.includes('{{')) {
-      if (!/^https:\/\//i.test(step.url) && !/^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(step.url)) {
+      if (
+        !/^https:\/\//i.test(step.url) &&
+        !/^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(step.url)
+      ) {
         add(step.id, `${p}.url`, 'URL must start with https:// (http only for localhost)');
       }
     }
     if (step.type === 'outbound_webhook') {
       if (!(ALL_DOMAIN_EVENTS as readonly string[]).includes(step.event)) {
-        add(step.id, `${p}.event`, `"${step.event}" is not a known event (${ALL_DOMAIN_EVENTS.join(', ')})`);
+        add(
+          step.id,
+          `${p}.event`,
+          `"${step.event}" is not a known event (${ALL_DOMAIN_EVENTS.join(', ')})`,
+        );
       }
     }
     if (step.type === 'set_variable' && !/^[A-Za-z_][A-Za-z0-9_]*$/.test(step.name)) {
@@ -433,8 +477,10 @@ export function validateWorkflowDefinition(
         if (root === 'steps') {
           const refId = expr.split(/[.[]/)[1];
           const refIndex = refId ? indexById.get(refId) : undefined;
-          if (refIndex === undefined) add(step.id, path, `Template references unknown step "${refId ?? ''}"`);
-          else if (refIndex >= i) add(step.id, path, `Template references step "${refId}" which runs later`);
+          if (refIndex === undefined)
+            add(step.id, path, `Template references unknown step "${refId ?? ''}"`);
+          else if (refIndex >= i)
+            add(step.id, path, `Template references step "${refId}" which runs later`);
         }
       }
     }

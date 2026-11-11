@@ -2,7 +2,13 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import type { BoardColumn, CurrencyTotal, DealBoard as DealBoardData, DealWithRelations, PipelineStage } from '@hilatech/contracts';
+import type {
+  BoardColumn,
+  CurrencyTotal,
+  DealBoard as DealBoardData,
+  DealWithRelations,
+  PipelineStage,
+} from '@hilatech/contracts';
 import { Badge, cn } from '@hilatech/ui';
 import { StageKindBadge } from './deal-badges';
 import { DealCard } from './deal-card';
@@ -22,7 +28,8 @@ export function CurrencyTotals({
 }) {
   const t = useT();
   const fmt = useFormat();
-  if (totals.length === 0) return <span className={cn('text-xs text-fg-subtle', className)}>—</span>;
+  if (totals.length === 0)
+    return <span className={cn('text-xs text-fg-subtle', className)}>—</span>;
   return (
     <ul className={cn('flex flex-col gap-0.5', className)} data-testid={testId}>
       {totals.map((total) => (
@@ -32,7 +39,9 @@ export function CurrencyTotals({
           </span>
           {total.weightedValue !== total.value ? (
             <span className="text-fg-muted tabular" title={t('deals.weightedValue')}>
-              {t('deals.weightedShort', { value: fmt.currency(total.weightedValue, total.currency, { compact: true }) })}
+              {t('deals.weightedShort', {
+                value: fmt.currency(total.weightedValue, total.currency, { compact: true }),
+              })}
             </span>
           ) : null}
         </li>
@@ -70,9 +79,9 @@ export function DealBoardView({
 
   /** Index among the column's cards (excluding the dragged one) whose midpoint is above the pointer. */
   const indexFromPointer = (list: HTMLElement, clientY: number, dragId: string): number => {
-    const cards = Array.from(list.querySelectorAll<HTMLElement>('[data-testid="deal-card"]')).filter(
-      (el) => el.dataset.dealId !== dragId,
-    );
+    const cards = Array.from(
+      list.querySelectorAll<HTMLElement>('[data-testid="deal-card"]'),
+    ).filter((el) => el.dataset.dealId !== dragId);
     let index = 0;
     for (const el of cards) {
       const rect = el.getBoundingClientRect();
@@ -142,14 +151,18 @@ export function DealBoardView({
                 </Badge>
               </div>
               <div className="flex items-start justify-between gap-3 text-xs text-fg-muted">
-                <span className="tabular">{t('deals.probabilityValue', { value: column.stage.probability })}</span>
-                <CurrencyTotals totals={column.totals} compact className="min-w-0 flex-1 items-end" testId="column-totals" />
+                <span className="tabular">
+                  {t('deals.probabilityValue', { value: column.stage.probability })}
+                </span>
+                <CurrencyTotals
+                  totals={column.totals}
+                  compact
+                  className="min-w-0 flex-1 items-end"
+                  testId="column-totals"
+                />
               </div>
             </header>
-            <ul
-              className="flex min-h-16 flex-col gap-2"
-              aria-label={column.stage.name}
-            >
+            <ul className="flex min-h-16 flex-col gap-2" aria-label={column.stage.name}>
               {column.deals.map((deal) => (
                 <DealCard
                   key={deal.id}
@@ -169,7 +182,10 @@ export function DealBoardView({
               ) : null}
             </ul>
             {column.hasMore ? (
-              <Link href={listHref(column.stage.id)} className="text-xs text-accent hover:underline">
+              <Link
+                href={listHref(column.stage.id)}
+                className="text-xs text-accent hover:underline"
+              >
                 {t('deals.moreNotShown', { count: column.count - column.deals.length })}
               </Link>
             ) : null}

@@ -43,9 +43,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     const liveSession = !UUID.test(claims.data.sid)
       ? null
       : await this.prisma.client.refreshToken.findFirst({
-      where: { familyId: claims.data.sid, userId: user.id, revokedAt: null },
-      select: { id: true },
-    });
+          where: { familyId: claims.data.sid, userId: user.id, revokedAt: null },
+          select: { id: true },
+        });
     if (!liveSession) {
       throw AppException.unauthorized('Session has been revoked', ErrorCode.TOKEN_INVALID);
     }

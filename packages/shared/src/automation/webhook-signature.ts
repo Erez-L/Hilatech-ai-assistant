@@ -19,7 +19,11 @@ export function constantTimeEqual(a: string, b: string): boolean {
 // -- Outbound (we sign, the customer verifies) -----------------------------------------------------
 
 /** `sha256=hex(HMAC_SHA256(secret, "<timestamp>.<body>"))`. */
-export function signOutboundPayload(secret: string, timestamp: number | string, body: string): string {
+export function signOutboundPayload(
+  secret: string,
+  timestamp: number | string,
+  body: string,
+): string {
   return `${SIGNATURE_PREFIX}${hmacHex(secret, `${timestamp}.${body}`)}`;
 }
 
@@ -35,7 +39,10 @@ export function verifyOutboundSignature(params: {
   if (!Number.isFinite(ts)) return false;
   const now = params.nowSeconds ?? Math.floor(Date.now() / 1000);
   if (Math.abs(now - ts) > (params.toleranceSeconds ?? SIGNATURE_TOLERANCE_SECONDS)) return false;
-  return constantTimeEqual(signOutboundPayload(params.secret, params.timestamp, params.body), params.signature);
+  return constantTimeEqual(
+    signOutboundPayload(params.secret, params.timestamp, params.body),
+    params.signature,
+  );
 }
 
 // -- Inbound (the customer signs, we verify) ---------------------------------------------------------
@@ -50,7 +57,11 @@ export function hashEndpointSecret(secret: string): string {
  * the HMAC key is that hash (hex): `sha256=hex(HMAC_SHA256(key=SHA-256(secret), body))`. When the sender also
  * supplies `x-hilatech-timestamp`, the signed string is `"<timestamp>.<body>"` (replay protection).
  */
-export function signInboundPayload(secret: string, body: string, timestamp?: number | string): string {
+export function signInboundPayload(
+  secret: string,
+  body: string,
+  timestamp?: number | string,
+): string {
   const key = hashEndpointSecret(secret);
   return `${SIGNATURE_PREFIX}${hmacHex(key, timestamp === undefined ? body : `${timestamp}.${body}`)}`;
 }

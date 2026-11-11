@@ -39,4 +39,3 @@ export const companiesApi = {
   dissociate: (id: string, contactId: string) =>
     api.delete<void>(`/companies/${enc(id)}/contacts/${enc(contactId)}`),
 };
-

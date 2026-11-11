@@ -23,7 +23,10 @@ export class DomainEventPublisher {
     options: { actorUserId?: string | null; requestId?: string | null } = {},
   ): Promise<void> {
     try {
-      const body = JSON.parse(JSON.stringify({ ...payload, organizationId })) as Record<string, unknown>;
+      const body = JSON.parse(JSON.stringify({ ...payload, organizationId })) as Record<
+        string,
+        unknown
+      >;
       await this.producer.enqueue(QueueName.AUTOMATION, {
         kind: 'event',
         organizationId,

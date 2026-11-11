@@ -110,9 +110,11 @@ function rebuildContext(
   const skip = new Set<string>();
   for (const result of previous) {
     context.steps[result.stepId] = { status: result.status, output: result.output };
-    if (result.status !== 'succeeded' || !result.output || typeof result.output !== 'object') continue;
+    if (result.status !== 'succeeded' || !result.output || typeof result.output !== 'object')
+      continue;
     const out = result.output as Record<string, unknown>;
-    if (result.type === 'set_variable' && typeof out.name === 'string') context.vars[out.name] = out.value;
+    if (result.type === 'set_variable' && typeof out.name === 'string')
+      context.vars[out.name] = out.value;
     if (result.type === 'condition' && Array.isArray(out.skip)) {
       for (const id of out.skip) if (typeof id === 'string') skip.add(id);
     }
@@ -195,7 +197,11 @@ export class WorkflowRunner {
           const result = evaluateCondition(left, step.operator, right);
           const skipped = result ? step.else : step.then;
           for (const id of skipped) skip.add(id);
-          await finish('succeeded', { result, left, right, operator: step.operator, skip: skipped }, null);
+          await finish(
+            'succeeded',
+            { result, left, right, operator: step.operator, skip: skipped },
+            null,
+          );
           continue;
         }
         case 'set_variable': {
@@ -217,7 +223,12 @@ export class WorkflowRunner {
       const handler = input.handlers[step.type] as StepHandler | undefined;
       if (!handler) {
         await finish('failed', null, `No handler for step type "${step.type}"`);
-        return { status: 'failed', results, stepId: step.id, error: `No handler for step type "${step.type}"` };
+        return {
+          status: 'failed',
+          results,
+          stepId: step.id,
+          error: `No handler for step type "${step.type}"`,
+        };
       }
 
       let attempt = 0;

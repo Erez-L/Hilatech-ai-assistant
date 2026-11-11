@@ -56,10 +56,26 @@ export function ImportResult({ job }: { job: ImportJob }) {
         </Alert>
       ) : null}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label={t('imports.created')} value={job.result.created} data-testid="import-created" />
-        <StatCard label={t('imports.updated')} value={job.result.updated} data-testid="import-updated" />
-        <StatCard label={t('imports.skipped')} value={job.result.skipped} data-testid="import-skipped" />
-        <StatCard label={t('imports.failedRows')} value={job.result.failed} data-testid="import-failed" />
+        <StatCard
+          label={t('imports.created')}
+          value={job.result.created}
+          data-testid="import-created"
+        />
+        <StatCard
+          label={t('imports.updated')}
+          value={job.result.updated}
+          data-testid="import-updated"
+        />
+        <StatCard
+          label={t('imports.skipped')}
+          value={job.result.skipped}
+          data-testid="import-skipped"
+        />
+        <StatCard
+          label={t('imports.failedRows')}
+          value={job.result.failed}
+          data-testid="import-failed"
+        />
       </div>
 
       <div className="flex items-center justify-between gap-3">
@@ -79,7 +95,13 @@ export function ImportResult({ job }: { job: ImportJob }) {
         compact
         loading={<p className="text-sm text-fg-muted">{t('imports.loadingReport')}</p>}
         isEmpty={(r) => r.rows.length === 0}
-        empty={<EmptyState compact title={t('imports.nothingSkipped')} description={t('imports.nothingSkippedHint')} />}
+        empty={
+          <EmptyState
+            compact
+            title={t('imports.nothingSkipped')}
+            description={t('imports.nothingSkippedHint')}
+          />
+        }
       >
         {(r) => (
           <div className="flex flex-col gap-2">
@@ -103,7 +125,9 @@ export function ImportResult({ job }: { job: ImportJob }) {
                 </TableBody>
               </Table>
             </div>
-            {r.truncated ? <p className="text-xs text-fg-muted">{t('imports.reportTruncated')}</p> : null}
+            {r.truncated ? (
+              <p className="text-xs text-fg-muted">{t('imports.reportTruncated')}</p>
+            ) : null}
           </div>
         )}
       </QueryState>

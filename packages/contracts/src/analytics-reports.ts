@@ -79,8 +79,8 @@ export const businessAnalyticsSchema = z.object({
     /** Leads created in the range (soft-deleted excluded). */
     created: z.number().int(),
     /** Current status of the leads created in the range. */
-    byStatus: z.record(LeadStatus, z.number().int()),
-    bySource: z.record(LeadSource, z.number().int()),
+    byStatus: z.partialRecord(LeadStatus, z.number().int()),
+    bySource: z.partialRecord(LeadSource, z.number().int()),
     series: z.array(countPointSchema),
   }),
   funnel: z.object({
@@ -100,8 +100,8 @@ export const businessAnalyticsSchema = z.object({
   }),
   conversations: z.object({
     created: z.number().int(),
-    byStatus: z.record(ConversationStatus, z.number().int()),
-    byChannel: z.record(ConversationChannel, z.number().int()),
+    byStatus: z.partialRecord(ConversationStatus, z.number().int()),
+    byChannel: z.partialRecord(ConversationChannel, z.number().int()),
     series: z.array(countPointSchema),
   }),
   tasks: z.union([taskStatsSchema, notModelledSchema]),
@@ -191,7 +191,7 @@ export const agentAnalyticsSchema = z.object({
   range: analyticsRangeSchema,
   pricingConfigured: z.boolean(),
   totals: executionCountsSchema.extend({
-    byStatus: z.record(AgentExecutionStatus, z.number().int()),
+    byStatus: z.partialRecord(AgentExecutionStatus, z.number().int()),
     durationMs: percentileSchema,
     inputTokens: z.number().int(),
     outputTokens: z.number().int(),

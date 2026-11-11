@@ -106,7 +106,11 @@ describe('Analytics reports', () => {
     });
     await lead('l1', 'lost', 'website', 8, { value: 400, updatedAt: daysAgo(1) });
     // outside the default 30d range
-    await lead('old', 'won', 'website', 200, { value: 9999, convertedAt: daysAgo(190), updatedAt: daysAgo(190) });
+    await lead('old', 'won', 'website', 200, {
+      value: 9999,
+      convertedAt: daysAgo(190),
+      updatedAt: daysAgo(190),
+    });
     // soft-deleted lead must never count
     await lead('gone', 'new', 'website', 2, { deletedAt: new Date() });
 
@@ -171,10 +175,19 @@ describe('Analytics reports', () => {
     // ----- automation -----------------------------------------------------------------------
     workflowId = (
       await db.workflow.create({
-        data: { organizationId: orgId, name: 'Welcome flow', trigger: { type: 'manual' }, steps: [] },
+        data: {
+          organizationId: orgId,
+          name: 'Welcome flow',
+          trigger: { type: 'manual' },
+          steps: [],
+        },
       })
     ).id;
-    const run = (status: 'succeeded' | 'failed' | 'cancelled', durationMs: number, error?: string) => ({
+    const run = (
+      status: 'succeeded' | 'failed' | 'cancelled',
+      durationMs: number,
+      error?: string,
+    ) => ({
       organizationId: orgId,
       workflowId,
       status,
@@ -284,7 +297,12 @@ describe('Analytics reports', () => {
       const data = await get<BusinessAnalytics>('business');
       expect(data.leads.created).toBe(9);
       expect(data.leads.byStatus).toMatchObject({
-        new: 2, contacted: 1, qualified: 1, proposal: 2, won: 2, lost: 1,
+        new: 2,
+        contacted: 1,
+        qualified: 1,
+        proposal: 2,
+        won: 2,
+        lost: 1,
       });
       expect(data.leads.bySource).toMatchObject({ website: 5, referral: 3, other: 1, email: 0 });
       expect(data.contacts.created).toBe(2);
@@ -298,7 +316,11 @@ describe('Analytics reports', () => {
       const { funnel } = await get<BusinessAnalytics>('business');
       expect(funnel.basis).toBe('current_status_of_leads_created_in_range');
       expect(funnel.stages.map((s) => [s.status, s.reached])).toEqual([
-        ['new', 9], ['contacted', 6], ['qualified', 5], ['proposal', 4], ['won', 2],
+        ['new', 9],
+        ['contacted', 6],
+        ['qualified', 5],
+        ['proposal', 4],
+        ['won', 2],
       ]);
       expect(funnel.lost).toBe(1);
       expect(funnel.conversionRate).toBeCloseTo(2 / 9, 3);
@@ -356,7 +378,11 @@ describe('Analytics reports', () => {
       expect(data.pipeline.some((p) => p.status === 'won' || p.status === 'lost')).toBe(false);
       const usd = data.closedInRange.find((c) => c.currency === 'USD')!;
       expect(usd).toMatchObject({
-        wonCount: 2, wonValue: 4000, lostCount: 1, lostValue: 400, avgWonValue: 2000,
+        wonCount: 2,
+        wonValue: 4000,
+        lostCount: 1,
+        lostValue: 400,
+        avgWonValue: 2000,
       });
       expect(data.winRate).toBeCloseTo(2 / 3, 3);
       expect(data.avgSalesCycleDays).toBeCloseTo(8, 0); // created 10d ago, closed 2d ago
@@ -371,7 +397,12 @@ describe('Analytics reports', () => {
       expect(data.pricingConfigured).toBe(false);
       expect(data.totals.executions).toBe(8);
       expect(data.totals.byStatus).toMatchObject({
-        succeeded: 4, failed: 1, timed_out: 1, cancelled: 1, running: 1, queued: 0,
+        succeeded: 4,
+        failed: 1,
+        timed_out: 1,
+        cancelled: 1,
+        running: 1,
+        queued: 0,
       });
       expect(data.totals.succeeded).toBe(4);
       expect(data.totals.failed).toBe(2); // failed + timed_out
@@ -410,10 +441,20 @@ describe('Analytics reports', () => {
       expect(data.workflows.runs).toBe(6);
       expect(data.workflows.byStatus).toMatchObject({ succeeded: 2, failed: 3, cancelled: 1 });
       expect(data.workflows.successRate).toBeCloseTo(2 / 5, 3);
-      expect(data.workflows.failureReasons[0]).toEqual({ reason: 'Step http failed: 500', count: 2 });
-      expect(data.workflows.failureReasons[1]).toEqual({ reason: 'Condition evaluation error', count: 1 });
+      expect(data.workflows.failureReasons[0]).toEqual({
+        reason: 'Step http failed: 500',
+        count: 2,
+      });
+      expect(data.workflows.failureReasons[1]).toEqual({
+        reason: 'Condition evaluation error',
+        count: 1,
+      });
       expect(data.workflows.byWorkflow[0]).toMatchObject({
-        workflowId, name: 'Welcome flow', runs: 6, succeeded: 2, failed: 3,
+        workflowId,
+        name: 'Welcome flow',
+        runs: 6,
+        succeeded: 2,
+        failed: 3,
       });
       expect(data.workflows.durationMs.p50).not.toBeNull();
       expect(data.workflows.series.reduce((a, p) => a + p.total, 0)).toBe(6);
@@ -422,9 +463,14 @@ describe('Analytics reports', () => {
       expect(data.webhooks.byStatus).toMatchObject({ delivered: 3, failed: 2, pending: 1 });
       expect(data.webhooks.successRate).toBeCloseTo(3 / 5, 3);
       expect(data.webhooks.avgAttempts).toBeCloseTo(14 / 6, 1);
-      expect(data.webhooks.failureReasons.map((r) => r.reason).sort()).toEqual(['HTTP 503', 'connect ECONNREFUSED']);
+      expect(data.webhooks.failureReasons.map((r) => r.reason).sort()).toEqual([
+        'HTTP 503',
+        'connect ECONNREFUSED',
+      ]);
       expect(data.webhooks.byEvent.find((e) => e.event === 'lead.created')).toMatchObject({
-        total: 3, delivered: 2, failed: 1,
+        total: 3,
+        delivered: 2,
+        failed: 1,
       });
     });
   });
@@ -434,19 +480,35 @@ describe('Analytics reports', () => {
       const data = await get<UsageAnalytics>('usage');
       expect(data.pricingConfigured).toBe(false);
       expect(data.totals).toMatchObject({
-        requests: 4, successRequests: 3, errorRequests: 1,
-        inputTokens: 310, outputTokens: 155, totalTokens: 465, pricedRequests: 2,
+        requests: 4,
+        successRequests: 3,
+        errorRequests: 1,
+        inputTokens: 310,
+        outputTokens: 155,
+        totalTokens: 465,
+        pricedRequests: 2,
       });
       expect(data.totals.costUsd).toBeCloseTo(1.5, 6);
       const gptA = data.byModel.find((m) => m.model === 'gpt-a')!;
       expect(gptA).toMatchObject({ provider: 'openai', requests: 2, totalTokens: 450 });
       expect(gptA.costUsd).toBeCloseTo(1.5, 6);
-      expect(data.byModel.find((m) => m.model === 'gpt-b')).toMatchObject({ requests: 2, costUsd: null });
+      expect(data.byModel.find((m) => m.model === 'gpt-b')).toMatchObject({
+        requests: 2,
+        costUsd: null,
+      });
       expect(data.byModel[0]?.model).toBe('gpt-a'); // ordered by tokens
-      expect(data.byAgent.find((a) => a.agentId === agentA)).toMatchObject({ name: 'Alpha', requests: 2 });
-      expect(data.byAgent.find((a) => a.agentId === null)).toMatchObject({ name: null, requests: 2 });
+      expect(data.byAgent.find((a) => a.agentId === agentA)).toMatchObject({
+        name: 'Alpha',
+        requests: 2,
+      });
+      expect(data.byAgent.find((a) => a.agentId === null)).toMatchObject({
+        name: null,
+        requests: 2,
+      });
       expect(data.byUser.find((u) => u.userId === owner.user.id)).toMatchObject({
-        name: 'Owen Owner', requests: 2, totalTokens: 450,
+        name: 'Owen Owner',
+        requests: 2,
+        totalTokens: 450,
       });
       expect(data.byUser.find((u) => u.userId === null)).toMatchObject({ name: null });
       expect(data.series.reduce((a, p) => a + p.totalTokens, 0)).toBe(465);
@@ -470,7 +532,9 @@ describe('Analytics reports', () => {
       const res = await exportCsv('report=business&section=series&granularity=day');
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toMatch(/^text\/csv/);
-      expect(res.headers['content-disposition']).toMatch(/^attachment; filename="business-series-.*\.csv"$/);
+      expect(res.headers['content-disposition']).toMatch(
+        /^attachment; filename="business-series-.*\.csv"$/,
+      );
       expect(res.headers['x-content-type-options']).toBe('nosniff');
       const lines = res.text.trim().split('\r\n');
       expect(lines[0]).toBe('bucket,contacts_created,leads_created,conversations_created');
@@ -490,23 +554,39 @@ describe('Analytics reports', () => {
       expect(breakdown.text).toContain('lead_status,won,2');
       expect(breakdown.text).toContain('funnel_reached,contacted,6');
       const usage = await exportCsv('report=usage&section=breakdown');
-      expect(usage.text.split('\r\n')[0]).toBe('dimension,key,name,requests,input_tokens,output_tokens,total_tokens,cost_usd');
+      expect(usage.text.split('\r\n')[0]).toBe(
+        'dimension,key,name,requests,input_tokens,output_tokens,total_tokens,cost_usd',
+      );
       expect(usage.text).toContain('model,openai:gpt-a,gpt-a,2,300,150,450,1.5');
       expect(usage.text).toContain('user,' + owner.user.id + ',Owen Owner,2,300,150,450,1.5');
       const series = await exportCsv('report=usage');
-      expect(series.text.split('\r\n')[0]).toBe('bucket,requests,input_tokens,output_tokens,total_tokens,cost_usd');
+      expect(series.text.split('\r\n')[0]).toBe(
+        'bucket,requests,input_tokens,output_tokens,total_tokens,cost_usd',
+      );
     });
 
     it('neutralises formulas in exported names', async () => {
       const evil = await register(ctx, { firstName: '=cmd|calc', lastName: 'x' });
       const roles = (await as(ctx, owner, orgId).get('/api/v1/roles')).body.data as Role[];
       await ctx.prisma.client.organizationMember.create({
-        data: { organizationId: orgId, userId: evil.user.id, roleId: roles.find((r) => r.key === 'member')!.id, status: 'active' },
+        data: {
+          organizationId: orgId,
+          userId: evil.user.id,
+          roleId: roles.find((r) => r.key === 'member')!.id,
+          status: 'active',
+        },
       });
       await ctx.prisma.client.aiRequestLog.create({
         data: {
-          organizationId: orgId, userId: evil.user.id, provider: 'openai', model: 'gpt-b',
-          operation: 'generate', status: 'success', inputTokens: 1, outputTokens: 1, createdAt: daysAgo(1),
+          organizationId: orgId,
+          userId: evil.user.id,
+          provider: 'openai',
+          model: 'gpt-b',
+          operation: 'generate',
+          status: 'success',
+          inputTokens: 1,
+          outputTokens: 1,
+          createdAt: daysAgo(1),
         },
       });
       const res = await exportCsv('report=usage&section=breakdown');
@@ -522,16 +602,17 @@ describe('Analytics reports', () => {
   });
 
   describe('permissions', () => {
-    const paths = [
-      'business', 'sales', 'agents', 'automation', 'usage', 'export?report=business',
-    ];
-    it.each(paths)('GET /analytics/%s needs analytics:read (403 without it, 200 for the member role)', async (path) => {
-      const denied = await as(ctx, noAnalytics, orgId).get(`/api/v1/analytics/${path}`);
-      expect(denied.status).toBe(403);
-      expect(denied.body.error.code).toBe(ErrorCode.FORBIDDEN);
-      const allowed = await as(ctx, member, orgId).get(`/api/v1/analytics/${path}`);
-      expect(allowed.status).toBe(200); // member role has analytics:read
-    });
+    const paths = ['business', 'sales', 'agents', 'automation', 'usage', 'export?report=business'];
+    it.each(paths)(
+      'GET /analytics/%s needs analytics:read (403 without it, 200 for the member role)',
+      async (path) => {
+        const denied = await as(ctx, noAnalytics, orgId).get(`/api/v1/analytics/${path}`);
+        expect(denied.status).toBe(403);
+        expect(denied.body.error.code).toBe(ErrorCode.FORBIDDEN);
+        const allowed = await as(ctx, member, orgId).get(`/api/v1/analytics/${path}`);
+        expect(allowed.status).toBe(200); // member role has analytics:read
+      },
+    );
   });
 
   it('runs every report fast enough on its indexes (smoke: all 5 reports < 2s on the seeded data)', async () => {

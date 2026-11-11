@@ -15,7 +15,10 @@ export interface RestSecrets {
 }
 
 /** Static headers + credentials for a REST integration. Secret values only ever flow server-side. */
-export function buildRestHeaders(config: RestAuthConfig, secrets: RestSecrets = {}): Record<string, string> {
+export function buildRestHeaders(
+  config: RestAuthConfig,
+  secrets: RestSecrets = {},
+): Record<string, string> {
   const headers: Record<string, string> = { ...(config.headers ?? {}) };
   switch (config.authType ?? 'none') {
     case 'bearer': {
@@ -29,7 +32,8 @@ export function buildRestHeaders(config: RestAuthConfig, secrets: RestSecrets = 
       }
       break;
     case 'header':
-      if (config.authHeaderName && secrets.apiKey) headers[config.authHeaderName.toLowerCase()] = secrets.apiKey;
+      if (config.authHeaderName && secrets.apiKey)
+        headers[config.authHeaderName.toLowerCase()] = secrets.apiKey;
       break;
     default:
       break;

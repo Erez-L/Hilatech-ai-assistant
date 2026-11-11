@@ -2,7 +2,17 @@
 
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CheckCircle2, Circle, FilterX, ListChecks, MoreHorizontal, Pencil, Plus, Trash2, UserRoundCheck } from 'lucide-react';
+import {
+  CheckCircle2,
+  Circle,
+  FilterX,
+  ListChecks,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Trash2,
+  UserRoundCheck,
+} from 'lucide-react';
 import { Permission, type TaskStatus, type TaskWithRelations } from '@hilatech/contracts';
 import {
   Button,
@@ -37,12 +47,7 @@ import {
 } from '@hilatech/ui';
 import { getErrorMessage } from '@/lib/api';
 import { useMembers } from '@/hooks/queries';
-import {
-  useBulkAssignTasks,
-  useCompleteTask,
-  useDeleteTask,
-  useTasks,
-} from '@/hooks/sales';
+import { useBulkAssignTasks, useCompleteTask, useDeleteTask, useTasks } from '@/hooks/sales';
 import { useCan } from '@/hooks/use-can';
 import { useSession } from '@/stores/session';
 import { fullName } from '@/lib/crm';
@@ -65,7 +70,11 @@ import { DealPicker } from '@/components/crm/deal-picker';
 import { ConversationPicker } from '@/components/crm/conversation-picker';
 import { ExportButton } from '@/components/data-exchange/export-button';
 import { TaskDialog } from '@/components/tasks/task-dialog';
-import { TaskPriorityBadge, TaskSourceBadge, TaskStatusBadge } from '@/components/tasks/task-badges';
+import {
+  TaskPriorityBadge,
+  TaskSourceBadge,
+  TaskStatusBadge,
+} from '@/components/tasks/task-badges';
 import { TaskDue } from '@/components/tasks/task-due';
 import { TaskRelated } from '@/components/tasks/task-related';
 import { useT } from '@/i18n/provider';
@@ -92,7 +101,15 @@ function initialFilters(params: URLSearchParams): TaskFilters {
 }
 
 function relatedKindOf(f: TaskFilters): RelatedKind {
-  return f.leadId ? 'lead' : f.contactId ? 'contact' : f.dealId ? 'deal' : f.conversationId ? 'conversation' : '';
+  return f.leadId
+    ? 'lead'
+    : f.contactId
+      ? 'contact'
+      : f.dealId
+        ? 'deal'
+        : f.conversationId
+          ? 'conversation'
+          : '';
 }
 
 export function TasksView() {
@@ -107,7 +124,9 @@ export function TasksView() {
   const canReadMembers = useCan(Permission.MEMBERS_READ);
 
   const [filters, setFilters] = React.useState<TaskFilters>(() => initialFilters(searchParams));
-  const [relatedKind, setRelatedKind] = React.useState<RelatedKind>(() => relatedKindOf(initialFilters(searchParams)));
+  const [relatedKind, setRelatedKind] = React.useState<RelatedKind>(() =>
+    relatedKindOf(initialFilters(searchParams)),
+  );
   const [page, setPage] = React.useState(1);
   const [sort, setSort] = React.useState<SortState<SortKey>>({ key: 'dueAt', direction: 'asc' });
   const [createOpen, setCreateOpen] = React.useState(searchParams.get('new') === '1');
@@ -172,7 +191,11 @@ export function TasksView() {
       { id: task.id, done },
       {
         onSuccess: () =>
-          toast.success(done ? t('tasks.taskCompleted', { title: task.title }) : t('tasks.taskReopened', { title: task.title })),
+          toast.success(
+            done
+              ? t('tasks.taskCompleted', { title: task.title })
+              : t('tasks.taskReopened', { title: task.title }),
+          ),
         onError: (e) => toast.error(getErrorMessage(e)),
       },
     );
@@ -180,7 +203,10 @@ export function TasksView() {
 
   const runBulkAssign = () => {
     bulk.mutate(
-      { taskIds: [...selected], assigneeId: bulkAssignee === '' || bulkAssignee === 'none' ? null : bulkAssignee },
+      {
+        taskIds: [...selected],
+        assigneeId: bulkAssignee === '' || bulkAssignee === 'none' ? null : bulkAssignee,
+      },
       {
         onSuccess: (r) => {
           toast.success(t('tasks.bulkAssigned', { count: r.updated }));
@@ -353,16 +379,24 @@ export function TasksView() {
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="tasks-related-record">{t('tasks.relatedRecord')}</Label>
                 {relatedKind === 'lead' ? (
-                  <LeadPicker id="tasks-related-record" value={filters.leadId || null} onValueChange={(id) => set({ leadId: id ?? '' })} />
+                  <LeadPicker
+                    id="tasks-related-record"
+                    value={filters.leadId || null}
+                    onValueChange={(id) => set({ leadId: id ?? '' })}
+                  />
                 ) : relatedKind === 'contact' ? (
                   <ContactPicker
                     id="tasks-related-record"
                     value={filters.contactId || null}
-                   
+
                     onValueChange={(id) => set({ contactId: id ?? '' })}
                   />
                 ) : relatedKind === 'deal' ? (
-                  <DealPicker id="tasks-related-record" value={filters.dealId || null} onValueChange={(id) => set({ dealId: id ?? '' })} />
+                  <DealPicker
+                    id="tasks-related-record"
+                    value={filters.dealId || null}
+                    onValueChange={(id) => set({ dealId: id ?? '' })}
+                  />
                 ) : relatedKind === 'conversation' ? (
                   <ConversationPicker
                     id="tasks-related-record"
@@ -375,7 +409,12 @@ export function TasksView() {
                   </NativeSelect>
                 )}
               </div>
-              <Button variant="ghost" onClick={reset} disabled={!hasFilters} leadingIcon={<FilterX aria-hidden />}>
+              <Button
+                variant="ghost"
+                onClick={reset}
+                disabled={!hasFilters}
+                leadingIcon={<FilterX aria-hidden />}
+              >
                 {t('common.clear')}
               </Button>
             </div>
@@ -440,13 +479,36 @@ export function TasksView() {
                       />
                     </TableHead>
                   ) : null}
-                  <SortableHead sortKey="title" sort={sort} onSortChange={(s) => { setSort(s); setPage(1); }}>
+                  <SortableHead
+                    sortKey="title"
+                    sort={sort}
+                    onSortChange={(s) => {
+                      setSort(s);
+                      setPage(1);
+                    }}
+                  >
                     {t('tasks.task')}
                   </SortableHead>
-                  <SortableHead sortKey="priority" sort={sort} onSortChange={(s) => { setSort(s); setPage(1); }} className="hidden sm:table-cell">
+                  <SortableHead
+                    sortKey="priority"
+                    sort={sort}
+                    onSortChange={(s) => {
+                      setSort(s);
+                      setPage(1);
+                    }}
+                    className="hidden sm:table-cell"
+                  >
                     {t('tasks.priority')}
                   </SortableHead>
-                  <SortableHead sortKey="dueAt" sort={sort} onSortChange={(s) => { setSort(s); setPage(1); }} className="hidden sm:table-cell">
+                  <SortableHead
+                    sortKey="dueAt"
+                    sort={sort}
+                    onSortChange={(s) => {
+                      setSort(s);
+                      setPage(1);
+                    }}
+                    className="hidden sm:table-cell"
+                  >
                     {t('tasks.due')}
                   </SortableHead>
                   <TableHead className="hidden md:table-cell">{t('common.assignee')}</TableHead>
@@ -474,15 +536,23 @@ export function TasksView() {
                     <EmptyState
                       compact
                       icon={<ListChecks />}
-                      title={hasFilters ? t('tasks.noTasksMatchTheseFilters') : t('tasks.noTasksYet')}
-                      description={hasFilters ? t('common.tryDifferentFilters') : t('tasks.addYourFirstTask')}
+                      title={
+                        hasFilters ? t('tasks.noTasksMatchTheseFilters') : t('tasks.noTasksYet')
+                      }
+                      description={
+                        hasFilters ? t('common.tryDifferentFilters') : t('tasks.addYourFirstTask')
+                      }
                       action={
                         hasFilters ? (
                           <Button variant="secondary" size="sm" onClick={reset}>
                             {t('common.clearFilters')}
                           </Button>
                         ) : canCreate ? (
-                          <Button size="sm" leadingIcon={<Plus aria-hidden />} onClick={() => setCreateOpen(true)}>
+                          <Button
+                            size="sm"
+                            leadingIcon={<Plus aria-hidden />}
+                            onClick={() => setCreateOpen(true)}
+                          >
                             {t('tasks.newTask')}
                           </Button>
                         ) : undefined
@@ -507,12 +577,22 @@ export function TasksView() {
                           <div className="flex min-w-0 items-start gap-2">
                             <IconButton
                               size="sm"
-                              label={done ? t('tasks.reopenTask', { title: task.title }) : t('tasks.markTaskDone', { title: task.title })}
-                              disabled={!canUpdate || task.status === 'cancelled' || complete.isPending}
+                              label={
+                                done
+                                  ? t('tasks.reopenTask', { title: task.title })
+                                  : t('tasks.markTaskDone', { title: task.title })
+                              }
+                              disabled={
+                                !canUpdate || task.status === 'cancelled' || complete.isPending
+                              }
                               onClick={() => toggleDone(task)}
                               aria-pressed={done}
                             >
-                              {done ? <CheckCircle2 className="text-success" aria-hidden /> : <Circle aria-hidden />}
+                              {done ? (
+                                <CheckCircle2 className="text-success" aria-hidden />
+                              ) : (
+                                <Circle aria-hidden />
+                              )}
                             </IconButton>
                             <div className="flex min-w-0 flex-col items-start gap-1">
                               <button
@@ -566,7 +646,10 @@ export function TasksView() {
                                 ) : null}
                                 {canUpdate && canDelete ? <DropdownMenuSeparator /> : null}
                                 {canDelete ? (
-                                  <DropdownMenuItem onSelect={() => setDeleting(task)} className="text-danger">
+                                  <DropdownMenuItem
+                                    onSelect={() => setDeleting(task)}
+                                    className="text-danger"
+                                  >
                                     <Trash2 aria-hidden /> {t('common.delete')}
                                   </DropdownMenuItem>
                                 ) : null}
@@ -601,7 +684,11 @@ export function TasksView() {
             if (!open && searchParams.get('new')) router.replace('/tasks');
           }}
         />
-        <TaskDialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)} task={editing} />
+        <TaskDialog
+          open={!!editing}
+          onOpenChange={(open) => !open && setEditing(null)}
+          task={editing}
+        />
         <ConfirmDialog
           open={!!deleting}
           onOpenChange={(open) => !open && setDeleting(null)}

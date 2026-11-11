@@ -349,7 +349,12 @@ export class InvitationsService {
     await this.events?.emit(
       invitation.organizationId,
       'member.joined',
-      { userId: user.id, email: user.email, roleKey: invitation.role.key, invitationId: invitation.id },
+      {
+        userId: user.id,
+        email: user.email,
+        roleKey: invitation.role.key,
+        invitationId: invitation.id,
+      },
       { actorUserId: user.id, requestId: meta.requestId },
     );
     await this.queue.enqueue(QueueName.NOTIFICATIONS, {

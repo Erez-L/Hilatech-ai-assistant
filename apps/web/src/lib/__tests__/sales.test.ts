@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { makeBoard } from './fixtures';
 import { moveDealOnBoard, needsLostReason, visibleColumns } from '@/lib/deals';
-import { DEFAULT_TASK_FILTERS, dueRange, hasActiveTaskFilters, taskFiltersToQuery } from '@/lib/tasks';
+import {
+  DEFAULT_TASK_FILTERS,
+  dueRange,
+  hasActiveTaskFilters,
+  taskFiltersToQuery,
+} from '@/lib/tasks';
 import {
   canValidate,
   initialWizardState,
@@ -38,7 +43,9 @@ describe('moveDealOnBoard (optimistic update)', () => {
     const moved = next.columns[2]!.deals[0]!;
     expect(moved.status).toBe('lost');
     expect(moved.closedAt).not.toBeNull();
-    expect(next.columns[2]!.totals).toEqual([{ currency: 'USD', count: 1, value: 1000, weightedValue: 0 }]);
+    expect(next.columns[2]!.totals).toEqual([
+      { currency: 'USD', count: 1, value: 1000, weightedValue: 0 },
+    ]);
   });
 
   it('reorders inside the same column at a position', () => {
@@ -89,7 +96,9 @@ describe('task filters', () => {
   });
 
   it('supports "me", unassigned, specific users, overdue and related records', () => {
-    expect(taskFiltersToQuery({ ...DEFAULT_TASK_FILTERS, assignee: 'me' }, now).assigneeId).toBe('me');
+    expect(taskFiltersToQuery({ ...DEFAULT_TASK_FILTERS, assignee: 'me' }, now).assigneeId).toBe(
+      'me',
+    );
     const un = taskFiltersToQuery({ ...DEFAULT_TASK_FILTERS, assignee: 'unassigned' }, now);
     expect(un.unassigned).toBe(true);
     expect(un.assigneeId).toBeUndefined();
@@ -141,7 +150,11 @@ describe('import wizard reducer', () => {
   });
 
   it('lets a column feed only one field', () => {
-    const s = after(initialWizardState(), { type: 'uploaded', upload }, { type: 'map', field: 'phone', column: 2 });
+    const s = after(
+      initialWizardState(),
+      { type: 'uploaded', upload },
+      { type: 'map', field: 'phone', column: 2 },
+    );
     expect(s.mapping.phone).toBe(2);
     expect(s.mapping.email).toBeNull();
     expect(s.stale).toBe(true);
@@ -168,8 +181,13 @@ describe('import wizard reducer', () => {
   });
 
   it('goes review -> progress -> result and back', () => {
-    const job = (status: string) => ({ ...(upload as object), status, validation: { total: 3 } }) as never;
-    let s = after(initialWizardState(), { type: 'uploaded', upload }, { type: 'validated', job: job('validated') });
+    const job = (status: string) =>
+      ({ ...(upload as object), status, validation: { total: 3 } }) as never;
+    let s = after(
+      initialWizardState(),
+      { type: 'uploaded', upload },
+      { type: 'validated', job: job('validated') },
+    );
     expect(s.step).toBe('review');
     expect(s.stale).toBe(false);
     s = wizardReducer(s, { type: 'strategy', strategy: 'update' });

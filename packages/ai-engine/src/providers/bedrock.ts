@@ -11,7 +11,7 @@ import {
   type ToolConfiguration,
 } from '@aws-sdk/client-bedrock-runtime';
 import type { AiModelInfo } from '@hilatech/contracts';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { zodToJsonSchema } from '../json-schema';
 
 import { AiProviderError, codeFromStatus, isAbortError, type AiErrorCode } from '../errors';
 import { stripSchemaMeta } from './anthropic';
@@ -174,10 +174,7 @@ export class BedrockProvider implements AiProvider {
    */
   async generateStructured<T>(request: StructuredRequest<T>): Promise<StructuredResult<T>> {
     const name = request.schemaName ?? 'structured_output';
-    const jsonSchema = zodToJsonSchema(request.schema, { $refStrategy: 'none' }) as Record<
-      string,
-      unknown
-    >;
+    const jsonSchema = zodToJsonSchema(request.schema);
     const attempt = async (messages: AiMessage[]): Promise<StructuredResult<T>> => {
       const result = await this.generate({
         ...request,

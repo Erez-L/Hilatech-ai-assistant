@@ -345,7 +345,11 @@ describe('AgentRunner', () => {
       });
       const provider = new MockProvider({
         script: [
-          { toolCalls: [{ name: 'agents__delegate', input: { agentId: childId, task: 'write it' } }] },
+          {
+            toolCalls: [
+              { name: 'agents__delegate', input: { agentId: childId, task: 'write it' } },
+            ],
+          },
           { toolCalls: [{ name: 'test__write', input: {} }] }, // child tries the write tool
           { text: 'child done' },
           { text: 'parent done' },
@@ -360,7 +364,11 @@ describe('AgentRunner', () => {
         tools: ['test.write'],
         permissions: { allowWrite: true, allowDelegation: false, delegateTo: [] },
       });
-      const { runner, store } = setup([], { agents: [parent, child], sharedProvider: provider, registry });
+      const { runner, store } = setup([], {
+        agents: [parent, child],
+        sharedProvider: provider,
+        registry,
+      });
       await runner.run({ ...delegator, agent: parent, input: 'x' });
       expect(writes).toBe(0);
       const toolStep = store.steps.get('child-1')?.find((s) => s.type === 'tool_call');

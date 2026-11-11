@@ -450,12 +450,18 @@ export function StepFields({
       );
 
     case 'create_task': {
-      const optionalNumber = (raw: string) => (raw.trim() === '' ? undefined : Math.max(0, Math.floor(Number(raw))));
+      const optionalNumber = (raw: string) =>
+        raw.trim() === '' ? undefined : Math.max(0, Math.floor(Number(raw)));
       const templateField = (
         name: 'leadId' | 'contactId' | 'dealId' | 'conversationId',
         label: string,
       ) => (
-        <FormField id={fid(name)} label={label} description={t('automation.taskRelatedHint')} error={errors[name]}>
+        <FormField
+          id={fid(name)}
+          label={label}
+          description={t('automation.taskRelatedHint')}
+          error={errors[name]}
+        >
           <Input
             dir="ltr"
             value={step[name] ?? ''}
@@ -465,10 +471,23 @@ export function StepFields({
       );
       return (
         <div className="grid gap-4">
-          <FormField id={fid('title')} label={t('common.title')} required description={TEMPLATE_HINT} error={errors.title}>
-            <Input value={step.title} onChange={(e) => onChange({ ...step, title: e.target.value })} />
+          <FormField
+            id={fid('title')}
+            label={t('common.title')}
+            required
+            description={TEMPLATE_HINT}
+            error={errors.title}
+          >
+            <Input
+              value={step.title}
+              onChange={(e) => onChange({ ...step, title: e.target.value })}
+            />
           </FormField>
-          <FormField id={fid('description')} label={t('common.description')} error={errors.description}>
+          <FormField
+            id={fid('description')}
+            label={t('common.description')}
+            error={errors.description}
+          >
             <Textarea
               rows={3}
               value={step.description ?? ''}
@@ -479,7 +498,9 @@ export function StepFields({
             <FormField id={fid('priority')} label={t('tasks.priority')} error={errors.priority}>
               <NativeSelect
                 value={step.priority}
-                onChange={(e) => onChange({ ...step, priority: e.target.value as typeof step.priority })}
+                onChange={(e) =>
+                  onChange({ ...step, priority: e.target.value as typeof step.priority })
+                }
               >
                 {(['low', 'medium', 'high', 'urgent'] as const).map((p) => (
                   <option key={p} value={p}>
@@ -488,7 +509,11 @@ export function StepFields({
                 ))}
               </NativeSelect>
             </FormField>
-            <FormField id={fid('assignee-kind')} label={t('tasks.assignee')} error={errors.assignee}>
+            <FormField
+              id={fid('assignee-kind')}
+              label={t('tasks.assignee')}
+              error={errors.assignee}
+            >
               <NativeSelect
                 value={step.assignee?.kind ?? 'none'}
                 onChange={(e) => {
@@ -496,7 +521,11 @@ export function StepFields({
                   onChange({
                     ...step,
                     assignee:
-                      kind === 'user' ? { kind: 'user', userId: '' } : kind === 'assignee' ? { kind: 'assignee' } : undefined,
+                      kind === 'user'
+                        ? { kind: 'user', userId: '' }
+                        : kind === 'assignee'
+                          ? { kind: 'assignee' }
+                          : undefined,
                   });
                 }}
               >
@@ -507,7 +536,12 @@ export function StepFields({
             </FormField>
           </div>
           {step.assignee?.kind === 'user' ? (
-            <FormField id={fid('assignee-user')} label={t('automation.person')} required error={errors['assignee.userId']}>
+            <FormField
+              id={fid('assignee-user')}
+              label={t('automation.person')}
+              required
+              error={errors['assignee.userId']}
+            >
               <UserPicker
                 id={fid('assignee-user')}
                 value={step.assignee.userId}
@@ -542,7 +576,9 @@ export function StepFields({
                 min={0}
                 inputMode="numeric"
                 value={step.reminderBeforeHours ?? ''}
-                onChange={(e) => onChange({ ...step, reminderBeforeHours: optionalNumber(e.target.value) })}
+                onChange={(e) =>
+                  onChange({ ...step, reminderBeforeHours: optionalNumber(e.target.value) })
+                }
               />
             </FormField>
           </div>

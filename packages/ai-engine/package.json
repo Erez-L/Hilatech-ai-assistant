@@ -32,8 +32,7 @@
     "@hilatech/shared": "workspace:*",
     "@hilatech/types": "workspace:*",
     "openai": "7.53.0",
-    "zod": "3.25.76",
-    "zod-to-json-schema": "3.25.2"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@hilatech/config": "workspace:*",

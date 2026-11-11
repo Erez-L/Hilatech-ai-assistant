@@ -52,7 +52,10 @@ const SOURCE_ICONS = {
 export function TaskSourceBadge({ source }: { source: TaskSource }) {
   const t = useT();
   return (
-    <Badge variant={source === 'human' ? 'outline' : 'accent'} data-testid={`task-source-${source}`}>
+    <Badge
+      variant={source === 'human' ? 'outline' : 'accent'}
+      data-testid={`task-source-${source}`}
+    >
       {SOURCE_ICONS[source]}
       {t(TASK_SOURCE_LABELS[source])}
     </Badge>

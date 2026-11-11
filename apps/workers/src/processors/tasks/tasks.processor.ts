@@ -31,7 +31,9 @@ export interface ReminderTickResult {
  * reset of `reminderSentAt` when `reminderAt` changes (done by the API). A failed delivery releases the claim.
  */
 @Injectable()
-export class TasksProcessor implements JobProcessor<typeof QueueName.TASKS>, OnApplicationBootstrap {
+export class TasksProcessor
+  implements JobProcessor<typeof QueueName.TASKS>, OnApplicationBootstrap
+{
   readonly queue = QueueName.TASKS;
 
   constructor(
@@ -65,7 +67,10 @@ export class TasksProcessor implements JobProcessor<typeof QueueName.TASKS>, OnA
     }
   }
 
-  async process(job: Job<JobPayload<typeof QueueName.TASKS>>, context: JobContext): Promise<JobOutcome> {
+  async process(
+    job: Job<JobPayload<typeof QueueName.TASKS>>,
+    context: JobContext,
+  ): Promise<JobOutcome> {
     const data = job.data;
     const result = await this.reminderTick(new Date(), data.organizationId, context);
     return { status: 'completed', kind: data.kind, ...result };
@@ -128,7 +133,11 @@ export class TasksProcessor implements JobProcessor<typeof QueueName.TASKS>, OnA
           // Release the claim so the next tick retries.
           await db.task
             .updateMany({
-              where: { id: task.id, organizationId: task.organizationId, reminderAt: task.reminderAt },
+              where: {
+                id: task.id,
+                organizationId: task.organizationId,
+                reminderAt: task.reminderAt,
+              },
               data: { reminderSentAt: null },
             })
             .catch(() => undefined);

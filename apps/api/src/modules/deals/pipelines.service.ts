@@ -69,7 +69,10 @@ export class PipelinesService {
   ): Promise<PipelineDto> {
     const stages = dto.stages ?? DEFAULT_STAGES.map((s) => ({ ...s }));
     const problem = validateStageSet(stages);
-    if (problem) throw AppException.validation(problem, [{ path: 'stages', message: problem, code: 'custom' }]);
+    if (problem)
+      throw AppException.validation(problem, [
+        { path: 'stages', message: problem, code: 'custom' },
+      ]);
     if (new Set(stages.map((s) => s.name.toLowerCase())).size !== stages.length) {
       throw AppException.validation('Stage names must be unique', [
         { path: 'stages', message: 'Stage names must be unique', code: 'custom' },
@@ -77,7 +80,9 @@ export class PipelinesService {
     }
     try {
       const created = await this.prisma.client.$transaction(async (tx) => {
-        const hasAny = await tx.pipeline.count({ where: { organizationId: tenant.organizationId } });
+        const hasAny = await tx.pipeline.count({
+          where: { organizationId: tenant.organizationId },
+        });
         const makeDefault = dto.isDefault || hasAny === 0;
         if (makeDefault) {
           await tx.pipeline.updateMany({
@@ -165,7 +170,9 @@ export class PipelinesService {
       where: { organizationId: tenant.organizationId, pipelineId: id },
     });
     if (deals > 0) {
-      throw AppException.conflict('The pipeline still has deals; move or delete them first', { deals });
+      throw AppException.conflict('The pipeline still has deals; move or delete them first', {
+        deals,
+      });
     }
     await this.prisma.client.pipeline.deleteMany({
       where: { id, organizationId: tenant.organizationId },
@@ -206,7 +213,8 @@ export class PipelinesService {
         await this.applyStageOrder(tx, tenant.organizationId, ordered);
       });
     } catch (error) {
-      if (isUnique(error)) throw AppException.conflict('A stage with this name already exists in the pipeline');
+      if (isUnique(error))
+        throw AppException.conflict('A stage with this name already exists in the pipeline');
       throw error;
     }
     await this.auditPipeline(tenant, pipelineId, meta, { kind: 'stage_created', name: dto.name });
@@ -263,10 +271,15 @@ export class PipelinesService {
         }
       });
     } catch (error) {
-      if (isUnique(error)) throw AppException.conflict('A stage with this name already exists in the pipeline');
+      if (isUnique(error))
+        throw AppException.conflict('A stage with this name already exists in the pipeline');
       throw error;
     }
-    await this.auditPipeline(tenant, pipelineId, meta, { kind: 'stage_updated', stageId, changes: Object.keys(dto) });
+    await this.auditPipeline(tenant, pipelineId, meta, {
+      kind: 'stage_updated',
+      stageId,
+      changes: Object.keys(dto),
+    });
     return this.get(tenant, pipelineId);
   }
 
@@ -332,8 +345,14 @@ export class PipelinesService {
           })),
         });
       }
-      await tx.pipelineStage.deleteMany({ where: { id: stageId, organizationId: tenant.organizationId } });
-      await this.applyStageOrder(tx, tenant.organizationId, remaining.map((s) => s.id));
+      await tx.pipelineStage.deleteMany({
+        where: { id: stageId, organizationId: tenant.organizationId },
+      });
+      await this.applyStageOrder(
+        tx,
+        tenant.organizationId,
+        remaining.map((s) => s.id),
+      );
     });
     await this.auditPipeline(tenant, pipelineId, meta, {
       kind: 'stage_deleted',
@@ -355,7 +374,10 @@ export class PipelinesService {
       pipeline.stages.map((s) => s.id),
       dto.stageIds,
     );
-    if (problem) throw AppException.validation(problem, [{ path: 'stageIds', message: problem, code: 'custom' }]);
+    if (problem)
+      throw AppException.validation(problem, [
+        { path: 'stageIds', message: problem, code: 'custom' },
+      ]);
     await this.prisma.client.$transaction((tx) =>
       this.applyStageOrder(tx, tenant.organizationId, dto.stageIds),
     );
@@ -384,7 +406,10 @@ export class PipelinesService {
     orderedIds: readonly string[],
   ): Promise<void> {
     for (const { id, position } of stageOrders(orderedIds)) {
-      await tx.pipelineStage.updateMany({ where: { id, organizationId }, data: { order: position } });
+      await tx.pipelineStage.updateMany({
+        where: { id, organizationId },
+        data: { order: position },
+      });
     }
   }
 

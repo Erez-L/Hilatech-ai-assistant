@@ -46,7 +46,9 @@ describe('value parsers', () => {
     expect(parseCurrency('usd')).toEqual({ value: 'USD' });
     expect(parseCurrency('dollars').error).toBeDefined();
     expect(parseTagList('vip; web,vip|חם').value).toEqual(['vip', 'web', 'חם']);
-    expect(parseTagList(Array.from({ length: 21 }, (_, i) => `t${i}`).join(';')).error).toBeDefined();
+    expect(
+      parseTagList(Array.from({ length: 21 }, (_, i) => `t${i}`).join(';')).error,
+    ).toBeDefined();
   });
 });
 
@@ -84,7 +86,9 @@ describe('column mapping', () => {
     expect(validateMapping('contacts', { fullName: 1 }, 3)).toEqual([]);
     expect(validateMapping('contacts', { email: 0 }, 3).join()).toMatch(/First name/);
     expect(validateMapping('contacts', { firstName: 5 }, 3).join()).toMatch(/does not exist/);
-    expect(validateMapping('contacts', { bogus: 0, firstName: 0 }, 3).join()).toMatch(/Unknown field/);
+    expect(validateMapping('contacts', { bogus: 0, firstName: 0 }, 3).join()).toMatch(
+      /Unknown field/,
+    );
     expect(validateMapping('companies', {}, 3).join()).toMatch(/must be mapped/);
   });
   it('declares fields for every entity', () => {
@@ -96,7 +100,11 @@ describe('column mapping', () => {
 
 describe('rowToFields', () => {
   it('trims, drops NULs and unescapes the export-side formula prefix', () => {
-    const f = rowToFields('contacts', { firstName: 0, phone: 1, notes: 2 }, [' Dana ', "'+972501234567", "'=SUM(1)"]);
+    const f = rowToFields('contacts', { firstName: 0, phone: 1, notes: 2 }, [
+      ' Dana ',
+      "'+972501234567",
+      "'=SUM(1)",
+    ]);
     expect(f.firstName).toBe('Dana');
     expect(f.phone).toBe('+972501234567');
     expect(f.notes).toBe('=SUM(1)');
@@ -108,10 +116,19 @@ describe('rowToFields', () => {
 
 describe('row normalisation', () => {
   it('normalises a Hebrew contact and splits a full name', () => {
-    const r = normalizeContactRow({ fullName: 'דנה כהן לוי', email: 'DANA@example.com', tags: 'vip;חם' });
+    const r = normalizeContactRow({
+      fullName: 'דנה כהן לוי',
+      email: 'DANA@example.com',
+      tags: 'vip;חם',
+    });
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(r.data).toMatchObject({ firstName: 'דנה', lastName: 'כהן לוי', email: 'dana@example.com', tags: ['vip', 'חם'] });
+      expect(r.data).toMatchObject({
+        firstName: 'דנה',
+        lastName: 'כהן לוי',
+        email: 'dana@example.com',
+        tags: ['vip', 'חם'],
+      });
     }
   });
   it('reports every problem of a bad contact row', () => {

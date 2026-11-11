@@ -41,13 +41,25 @@ function make(
   };
 }
 
-const note = (id: string, body = 'x'): WorkflowStep => ({ id, type: 'create_lead_note', leadId: 'L1', body });
+const note = (id: string, body = 'x'): WorkflowStep => ({
+  id,
+  type: 'create_lead_note',
+  leadId: 'L1',
+  body,
+});
 
 describe('WorkflowRunner', () => {
   it('runs steps in order, passes outputs to later templates and persists after every step', async () => {
     const seen: string[] = [];
     const steps: WorkflowStep[] = [
-      { id: 'a', type: 'http_request', method: 'GET', url: 'https://x.test', headers: {}, timeoutMs: 1000 },
+      {
+        id: 'a',
+        type: 'http_request',
+        method: 'GET',
+        url: 'https://x.test',
+        headers: {},
+        timeoutMs: 1000,
+      },
       note('b', 'status was {{ steps.a.output.status }} for {{ trigger.payload.leadId }}'),
     ];
     const { input, persisted } = make(steps, {
@@ -77,7 +89,15 @@ describe('WorkflowRunner', () => {
       return {};
     };
     const steps: WorkflowStep[] = [
-      { id: 'c', type: 'condition', left: '{{ trigger.payload.status }}', operator: 'eq', right: 'won', then: ['yes'], else: ['no'] },
+      {
+        id: 'c',
+        type: 'condition',
+        left: '{{ trigger.payload.status }}',
+        operator: 'eq',
+        right: 'won',
+        then: ['yes'],
+        else: ['no'],
+      },
       note('yes'),
       note('no'),
       note('always'),
@@ -93,7 +113,15 @@ describe('WorkflowRunner', () => {
   it('condition false takes the else branch; gt compares numbers', async () => {
     const ran: string[] = [];
     const steps: WorkflowStep[] = [
-      { id: 'c', type: 'condition', left: '{{ trigger.payload.value }}', operator: 'gt', right: '100', then: ['big'], else: ['small'] },
+      {
+        id: 'c',
+        type: 'condition',
+        left: '{{ trigger.payload.value }}',
+        operator: 'gt',
+        right: '100',
+        then: ['big'],
+        else: ['small'],
+      },
       note('big'),
       note('small'),
     ];
@@ -105,11 +133,19 @@ describe('WorkflowRunner', () => {
   it('set_variable stores typed values readable as vars.*', async () => {
     const seen: string[] = [];
     const steps: WorkflowStep[] = [
-      { id: 'v', type: 'set_variable', name: 'who', value: '{{ organization.name }}-{{ trigger.payload.leadId }}' },
+      {
+        id: 'v',
+        type: 'set_variable',
+        name: 'who',
+        value: '{{ organization.name }}-{{ trigger.payload.leadId }}',
+      },
       note('n', '{{ vars.who }}'),
     ];
     const { input } = make(steps, {
-      create_lead_note: async (s, rt) => (seen.push(rt.render((s as Extract<WorkflowStep, { type: 'create_lead_note' }>).body)), {}),
+      create_lead_note: async (s, rt) => (
+        seen.push(rt.render((s as Extract<WorkflowStep, { type: 'create_lead_note' }>).body)),
+        {}
+      ),
     });
     const out = await new WorkflowRunner().run(input);
     expect(seen).toEqual(['Acme-L1']);
@@ -117,9 +153,15 @@ describe('WorkflowRunner', () => {
   });
 
   it('delay persists progress, schedules a resume and returns waiting; resume continues at the next step', async () => {
-    const steps: WorkflowStep[] = [note('first'), { id: 'wait', type: 'delay', seconds: 90 }, note('last')];
+    const steps: WorkflowStep[] = [
+      note('first'),
+      { id: 'wait', type: 'delay', seconds: 90 },
+      note('last'),
+    ];
     const ran: string[] = [];
-    const handlers: StepHandlers = { create_lead_note: async (s) => (ran.push(s.id), { ok: true }) };
+    const handlers: StepHandlers = {
+      create_lead_note: async (s) => (ran.push(s.id), { ok: true }),
+    };
     const first = make(steps, handlers);
     const waiting = await new WorkflowRunner().run(first.input);
     expect(waiting.status).toBe('waiting');
@@ -137,7 +179,15 @@ describe('WorkflowRunner', () => {
   it('resuming rebuilds variables and skipped branches from persisted results', async () => {
     const steps: WorkflowStep[] = [
       { id: 'v', type: 'set_variable', name: 'k', value: 'kept' },
-      { id: 'c', type: 'condition', left: 'a', operator: 'eq', right: 'a', then: [], else: ['skipme'] },
+      {
+        id: 'c',
+        type: 'condition',
+        left: 'a',
+        operator: 'eq',
+        right: 'a',
+        then: [],
+        else: ['skipme'],
+      },
       { id: 'd', type: 'delay', seconds: 1 },
       note('skipme'),
       note('use', '{{ vars.k }}'),
@@ -175,14 +225,27 @@ describe('WorkflowRunner', () => {
     expect(out.stepId).toBe('b');
     expect(out.error).toContain('Step "b" failed: boom');
     expect(ran).toEqual(['a', 'b']);
-    expect(out.results[1]).toMatchObject({ status: 'failed', error: 'boom', output: { why: 'test' } });
+    expect(out.results[1]).toMatchObject({
+      status: 'failed',
+      error: 'boom',
+      output: { why: 'test' },
+    });
   });
 
   it('retries retryable errors with backoff, then succeeds', async () => {
     let calls = 0;
     const sleeps: number[] = [];
     const { input } = make(
-      [{ id: 'h', type: 'http_request', method: 'GET', url: 'https://x.test', headers: {}, timeoutMs: 1000 }],
+      [
+        {
+          id: 'h',
+          type: 'http_request',
+          method: 'GET',
+          url: 'https://x.test',
+          headers: {},
+          timeoutMs: 1000,
+        },
+      ],
       {
         http_request: async () => {
           calls += 1;
@@ -201,8 +264,22 @@ describe('WorkflowRunner', () => {
   it('gives up after the retry budget and does not retry non-retryable errors', async () => {
     let calls = 0;
     const retry = make(
-      [{ id: 'h', type: 'http_request', method: 'GET', url: 'https://x.test', headers: {}, timeoutMs: 1000 }],
-      { http_request: async () => (calls++, Promise.reject(new StepError('down', { retryable: true }))) },
+      [
+        {
+          id: 'h',
+          type: 'http_request',
+          method: 'GET',
+          url: 'https://x.test',
+          headers: {},
+          timeoutMs: 1000,
+        },
+      ],
+      {
+        http_request: async () => (
+          calls++,
+          Promise.reject(new StepError('down', { retryable: true }))
+        ),
+      },
       { retryBackoffMs: [1, 1] },
     );
     expect((await new WorkflowRunner().run(retry.input)).status).toBe('failed');
@@ -210,7 +287,16 @@ describe('WorkflowRunner', () => {
 
     calls = 0;
     const hard = make(
-      [{ id: 'h', type: 'http_request', method: 'GET', url: 'https://x.test', headers: {}, timeoutMs: 1000 }],
+      [
+        {
+          id: 'h',
+          type: 'http_request',
+          method: 'GET',
+          url: 'https://x.test',
+          headers: {},
+          timeoutMs: 1000,
+        },
+      ],
       { http_request: async () => (calls++, Promise.reject(new StepError('HTTP 404'))) },
     );
     expect((await new WorkflowRunner().run(hard.input)).status).toBe('failed');
@@ -219,7 +305,9 @@ describe('WorkflowRunner', () => {
 
   it('unexpected (non-StepError) exceptions fail the step without retry', async () => {
     let calls = 0;
-    const { input } = make([note('a')], { create_lead_note: async () => (calls++, Promise.reject(new TypeError('bad'))) });
+    const { input } = make([note('a')], {
+      create_lead_note: async () => (calls++, Promise.reject(new TypeError('bad'))),
+    });
     const out = await new WorkflowRunner().run(input);
     expect(out.status).toBe('failed');
     expect(calls).toBe(1);
@@ -246,9 +334,13 @@ describe('WorkflowRunner', () => {
 
   it('aborts cooperatively (e.g. workflow disabled mid-run)', async () => {
     let checks = 0;
-    const { input } = make([note('a'), note('b')], { create_lead_note: async () => ({}) }, {
-      shouldAbort: async () => ++checks > 1,
-    });
+    const { input } = make(
+      [note('a'), note('b')],
+      { create_lead_note: async () => ({}) },
+      {
+        shouldAbort: async () => ++checks > 1,
+      },
+    );
     const out = await new WorkflowRunner().run(input);
     expect(out.status).toBe('aborted');
     expect(out.results).toHaveLength(1);
@@ -256,9 +348,15 @@ describe('WorkflowRunner', () => {
 
   it('templates cannot reach prototypes or other tenants through the context', async () => {
     const seen: string[] = [];
-    const { input } = make([note('a', '[{{ trigger.constructor }}][{{ __proto__ }}][{{ organization.id }}]')], {
-      create_lead_note: async (s, rt) => (seen.push(rt.render((s as Extract<WorkflowStep, { type: 'create_lead_note' }>).body)), {}),
-    });
+    const { input } = make(
+      [note('a', '[{{ trigger.constructor }}][{{ __proto__ }}][{{ organization.id }}]')],
+      {
+        create_lead_note: async (s, rt) => (
+          seen.push(rt.render((s as Extract<WorkflowStep, { type: 'create_lead_note' }>).body)),
+          {}
+        ),
+      },
+    );
     await new WorkflowRunner().run(input);
     expect(seen).toEqual(['[][][org1]']);
   });

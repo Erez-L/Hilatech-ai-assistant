@@ -90,7 +90,8 @@ export function fillSeries<Row extends { bucket: Date }, Out extends { bucket: s
   });
 }
 
-export const num = (value: unknown): number => (value === null || value === undefined ? 0 : Number(value));
+export const num = (value: unknown): number =>
+  value === null || value === undefined ? 0 : Number(value);
 export const numOrNull = (value: unknown): number | null =>
   value === null || value === undefined ? null : Number(value);
 
@@ -129,9 +130,7 @@ export function buildFunnel(byStatus: Record<LeadStatus, number>): {
   let previous: number | null = null;
   FUNNEL_STAGES.forEach((status, index) => {
     const reached =
-      index === 0
-        ? total
-        : FUNNEL_STAGES.slice(index).reduce((sum, s) => sum + byStatus[s], 0);
+      index === 0 ? total : FUNNEL_STAGES.slice(index).reduce((sum, s) => sum + byStatus[s], 0);
     stages.push({
       status,
       reached,

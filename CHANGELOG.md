@@ -3,6 +3,11 @@
 All notable changes to this project are documented here. Format: Keep a Changelog; versioning: SemVer.
 
 ## [Unreleased]
+### Fixed
+
+- CI: packages are built before the database seed; API and workers integration suites run one after the other (they share a database); the repository is Prettier-clean and load-test result files are ignored by Prettier.
+- Dependencies: zod 4.6.7 (was 3.25), multer >= 2.5.0, postcss >= 8.5.23 — `pnpm audit --prod` is clean. Validation issue codes in `400 VALIDATION_ERROR` details follow zod 4 (`invalid_format` instead of `invalid_string`).
+
 ### Documentation
 
 - Product documents (vision, functional specification, user journeys, feature matrix), design documents (design system, screen specifications), architecture documents (system overview with C4 diagrams, tenant isolation) and development documents (gap analysis, implementation plan) written from the code, with an explicit status per feature (verified / not live-tested / partial / not implemented / externally blocked).

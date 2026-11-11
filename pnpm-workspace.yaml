@@ -11,3 +11,7 @@ onlyBuiltDependencies:
   - '@swc/core'
   - sharp
   - unrs-resolver
+
+overrides:
+  postcss: '>=8.5.23'
+  multer: '>=2.5.0'

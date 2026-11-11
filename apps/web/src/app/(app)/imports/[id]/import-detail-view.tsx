@@ -35,7 +35,9 @@ export function ImportDetailView({ id }: { id: string }) {
               description={
                 <span className="flex flex-wrap items-center gap-2">
                   <Badge variant="outline">{t(IMPORT_ENTITY_LABELS[data.entity])}</Badge>
-                  <Badge variant="outline">{t('imports.rowsCount', { count: data.totalRows })}</Badge>
+                  <Badge variant="outline">
+                    {t('imports.rowsCount', { count: data.totalRows })}
+                  </Badge>
                   <time dateTime={data.createdAt}>{fmt.dateTime(new Date(data.createdAt))}</time>
                 </span>
               }
@@ -46,7 +48,10 @@ export function ImportDetailView({ id }: { id: string }) {
                   <ImportResult job={data} />
                 ) : (
                   <p className="text-sm text-fg-muted">
-                    {t('imports.notFinished', { processed: data.progress.processed, total: data.progress.total })}
+                    {t('imports.notFinished', {
+                      processed: data.progress.processed,
+                      total: data.progress.total,
+                    })}
                   </p>
                 )}
               </CardContent>

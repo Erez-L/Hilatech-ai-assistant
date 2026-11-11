@@ -159,18 +159,54 @@ export const createTaskTool: ToolDefinition = {
   async execute(ctx, input) {
     const org = ctx.organizationId;
     const checks: Array<[string, string | undefined, () => Promise<unknown>]> = [
-      ['Lead', input.leadId, () => ctx.prisma.lead.findFirst({ where: { id: input.leadId, organizationId: org, deletedAt: null }, select: { id: true } })],
-      ['Contact', input.contactId, () => ctx.prisma.contact.findFirst({ where: { id: input.contactId, organizationId: org, deletedAt: null }, select: { id: true } })],
-      ['Deal', input.dealId, () => ctx.prisma.deal.findFirst({ where: { id: input.dealId, organizationId: org }, select: { id: true } })],
-      ['Conversation', input.conversationId, () => ctx.prisma.conversation.findFirst({ where: { id: input.conversationId, organizationId: org }, select: { id: true } })],
+      [
+        'Lead',
+        input.leadId,
+        () =>
+          ctx.prisma.lead.findFirst({
+            where: { id: input.leadId, organizationId: org, deletedAt: null },
+            select: { id: true },
+          }),
+      ],
+      [
+        'Contact',
+        input.contactId,
+        () =>
+          ctx.prisma.contact.findFirst({
+            where: { id: input.contactId, organizationId: org, deletedAt: null },
+            select: { id: true },
+          }),
+      ],
+      [
+        'Deal',
+        input.dealId,
+        () =>
+          ctx.prisma.deal.findFirst({
+            where: { id: input.dealId, organizationId: org },
+            select: { id: true },
+          }),
+      ],
+      [
+        'Conversation',
+        input.conversationId,
+        () =>
+          ctx.prisma.conversation.findFirst({
+            where: { id: input.conversationId, organizationId: org },
+            select: { id: true },
+          }),
+      ],
     ];
     for (const [label, id, lookup] of checks) {
-      if (id && !(await lookup())) return fail(`${label} not found in this organization`, 'invalid_reference');
+      if (id && !(await lookup()))
+        return fail(`${label} not found in this organization`, 'invalid_reference');
     }
     let assigneeId: string | null = input.assigneeId ?? ctx.userId;
     if (input.assigneeId && input.assigneeId !== ctx.userId) {
       if (!(await actorCan(ctx, Permission.TASKS_ASSIGN))) {
-        return fail('Assigning a task to someone else requires the tasks:assign permission', 'forbidden');
+        return fail(
+          'Assigning a task to someone else requires the tasks:assign permission',
+          'forbidden',
+        );
       }
       if (!(await isActiveMember(ctx, input.assigneeId))) {
         return fail('Assignee is not an active member of this organization', 'invalid_reference');
@@ -296,7 +332,10 @@ export const createDealTool: ToolDefinition = {
       pipelineId = stage.pipelineId;
     } else {
       if (pipelineId) {
-        const p = await ctx.prisma.pipeline.findFirst({ where: { id: pipelineId, organizationId: org }, select: { id: true } });
+        const p = await ctx.prisma.pipeline.findFirst({
+          where: { id: pipelineId, organizationId: org },
+          select: { id: true },
+        });
         if (!p) return fail('Pipeline not found in this organization', 'invalid_reference');
       } else {
         pipelineId = (await ensureDefaultPipeline(ctx.prisma, org)).id;
@@ -327,11 +366,18 @@ export const createDealTool: ToolDefinition = {
             tags: input.tags,
             now: ctx.now(),
           },
-          { actorId: ctx.userId, by: 'ai', extra: { agentId: ctx.agentId, executionId: ctx.executionId } },
+          {
+            actorId: ctx.userId,
+            by: 'ai',
+            extra: { agentId: ctx.agentId, executionId: ctx.executionId },
+          },
         );
         return tx.deal.findFirstOrThrow({ where: { id: deal.id }, select: dealView });
       });
-      return ok(`Created deal "${created.title}" in stage ${created.stage.name}`, serialise(created));
+      return ok(
+        `Created deal "${created.title}" in stage ${created.stage.name}`,
+        serialise(created),
+      );
     } catch (err) {
       if (err instanceof DomainError) return fail(err.message, err.code);
       throw err;
@@ -354,7 +400,10 @@ export const moveDealTool: ToolDefinition = {
       stageName: z.string().trim().min(1).max(80).optional(),
       lostReason: z.string().trim().max(500).optional(),
     })
-    .refine((v) => !!v.stageId || !!v.stageName, { message: 'Give stageId or stageName', path: ['stageId'] }),
+    .refine((v) => !!v.stageId || !!v.stageName, {
+      message: 'Give stageId or stageName',
+      path: ['stageId'],
+    }),
   async execute(ctx, input) {
     const org = ctx.organizationId;
     const deal = await ctx.prisma.deal.findFirst({
@@ -366,7 +415,9 @@ export const moveDealTool: ToolDefinition = {
       where: {
         organizationId: org,
         pipelineId: deal.pipelineId,
-        ...(input.stageId ? { id: input.stageId } : { name: { equals: input.stageName, mode: 'insensitive' } }),
+        ...(input.stageId
+          ? { id: input.stageId }
+          : { name: { equals: input.stageName, mode: 'insensitive' } }),
       },
     });
     if (!stage) return fail('Stage not found in the deal pipeline', 'invalid_reference');
@@ -382,11 +433,18 @@ export const moveDealTool: ToolDefinition = {
               lostReason: input.lostReason ?? null,
               now: ctx.now(),
             },
-            { actorId: ctx.userId, by: 'ai', extra: { agentId: ctx.agentId, executionId: ctx.executionId } },
+            {
+              actorId: ctx.userId,
+              by: 'ai',
+              extra: { agentId: ctx.agentId, executionId: ctx.executionId },
+            },
           ),
         { timeout: 15_000 },
       );
-      const row = await ctx.prisma.deal.findFirstOrThrow({ where: { id: deal.id }, select: dealView });
+      const row = await ctx.prisma.deal.findFirstOrThrow({
+        where: { id: deal.id },
+        select: dealView,
+      });
       return ok(
         result.stageChanged
           ? `Deal "${deal.title}" moved from ${result.fromStage.name} to ${stage.name}`

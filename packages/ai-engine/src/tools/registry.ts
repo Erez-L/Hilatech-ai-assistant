@@ -1,5 +1,5 @@
 import type { ToolDefinition as ToolDefinitionDto } from '@hilatech/contracts';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { zodToJsonSchema } from '../json-schema';
 
 import { stripSchemaMeta } from '../providers/anthropic';
 import type { ToolSpec } from '../providers/types';
@@ -74,9 +74,7 @@ export class ToolRegistry {
 }
 
 export function inputJsonSchema(tool: ToolDefinition): Record<string, unknown> {
-  return stripSchemaMeta(
-    zodToJsonSchema(tool.input, { $refStrategy: 'none' }) as Record<string, unknown>,
-  );
+  return stripSchemaMeta(zodToJsonSchema(tool.input));
 }
 
 /** Providers restrict function names to `[a-zA-Z0-9_-]`; map dotted keys both ways. */

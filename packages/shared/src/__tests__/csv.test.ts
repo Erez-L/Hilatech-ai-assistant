@@ -13,13 +13,19 @@ import {
 
 describe('decodeCsvBuffer', () => {
   it('strips a UTF-8 BOM and reads Hebrew', () => {
-    const bytes = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from('שם,אימייל\nדנה,d@x.co', 'utf8')]);
+    const bytes = Buffer.concat([
+      Buffer.from([0xef, 0xbb, 0xbf]),
+      Buffer.from('שם,אימייל\nדנה,d@x.co', 'utf8'),
+    ]);
     const out = decodeCsvBuffer(bytes);
     expect(out.encoding).toBe('utf-8-bom');
     expect(out.text.startsWith('שם')).toBe(true);
   });
   it('decodes plain UTF-8', () => {
-    expect(decodeCsvBuffer(Buffer.from('שלום', 'utf8'))).toEqual({ text: 'שלום', encoding: 'utf-8' });
+    expect(decodeCsvBuffer(Buffer.from('שלום', 'utf8'))).toEqual({
+      text: 'שלום',
+      encoding: 'utf-8',
+    });
   });
   it('falls back to Windows-1255 (Excel in Hebrew locales)', () => {
     // "שלום" in cp1255: 0xF9 0xEC 0xE5 0xED
@@ -36,7 +42,10 @@ describe('decodeCsvBuffer', () => {
       be[i] = body[i + 1] as number;
       be[i + 1] = body[i] as number;
     }
-    expect(decodeCsvBuffer(Buffer.concat([Buffer.from([0xfe, 0xff]), be]))).toEqual({ text: 'a,ש', encoding: 'utf-16be' });
+    expect(decodeCsvBuffer(Buffer.concat([Buffer.from([0xfe, 0xff]), be]))).toEqual({
+      text: 'a,ש',
+      encoding: 'utf-16be',
+    });
   });
 });
 
@@ -53,13 +62,22 @@ describe('parseCsv', () => {
     expect(detectDelimiter('a;b;c\n1;2;3')).toBe(';');
     expect(detectDelimiter('a\tb\n1\t2')).toBe('\t');
     expect(detectDelimiter('a,b')).toBe(',');
-    expect(parseCsv('a;b\n1;2')).toEqual([['a', 'b'], ['1', '2']]);
+    expect(parseCsv('a;b\n1;2')).toEqual([
+      ['a', 'b'],
+      ['1', '2'],
+    ]);
   });
   it('ignores a BOM and skips empty lines', () => {
-    expect(parseCsv(`${UTF8_BOM}a,b\n\n1,2\n\n`)).toEqual([['a', 'b'], ['1', '2']]);
+    expect(parseCsv(`${UTF8_BOM}a,b\n\n1,2\n\n`)).toEqual([
+      ['a', 'b'],
+      ['1', '2'],
+    ]);
   });
   it('keeps empty trailing cells', () => {
-    expect(parseCsv('a,b,c\n1,,')).toEqual([['a', 'b', 'c'], ['1', '', '']]);
+    expect(parseCsv('a,b,c\n1,,')).toEqual([
+      ['a', 'b', 'c'],
+      ['1', '', ''],
+    ]);
   });
   it('enforces row, column and quote limits', () => {
     expect(() => parseCsv('a\n1\n2\n3', { maxRows: 3 })).toThrowError(CsvError);

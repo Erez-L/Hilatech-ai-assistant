@@ -67,11 +67,34 @@ const f = (
 
 export const IMPORT_FIELDS: Record<ImportEntity, readonly ImportFieldSpec[]> = {
   contacts: [
-    f('firstName', 'First name', ['first name', 'given name', 'שם פרטי', 'פרטי'], true, 'Or map "Full name"'),
+    f(
+      'firstName',
+      'First name',
+      ['first name', 'given name', 'שם פרטי', 'פרטי'],
+      true,
+      'Or map "Full name"',
+    ),
     f('lastName', 'Last name', ['last name', 'surname', 'family name', 'שם משפחה', 'משפחה']),
     f('fullName', 'Full name', ['name', 'contact name', 'שם', 'שם מלא']),
-    f('email', 'Email', ['e-mail', 'mail', 'email address', 'אימייל', 'דוא"ל', 'מייל', 'דואר אלקטרוני']),
-    f('phone', 'Phone', ['mobile', 'tel', 'telephone', 'cell', 'phone number', 'טלפון', 'נייד', 'סלולרי']),
+    f('email', 'Email', [
+      'e-mail',
+      'mail',
+      'email address',
+      'אימייל',
+      'דוא"ל',
+      'מייל',
+      'דואר אלקטרוני',
+    ]),
+    f('phone', 'Phone', [
+      'mobile',
+      'tel',
+      'telephone',
+      'cell',
+      'phone number',
+      'טלפון',
+      'נייד',
+      'סלולרי',
+    ]),
     f('company', 'Company', ['organization', 'organisation', 'employer', 'חברה', 'ארגון']),
     f('jobTitle', 'Job title', ['title', 'position', 'role', 'תפקיד']),
     f('tags', 'Tags', ['labels', 'תגיות', 'תגים'], false, 'Separated by ; , or |'),
@@ -80,7 +103,13 @@ export const IMPORT_FIELDS: Record<ImportEntity, readonly ImportFieldSpec[]> = {
   ],
   leads: [
     f('title', 'Title', ['name', 'lead', 'lead name', 'subject', 'כותרת', 'שם הליד', 'ליד'], true),
-    f('status', 'Status', ['stage', 'סטטוס', 'שלב'], false, 'new, contacted, qualified, proposal, won, lost'),
+    f(
+      'status',
+      'Status',
+      ['stage', 'סטטוס', 'שלב'],
+      false,
+      'new, contacted, qualified, proposal, won, lost',
+    ),
     f('source', 'Source', ['origin', 'channel', 'מקור']),
     f('value', 'Value', ['amount', 'deal value', 'ערך', 'סכום']),
     f('currency', 'Currency', ['מטבע']),
@@ -103,7 +132,13 @@ export const IMPORT_FIELDS: Record<ImportEntity, readonly ImportFieldSpec[]> = {
     f('value', 'Value', ['amount', 'ערך', 'סכום']),
     f('currency', 'Currency', ['מטבע']),
     f('pipeline', 'Pipeline', ['pipeline name', 'צינור', 'תהליך']),
-    f('stage', 'Stage', ['deal stage', 'status', 'שלב', 'סטטוס'], false, 'Stage name of the pipeline'),
+    f(
+      'stage',
+      'Stage',
+      ['deal stage', 'status', 'שלב', 'סטטוס'],
+      false,
+      'Stage name of the pipeline',
+    ),
     f('ownerEmail', 'Owner email', ['owner', 'assignee', 'בעלים', 'אחראי']),
     f('contactEmail', 'Contact email', ['email', 'contact', 'אימייל', 'מייל']),
     f('companyName', 'Company', ['company', 'organization', 'חברה']),
@@ -123,7 +158,10 @@ export const importFieldSpecSchema = z.object({
 });
 
 /** column index per field key (`null` = not imported). */
-export const importMappingSchema = z.record(z.string().max(60), z.number().int().min(0).max(IMPORT_MAX_COLUMNS).nullable());
+export const importMappingSchema = z.record(
+  z.string().max(60),
+  z.number().int().min(0).max(IMPORT_MAX_COLUMNS).nullable(),
+);
 export type ImportMapping = z.infer<typeof importMappingSchema>;
 
 /** Lower-cases, NFKC-normalises and drops everything but letters/digits (works for Hebrew). */
@@ -144,10 +182,7 @@ export function suggestMapping(entity: ImportEntity, headers: readonly string[])
   for (const pass of ['exact', 'alias'] as const) {
     for (const field of fields) {
       if (mapping[field.key] !== undefined && mapping[field.key] !== null) continue;
-      const names =
-        pass === 'exact'
-          ? [field.key, field.label]
-          : field.aliases;
+      const names = pass === 'exact' ? [field.key, field.label] : field.aliases;
       const wanted = new Set(names.map(normalizeHeader));
       const index = normalized.findIndex((h, i) => !used.has(i) && h !== '' && wanted.has(h));
       if (index >= 0) {
@@ -176,7 +211,8 @@ export function validateMapping(
   }
   const mapped = (key: string) => mapping[key] !== undefined && mapping[key] !== null;
   if (entity === 'contacts') {
-    if (!mapped('firstName') && !mapped('fullName')) problems.push('Map either "First name" or "Full name"');
+    if (!mapped('firstName') && !mapped('fullName'))
+      problems.push('Map either "First name" or "Full name"');
   } else {
     for (const spec of IMPORT_FIELDS[entity]) {
       if (spec.required && !mapped(spec.key)) problems.push(`"${spec.label}" must be mapped`);
@@ -217,7 +253,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 export function parseEmail(value: string): { value?: string; error?: string } {
   if (value === '') return {};
   const email = value.toLowerCase();
-  return email.length <= 254 && EMAIL_RE.test(email) ? { value: email } : { error: 'Invalid email address' };
+  return email.length <= 254 && EMAIL_RE.test(email)
+    ? { value: email }
+    : { error: 'Invalid email address' };
 }
 
 /** "₪1,200.50", "1.200,50", "1200", "12 000" → number. */
@@ -230,7 +268,10 @@ export function parseMoney(value: string): { value?: number; error?: string } {
   if (lastComma >= 0 && lastDot >= 0) {
     s = lastComma > lastDot ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
   } else if (lastComma >= 0) {
-    s = /,\d{1,2}$/.test(s) && s.indexOf(',') === lastComma ? s.replace(',', '.') : s.replace(/,/g, '');
+    s =
+      /,\d{1,2}$/.test(s) && s.indexOf(',') === lastComma
+        ? s.replace(',', '.')
+        : s.replace(/,/g, '');
   }
   if (!/^\d+(\.\d+)?$/.test(s)) return { error: 'Invalid number' };
   const n = Number(s);
@@ -268,9 +309,17 @@ export function parseDateValue(value: string): { value?: string; error?: string 
 
 export function parseTagList(value: string): { value: string[]; error?: string } {
   if (value === '') return { value: [] };
-  const tags = [...new Set(value.split(/[;,|،]/).map((t) => t.trim()).filter(Boolean))];
+  const tags = [
+    ...new Set(
+      value
+        .split(/[;,|،]/)
+        .map((t) => t.trim())
+        .filter(Boolean),
+    ),
+  ];
   if (tags.length > 20) return { value: [], error: 'At most 20 tags' };
-  if (tags.some((t) => t.length > 40)) return { value: [], error: 'A tag is longer than 40 characters' };
+  if (tags.some((t) => t.length > 40))
+    return { value: [], error: 'A tag is longer than 40 characters' };
   return { value: tags };
 }
 
@@ -282,7 +331,9 @@ export function parseEnumValue<T extends string>(
   if (value === '') return {};
   const wanted = value.toLowerCase().replace(/[\s-]+/g, '_');
   const hit = options.find((o) => o === wanted);
-  return hit ? { value: hit } : { error: `Unknown ${label} "${value.slice(0, 40)}" (expected ${options.join(', ')})` };
+  return hit
+    ? { value: hit }
+    : { error: `Unknown ${label} "${value.slice(0, 40)}" (expected ${options.join(', ')})` };
 }
 
 /** "https://www.Example.com/path" → "example.com"; invalid → error. */
@@ -294,7 +345,12 @@ export function parseDomain(value: string): { value?: string; error?: string } {
     .replace(/^https?:\/\//, '')
     .replace(/^www\./, '')
     .replace(/[/?#].*$/, '');
-  if (d.length > 160 || !/^[\p{L}\p{N}]([\p{L}\p{N}-]*[\p{L}\p{N}])?(\.[\p{L}\p{N}]([\p{L}\p{N}-]*[\p{L}\p{N}])?)+$/u.test(d)) {
+  if (
+    d.length > 160 ||
+    !/^[\p{L}\p{N}]([\p{L}\p{N}-]*[\p{L}\p{N}])?(\.[\p{L}\p{N}]([\p{L}\p{N}-]*[\p{L}\p{N}])?)+$/u.test(
+      d,
+    )
+  ) {
     return { error: 'Invalid domain' };
   }
   return { value: d };
@@ -375,7 +431,9 @@ export interface ContactImportData {
   ownerEmail?: string;
 }
 
-export function normalizeContactRow(fields: Record<string, string>): NormalizedRow<ContactImportData> {
+export function normalizeContactRow(
+  fields: Record<string, string>,
+): NormalizedRow<ContactImportData> {
   const c = new Collector();
   let first = fields.firstName ?? '';
   let last = fields.lastName ?? '';
@@ -428,8 +486,14 @@ export interface LeadImportData {
 export function normalizeLeadRow(fields: Record<string, string>): NormalizedRow<LeadImportData> {
   const c = new Collector();
   const title = c.text('title', fields.title ?? '', 160, true);
-  const status = c.take('status', parseEnumValue(fields.status ?? '', LeadStatus.options, 'status'));
-  const source = c.take('source', parseEnumValue(fields.source ?? '', LeadSource.options, 'source'));
+  const status = c.take(
+    'status',
+    parseEnumValue(fields.status ?? '', LeadStatus.options, 'status'),
+  );
+  const source = c.take(
+    'source',
+    parseEnumValue(fields.source ?? '', LeadSource.options, 'source'),
+  );
   const value = c.take('value', parseMoney(fields.value ?? ''));
   const currency = c.take('currency', parseCurrency(fields.currency ?? ''));
   const contactEmail = c.take('contactEmail', parseEmail(fields.contactEmail ?? ''));
@@ -437,7 +501,10 @@ export function normalizeLeadRow(fields: Record<string, string>): NormalizedRow<
   const assigneeEmail = c.take('assigneeEmail', parseEmail(fields.assigneeEmail ?? ''));
   const description = c.text('description', fields.description ?? '', 5000);
   const tags = c.tags('tags', fields.tags ?? '');
-  const expectedCloseDate = c.take('expectedCloseDate', parseDateValue(fields.expectedCloseDate ?? ''));
+  const expectedCloseDate = c.take(
+    'expectedCloseDate',
+    parseDateValue(fields.expectedCloseDate ?? ''),
+  );
   if (c.errors.length > 0 || !title) return { ok: false, errors: c.errors };
   return {
     ok: true,
@@ -465,7 +532,9 @@ export interface CompanyImportData {
   ownerEmail?: string;
 }
 
-export function normalizeCompanyRow(fields: Record<string, string>): NormalizedRow<CompanyImportData> {
+export function normalizeCompanyRow(
+  fields: Record<string, string>,
+): NormalizedRow<CompanyImportData> {
   const c = new Collector();
   const name = c.text('name', fields.name ?? '', 160, true);
   const domain = c.take('domain', parseDomain(fields.domain ?? ''));
@@ -672,7 +741,9 @@ export const exportLeadsQuerySchema = z.object({
   assigneeId: idSchema.optional(),
   contactId: idSchema.optional(),
   tag: z.string().trim().max(40).optional(),
-  sortBy: z.enum(['createdAt', 'updatedAt', 'value', 'expectedCloseDate', 'title']).default('createdAt'),
+  sortBy: z
+    .enum(['createdAt', 'updatedAt', 'value', 'expectedCloseDate', 'title'])
+    .default('createdAt'),
   sortOrder: sortOrderSchema.default('desc'),
 });
 export type ExportLeadsQuery = z.infer<typeof exportLeadsQuerySchema>;
@@ -699,7 +770,9 @@ export const exportDealsQuerySchema = z.object({
   maxValue: z.coerce.number().nonnegative().optional(),
   expectedCloseFrom: z.string().datetime().optional(),
   expectedCloseTo: z.string().datetime().optional(),
-  sortBy: z.enum(['createdAt', 'updatedAt', 'value', 'expectedCloseAt', 'title']).default('createdAt'),
+  sortBy: z
+    .enum(['createdAt', 'updatedAt', 'value', 'expectedCloseAt', 'title'])
+    .default('createdAt'),
   sortOrder: sortOrderSchema.default('desc'),
 });
 export type ExportDealsQuery = z.infer<typeof exportDealsQuerySchema>;
@@ -707,7 +780,12 @@ export type ExportDealsQuery = z.infer<typeof exportDealsQuerySchema>;
 export const exportTasksQuerySchema = z.object({
   status: z
     .string()
-    .transform((v) => v.split(',').map((s) => s.trim()).filter(Boolean))
+    .transform((v) =>
+      v
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    )
     .pipe(z.array(TaskStatus).min(1))
     .optional(),
   priority: TaskPriority.optional(),
@@ -718,8 +796,51 @@ export type ExportTasksQuery = z.infer<typeof exportTasksQuerySchema>;
 
 /** Column headers of every export (also the round-trip contract with the import field keys). */
 export const EXPORT_COLUMNS = {
-  contacts: ['id', 'firstName', 'lastName', 'email', 'phone', 'company', 'jobTitle', 'tags', 'notes', 'ownerEmail', 'createdAt'],
-  leads: ['id', 'title', 'status', 'source', 'value', 'currency', 'contactEmail', 'contactPhone', 'assigneeEmail', 'description', 'tags', 'expectedCloseDate', 'createdAt'],
+  contacts: [
+    'id',
+    'firstName',
+    'lastName',
+    'email',
+    'phone',
+    'company',
+    'jobTitle',
+    'tags',
+    'notes',
+    'ownerEmail',
+    'createdAt',
+  ],
+  leads: [
+    'id',
+    'title',
+    'status',
+    'source',
+    'value',
+    'currency',
+    'contactEmail',
+    'contactPhone',
+    'assigneeEmail',
+    'description',
+    'tags',
+    'expectedCloseDate',
+    'createdAt',
+  ],
   companies: ['id', 'name', 'domain', 'notes', 'tags', 'ownerEmail', 'createdAt'],
-  deals: ['id', 'title', 'value', 'currency', 'pipeline', 'stage', 'status', 'ownerEmail', 'contactEmail', 'companyName', 'expectedCloseAt', 'closedAt', 'lostReason', 'description', 'tags', 'createdAt'],
+  deals: [
+    'id',
+    'title',
+    'value',
+    'currency',
+    'pipeline',
+    'stage',
+    'status',
+    'ownerEmail',
+    'contactEmail',
+    'companyName',
+    'expectedCloseAt',
+    'closedAt',
+    'lostReason',
+    'description',
+    'tags',
+    'createdAt',
+  ],
 } as const satisfies Record<ImportEntity, readonly string[]>;

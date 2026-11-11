@@ -53,20 +53,25 @@ function addTotal(
   row.count = Math.max(0, row.count + sign);
   row.value = round2(row.value + sign * value);
   row.weightedValue = round2(row.weightedValue + sign * weighted);
-  return next
-    .filter((t) => t.count > 0)
-    .sort((a, b) => a.currency.localeCompare(b.currency));
+  return next.filter((t) => t.count > 0).sort((a, b) => a.currency.localeCompare(b.currency));
 }
 
 function weightedFor(stage: PipelineStage, value: number): number {
-  return stage.kind === 'lost' ? 0 : weightedValue(value, effectiveProbability(stage.kind, stage.probability));
+  return stage.kind === 'lost'
+    ? 0
+    : weightedValue(value, effectiveProbability(stage.kind, stage.probability));
 }
 
 function sumTotals(columns: readonly BoardColumn[]): CurrencyTotal[] {
   const map = new Map<string, CurrencyTotal>();
   for (const c of columns) {
     for (const t of c.totals) {
-      const acc = map.get(t.currency) ?? { currency: t.currency, count: 0, value: 0, weightedValue: 0 };
+      const acc = map.get(t.currency) ?? {
+        currency: t.currency,
+        count: 0,
+        value: 0,
+        weightedValue: 0,
+      };
       acc.count += t.count;
       acc.value = round2(acc.value + t.value);
       acc.weightedValue = round2(acc.weightedValue + t.weightedValue);
@@ -128,7 +133,9 @@ export function moveDealOnBoard(
     if (sameColumn && col.stage.id === target.stage.id) {
       const without = col.deals.filter((d) => d.id !== dealId);
       const index =
-        position == null ? without.length : Math.max(0, Math.min(without.length, Math.trunc(position)));
+        position == null
+          ? without.length
+          : Math.max(0, Math.min(without.length, Math.trunc(position)));
       const deals = [...without.slice(0, index), moved, ...without.slice(index)];
       return { ...col, deals: deals.map((d, i) => ({ ...d, position: i })) };
     }
@@ -138,21 +145,31 @@ export function moveDealOnBoard(
         ...col,
         deals,
         count: Math.max(0, col.count - 1),
-        totals: deal.value == null ? col.totals : addTotal(col.totals, deal.currency, -1, value, weightedFor(col.stage, value)),
+        totals:
+          deal.value == null
+            ? col.totals
+            : addTotal(col.totals, deal.currency, -1, value, weightedFor(col.stage, value)),
       };
     }
     if (col.stage.id === target.stage.id) {
       const index =
-        position == null ? col.deals.length : Math.max(0, Math.min(col.deals.length, Math.trunc(position)));
-      const deals = [...col.deals.slice(0, index), moved, ...col.deals.slice(index)].map((d, i) => ({
-        ...d,
-        position: i,
-      }));
+        position == null
+          ? col.deals.length
+          : Math.max(0, Math.min(col.deals.length, Math.trunc(position)));
+      const deals = [...col.deals.slice(0, index), moved, ...col.deals.slice(index)].map(
+        (d, i) => ({
+          ...d,
+          position: i,
+        }),
+      );
       return {
         ...col,
         deals,
         count: col.count + 1,
-        totals: deal.value == null ? col.totals : addTotal(col.totals, deal.currency, 1, value, weightedFor(col.stage, value)),
+        totals:
+          deal.value == null
+            ? col.totals
+            : addTotal(col.totals, deal.currency, 1, value, weightedFor(col.stage, value)),
       };
     }
     return col;
@@ -197,10 +214,18 @@ export function describeDealActivity(
   const actor = activity.actor ? fullName(activity.actor) : t('crm.activity.system');
   switch (activity.type) {
     case 'created':
-      return { title: t('deals.activity.created', { actor }), description: str(p.stage) ?? undefined, tone: 'accent' };
+      return {
+        title: t('deals.activity.created', { actor }),
+        description: str(p.stage) ?? undefined,
+        tone: 'accent',
+      };
     case 'stage_changed':
       return {
-        title: t('deals.activity.stageChanged', { actor, from: str(p.from) ?? '—', to: str(p.to) ?? '—' }),
+        title: t('deals.activity.stageChanged', {
+          actor,
+          from: str(p.from) ?? '—',
+          to: str(p.to) ?? '—',
+        }),
         tone: 'neutral',
       };
     case 'reopened':

@@ -4,7 +4,12 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FileUp, Upload } from 'lucide-react';
-import { ImportStatus as ImportStatusEnum, Permission, type ImportEntity, type ImportStatus } from '@hilatech/contracts';
+import {
+  ImportStatus as ImportStatusEnum,
+  Permission,
+  type ImportEntity,
+  type ImportStatus,
+} from '@hilatech/contracts';
 import {
   Button,
   Card,
@@ -137,7 +142,11 @@ export function ImportsView() {
                       title={t('imports.noImportsYet')}
                       description={t('imports.noImportsYetHint')}
                       action={
-                        <Button size="sm" leadingIcon={<Upload aria-hidden />} onClick={() => setOpen(true)}>
+                        <Button
+                          size="sm"
+                          leadingIcon={<Upload aria-hidden />}
+                          onClick={() => setOpen(true)}
+                        >
                           {t('imports.newImport')}
                         </Button>
                       }
@@ -155,7 +164,11 @@ export function ImportsView() {
                       }}
                     >
                       <TableCell>
-                        <Link href={`/imports/${job.id}`} dir="auto" className="font-medium hover:underline">
+                        <Link
+                          href={`/imports/${job.id}`}
+                          dir="auto"
+                          className="font-medium hover:underline"
+                        >
                           {job.fileName}
                         </Link>
                       </TableCell>
@@ -168,7 +181,10 @@ export function ImportsView() {
                       <TableCell className="text-end tabular">{job.result.skipped}</TableCell>
                       <TableCell className="text-end tabular">{job.result.failed}</TableCell>
                       <TableCell className="whitespace-nowrap text-fg-muted tabular">
-                        <time dateTime={job.createdAt} title={fmt.dateTime(new Date(job.createdAt), 'long')}>
+                        <time
+                          dateTime={job.createdAt}
+                          title={fmt.dateTime(new Date(job.createdAt), 'long')}
+                        >
                           {fmt.relative(new Date(job.createdAt))}
                         </time>
                       </TableCell>

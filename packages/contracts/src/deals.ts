@@ -5,6 +5,7 @@ import {
   sortOrderSchema,
   timestampsSchema,
   userSummarySchema,
+  partialUpdate,
 } from './common';
 import { contactSchema, contactSummarySchema } from './crm';
 import { queryBoolean } from './tasks';
@@ -18,10 +19,22 @@ const domainSchema = z
   .trim()
   .toLowerCase()
   .max(160)
-  .transform((v) => v.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, ''))
-  .refine((v) => v === '' || /^[\p{L}\p{N}]([\p{L}\p{N}-]*[\p{L}\p{N}])?(\.[\p{L}\p{N}]([\p{L}\p{N}-]*[\p{L}\p{N}])?)+$/u.test(v), {
-    message: 'Must be a domain like example.com',
-  })
+  .transform((v) =>
+    v
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .replace(/\/.*$/, ''),
+  )
+  .refine(
+    (v) =>
+      v === '' ||
+      /^[\p{L}\p{N}]([\p{L}\p{N}-]*[\p{L}\p{N}])?(\.[\p{L}\p{N}]([\p{L}\p{N}-]*[\p{L}\p{N}])?)+$/u.test(
+        v,
+      ),
+    {
+      message: 'Must be a domain like example.com',
+    },
+  )
   .transform((v) => (v === '' ? undefined : v));
 
 export const companySchema = z
@@ -146,7 +159,7 @@ export const createStageSchema = stageInputSchema.extend({
   order: z.number().int().min(0).optional(),
 });
 export type CreateStageRequest = z.infer<typeof createStageSchema>;
-export const updateStageSchema = stageInputSchema.partial();
+export const updateStageSchema = partialUpdate(stageInputSchema);
 export type UpdateStageRequest = z.infer<typeof updateStageSchema>;
 
 export const reorderStagesSchema = z.object({ stageIds: z.array(idSchema).min(1).max(30) });
@@ -186,7 +199,13 @@ export const dealSchema = z
 export type Deal = z.infer<typeof dealSchema>;
 
 export const dealWithRelationsSchema = dealSchema.extend({
-  stage: pipelineStageSchema.pick({ id: true, name: true, kind: true, probability: true, order: true }),
+  stage: pipelineStageSchema.pick({
+    id: true,
+    name: true,
+    kind: true,
+    probability: true,
+    order: true,
+  }),
   owner: userSummarySchema.nullable(),
   contact: contactSummarySchema.nullable(),
   company: companySummarySchema.nullable(),
@@ -266,7 +285,9 @@ export const dealNoteSchema = z.object({
   createdAt: z.string().datetime(),
 });
 export type DealNote = z.infer<typeof dealNoteSchema>;
-export const dealNoteWithAuthorSchema = dealNoteSchema.extend({ author: userSummarySchema.nullable() });
+export const dealNoteWithAuthorSchema = dealNoteSchema.extend({
+  author: userSummarySchema.nullable(),
+});
 export type DealNoteWithAuthor = z.infer<typeof dealNoteWithAuthorSchema>;
 export const createDealNoteSchema = z.object({ body: z.string().trim().min(1).max(5000) });
 export type CreateDealNoteRequest = z.infer<typeof createDealNoteSchema>;
@@ -385,7 +406,9 @@ export const dealConversionReportSchema = z.object({
       weightedValue: z.number(),
     }),
   ),
-  wonValue: z.array(z.object({ currency: z.string().length(3), count: z.number().int(), value: z.number() })),
+  wonValue: z.array(
+    z.object({ currency: z.string().length(3), count: z.number().int(), value: z.number() }),
+  ),
   lostReasons: z.array(z.object({ reason: z.string(), count: z.number().int() })),
 });
 export type DealConversionReport = z.infer<typeof dealConversionReportSchema>;

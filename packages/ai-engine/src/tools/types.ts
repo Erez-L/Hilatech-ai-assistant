@@ -1,6 +1,10 @@
 import type { Permission, ToolRiskLevel } from '@hilatech/contracts';
 import type { PrismaClient } from '@hilatech/database';
-import type { ZodTypeAny, z } from 'zod';
+import type { z } from 'zod';
+
+// Tool inputs are validated at runtime by the executor; `any` keeps `execute(ctx, input)` ergonomic.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyToolInput = z.ZodType<any, any>;
 
 /** Minimal logger surface so the engine works with pino, Nest's Logger or console. */
 export interface EngineLogger {
@@ -41,7 +45,7 @@ export interface ToolResult {
   error?: string;
 }
 
-export interface ToolDefinition<TInput extends ZodTypeAny = ZodTypeAny> {
+export interface ToolDefinition<TInput extends AnyToolInput = AnyToolInput> {
   /** Stable key, e.g. `crm.search_leads`. Also the function name the model sees. */
   key: string;
   name: string;

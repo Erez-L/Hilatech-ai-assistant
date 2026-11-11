@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { idSchema, paginationQuerySchema, timestampsSchema } from './common';
+import { idSchema, paginationQuerySchema, timestampsSchema, partialUpdate } from './common';
 import { LeadStatus } from './crm';
 
 // ---------------------------------------------------------------------------
@@ -153,9 +153,19 @@ export const workflowStepSchema = z.discriminatedUnion('type', [
       ])
       .optional(),
     /** Due date = run time + this many hours. */
-    dueInHours: z.number().int().min(0).max(24 * 365).optional(),
+    dueInHours: z
+      .number()
+      .int()
+      .min(0)
+      .max(24 * 365)
+      .optional(),
     /** Reminder = due date - this many hours (requires `dueInHours`); 0 = at the due date. */
-    reminderBeforeHours: z.number().int().min(0).max(24 * 365).optional(),
+    reminderBeforeHours: z
+      .number()
+      .int()
+      .min(0)
+      .max(24 * 365)
+      .optional(),
     leadId: templateString.optional(),
     contactId: templateString.optional(),
     dealId: templateString.optional(),
@@ -195,7 +205,7 @@ export const createWorkflowSchema = z.object({
   steps: z.array(workflowStepSchema).min(1).max(30),
 });
 export type CreateWorkflowRequest = z.infer<typeof createWorkflowSchema>;
-export const updateWorkflowSchema = createWorkflowSchema.partial();
+export const updateWorkflowSchema = partialUpdate(createWorkflowSchema);
 export type UpdateWorkflowRequest = z.infer<typeof updateWorkflowSchema>;
 
 export const listWorkflowsQuerySchema = paginationQuerySchema.extend({
@@ -288,9 +298,9 @@ export const createWebhookEndpointSchema = z.object({
   isEnabled: z.boolean().default(true),
 });
 export type CreateWebhookEndpointRequest = z.infer<typeof createWebhookEndpointSchema>;
-export const updateWebhookEndpointSchema = createWebhookEndpointSchema
-  .omit({ slug: true })
-  .partial();
+export const updateWebhookEndpointSchema = partialUpdate(
+  createWebhookEndpointSchema.omit({ slug: true }),
+);
 export type UpdateWebhookEndpointRequest = z.infer<typeof updateWebhookEndpointSchema>;
 
 // ---------------------------------------------------------------------------
@@ -325,7 +335,7 @@ export const createWebhookSchema = z.object({
   isEnabled: z.boolean().default(true),
 });
 export type CreateWebhookRequest = z.infer<typeof createWebhookSchema>;
-export const updateWebhookSchema = createWebhookSchema.partial();
+export const updateWebhookSchema = partialUpdate(createWebhookSchema);
 export type UpdateWebhookRequest = z.infer<typeof updateWebhookSchema>;
 
 export const WebhookDeliveryStatus = z.enum(['pending', 'delivered', 'failed']);

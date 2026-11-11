@@ -68,18 +68,32 @@ export function isLiveKind(kind: IntegrationKind): boolean {
 }
 
 /** Cross-field checks that depend on both config and secrets. Returns validation messages (empty = ok). */
-export function secretProblems(config: IntegrationConfig, secrets: IntegrationSecrets): Array<{ path: string; message: string }> {
+export function secretProblems(
+  config: IntegrationConfig,
+  secrets: IntegrationSecrets,
+): Array<{ path: string; message: string }> {
   const problems: Array<{ path: string; message: string }> = [];
   if (config.kind === 'rest') {
     if (config.authType === 'bearer' && !secrets.accessToken && !secrets.apiKey) {
-      problems.push({ path: 'secrets.accessToken', message: 'Bearer authentication needs accessToken (or apiKey)' });
+      problems.push({
+        path: 'secrets.accessToken',
+        message: 'Bearer authentication needs accessToken (or apiKey)',
+      });
     }
     if (config.authType === 'basic' && (!secrets.username || !secrets.password)) {
-      problems.push({ path: 'secrets.username', message: 'Basic authentication needs username and password' });
+      problems.push({
+        path: 'secrets.username',
+        message: 'Basic authentication needs username and password',
+      });
     }
     if (config.authType === 'header') {
-      if (!config.authHeaderName) problems.push({ path: 'config.authHeaderName', message: 'authHeaderName is required for header authentication' });
-      if (!secrets.apiKey) problems.push({ path: 'secrets.apiKey', message: 'Header authentication needs apiKey' });
+      if (!config.authHeaderName)
+        problems.push({
+          path: 'config.authHeaderName',
+          message: 'authHeaderName is required for header authentication',
+        });
+      if (!secrets.apiKey)
+        problems.push({ path: 'secrets.apiKey', message: 'Header authentication needs apiKey' });
     }
   }
   return problems;

@@ -20,7 +20,10 @@ export function DealsTabs() {
   ].filter((tab) => tab.show);
   if (tabs.length < 2) return null;
   return (
-    <nav aria-label={t('deals.dealsSections')} className="flex items-center gap-1 overflow-x-auto border-b border-border">
+    <nav
+      aria-label={t('deals.dealsSections')}
+      className="flex items-center gap-1 overflow-x-auto border-b border-border"
+    >
       {tabs.map((tab) => {
         const active = tab.exact ? pathname === tab.href : pathname.startsWith(tab.href);
         return (

@@ -16,11 +16,7 @@ type Key = keyof typeof en;
 const H = (k: Key) => String(he[k]);
 
 async function openNav(page: Page, name: string | RegExp) {
-  await page
-    .getByRole('navigation')
-    .getByRole('link', { name })
-    .first()
-    .click();
+  await page.getByRole('navigation').getByRole('link', { name }).first().click();
 }
 
 test.describe('sales journey', () => {
@@ -133,7 +129,9 @@ test.describe('sales journey', () => {
     const to = (await negotiation.boundingBox())!;
     await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
     await page.mouse.down();
-    await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2 + 10, { steps: 5 });
+    await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2 + 10, {
+      steps: 5,
+    });
     await page.mouse.move(to.x + to.width / 2, to.y + 120, { steps: 10 });
     await page.mouse.up();
     await expect(negotiation.getByTestId('deal-card').filter({ hasText: dealTitle })).toBeVisible();
@@ -141,7 +139,12 @@ test.describe('sales journey', () => {
   });
 
   test('deals: detail page with stage history, notes and tasks; lost needs a reason prompt', async () => {
-    await page.getByTestId('deal-card').filter({ hasText: dealTitle }).getByRole('link').first().click();
+    await page
+      .getByTestId('deal-card')
+      .filter({ hasText: dealTitle })
+      .getByRole('link')
+      .first()
+      .click();
     await expect(page).toHaveURL(new RegExp(`/deals/${UUID}$`));
     await expect(page.getByRole('heading', { level: 1 })).toContainText(dealTitle);
     await expect(page.getByTestId('stage-history')).toContainText('Negotiation');
@@ -218,7 +221,9 @@ test.describe('sales journey', () => {
 
     // Mapping: Hebrew headers were mapped by the suggestion.
     await expect(wizard.getByTestId('import-detected')).toBeVisible();
-    await expect(wizard.getByRole('combobox', { name: 'First name', exact: true })).toHaveValue('0');
+    await expect(wizard.getByRole('combobox', { name: 'First name', exact: true })).toHaveValue(
+      '0',
+    );
     await expect(wizard.getByRole('combobox', { name: 'Email', exact: true })).toHaveValue('2');
     await wizard.getByRole('button', { name: 'Check file (dry run)' }).click();
 
@@ -244,7 +249,9 @@ test.describe('sales journey', () => {
     await expect(page.getByRole('row', { name: /contacts-he\.csv/ })).toContainText('Completed');
     await openNav(page, /^Contacts/);
     await page.locator('#contacts-search').fill(hebrewLast);
-    await expect(page.getByRole('link', { name: `${hebrewFirst} ${hebrewLast}`, exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: `${hebrewFirst} ${hebrewLast}`, exact: true }),
+    ).toBeVisible();
     await expect(page.getByRole('link', { name: 'Noa Levi' })).toHaveCount(0);
   });
 
@@ -265,7 +272,8 @@ test.describe('sales journey', () => {
     await page.goto('/settings/profile');
     const requests: number[] = [];
     page.on('response', (r) => {
-      if (r.url().includes('/notifications/preferences') && r.request().method() === 'PUT') requests.push(r.status());
+      if (r.url().includes('/notifications/preferences') && r.request().method() === 'PUT')
+        requests.push(r.status());
     });
     const email = page.getByRole('switch', { name: 'Email notifications' });
     await expect(email).toBeEnabled();
@@ -303,7 +311,10 @@ test.describe('sales journey', () => {
     expect(first!.x).toBeGreaterThan(last!.x);
 
     await page.goto('/tasks');
-    await page.getByRole('button', { name: H('tasks.newTask') }).first().click();
+    await page
+      .getByRole('button', { name: H('tasks.newTask') })
+      .first()
+      .click();
     await expect(page.getByRole('dialog').getByLabel(H('tasks.priority'))).toBeVisible();
   });
 });

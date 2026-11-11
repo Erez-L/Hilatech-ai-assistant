@@ -79,7 +79,8 @@ export class HooksService {
     }
 
     if (!endpoint.isEnabled) throw AppException.conflict('This webhook endpoint is disabled');
-    if (!endpoint.workflowId) throw AppException.conflict('This webhook endpoint is not bound to a workflow');
+    if (!endpoint.workflowId)
+      throw AppException.conflict('This webhook endpoint is not bound to a workflow');
     const workflow = await this.prisma.client.workflow.findFirst({
       where: { id: endpoint.workflowId, organizationId: org.id },
       select: { id: true, isEnabled: true },
@@ -88,7 +89,9 @@ export class HooksService {
     if (!workflow.isEnabled) throw AppException.conflict('The bound workflow is disabled');
 
     const input = (
-      req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : { body: req.body ?? null }
+      req.body && typeof req.body === 'object' && !Array.isArray(req.body)
+        ? req.body
+        : { body: req.body ?? null }
     ) as Prisma.InputJsonObject;
 
     const execution = await this.prisma.client.workflowExecution.create({

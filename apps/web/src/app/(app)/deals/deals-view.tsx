@@ -59,7 +59,9 @@ export function DealsView() {
   const canCreate = useCan(Permission.DEALS_CREATE);
   const canUpdate = useCan(Permission.DEALS_UPDATE);
 
-  const [view, setView] = React.useState<View>(searchParams.get('view') === 'list' ? 'list' : 'board');
+  const [view, setView] = React.useState<View>(
+    searchParams.get('view') === 'list' ? 'list' : 'board',
+  );
   const [pipelineId, setPipelineId] = React.useState(searchParams.get('pipelineId') ?? '');
   const [search, setSearch] = React.useState('');
   const [owner, setOwner] = React.useState<'' | 'me'>('');
@@ -67,12 +69,17 @@ export function DealsView() {
   const [stageId, setStageId] = React.useState(searchParams.get('stageId') ?? '');
   const [status, setStatus] = React.useState<DealStatus | ''>('');
   const [page, setPage] = React.useState(1);
-  const [sort, setSort] = React.useState<SortState<SortKey>>({ key: 'updatedAt', direction: 'desc' });
+  const [sort, setSort] = React.useState<SortState<SortKey>>({
+    key: 'updatedAt',
+    direction: 'desc',
+  });
   const [createOpen, setCreateOpen] = React.useState(searchParams.get('new') === '1');
 
   const pipelines = usePipelines();
   const activePipeline =
-    pipelines.data?.find((p) => p.id === pipelineId) ?? pipelines.data?.find((p) => p.isDefault) ?? pipelines.data?.[0];
+    pipelines.data?.find((p) => p.id === pipelineId) ??
+    pipelines.data?.find((p) => p.isDefault) ??
+    pipelines.data?.[0];
   const activePipelineId = activePipeline?.id;
 
   const boardParams = {
@@ -108,8 +115,11 @@ export function DealsView() {
     setPage(1);
   };
 
-  const onMove = (deal: DealWithRelations, stage: Parameters<typeof mover.request>[1], position?: number) =>
-    mover.request(deal, stage, position);
+  const onMove = (
+    deal: DealWithRelations,
+    stage: Parameters<typeof mover.request>[1],
+    position?: number,
+  ) => mover.request(deal, stage, position);
 
   const columns = board.data ? visibleColumns(board.data, showClosed) : [];
   const boardForView = board.data ? { ...board.data, columns } : null;
@@ -207,18 +217,31 @@ export function DealsView() {
                     setPage(1);
                   }}
                   options={[
-                    { value: 'board', label: t('deals.boardView'), icon: <KanbanSquare aria-hidden /> },
+                    {
+                      value: 'board',
+                      label: t('deals.boardView'),
+                      icon: <KanbanSquare aria-hidden />,
+                    },
                     { value: 'list', label: t('deals.listView'), icon: <List aria-hidden /> },
                   ]}
                 />
               </div>
-              <Button variant="ghost" onClick={reset} disabled={!hasFilters} leadingIcon={<FilterX aria-hidden />}>
+              <Button
+                variant="ghost"
+                onClick={reset}
+                disabled={!hasFilters}
+                leadingIcon={<FilterX aria-hidden />}
+              >
                 {t('common.clear')}
               </Button>
             </div>
             {view === 'board' ? (
               <div className="flex items-center gap-2.5">
-                <Checkbox id="deals-show-closed" checked={showClosed} onCheckedChange={(c) => setShowClosed(c === true)} />
+                <Checkbox
+                  id="deals-show-closed"
+                  checked={showClosed}
+                  onCheckedChange={(c) => setShowClosed(c === true)}
+                />
                 <Label htmlFor="deals-show-closed" className="font-normal">
                   {t('deals.showWonAndLost')}
                 </Label>
@@ -267,7 +290,11 @@ export function DealsView() {
         </Card>
 
         {pipelines.isError ? (
-          <ErrorState title={t('common.thisCouldnTBeLoaded')} message={getErrorMessage(pipelines.error)} onRetry={() => void pipelines.refetch()} />
+          <ErrorState
+            title={t('common.thisCouldnTBeLoaded')}
+            message={getErrorMessage(pipelines.error)}
+            onRetry={() => void pipelines.refetch()}
+          />
         ) : view === 'board' ? (
           <>
             {board.isPending || pipelines.isPending ? (
@@ -277,7 +304,11 @@ export function DealsView() {
                 ))}
               </div>
             ) : board.isError ? (
-              <ErrorState title={t('deals.boardCouldntBeLoaded')} message={getErrorMessage(board.error)} onRetry={() => void board.refetch()} />
+              <ErrorState
+                title={t('deals.boardCouldntBeLoaded')}
+                message={getErrorMessage(board.error)}
+                onRetry={() => void board.refetch()}
+              />
             ) : boardForView ? (
               <>
                 <section
@@ -287,26 +318,35 @@ export function DealsView() {
                 >
                   <div className="flex flex-col">
                     <span className="text-xs text-fg-muted">{t('deals.openAndClosedDeals')}</span>
-                    <span className="text-lg font-semibold tabular">{board.data.columns.reduce((n, c) => n + c.count, 0)}</span>
+                    <span className="text-lg font-semibold tabular">
+                      {board.data.columns.reduce((n, c) => n + c.count, 0)}
+                    </span>
                   </div>
                   <div className="flex min-w-48 flex-col gap-1">
                     <span className="text-xs text-fg-muted">{t('deals.totalByCurrency')}</span>
                     <CurrencyTotals totals={board.data.totals} />
                   </div>
-                  <p className="ms-auto max-w-xs text-xs text-fg-subtle">{t('deals.totalsNeverMixed')}</p>
+                  <p className="ms-auto max-w-xs text-xs text-fg-subtle">
+                    {t('deals.totalsNeverMixed')}
+                  </p>
                 </section>
                 {board.data.columns.every((c) => c.count === 0) ? (
                   <EmptyState
                     icon={<Handshake />}
                     title={hasFilters ? t('deals.noDealsMatchTheseFilters') : t('deals.noDealsYet')}
-                    description={hasFilters ? t('common.tryDifferentFilters') : t('deals.addYourFirstDeal')}
+                    description={
+                      hasFilters ? t('common.tryDifferentFilters') : t('deals.addYourFirstDeal')
+                    }
                     action={
                       hasFilters ? (
                         <Button variant="secondary" onClick={reset}>
                           {t('common.clearFilters')}
                         </Button>
                       ) : canCreate ? (
-                        <Button leadingIcon={<Plus aria-hidden />} onClick={() => setCreateOpen(true)}>
+                        <Button
+                          leadingIcon={<Plus aria-hidden />}
+                          onClick={() => setCreateOpen(true)}
+                        >
                           {t('deals.newDeal')}
                         </Button>
                       ) : undefined
@@ -317,7 +357,9 @@ export function DealsView() {
                   board={boardForView}
                   canMove={canUpdate}
                   onMove={onMove}
-                  listHref={(sid) => `/deals?view=list&pipelineId=${board.data.pipeline.id}&stageId=${sid}`}
+                  listHref={(sid) =>
+                    `/deals?view=list&pipelineId=${board.data.pipeline.id}&stageId=${sid}`
+                  }
                 />
               </>
             ) : null}
@@ -328,16 +370,37 @@ export function DealsView() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <SortableHead sortKey="title" sort={sort} onSortChange={(s) => { setSort(s); setPage(1); }}>
+                    <SortableHead
+                      sortKey="title"
+                      sort={sort}
+                      onSortChange={(s) => {
+                        setSort(s);
+                        setPage(1);
+                      }}
+                    >
                       {t('deals.deal')}
                     </SortableHead>
                     <TableHead>{t('common.stage')}</TableHead>
-                    <SortableHead sortKey="value" sort={sort} onSortChange={(s) => { setSort(s); setPage(1); }}>
+                    <SortableHead
+                      sortKey="value"
+                      sort={sort}
+                      onSortChange={(s) => {
+                        setSort(s);
+                        setPage(1);
+                      }}
+                    >
                       {t('common.value')}
                     </SortableHead>
                     <TableHead>{t('common.company')}</TableHead>
                     <TableHead>{t('contacts.owner')}</TableHead>
-                    <SortableHead sortKey="expectedCloseAt" sort={sort} onSortChange={(s) => { setSort(s); setPage(1); }}>
+                    <SortableHead
+                      sortKey="expectedCloseAt"
+                      sort={sort}
+                      onSortChange={(s) => {
+                        setSort(s);
+                        setPage(1);
+                      }}
+                    >
                       {t('deals.expectedClose')}
                     </SortableHead>
                     <TableHead>{t('common.status')}</TableHead>
@@ -363,8 +426,12 @@ export function DealsView() {
                       <EmptyState
                         compact
                         icon={<Handshake />}
-                        title={hasFilters ? t('deals.noDealsMatchTheseFilters') : t('deals.noDealsYet')}
-                        description={hasFilters ? t('common.tryDifferentFilters') : t('deals.addYourFirstDeal')}
+                        title={
+                          hasFilters ? t('deals.noDealsMatchTheseFilters') : t('deals.noDealsYet')
+                        }
+                        description={
+                          hasFilters ? t('common.tryDifferentFilters') : t('deals.addYourFirstDeal')
+                        }
                         action={
                           hasFilters ? (
                             <Button variant="secondary" size="sm" onClick={reset}>
@@ -386,13 +453,21 @@ export function DealsView() {
                         }}
                       >
                         <TableCell>
-                          <Link href={`/deals/${deal.id}`} dir="auto" className="font-medium hover:underline">
+                          <Link
+                            href={`/deals/${deal.id}`}
+                            dir="auto"
+                            className="font-medium hover:underline"
+                          >
                             {deal.title}
                           </Link>
                         </TableCell>
                         <TableCell dir="auto">{deal.stage.name}</TableCell>
                         <TableCell className="tabular whitespace-nowrap">
-                          {deal.value != null ? fmt.currency(deal.value, deal.currency) : <span className="text-fg-subtle">—</span>}
+                          {deal.value != null ? (
+                            fmt.currency(deal.value, deal.currency)
+                          ) : (
+                            <span className="text-fg-subtle">—</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-fg-muted" dir="auto">
                           {deal.company?.name ?? '—'}
@@ -401,7 +476,9 @@ export function DealsView() {
                           <UserChip user={deal.owner} />
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-fg-muted tabular">
-                          {deal.expectedCloseAt ? fmt.date(new Date(deal.expectedCloseAt), 'short') : '—'}
+                          {deal.expectedCloseAt
+                            ? fmt.date(new Date(deal.expectedCloseAt), 'short')
+                            : '—'}
                         </TableCell>
                         <TableCell>
                           <DealStatusBadge status={deal.status} />

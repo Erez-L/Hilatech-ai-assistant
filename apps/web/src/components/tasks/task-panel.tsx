@@ -87,7 +87,11 @@ export function TaskPanel({
       { id: task.id, done },
       {
         onSuccess: () =>
-          toast.success(done ? t('tasks.taskCompleted', { title: task.title }) : t('tasks.taskReopened', { title: task.title })),
+          toast.success(
+            done
+              ? t('tasks.taskCompleted', { title: task.title })
+              : t('tasks.taskReopened', { title: task.title }),
+          ),
         onError: (e) => toast.error(getErrorMessage(e)),
       },
     );
@@ -110,7 +114,11 @@ export function TaskPanel({
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {canCreate ? (
-          <form onSubmit={submit} className="flex items-center gap-2" aria-label={t('tasks.quickAddTask')}>
+          <form
+            onSubmit={submit}
+            className="flex items-center gap-2"
+            aria-label={t('tasks.quickAddTask')}
+          >
             <Input
               id={`${idPrefix}-quick-task`}
               aria-label={t('tasks.quickAddTask')}
@@ -120,7 +128,13 @@ export function TaskPanel({
               placeholder={t('tasks.addATaskPlaceholder')}
               autoComplete="off"
             />
-            <Button type="submit" variant="secondary" loading={create.isPending} disabled={!title.trim()} leadingIcon={<Plus aria-hidden />}>
+            <Button
+              type="submit"
+              variant="secondary"
+              loading={create.isPending}
+              disabled={!title.trim()}
+              leadingIcon={<Plus aria-hidden />}
+            >
               {t('tasks.add')}
             </Button>
             <Button type="button" variant="ghost" onClick={() => setDialogOpen(true)}>
@@ -140,7 +154,12 @@ export function TaskPanel({
           }
           isEmpty={(r) => r.data.length === 0}
           empty={
-            <EmptyState compact icon={<ListChecks />} title={t('tasks.noTasksForThisRecord')} description={t('tasks.noTasksForThisRecordHint')} />
+            <EmptyState
+              compact
+              icon={<ListChecks />}
+              title={t('tasks.noTasksForThisRecord')}
+              description={t('tasks.noTasksForThisRecordHint')}
+            />
           }
         >
           {(r) => (
@@ -148,18 +167,33 @@ export function TaskPanel({
               {r.data.map((task) => {
                 const done = task.status === 'done';
                 return (
-                  <li key={task.id} className="flex items-start gap-2 py-2.5" data-testid="panel-task">
+                  <li
+                    key={task.id}
+                    className="flex items-start gap-2 py-2.5"
+                    data-testid="panel-task"
+                  >
                     <IconButton
                       size="sm"
-                      label={done ? t('tasks.reopenTask', { title: task.title }) : t('tasks.markTaskDone', { title: task.title })}
+                      label={
+                        done
+                          ? t('tasks.reopenTask', { title: task.title })
+                          : t('tasks.markTaskDone', { title: task.title })
+                      }
                       disabled={!canUpdate || task.status === 'cancelled'}
                       aria-pressed={done}
                       onClick={() => toggle(task)}
                     >
-                      {done ? <CheckCircle2 className="text-success" aria-hidden /> : <Circle aria-hidden />}
+                      {done ? (
+                        <CheckCircle2 className="text-success" aria-hidden />
+                      ) : (
+                        <Circle aria-hidden />
+                      )}
                     </IconButton>
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
-                      <span dir="auto" className={done ? 'text-fg-muted line-through' : 'font-medium'}>
+                      <span
+                        dir="auto"
+                        className={done ? 'text-fg-muted line-through' : 'font-medium'}
+                      >
                         {task.title}
                       </span>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-fg-muted">
@@ -175,7 +209,9 @@ export function TaskPanel({
           )}
         </QueryState>
       </CardContent>
-      {canCreate ? <TaskDialog open={dialogOpen} onOpenChange={setDialogOpen} relation={relationProps} /> : null}
+      {canCreate ? (
+        <TaskDialog open={dialogOpen} onOpenChange={setDialogOpen} relation={relationProps} />
+      ) : null}
     </Card>
   );
 }

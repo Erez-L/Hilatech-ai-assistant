@@ -82,7 +82,10 @@ const reminderNotAfterDue = (v: { dueAt?: string | null; reminderAt?: string | n
 
 export const createTaskSchema = taskBase
   .extend({ status: z.enum(['todo', 'in_progress']).default('todo') })
-  .refine(reminderNotAfterDue, { message: 'reminderAt must not be after dueAt', path: ['reminderAt'] });
+  .refine(reminderNotAfterDue, {
+    message: 'reminderAt must not be after dueAt',
+    path: ['reminderAt'],
+  });
 export type CreateTaskRequest = z.infer<typeof createTaskSchema>;
 
 /** PATCH: every field optional; `null` clears dueAt / reminderAt / assigneeId / related ids. Use /complete and /reopen for done. */
@@ -101,13 +104,21 @@ export const updateTaskSchema = z
     conversationId: idSchema.nullable(),
   })
   .partial()
-  .refine(reminderNotAfterDue, { message: 'reminderAt must not be after dueAt', path: ['reminderAt'] });
+  .refine(reminderNotAfterDue, {
+    message: 'reminderAt must not be after dueAt',
+    path: ['reminderAt'],
+  });
 export type UpdateTaskRequest = z.infer<typeof updateTaskSchema>;
 
-const csvEnumList = <T extends [string, ...string[]]>(values: z.ZodEnum<T>) =>
+const csvEnumList = <T extends z.ZodType<string, string>>(values: T) =>
   z
     .string()
-    .transform((v) => v.split(',').map((s) => s.trim()).filter(Boolean))
+    .transform((v) =>
+      v
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    )
     .pipe(z.array(values).min(1).max(8));
 
 export const listTasksQuerySchema = paginationQuerySchema.extend({

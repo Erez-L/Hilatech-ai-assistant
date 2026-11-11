@@ -186,13 +186,20 @@ export function BusinessTab({ ctx }: { ctx: ReportContext }) {
               </div>
 
               {d.tasks.modelled ? (
-                <section className="flex flex-col gap-4" aria-label={t('analytics.tasks')} data-testid="tasks-stats">
+                <section
+                  className="flex flex-col gap-4"
+                  aria-label={t('analytics.tasks')}
+                  data-testid="tasks-stats"
+                >
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                     <StatCard label={t('analytics.tasksOpen')} value={d.tasks.open} />
                     <StatCard label={t('analytics.tasksOverdue')} value={d.tasks.overdue} />
                     <StatCard label={t('analytics.tasksDueToday')} value={d.tasks.dueToday} />
                     <StatCard label={t('analytics.tasksCreated')} value={d.tasks.createdInRange} />
-                    <StatCard label={t('analytics.tasksCompleted')} value={d.tasks.completedInRange} />
+                    <StatCard
+                      label={t('analytics.tasksCompleted')}
+                      value={d.tasks.completedInRange}
+                    />
                   </div>
                   <div className="grid gap-6 lg:grid-cols-2">
                     <SectionCard title={t('analytics.tasksByStatus')}>

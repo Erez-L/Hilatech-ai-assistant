@@ -32,7 +32,10 @@ interface Captured {
   body: string;
 }
 
-async function waitFor<T>(fn: () => Promise<T | null | undefined | false>, ms = 20_000): Promise<T> {
+async function waitFor<T>(
+  fn: () => Promise<T | null | undefined | false>,
+  ms = 20_000,
+): Promise<T> {
   const deadline = Date.now() + ms;
   while (Date.now() < deadline) {
     const value = await fn();
@@ -81,7 +84,12 @@ describe('automation (integration)', () => {
         slug: `auto-int-${label}-${randomUUID().slice(0, 8)}`,
         timezone,
         roles: {
-          create: { key: 'owner', name: 'Owner', isSystem: true, permissions: [...ALL_PERMISSIONS] },
+          create: {
+            key: 'owner',
+            name: 'Owner',
+            isSystem: true,
+            permissions: [...ALL_PERMISSIONS],
+          },
         },
       },
       select: { id: true, roles: { select: { id: true } } },
@@ -134,7 +142,11 @@ describe('automation (integration)', () => {
     ...base(),
   });
 
-  const createWebhook = async (organizationId: string, url: string, events: string[] = ['lead.created']) =>
+  const createWebhook = async (
+    organizationId: string,
+    url: string,
+    events: string[] = ['lead.created'],
+  ) =>
     db().webhook.create({
       data: {
         organizationId,
@@ -167,7 +179,13 @@ describe('automation (integration)', () => {
   /** Runs one delivery attempt through the processor and returns the reloaded row. */
   const attempt = async (organizationId: string, deliveryId: string, attempts: number) => {
     const job = {
-      data: { organizationId, deliveryId, attempt: attempts, idempotencyKey: `t-${randomUUID()}`, ...base() },
+      data: {
+        organizationId,
+        deliveryId,
+        attempt: attempts,
+        idempotencyKey: `t-${randomUUID()}`,
+        ...base(),
+      },
     };
     await delivery.process(job as never, { requestId: 'int', jobId: 'int' } as never);
     return db().webhookDelivery.findUniqueOrThrow({ where: { id: deliveryId } });
@@ -213,9 +231,15 @@ describe('automation (integration)', () => {
 
   afterAll(async () => {
     if (prisma) {
-      await db().notification.deleteMany({ where: { userId: { in: [userA, userB] } } }).catch(() => undefined);
-      await db().organization.deleteMany({ where: { id: { in: [orgA, orgB] } } }).catch(() => undefined);
-      await db().user.deleteMany({ where: { id: { in: [userA, userB] } } }).catch(() => undefined);
+      await db()
+        .notification.deleteMany({ where: { userId: { in: [userA, userB] } } })
+        .catch(() => undefined);
+      await db()
+        .organization.deleteMany({ where: { id: { in: [orgA, orgB] } } })
+        .catch(() => undefined);
+      await db()
+        .user.deleteMany({ where: { id: { in: [userA, userB] } } })
+        .catch(() => undefined);
     }
     await producer?.close();
     if (app) await app.close();
@@ -243,9 +267,24 @@ describe('automation (integration)', () => {
         'lead-created',
         { type: 'event', event: 'lead.created' },
         [
-          { id: 's1', type: 'update_lead', leadId: '{{trigger.payload.lead.id}}', addTags: ['auto'] },
-          { id: 's2', type: 'create_lead_note', leadId: '{{trigger.payload.lead.id}}', body: 'Auto note for {{trigger.payload.lead.title}}' },
-          { id: 's3', type: 'send_notification', to: { kind: 'user', userId: userA }, title: 'New lead {{trigger.payload.lead.title}}' },
+          {
+            id: 's1',
+            type: 'update_lead',
+            leadId: '{{trigger.payload.lead.id}}',
+            addTags: ['auto'],
+          },
+          {
+            id: 's2',
+            type: 'create_lead_note',
+            leadId: '{{trigger.payload.lead.id}}',
+            body: 'Auto note for {{trigger.payload.lead.title}}',
+          },
+          {
+            id: 's3',
+            type: 'send_notification',
+            to: { kind: 'user', userId: userA },
+            title: 'New lead {{trigger.payload.lead.title}}',
+          },
         ],
       );
       const outcome = await automation.fanOut(
@@ -267,14 +306,23 @@ describe('automation (integration)', () => {
       expect(lead.tags).toContain('auto');
       const notes = await db().leadNote.findMany({ where: { leadId: leadA } });
       expect(notes.map((n) => n.body)).toContain('Auto note for Lead A');
-      const notification = await db().notification.findFirst({ where: { userId: userA, title: 'New lead Lead A' } });
+      const notification = await db().notification.findFirst({
+        where: { userId: userA, title: 'New lead Lead A' },
+      });
       expect(notification).not.toBeNull();
 
       const audits = await db().auditLog.findMany({
         where: { organizationId: orgA, action: { in: ['workflow.action', 'workflow.executed'] } },
       });
       expect(audits.some((a) => a.action === 'workflow.action')).toBe(true);
-      expect(audits.some((a) => a.action === 'workflow.executed' && a.targetId === wf.id && (a.metadata as { executionId?: string }).executionId === execution!.id)).toBe(true);
+      expect(
+        audits.some(
+          (a) =>
+            a.action === 'workflow.executed' &&
+            a.targetId === wf.id &&
+            (a.metadata as { executionId?: string }).executionId === execution!.id,
+        ),
+      ).toBe(true);
 
       const wfAfter = await db().workflow.findUniqueOrThrow({ where: { id: wf.id } });
       expect(wfAfter.runCount).toBe(1);
@@ -300,7 +348,9 @@ describe('automation (integration)', () => {
         [{ id: 's1', type: 'set_variable', name: 'x', value: '1' }],
         { isEnabled: false },
       );
-      const outcome = await automation.fanOut(eventJob(orgA, 'lead.assigned', { lead: { id: leadA } }));
+      const outcome = await automation.fanOut(
+        eventJob(orgA, 'lead.assigned', { lead: { id: leadA } }),
+      );
       expect(outcome).toMatchObject({ status: 'completed', executions: 0 });
       expect(await executionsOf(wf.id)).toHaveLength(0);
     });
@@ -314,7 +364,13 @@ describe('automation (integration)', () => {
         { isEnabled: false },
       );
       const execution = await db().workflowExecution.create({
-        data: { organizationId: orgA, workflowId: wf.id, status: 'queued', trigger: { type: 'manual' }, input: {} },
+        data: {
+          organizationId: orgA,
+          workflowId: wf.id,
+          status: 'queued',
+          trigger: { type: 'manual' },
+          input: {},
+        },
       });
       const outcome = await automation.execute({
         kind: 'execute',
@@ -325,8 +381,12 @@ describe('automation (integration)', () => {
         ...base(),
       });
       expect(outcome).toMatchObject({ executionStatus: 'cancelled' });
-      expect((await db().workflowExecution.findUniqueOrThrow({ where: { id: execution.id } })).status).toBe('cancelled');
-      expect(await db().leadNote.count({ where: { leadId: leadA, body: 'must not be written' } })).toBe(0);
+      expect(
+        (await db().workflowExecution.findUniqueOrThrow({ where: { id: execution.id } })).status,
+      ).toBe('cancelled');
+      expect(
+        await db().leadNote.count({ where: { leadId: leadA, body: 'must not be written' } }),
+      ).toBe(0);
     });
 
     it('persists a delay, keeps the run in progress and finishes after resume', async () => {
@@ -336,7 +396,13 @@ describe('automation (integration)', () => {
         { id: 's3', type: 'create_lead_note', leadId: leadA, body: 'after delay {{vars.a}}' },
       ]);
       const execution = await db().workflowExecution.create({
-        data: { organizationId: orgA, workflowId: wf.id, status: 'queued', trigger: { type: 'manual' }, input: {} },
+        data: {
+          organizationId: orgA,
+          workflowId: wf.id,
+          status: 'queued',
+          trigger: { type: 'manual' },
+          input: {},
+        },
       });
       await automation.execute({
         kind: 'execute',
@@ -349,12 +415,16 @@ describe('automation (integration)', () => {
       const mid = await db().workflowExecution.findUniqueOrThrow({ where: { id: execution.id } });
       expect(mid.status).toBe('running');
       expect((mid.stepResults as unknown[]).length).toBe(2);
-      expect(await db().leadNote.count({ where: { leadId: leadA, body: 'after delay one' } })).toBe(0);
+      expect(await db().leadNote.count({ where: { leadId: leadA, body: 'after delay one' } })).toBe(
+        0,
+      );
 
       // The delayed `resume` job is consumed by the real worker.
       const done = await finished(execution.id);
       expect(done.status).toBe('succeeded');
-      expect(await db().leadNote.count({ where: { leadId: leadA, body: 'after delay one' } })).toBe(1);
+      expect(await db().leadNote.count({ where: { leadId: leadA, body: 'after delay one' } })).toBe(
+        1,
+      );
     });
 
     it('blocks http_request steps that target private addresses', async () => {
@@ -362,11 +432,21 @@ describe('automation (integration)', () => {
         { id: 's1', type: 'http_request', method: 'GET', url: 'https://10.0.0.5/internal' },
       ]);
       const execution = await db().workflowExecution.create({
-        data: { organizationId: orgA, workflowId: wf.id, status: 'queued', trigger: { type: 'manual' }, input: {} },
+        data: {
+          organizationId: orgA,
+          workflowId: wf.id,
+          status: 'queued',
+          trigger: { type: 'manual' },
+          input: {},
+        },
       });
       await automation.execute({
-        kind: 'execute', organizationId: orgA, workflowId: wf.id, executionId: execution.id,
-        idempotencyKey: `wf-exec-${execution.id}`, ...base(),
+        kind: 'execute',
+        organizationId: orgA,
+        workflowId: wf.id,
+        executionId: execution.id,
+        idempotencyKey: `wf-exec-${execution.id}`,
+        ...base(),
       });
       const done = await finished(execution.id);
       expect(done.status).toBe('failed');
@@ -389,7 +469,12 @@ describe('automation (integration)', () => {
       // Second local server = a different origin (different port).
       const other: Captured[] = [];
       const otherServer = createServer((req, res) => {
-        other.push({ method: req.method ?? '', url: req.url ?? '', headers: req.headers, body: '' });
+        other.push({
+          method: req.method ?? '',
+          url: req.url ?? '',
+          headers: req.headers,
+          body: '',
+        });
         res.end('{}');
       });
       await new Promise<void>((resolve) => otherServer.listen(0, '127.0.0.1', resolve));
@@ -400,17 +485,30 @@ describe('automation (integration)', () => {
           { id: 's2', type: 'n8n_trigger', webhook: otherUrl, payload: {} },
         ]);
         const execution = await db().workflowExecution.create({
-          data: { organizationId: orgA, workflowId: wf.id, status: 'queued', trigger: { type: 'manual' }, input: {} },
+          data: {
+            organizationId: orgA,
+            workflowId: wf.id,
+            status: 'queued',
+            trigger: { type: 'manual' },
+            input: {},
+          },
         });
         await automation.execute({
-          kind: 'execute', organizationId: orgA, workflowId: wf.id, executionId: execution.id,
-          idempotencyKey: `wf-exec-${execution.id}`, ...base(),
+          kind: 'execute',
+          organizationId: orgA,
+          workflowId: wf.id,
+          executionId: execution.id,
+          idempotencyKey: `wf-exec-${execution.id}`,
+          ...base(),
         });
         const done = await finished(execution.id);
         expect(done.status).toBe('succeeded');
         const own = captured.find((c) => c.url === '/webhook/lead-flow');
         expect(own?.headers['x-n8n-api-key']).toBe('n8n-secret-key');
-        expect(JSON.parse(own!.body)).toMatchObject({ hello: 'world', _hilatech: { organizationId: orgA } });
+        expect(JSON.parse(own!.body)).toMatchObject({
+          hello: 'world',
+          _hilatech: { organizationId: orgA },
+        });
         expect(other).toHaveLength(1);
         expect(other[0]!.headers['x-n8n-api-key']).toBeUndefined();
       } finally {
@@ -434,7 +532,9 @@ describe('automation (integration)', () => {
       expect(first).toMatchObject({ status: 'completed' });
       const afterFirst = await executionsOf(wf.id);
       expect(afterFirst.length).toBeGreaterThanOrEqual(4);
-      expect(afterFirst.every((e) => (e.trigger as { type?: string }).type === 'schedule')).toBe(true);
+      expect(afterFirst.every((e) => (e.trigger as { type?: string }).type === 'schedule')).toBe(
+        true,
+      );
 
       await automation.tick(now);
       const afterSecond = await executionsOf(wf.id);
@@ -443,9 +543,12 @@ describe('automation (integration)', () => {
     });
 
     it('does not fire for minutes before the workflow was saved, nor for disabled workflows', async () => {
-      const fresh = await createWorkflow(orgA, 'cron-fresh', { type: 'schedule', cron: '* * * * *' }, [
-        { id: 's1', type: 'set_variable', name: 'x', value: '1' },
-      ]);
+      const fresh = await createWorkflow(
+        orgA,
+        'cron-fresh',
+        { type: 'schedule', cron: '* * * * *' },
+        [{ id: 's1', type: 'set_variable', name: 'x', value: '1' }],
+      );
       const off = await createWorkflow(
         orgA,
         'cron-off',
@@ -491,7 +594,11 @@ describe('automation (integration)', () => {
           signature: req.headers['x-hilatech-signature'] as string,
         }),
       ).toBe(false);
-      expect(JSON.parse(req.body)).toMatchObject({ id: row.id, event: 'lead.created', organizationId: orgA });
+      expect(JSON.parse(req.body)).toMatchObject({
+        id: row.id,
+        event: 'lead.created',
+        organizationId: orgA,
+      });
     });
 
     it('schedules a retry after a 500 and a stale duplicate job does not double-send', async () => {
@@ -504,7 +611,9 @@ describe('automation (integration)', () => {
       expect(after.responseStatus).toBe(500);
       expect(after.nextAttemptAt!.getTime()).toBeGreaterThan(Date.now() + 10_000);
       const delayed = await producer.getDelayed();
-      expect(delayed.some((j) => j.data?.deliveryId === row.id && j.data?.attempt === 1)).toBe(true);
+      expect(delayed.some((j) => j.data?.deliveryId === row.id && j.data?.attempt === 1)).toBe(
+        true,
+      );
 
       const count = captured.length;
       const dup = await attempt(orgA, row.id, 1); // not due yet
@@ -539,7 +648,9 @@ describe('automation (integration)', () => {
     it('fans an event out to the matching subscriptions of the same organization only', async () => {
       const mine = await createWebhook(orgA, `${serverUrl}/mine`, ['member.joined']);
       const theirs = await createWebhook(orgB, `${serverUrl}/theirs`, ['member.joined']);
-      const outcome = await automation.fanOut(eventJob(orgA, 'member.joined', { member: { id: randomUUID() } }));
+      const outcome = await automation.fanOut(
+        eventJob(orgA, 'member.joined', { member: { id: randomUUID() } }),
+      );
       expect(outcome).toMatchObject({ deliveries: 1 });
       expect(await db().webhookDelivery.count({ where: { webhookId: mine.id } })).toBe(1);
       expect(await db().webhookDelivery.count({ where: { webhookId: theirs.id } })).toBe(0);
@@ -556,11 +667,21 @@ describe('automation (integration)', () => {
       const row = await createDelivery(orgA, hook.id);
       const before = captured.length;
       await delivery.process(
-        { data: { organizationId: orgB, deliveryId: row.id, attempt: 0, idempotencyKey: 'x', ...base() } } as never,
+        {
+          data: {
+            organizationId: orgB,
+            deliveryId: row.id,
+            attempt: 0,
+            idempotencyKey: 'x',
+            ...base(),
+          },
+        } as never,
         { requestId: 'int', jobId: 'int' } as never,
       );
       expect(captured).toHaveLength(before);
-      expect((await db().webhookDelivery.findUniqueOrThrow({ where: { id: row.id } })).attempts).toBe(0);
+      expect(
+        (await db().webhookDelivery.findUniqueOrThrow({ where: { id: row.id } })).attempts,
+      ).toBe(0);
     });
   });
 
@@ -571,22 +692,39 @@ describe('automation (integration)', () => {
         { id: 's1', type: 'update_lead', leadId: leadB, addTags: ['pwned'] },
       ]);
       const execution = await db().workflowExecution.create({
-        data: { organizationId: orgA, workflowId: wf.id, status: 'queued', trigger: { type: 'manual' }, input: {} },
+        data: {
+          organizationId: orgA,
+          workflowId: wf.id,
+          status: 'queued',
+          trigger: { type: 'manual' },
+          input: {},
+        },
       });
       await automation.execute({
-        kind: 'execute', organizationId: orgA, workflowId: wf.id, executionId: execution.id,
-        idempotencyKey: `wf-exec-${execution.id}`, ...base(),
+        kind: 'execute',
+        organizationId: orgA,
+        workflowId: wf.id,
+        executionId: execution.id,
+        idempotencyKey: `wf-exec-${execution.id}`,
+        ...base(),
       });
       const done = await finished(execution.id);
       expect(done.status).toBe('failed');
-      expect((await db().lead.findUniqueOrThrow({ where: { id: leadB } })).tags).not.toContain('pwned');
+      expect((await db().lead.findUniqueOrThrow({ where: { id: leadB } })).tags).not.toContain(
+        'pwned',
+      );
     });
 
     it('an org A event never triggers an org B workflow', async () => {
-      const wf = await createWorkflow(orgB, 'b-only', { type: 'event', event: 'conversation.created' }, [
-        { id: 's1', type: 'set_variable', name: 'x', value: '1' },
-      ]);
-      await automation.fanOut(eventJob(orgA, 'conversation.created', { conversation: { id: randomUUID() } }));
+      const wf = await createWorkflow(
+        orgB,
+        'b-only',
+        { type: 'event', event: 'conversation.created' },
+        [{ id: 's1', type: 'set_variable', name: 'x', value: '1' }],
+      );
+      await automation.fanOut(
+        eventJob(orgA, 'conversation.created', { conversation: { id: randomUUID() } }),
+      );
       expect(await executionsOf(wf.id)).toHaveLength(0);
     });
 
@@ -595,14 +733,26 @@ describe('automation (integration)', () => {
         { id: 's1', type: 'set_variable', name: 'x', value: '1' },
       ]);
       const execution = await db().workflowExecution.create({
-        data: { organizationId: orgA, workflowId: wf.id, status: 'queued', trigger: { type: 'manual' }, input: {} },
+        data: {
+          organizationId: orgA,
+          workflowId: wf.id,
+          status: 'queued',
+          trigger: { type: 'manual' },
+          input: {},
+        },
       });
       const outcome = await automation.execute({
-        kind: 'execute', organizationId: orgB, workflowId: wf.id, executionId: execution.id,
-        idempotencyKey: `wf-exec-wrong-${execution.id}`, ...base(),
+        kind: 'execute',
+        organizationId: orgB,
+        workflowId: wf.id,
+        executionId: execution.id,
+        idempotencyKey: `wf-exec-wrong-${execution.id}`,
+        ...base(),
       });
       expect(outcome).toMatchObject({ status: 'skipped', reason: 'not_found' });
-      expect((await db().workflowExecution.findUniqueOrThrow({ where: { id: execution.id } })).status).toBe('queued');
+      expect(
+        (await db().workflowExecution.findUniqueOrThrow({ where: { id: execution.id } })).status,
+      ).toBe('queued');
     });
   });
 });

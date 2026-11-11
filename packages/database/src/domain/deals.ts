@@ -36,7 +36,11 @@ export interface CreateDealInput {
 export async function createDealRow(db: Db, input: CreateDealInput, actor: DealActor) {
   const now = input.now ?? new Date();
   const stage = await db.pipelineStage.findFirst({
-    where: { id: input.stageId, pipelineId: input.pipelineId, organizationId: input.organizationId },
+    where: {
+      id: input.stageId,
+      pipelineId: input.pipelineId,
+      organizationId: input.organizationId,
+    },
   });
   if (!stage) throw new DomainError('invalid_stage', 'Stage does not belong to the pipeline');
   const kind = stage.kind as StageKind;
@@ -114,13 +118,24 @@ export async function moveDealRow(db: Db, input: MoveDealInput, actor: DealActor
   });
   if (!deal) throw new DomainError('not_found', 'Deal not found');
   const toStage = await db.pipelineStage.findFirst({
-    where: { id: input.toStageId, pipelineId: deal.pipelineId, organizationId: input.organizationId },
+    where: {
+      id: input.toStageId,
+      pipelineId: deal.pipelineId,
+      organizationId: input.organizationId,
+    },
   });
-  if (!toStage) throw new DomainError('invalid_stage', 'Stage does not belong to the deal pipeline');
+  if (!toStage)
+    throw new DomainError('invalid_stage', 'Stage does not belong to the deal pipeline');
 
   const stageChanged = deal.stageId !== toStage.id;
   if (!stageChanged && (input.position === undefined || input.position === null)) {
-    return { deal, fromStage: deal.stage, toStage, stageChanged: false, previousStatus: deal.status };
+    return {
+      deal,
+      fromStage: deal.stage,
+      toStage,
+      stageChanged: false,
+      previousStatus: deal.status,
+    };
   }
 
   // Lock both columns (ordered) so concurrent moves serialise instead of interleaving positions.
@@ -179,7 +194,13 @@ export async function moveDealRow(db: Db, input: MoveDealInput, actor: DealActor
       },
     });
     const type =
-      toKind === 'won' ? 'won' : toKind === 'lost' ? 'lost' : fromKind !== 'open' ? 'reopened' : 'stage_changed';
+      toKind === 'won'
+        ? 'won'
+        : toKind === 'lost'
+          ? 'lost'
+          : fromKind !== 'open'
+            ? 'reopened'
+            : 'stage_changed';
     await db.dealActivity.create({
       data: {
         organizationId: input.organizationId,
@@ -199,7 +220,10 @@ export async function moveDealRow(db: Db, input: MoveDealInput, actor: DealActor
     });
   }
   return {
-    deal: { ...updated, position: plan.updates.find((u) => u.id === deal.id)?.position ?? updated.position },
+    deal: {
+      ...updated,
+      position: plan.updates.find((u) => u.id === deal.id)?.position ?? updated.position,
+    },
     fromStage: deal.stage,
     toStage,
     stageChanged,

@@ -22,9 +22,27 @@ describe('outbound signatures', () => {
   it('verifies within tolerance and rejects stale/tampered', () => {
     const ts = 1700000000;
     const sig = signOutboundPayload(secret, ts, body);
-    expect(verifyOutboundSignature({ secret, timestamp: ts, body, signature: sig, nowSeconds: ts + 10 })).toBe(true);
-    expect(verifyOutboundSignature({ secret, timestamp: ts, body, signature: sig, nowSeconds: ts + 3600 })).toBe(false);
-    expect(verifyOutboundSignature({ secret, timestamp: ts, body: body + ' ', signature: sig, nowSeconds: ts })).toBe(false);
+    expect(
+      verifyOutboundSignature({ secret, timestamp: ts, body, signature: sig, nowSeconds: ts + 10 }),
+    ).toBe(true);
+    expect(
+      verifyOutboundSignature({
+        secret,
+        timestamp: ts,
+        body,
+        signature: sig,
+        nowSeconds: ts + 3600,
+      }),
+    ).toBe(false);
+    expect(
+      verifyOutboundSignature({
+        secret,
+        timestamp: ts,
+        body: body + ' ',
+        signature: sig,
+        nowSeconds: ts,
+      }),
+    ).toBe(false);
   });
 });
 
@@ -34,17 +52,33 @@ describe('inbound verification', () => {
   const rawBody = '{"hello":"world"}';
 
   it('accepts a valid signature (no timestamp)', () => {
-    const r = verifyInboundRequest({ secretHash: hash, rawBody, signatureHeader: signInboundPayload(secret, rawBody) });
+    const r = verifyInboundRequest({
+      secretHash: hash,
+      rawBody,
+      signatureHeader: signInboundPayload(secret, rawBody),
+    });
     expect(r).toEqual({ ok: true, method: 'signature' });
   });
   it('accepts a valid timestamped signature and rejects stale ones', () => {
     const now = 1_800_000_000;
     const sig = signInboundPayload(secret, rawBody, now);
     expect(
-      verifyInboundRequest({ secretHash: hash, rawBody, signatureHeader: sig, timestampHeader: String(now), nowSeconds: now + 5 }),
+      verifyInboundRequest({
+        secretHash: hash,
+        rawBody,
+        signatureHeader: sig,
+        timestampHeader: String(now),
+        nowSeconds: now + 5,
+      }),
     ).toEqual({ ok: true, method: 'signature' });
     expect(
-      verifyInboundRequest({ secretHash: hash, rawBody, signatureHeader: sig, timestampHeader: String(now), nowSeconds: now + 9999 }),
+      verifyInboundRequest({
+        secretHash: hash,
+        rawBody,
+        signatureHeader: sig,
+        timestampHeader: String(now),
+        nowSeconds: now + 9999,
+      }),
     ).toEqual({ ok: false, reason: 'stale_timestamp' });
     // stripping the timestamp from a timestamped signature fails
     expect(verifyInboundRequest({ secretHash: hash, rawBody, signatureHeader: sig })).toEqual({
@@ -54,21 +88,35 @@ describe('inbound verification', () => {
   });
   it('rejects tampered body / wrong secret signatures', () => {
     const sig = signInboundPayload(secret, rawBody);
-    expect(verifyInboundRequest({ secretHash: hash, rawBody: rawBody + 'x', signatureHeader: sig }).ok).toBe(false);
     expect(
-      verifyInboundRequest({ secretHash: hash, rawBody, signatureHeader: signInboundPayload('nope', rawBody) }).ok,
+      verifyInboundRequest({ secretHash: hash, rawBody: rawBody + 'x', signatureHeader: sig }).ok,
     ).toBe(false);
-    expect(verifyInboundRequest({ secretHash: hash, rawBody, signatureHeader: 'sha256=zz' }).ok).toBe(false);
+    expect(
+      verifyInboundRequest({
+        secretHash: hash,
+        rawBody,
+        signatureHeader: signInboundPayload('nope', rawBody),
+      }).ok,
+    ).toBe(false);
+    expect(
+      verifyInboundRequest({ secretHash: hash, rawBody, signatureHeader: 'sha256=zz' }).ok,
+    ).toBe(false);
   });
   it('supports the plain secret header and compares hashes', () => {
-    expect(verifyInboundRequest({ secretHash: hash, rawBody, secretHeader: secret })).toEqual({ ok: true, method: 'secret' });
+    expect(verifyInboundRequest({ secretHash: hash, rawBody, secretHeader: secret })).toEqual({
+      ok: true,
+      method: 'secret',
+    });
     expect(verifyInboundRequest({ secretHash: hash, rawBody, secretHeader: 'wrong' })).toEqual({
       ok: false,
       reason: 'invalid_secret',
     });
   });
   it('rejects requests without credentials', () => {
-    expect(verifyInboundRequest({ secretHash: hash, rawBody })).toEqual({ ok: false, reason: 'missing' });
+    expect(verifyInboundRequest({ secretHash: hash, rawBody })).toEqual({
+      ok: false,
+      reason: 'missing',
+    });
   });
 });
 

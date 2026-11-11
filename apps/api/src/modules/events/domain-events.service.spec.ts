@@ -12,7 +12,12 @@ describe('DomainEventsService', () => {
   it('enqueues one automation.event job with org, actor and a JSON-safe payload', async () => {
     const enqueue = jest.fn().mockResolvedValue({ jobId: 'x' });
     const { service } = make(enqueue);
-    await service.emit('org-1', 'lead.created', { leadId: 'l1', at: new Date('2026-01-01T00:00:00Z'), skip: undefined }, { actorUserId: 'u1', requestId: 'r1' });
+    await service.emit(
+      'org-1',
+      'lead.created',
+      { leadId: 'l1', at: new Date('2026-01-01T00:00:00Z'), skip: undefined },
+      { actorUserId: 'u1', requestId: 'r1' },
+    );
     expect(enqueue).toHaveBeenCalledTimes(1);
     const [queue, payload] = enqueue.mock.calls[0]!;
     expect(queue).toBe(QueueName.AUTOMATION);
@@ -33,7 +38,9 @@ describe('DomainEventsService', () => {
     const { service } = make(enqueue);
     await service.emit('o', 'contact.created', {});
     await service.emit('o', 'contact.created', {});
-    expect(enqueue.mock.calls[0]![1].idempotencyKey).not.toBe(enqueue.mock.calls[1]![1].idempotencyKey);
+    expect(enqueue.mock.calls[0]![1].idempotencyKey).not.toBe(
+      enqueue.mock.calls[1]![1].idempotencyKey,
+    );
   });
 
   it('never throws when the queue fails (the business request must not fail) and logs the error', async () => {

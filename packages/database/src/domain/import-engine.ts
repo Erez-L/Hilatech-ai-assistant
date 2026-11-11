@@ -92,7 +92,11 @@ const union = (a: string[], b: string[]): string[] => [...new Set([...a, ...b])]
 // Shared lookups
 // ---------------------------------------------------------------------------
 
-async function ownersByEmail(db: Db, organizationId: string, emails: string[]): Promise<Map<string, string>> {
+async function ownersByEmail(
+  db: Db,
+  organizationId: string,
+  emails: string[],
+): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   for (const part of chunk(emails)) {
     const rows = await db.organizationMember.findMany({
@@ -118,7 +122,8 @@ async function contactsByKeys(
       select: { id: true, email: true },
       orderBy: { createdAt: 'asc' },
     });
-    for (const r of rows) if (r.email && !byEmail.has(r.email.toLowerCase())) byEmail.set(r.email.toLowerCase(), r.id);
+    for (const r of rows)
+      if (r.email && !byEmail.has(r.email.toLowerCase())) byEmail.set(r.email.toLowerCase(), r.id);
   }
   for (const part of chunk(phones)) {
     const rows = await db.$queryRaw<Array<{ id: string; k: string }>>`
@@ -233,7 +238,9 @@ const contactsHandler: Handler<ContactImportData, ContactRefs> = {
         ...(d.jobTitle ? { jobTitle: d.jobTitle } : {}),
         ...(d.notes ? { notes: d.notes } : {}),
         ...(d.tags.length ? { tags: union(current.tags, d.tags) } : {}),
-        ...(d.ownerEmail && refs.owners.get(d.ownerEmail) ? { ownerId: refs.owners.get(d.ownerEmail) } : {}),
+        ...(d.ownerEmail && refs.owners.get(d.ownerEmail)
+          ? { ownerId: refs.owners.get(d.ownerEmail) }
+          : {}),
       },
     });
   },
@@ -253,7 +260,11 @@ const companiesHandler: Handler<CompanyImportData, CompanyRefs> = {
   async prefetch(db, ctx, items) {
     const [owners, byName] = await Promise.all([
       ownersByEmail(db, ctx.organizationId, unique(items.map((i) => i.ownerEmail))),
-      companiesByName(db, ctx.organizationId, items.map((i) => i.name)),
+      companiesByName(
+        db,
+        ctx.organizationId,
+        items.map((i) => i.name),
+      ),
     ]);
     return { owners, byName };
   },
@@ -295,7 +306,9 @@ const companiesHandler: Handler<CompanyImportData, CompanyRefs> = {
         ...(d.domain ? { domain: d.domain } : {}),
         ...(d.notes ? { notes: d.notes } : {}),
         ...(d.tags.length ? { tags: union(current.tags, d.tags) } : {}),
-        ...(d.ownerEmail && refs.owners.get(d.ownerEmail) ? { ownerId: refs.owners.get(d.ownerEmail) } : {}),
+        ...(d.ownerEmail && refs.owners.get(d.ownerEmail)
+          ? { ownerId: refs.owners.get(d.ownerEmail) }
+          : {}),
       },
     });
   },
@@ -334,7 +347,9 @@ const leadsHandler: Handler<LeadImportData, LeadRefs> = {
     const leads = new Map<string, string>();
     const titles = unique(items.map((i) => i.title.toLowerCase().trim()));
     for (const part of chunk(titles)) {
-      const rows = await db.$queryRaw<Array<{ id: string; title: string; contactId: string | null }>>`
+      const rows = await db.$queryRaw<
+        Array<{ id: string; title: string; contactId: string | null }>
+      >`
         SELECT "id", "title", "contactId" FROM "Lead"
         WHERE "organizationId" = ${ctx.organizationId}::uuid AND "deletedAt" IS NULL
           AND lower(btrim("title")) = ANY(${part}::text[])
@@ -348,7 +363,12 @@ const leadsHandler: Handler<LeadImportData, LeadRefs> = {
   },
   refErrors(d, refs) {
     return d.assigneeEmail && !refs.owners.has(d.assigneeEmail)
-      ? [{ field: 'assigneeEmail', message: 'Assignee is not an active member of this organization' }]
+      ? [
+          {
+            field: 'assigneeEmail',
+            message: 'Assignee is not an active member of this organization',
+          },
+        ]
       : [];
   },
   keys(d, refs) {
@@ -407,7 +427,11 @@ const leadsHandler: Handler<LeadImportData, LeadRefs> = {
     if (d.value !== undefined) set('value', () => (data.value = d.value));
     if (d.currency) set('currency', () => (data.currency = d.currency));
     if (d.description) set('description', () => (data.description = d.description));
-    if (d.expectedCloseDate) set('expectedCloseDate', () => (data.expectedCloseDate = new Date(d.expectedCloseDate as string)));
+    if (d.expectedCloseDate)
+      set(
+        'expectedCloseDate',
+        () => (data.expectedCloseDate = new Date(d.expectedCloseDate as string)),
+      );
     if (d.tags.length) set('tags', () => (data.tags = union(current.tags, d.tags)));
     const contactId = leadContactId(d, refs);
     if (contactId) set('contactId', () => (data.contactId = contactId));
@@ -470,7 +494,12 @@ const dealsHandler: Handler<DealImportData, DealRefs> = {
     const defaultPipeline = await ensureDefaultPipelineLite(db, ctx.organizationId);
     const [owners, found, companies, pipelineRows] = await Promise.all([
       ownersByEmail(db, ctx.organizationId, unique(items.map((i) => i.ownerEmail))),
-      contactsByKeys(db, ctx.organizationId, unique(items.map((i) => emailKey(i.contactEmail))), []),
+      contactsByKeys(
+        db,
+        ctx.organizationId,
+        unique(items.map((i) => emailKey(i.contactEmail))),
+        [],
+      ),
       companiesByName(db, ctx.organizationId, unique(items.map((i) => i.companyName))),
       db.pipeline.findMany({
         where: { organizationId: ctx.organizationId },
@@ -502,12 +531,19 @@ const dealsHandler: Handler<DealImportData, DealRefs> = {
   refErrors(d, refs) {
     const errors: RowIssue[] = [];
     const pipeline = resolveDealPipeline(d, refs);
-    if (!pipeline) errors.push({ field: 'pipeline', message: `Pipeline "${d.pipeline}" does not exist` });
+    if (!pipeline)
+      errors.push({ field: 'pipeline', message: `Pipeline "${d.pipeline}" does not exist` });
     else if (!resolveDealStage(pipeline, d.stage)) {
-      errors.push({ field: 'stage', message: `Stage "${d.stage ?? ''}" does not exist in pipeline "${pipeline.name}"` });
+      errors.push({
+        field: 'stage',
+        message: `Stage "${d.stage ?? ''}" does not exist in pipeline "${pipeline.name}"`,
+      });
     }
     if (d.ownerEmail && !refs.owners.has(d.ownerEmail)) {
-      errors.push({ field: 'ownerEmail', message: 'Owner is not an active member of this organization' });
+      errors.push({
+        field: 'ownerEmail',
+        message: 'Owner is not an active member of this organization',
+      });
     }
     return errors;
   },
@@ -535,7 +571,8 @@ const dealsHandler: Handler<DealImportData, DealRefs> = {
         stageId: stage.id,
         ownerId: (d.ownerEmail ? refs.owners.get(d.ownerEmail) : undefined) ?? ctx.actorId,
         contactId: (email ? refs.byEmail.get(email) : undefined) ?? null,
-        companyId: (d.companyName ? refs.companies.get(nameKey(d.companyName) ?? '') : undefined) ?? null,
+        companyId:
+          (d.companyName ? refs.companies.get(nameKey(d.companyName) ?? '') : undefined) ?? null,
         expectedCloseAt: d.expectedCloseAt ? new Date(d.expectedCloseAt) : null,
         tags: d.tags,
         lostReason: d.lostReason ?? null,
@@ -569,12 +606,24 @@ const dealsHandler: Handler<DealImportData, DealRefs> = {
     });
     if (d.stage) {
       const pipeline = resolveDealPipeline(d, refs);
-      const stage = pipeline && current.pipelineId === pipeline.id ? resolveDealStage(pipeline, d.stage) : undefined;
+      const stage =
+        pipeline && current.pipelineId === pipeline.id
+          ? resolveDealStage(pipeline, d.stage)
+          : undefined;
       if (stage && stage.id !== current.stageId) {
         await moveDealRow(
           tx,
-          { organizationId: ctx.organizationId, dealId: id, toStageId: stage.id, lostReason: d.lostReason ?? null },
-          { actorId: ctx.actorId, by: 'import', extra: ctx.importId ? { importId: ctx.importId } : {} },
+          {
+            organizationId: ctx.organizationId,
+            dealId: id,
+            toStageId: stage.id,
+            lostReason: d.lostReason ?? null,
+          },
+          {
+            actorId: ctx.actorId,
+            by: 'import',
+            extra: ctx.importId ? { importId: ctx.importId } : {},
+          },
         );
       }
     }
@@ -592,7 +641,12 @@ async function ensureDefaultPipelineLite(db: Db, organizationId: string): Promis
   return {
     id: pipeline.id,
     name: pipeline.name,
-    stages: pipeline.stages.map((s) => ({ id: s.id, name: s.name, order: s.order, kind: s.kind as StageRef['kind'] })),
+    stages: pipeline.stages.map((s) => ({
+      id: s.id,
+      name: s.name,
+      order: s.order,
+      kind: s.kind as StageRef['kind'],
+    })),
   };
 }
 
@@ -615,7 +669,8 @@ const label: Record<ImportEntity, string> = {
 };
 
 function describeDuplicate(entity: ImportEntity, dup: DuplicateOf): string {
-  const what = dup.source === 'file' ? `row ${dup.row} of the file` : `an existing ${label[entity]}`;
+  const what =
+    dup.source === 'file' ? `row ${dup.row} of the file` : `an existing ${label[entity]}`;
   return `Duplicate of ${what} (matched by ${dup.matchedBy})`;
 }
 
@@ -637,14 +692,23 @@ async function processRows(
     const row = firstRow + i;
     const normalized = handler.normalize(rowToFields(ctx.entity, ctx.mapping, cells));
     if (!normalized.ok) {
-      outcomes.push({ row, kind: 'invalid', errors: normalized.errors, reason: normalized.errors[0]?.message });
+      outcomes.push({
+        row,
+        kind: 'invalid',
+        errors: normalized.errors,
+        reason: normalized.errors[0]?.message,
+      });
       return null;
     }
     return { row, data: normalized.data };
   });
   const items = parsed.filter((p): p is { row: number; data: unknown } => p !== null);
   if (items.length === 0) return outcomes.sort((a, b) => a.row - b.row);
-  const refs = await handler.prefetch(db, ctx, items.map((i) => i.data));
+  const refs = await handler.prefetch(
+    db,
+    ctx,
+    items.map((i) => i.data),
+  );
 
   for (const item of items) {
     const errors = handler.refErrors(item.data, refs);
@@ -657,7 +721,10 @@ async function processRows(
     for (const k of keys) {
       const existingId = handler.existing(k.key, refs);
       if (existingId) {
-        duplicate = { dup: { source: 'existing', id: existingId, matchedBy: k.matchedBy }, id: existingId };
+        duplicate = {
+          dup: { source: 'existing', id: existingId, matchedBy: k.matchedBy },
+          id: existingId,
+        };
         break;
       }
       const earlier = seen.get(k.key);
@@ -671,7 +738,8 @@ async function processRows(
     }
 
     const register = (id?: string) => {
-      for (const k of keys) if (!seen.has(k.key)) seen.set(k.key, { row: item.row, ...(id ? { id } : {}) });
+      for (const k of keys)
+        if (!seen.has(k.key)) seen.set(k.key, { row: item.row, ...(id ? { id } : {}) });
     };
 
     if (duplicate && ctx.strategy !== 'create') {
@@ -686,19 +754,30 @@ async function processRows(
       }
       // strategy === 'update'
       if (mode === 'dry') {
-        outcomes.push({ row: item.row, kind: 'updated', duplicateOf: duplicate.dup, reason: 'Would update the existing record' });
+        outcomes.push({
+          row: item.row,
+          kind: 'updated',
+          duplicateOf: duplicate.dup,
+          reason: 'Would update the existing record',
+        });
         continue;
       }
       const outcome = await guarded(db, item.row, async () => {
         await handler.update(db, ctx, duplicate!.id as string, item.data, refs);
       });
-      outcomes.push(outcome.error ? outcome : { row: item.row, kind: 'updated', duplicateOf: duplicate.dup });
+      outcomes.push(
+        outcome.error ? outcome : { row: item.row, kind: 'updated', duplicateOf: duplicate.dup },
+      );
       continue;
     }
 
     if (mode === 'dry') {
       register();
-      outcomes.push({ row: item.row, kind: 'created', ...(duplicate ? { duplicateOf: duplicate.dup } : {}) });
+      outcomes.push({
+        row: item.row,
+        kind: 'created',
+        ...(duplicate ? { duplicateOf: duplicate.dup } : {}),
+      });
       continue;
     }
     let createdId: string | undefined;
@@ -734,7 +813,10 @@ async function guarded(
       row,
       kind: 'failed',
       error: true,
-      reason: code === 'P2002' ? 'A record with the same unique value already exists' : 'The row could not be saved',
+      reason:
+        code === 'P2002'
+          ? 'A record with the same unique value already exists'
+          : 'The row could not be saved',
     };
   }
 }
@@ -777,7 +859,9 @@ export async function validateImportRows(
         problems.push({
           row: o.row,
           status,
-          errors: o.errors ?? (o.reason && status === 'duplicate' ? [{ field: null, message: o.reason }] : []),
+          errors:
+            o.errors ??
+            (o.reason && status === 'duplicate' ? [{ field: null, message: o.reason }] : []),
           ...(o.duplicateOf ? { duplicateOf: o.duplicateOf } : {}),
         });
       }

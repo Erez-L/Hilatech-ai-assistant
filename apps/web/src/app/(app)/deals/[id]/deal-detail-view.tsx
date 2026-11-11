@@ -17,7 +17,11 @@ import {
   UserRoundCheck,
   XCircle,
 } from 'lucide-react';
-import { Permission, type DealActivityWithActor, type DealWithRelations } from '@hilatech/contracts';
+import {
+  Permission,
+  type DealActivityWithActor,
+  type DealWithRelations,
+} from '@hilatech/contracts';
 import {
   Badge,
   Button,
@@ -145,12 +149,20 @@ function DealBody({ deal }: { deal: DealWithRelations }) {
               />
             ) : null}
             {canUpdate ? (
-              <Button variant="secondary" leadingIcon={<Pencil aria-hidden />} onClick={() => setEditOpen(true)}>
+              <Button
+                variant="secondary"
+                leadingIcon={<Pencil aria-hidden />}
+                onClick={() => setEditOpen(true)}
+              >
                 {t('common.edit')}
               </Button>
             ) : null}
             {canDelete ? (
-              <Button variant="secondary" leadingIcon={<Trash2 aria-hidden />} onClick={() => setDeleteOpen(true)}>
+              <Button
+                variant="secondary"
+                leadingIcon={<Trash2 aria-hidden />}
+                onClick={() => setDeleteOpen(true)}
+              >
                 {t('common.delete')}
               </Button>
             ) : null}
@@ -161,7 +173,11 @@ function DealBody({ deal }: { deal: DealWithRelations }) {
       {stages.length > 0 ? (
         <Card>
           <CardContent className="py-4">
-            <ol aria-label={t('deals.stageProgress')} className="flex flex-wrap items-center gap-2" data-testid="stage-track">
+            <ol
+              aria-label={t('deals.stageProgress')}
+              className="flex flex-wrap items-center gap-2"
+              data-testid="stage-track"
+            >
               {stages.map((s) => {
                 const current = s.id === deal.stageId;
                 return (
@@ -187,7 +203,8 @@ function DealBody({ deal }: { deal: DealWithRelations }) {
             </ol>
             {deal.status === 'lost' && deal.lostReason ? (
               <p className="mt-3 text-sm text-fg-muted" dir="auto">
-                <span className="font-medium text-fg">{t('deals.lostReason')}</span> {deal.lostReason}
+                <span className="font-medium text-fg">{t('deals.lostReason')}</span>{' '}
+                {deal.lostReason}
               </p>
             ) : null}
           </CardContent>
@@ -209,7 +226,12 @@ function DealBody({ deal }: { deal: DealWithRelations }) {
             </Card>
           ) : null}
           <DealNotes dealId={deal.id} canWrite={canUpdate} />
-          <TaskPanel relationKey="dealId" recordId={deal.id} idPrefix="deal" relation={{ deal: deal.title }} />
+          <TaskPanel
+            relationKey="dealId"
+            recordId={deal.id}
+            idPrefix="deal"
+            relation={{ deal: deal.title }}
+          />
           <DealActivity dealId={deal.id} />
         </div>
         <div className="flex min-w-0 flex-col gap-6">
@@ -222,7 +244,9 @@ function DealBody({ deal }: { deal: DealWithRelations }) {
                 <dt className="text-fg-muted">{t('common.stage')}</dt>
                 <dd dir="auto">{deal.stage.name}</dd>
                 <dt className="text-fg-muted">{t('deals.probability')}</dt>
-                <dd className="tabular">{t('deals.probabilityValue', { value: deal.stage.probability })}</dd>
+                <dd className="tabular">
+                  {t('deals.probabilityValue', { value: deal.stage.probability })}
+                </dd>
                 <dt className="text-fg-muted">{t('contacts.owner')}</dt>
                 <dd>
                   <UserChip user={deal.owner} emptyLabel={t('contacts.noOwner')} />
@@ -230,7 +254,11 @@ function DealBody({ deal }: { deal: DealWithRelations }) {
                 <dt className="text-fg-muted">{t('common.company')}</dt>
                 <dd>
                   {deal.company ? (
-                    <Link href={`/companies/${deal.company.id}`} dir="auto" className="hover:underline">
+                    <Link
+                      href={`/companies/${deal.company.id}`}
+                      dir="auto"
+                      className="hover:underline"
+                    >
                       {deal.company.name}
                     </Link>
                   ) : (
@@ -240,7 +268,11 @@ function DealBody({ deal }: { deal: DealWithRelations }) {
                 <dt className="text-fg-muted">{t('common.contact')}</dt>
                 <dd>
                   {deal.contact ? (
-                    <Link href={`/contacts/${deal.contact.id}`} dir="auto" className="hover:underline">
+                    <Link
+                      href={`/contacts/${deal.contact.id}`}
+                      dir="auto"
+                      className="hover:underline"
+                    >
                       {contactName(deal.contact)}
                     </Link>
                   ) : (
@@ -257,7 +289,15 @@ function DealBody({ deal }: { deal: DealWithRelations }) {
                 ) : null}
                 <dt className="text-fg-muted">{t('common.tags')}</dt>
                 <dd className="flex flex-wrap gap-1">
-                  {deal.tags.length > 0 ? deal.tags.map((tag) => <Badge key={tag} variant="outline">{tag}</Badge>) : <span className="text-fg-subtle">—</span>}
+                  {deal.tags.length > 0 ? (
+                    deal.tags.map((tag) => (
+                      <Badge key={tag} variant="outline">
+                        {tag}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-fg-subtle">—</span>
+                  )}
                 </dd>
                 <dt className="text-fg-muted">{t('deals.inStageSince')}</dt>
                 <dd className="tabular">{fmt.relative(new Date(deal.stageEnteredAt))}</dd>

@@ -145,7 +145,11 @@ export class MembersService {
       where: { id: member.roleId },
       select: { permissions: true },
     });
-    PrivilegeRules.assertNoEscalation(tenant.permissions, role?.permissions ?? [], 'manage a member holding');
+    PrivilegeRules.assertNoEscalation(
+      tenant.permissions,
+      role?.permissions ?? [],
+      'manage a member holding',
+    );
   }
 
   private async ruleContext(

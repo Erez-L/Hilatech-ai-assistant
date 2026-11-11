@@ -5,6 +5,7 @@ import {
   sortOrderSchema,
   timestampsSchema,
   userSummarySchema,
+  partialUpdate,
 } from './common';
 
 // ---------------------------------------------------------------------------
@@ -64,9 +65,9 @@ export const createContactSchema = z.object({
   companyId: idSchema.optional(),
 });
 export type CreateContactRequest = z.infer<typeof createContactSchema>;
-export const updateContactSchema = createContactSchema
-  .partial()
-  .extend({ companyId: idSchema.nullable().optional() });
+export const updateContactSchema = partialUpdate(createContactSchema).extend({
+  companyId: idSchema.nullable().optional(),
+});
 export type UpdateContactRequest = z.infer<typeof updateContactSchema>;
 
 export const listContactsQuerySchema = paginationQuerySchema.extend({
@@ -171,7 +172,7 @@ export const createLeadSchema = z.object({
   expectedCloseDate: z.string().datetime().optional(),
 });
 export type CreateLeadRequest = z.infer<typeof createLeadSchema>;
-export const updateLeadSchema = createLeadSchema.partial().extend({
+export const updateLeadSchema = partialUpdate(createLeadSchema).extend({
   lostReason: z.string().trim().max(500).optional(),
 });
 export type UpdateLeadRequest = z.infer<typeof updateLeadSchema>;

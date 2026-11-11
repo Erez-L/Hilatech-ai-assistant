@@ -12,7 +12,9 @@ describe('notification preferences', () => {
     const next = setChannelForAll({}, 'email', false);
     expect(typeof next.email).toBe('object');
     expect(notificationPreferencesSchema.strict().safeParse(next).success).toBe(true);
-    expect(notificationPreferencesSchema.safeParse({ email: true, inApp: true }).success).toBe(false);
+    expect(notificationPreferencesSchema.safeParse({ email: true, inApp: true }).success).toBe(
+      false,
+    );
   });
 
   it('switches every type of one channel and leaves the other channel alone', () => {
@@ -28,7 +30,9 @@ describe('notification preferences', () => {
 
   it('treats missing types as enabled', () => {
     expect(isNotificationEnabled(undefined, 'email', 'task_assigned')).toBe(true);
-    expect(isNotificationEnabled({ email: { task_assigned: false } }, 'email', 'task_assigned')).toBe(false);
+    expect(
+      isNotificationEnabled({ email: { task_assigned: false } }, 'email', 'task_assigned'),
+    ).toBe(false);
     expect(isChannelFullyEnabled({ email: { task_assigned: false } }, 'email')).toBe(false);
     expect(isChannelFullyEnabled({}, 'inApp')).toBe(true);
   });
@@ -36,12 +40,18 @@ describe('notification preferences', () => {
   it('the web preferences mirror matches the API contract', () => {
     expect(userPreferencesSchema.safeParse(DEFAULT_PREFERENCES).success).toBe(true);
     expect(
-      userPreferencesSchema.safeParse({ theme: 'dark', locale: 'he', notifications: { email: { lead_assigned: false } } })
-        .success,
+      userPreferencesSchema.safeParse({
+        theme: 'dark',
+        locale: 'he',
+        notifications: { email: { lead_assigned: false } },
+      }).success,
     ).toBe(true);
     expect(
-      userPreferencesSchema.safeParse({ theme: 'dark', locale: 'he', notifications: { email: true, inApp: true } })
-        .success,
+      userPreferencesSchema.safeParse({
+        theme: 'dark',
+        locale: 'he',
+        notifications: { email: true, inApp: true },
+      }).success,
     ).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { AiModelInfo } from '@hilatech/contracts';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { zodToJsonSchema } from '../json-schema';
 
 import { AiProviderError, codeFromStatus, isAbortError } from '../errors';
 import { listModels } from './models';
@@ -181,10 +181,7 @@ export class AnthropicProvider implements AiProvider {
   /** Structured output via a forced tool call whose input schema is the requested schema. */
   async generateStructured<T>(request: StructuredRequest<T>): Promise<StructuredResult<T>> {
     const name = request.schemaName ?? 'structured_output';
-    const jsonSchema = zodToJsonSchema(request.schema, { $refStrategy: 'none' }) as Record<
-      string,
-      unknown
-    >;
+    const jsonSchema = zodToJsonSchema(request.schema);
     const attempt = async (messages: AiMessage[]): Promise<StructuredResult<T>> => {
       const result = await this.generate({
         ...request,

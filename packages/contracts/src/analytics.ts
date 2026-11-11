@@ -27,8 +27,8 @@ export const dashboardSummarySchema = z.object({
     newInPeriod: z.number().int(),
     wonInPeriod: z.number().int(),
     lostInPeriod: z.number().int(),
-    byStatus: z.record(LeadStatus, z.number().int()),
-    bySource: z.record(LeadSource, z.number().int()),
+    byStatus: z.partialRecord(LeadStatus, z.number().int()),
+    bySource: z.partialRecord(LeadSource, z.number().int()),
     /** Sum of `value` over open leads (not won/lost), in the organization's reporting currency. */
     pipelineValue: z.number(),
     wonValueInPeriod: z.number(),
@@ -46,7 +46,9 @@ export const dashboardSummarySchema = z.object({
       weightedPipelineValue: z.number(),
       wonValueInPeriod: z.number(),
       currency: z.string().length(3),
-      otherCurrencies: z.array(z.object({ currency: z.string().length(3), pipelineValue: z.number() })),
+      otherCurrencies: z.array(
+        z.object({ currency: z.string().length(3), pipelineValue: z.number() }),
+      ),
     })
     .optional(),
   tasks: z
@@ -58,8 +60,8 @@ export const dashboardSummarySchema = z.object({
     pending: z.number().int(),
     unassigned: z.number().int(),
     newInPeriod: z.number().int(),
-    byStatus: z.record(ConversationStatus, z.number().int()),
-    byChannel: z.record(ConversationChannel, z.number().int()),
+    byStatus: z.partialRecord(ConversationStatus, z.number().int()),
+    byChannel: z.partialRecord(ConversationChannel, z.number().int()),
   }),
   /** Daily series over the period for sparklines/charts: ISO date (YYYY-MM-DD) → count. */
   series: z.object({

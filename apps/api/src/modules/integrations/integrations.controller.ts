@@ -56,7 +56,9 @@ export class IntegrationsController {
 
   @Get('catalog')
   @RequirePermissions(Permission.INTEGRATIONS_READ)
-  @ApiOperation({ summary: 'Integration kinds, required secrets and whether live support exists in this release' })
+  @ApiOperation({
+    summary: 'Integration kinds, required secrets and whether live support exists in this release',
+  })
   @ApiZodResponse(z.array(integrationCatalogueEntrySchema))
   @ApiErrors(...COMMON_TENANT_ERRORS)
   catalogue() {
@@ -65,7 +67,10 @@ export class IntegrationsController {
 
   @Get('status')
   @RequirePermissions(Permission.INTEGRATIONS_READ)
-  @ApiOperation({ summary: 'Per-kind summary: connected/total counts and availability (available | not_configured)' })
+  @ApiOperation({
+    summary:
+      'Per-kind summary: connected/total counts and availability (available | not_configured)',
+  })
   @ApiZodResponse(z.array(statusEntrySchema))
   @ApiErrors(...COMMON_TENANT_ERRORS)
   status(@Tenant() tenant: TenantContext) {
@@ -85,7 +90,8 @@ export class IntegrationsController {
   @RequirePermissions(Permission.INTEGRATIONS_MANAGE)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: 'Connect an integration. Credentials are encrypted at rest and write-only. rest/n8n are tested immediately.',
+    summary:
+      'Connect an integration. Credentials are encrypted at rest and write-only. rest/n8n are tested immediately.',
   })
   @ApiZodBody(createIntegrationSchema)
   @ApiZodResponse(integrationSchema, { status: HttpStatus.CREATED })
@@ -110,7 +116,10 @@ export class IntegrationsController {
 
   @Patch(':id')
   @RequirePermissions(Permission.INTEGRATIONS_MANAGE)
-  @ApiOperation({ summary: 'Update name/config/secrets (secrets merge; "" deletes a key). Resets status until re-tested' })
+  @ApiOperation({
+    summary:
+      'Update name/config/secrets (secrets merge; "" deletes a key). Resets status until re-tested',
+  })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiZodBody(updateIntegrationSchema)
   @ApiZodResponse(integrationSchema)
@@ -127,7 +136,10 @@ export class IntegrationsController {
   @Post(':id/test')
   @RequirePermissions(Permission.INTEGRATIONS_MANAGE)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Run the connectivity test. Configuration-only kinds always report ok=false (unconfigured)' })
+  @ApiOperation({
+    summary:
+      'Run the connectivity test. Configuration-only kinds always report ok=false (unconfigured)',
+  })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiZodResponse(integrationTestResultSchema)
   @ApiErrors(...COMMON_TENANT_ERRORS, NOT_FOUND)

@@ -34,7 +34,13 @@ export function LostReasonDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
       <DialogContent size="md">
-        <LostReasonForm dealTitle={dealTitle} stageName={stageName} pending={pending} onCancel={onCancel} onConfirm={onConfirm} />
+        <LostReasonForm
+          dealTitle={dealTitle}
+          stageName={stageName}
+          pending={pending}
+          onCancel={onCancel}
+          onConfirm={onConfirm}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -58,36 +64,42 @@ function LostReasonForm({
   const [reason, setReason] = React.useState('');
   return (
     <form
-          noValidate
-          onSubmit={(e) => {
-            e.preventDefault();
-            onConfirm(reason.trim() || undefined);
-          }}
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        onConfirm(reason.trim() || undefined);
+      }}
+    >
+      <DialogHeader>
+        <DialogTitle>{t('deals.markAsLost')}</DialogTitle>
+        <DialogDescription>
+          {t('deals.markAsLostDescription', { title: dealTitle, stage: stageName })}
+        </DialogDescription>
+      </DialogHeader>
+      <DialogBody className="pb-2">
+        <FormField
+          id="deal-lost-reason"
+          label={t('deals.lostReason')}
+          description={t('deals.lostReasonHint')}
         >
-          <DialogHeader>
-            <DialogTitle>{t('deals.markAsLost')}</DialogTitle>
-            <DialogDescription>{t('deals.markAsLostDescription', { title: dealTitle, stage: stageName })}</DialogDescription>
-          </DialogHeader>
-          <DialogBody className="pb-2">
-            <FormField id="deal-lost-reason" label={t('deals.lostReason')} description={t('deals.lostReasonHint')}>
-              <Textarea
-                autoFocus
-                rows={3}
-                dir="auto"
-                maxLength={500}
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-              />
-            </FormField>
-          </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="secondary" onClick={onCancel} disabled={pending}>
-              {t('common.cancel')}
-            </Button>
-            <Button type="submit" variant="danger" loading={pending}>
-              {t('deals.markAsLost')}
-            </Button>
-          </DialogFooter>
+          <Textarea
+            autoFocus
+            rows={3}
+            dir="auto"
+            maxLength={500}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+        </FormField>
+      </DialogBody>
+      <DialogFooter>
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={pending}>
+          {t('common.cancel')}
+        </Button>
+        <Button type="submit" variant="danger" loading={pending}>
+          {t('deals.markAsLost')}
+        </Button>
+      </DialogFooter>
     </form>
   );
 }

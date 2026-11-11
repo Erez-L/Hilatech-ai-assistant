@@ -1,5 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { QueueName, WEBHOOK_EVENT_HEADER, WEBHOOK_SIGNATURE_HEADER, WEBHOOK_TIMESTAMP_HEADER } from '@hilatech/contracts';
+import {
+  QueueName,
+  WEBHOOK_EVENT_HEADER,
+  WEBHOOK_SIGNATURE_HEADER,
+  WEBHOOK_TIMESTAMP_HEADER,
+} from '@hilatech/contracts';
 import {
   SecretBox,
   SsrfError,
@@ -44,7 +49,9 @@ export class WebhookDeliveryProcessor implements JobProcessor<typeof QueueName.W
     @Inject(WORKERS_ENV) private readonly env: WorkersEnv,
     @InjectPinoLogger(WebhookDeliveryProcessor.name) private readonly logger: PinoLogger,
   ) {
-    this.box = env.CREDENTIALS_ENCRYPTION_KEY ? new SecretBox(env.CREDENTIALS_ENCRYPTION_KEY) : null;
+    this.box = env.CREDENTIALS_ENCRYPTION_KEY
+      ? new SecretBox(env.CREDENTIALS_ENCRYPTION_KEY)
+      : null;
   }
 
   async process(job: Job<Payload>, context: JobContext): Promise<JobOutcome> {
@@ -59,7 +66,12 @@ export class WebhookDeliveryProcessor implements JobProcessor<typeof QueueName.W
       return { status: 'skipped', reason: 'not_found', deliveryId };
     }
     if (delivery.status !== 'pending') {
-      return { status: 'skipped', reason: 'already_finished', deliveryId, deliveryStatus: delivery.status };
+      return {
+        status: 'skipped',
+        reason: 'already_finished',
+        deliveryId,
+        deliveryStatus: delivery.status,
+      };
     }
     // A retry job that fires before the stored schedule (duplicate/stale) must not double-send.
     if (delivery.nextAttemptAt && delivery.nextAttemptAt.getTime() - Date.now() > 2_000) {
@@ -72,7 +84,12 @@ export class WebhookDeliveryProcessor implements JobProcessor<typeof QueueName.W
 
     if (!delivery.webhook.isEnabled) {
       await this.fail(deliveryId, delivery.attempts, 'Webhook subscription is disabled');
-      return { status: 'completed', deliveryId, deliveryStatus: 'failed', reason: 'webhook_disabled' };
+      return {
+        status: 'completed',
+        deliveryId,
+        deliveryStatus: 'failed',
+        reason: 'webhook_disabled',
+      };
     }
 
     let secret: string;
@@ -80,8 +97,17 @@ export class WebhookDeliveryProcessor implements JobProcessor<typeof QueueName.W
       if (!this.box) throw new Error('CREDENTIALS_ENCRYPTION_KEY is not configured');
       secret = this.box.decrypt(delivery.webhook.encryptedSecret, organizationId);
     } catch (err) {
-      await this.fail(deliveryId, delivery.attempts, `Signing secret unavailable: ${(err as Error).message}`);
-      return { status: 'completed', deliveryId, deliveryStatus: 'failed', reason: 'secret_unavailable' };
+      await this.fail(
+        deliveryId,
+        delivery.attempts,
+        `Signing secret unavailable: ${(err as Error).message}`,
+      );
+      return {
+        status: 'completed',
+        deliveryId,
+        deliveryStatus: 'failed',
+        reason: 'secret_unavailable',
+      };
     }
 
     const body = JSON.stringify({
@@ -139,7 +165,13 @@ export class WebhookDeliveryProcessor implements JobProcessor<typeof QueueName.W
           deliveredAt: new Date(),
         },
       });
-      return { status: 'completed', deliveryId, deliveryStatus: 'delivered', attempts: attemptNumber, responseStatus };
+      return {
+        status: 'completed',
+        deliveryId,
+        deliveryStatus: 'delivered',
+        attempts: attemptNumber,
+        responseStatus,
+      };
     }
 
     if (permanent || attemptNumber >= WEBHOOK_MAX_ATTEMPTS) {
@@ -154,8 +186,17 @@ export class WebhookDeliveryProcessor implements JobProcessor<typeof QueueName.W
           nextAttemptAt: null,
         },
       });
-      this.logger.warn({ ...context, deliveryId, attempts: attemptNumber, error }, 'Webhook delivery failed permanently');
-      return { status: 'completed', deliveryId, deliveryStatus: 'failed', attempts: attemptNumber, error };
+      this.logger.warn(
+        { ...context, deliveryId, attempts: attemptNumber, error },
+        'Webhook delivery failed permanently',
+      );
+      return {
+        status: 'completed',
+        deliveryId,
+        deliveryStatus: 'failed',
+        attempts: attemptNumber,
+        error,
+      };
     }
 
     const delayMs = webhookBackoffMs(attemptNumber);
@@ -180,8 +221,18 @@ export class WebhookDeliveryProcessor implements JobProcessor<typeof QueueName.W
       },
       { delay: delayMs },
     );
-    this.logger.info({ ...context, deliveryId, attempts: attemptNumber, retryInMs: delayMs, error }, 'Webhook delivery will retry');
-    return { status: 'completed', deliveryId, deliveryStatus: 'pending', attempts: attemptNumber, retryInMs: delayMs, error };
+    this.logger.info(
+      { ...context, deliveryId, attempts: attemptNumber, retryInMs: delayMs, error },
+      'Webhook delivery will retry',
+    );
+    return {
+      status: 'completed',
+      deliveryId,
+      deliveryStatus: 'pending',
+      attempts: attemptNumber,
+      retryInMs: delayMs,
+      error,
+    };
   }
 
   private async fail(deliveryId: string, attempts: number, message: string): Promise<void> {

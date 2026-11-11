@@ -11,7 +11,8 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
   {
     key: 'notify-assignee-on-new-lead',
     name: 'Notify the assignee about a new lead',
-    description: 'When a lead is created with an assignee, send them an in-app notification with a link.',
+    description:
+      'When a lead is created with an assignee, send them an in-app notification with a link.',
     category: 'notifications',
     requires: [],
     trigger: { type: 'event', event: 'lead.created' },
@@ -76,7 +77,8 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
   {
     key: 'inbound-webhook-alert-admins',
     name: 'Alert admins from an inbound webhook',
-    description: 'Bind an inbound webhook endpoint to this workflow and notify all admins with the payload message.',
+    description:
+      'Bind an inbound webhook endpoint to this workflow and notify all admins with the payload message.',
     category: 'notifications',
     requires: ['inbound webhook endpoint'],
     trigger: { type: 'webhook' },
@@ -93,7 +95,8 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
   {
     key: 'weekday-agent-digest',
     name: 'Weekday morning agent digest',
-    description: 'Every weekday at 08:00 (organization time zone) run an agent and notify the owner with its answer.',
+    description:
+      'Every weekday at 08:00 (organization time zone) run an agent and notify the owner with its answer.',
     category: 'scheduling',
     requires: ['agentId', 'owner userId'],
     trigger: { type: 'schedule', cron: '0 8 * * 1-5' },
@@ -102,7 +105,7 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
         id: 'digest',
         type: 'agent_run',
         agentId: PLACEHOLDER_ID,
-        input: 'Summarise yesterday\'s new leads and open conversations.',
+        input: "Summarise yesterday's new leads and open conversations.",
         wait: true,
       },
       {
@@ -117,7 +120,8 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
   {
     key: 'agent-triage-customer-message',
     name: 'AI triage of customer messages',
-    description: 'When a customer message arrives, let an agent draft a reply suggestion and notify the assignee.',
+    description:
+      'When a customer message arrives, let an agent draft a reply suggestion and notify the assignee.',
     category: 'ai',
     requires: ['agentId'],
     trigger: { type: 'event', event: 'conversation.message_received' },

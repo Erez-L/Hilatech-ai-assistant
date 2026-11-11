@@ -45,29 +45,63 @@ describe('Security: tasks / deals / companies / data exchange cross-tenant isola
     orgB = (await createOrganization(ctx, userB, 'Org B')).id;
     const roles = (await as(ctx, userA, orgA).get('/api/v1/roles')).body.data as Role[];
     await ctx.prisma.client.organizationMember.create({
-      data: { organizationId: orgA, userId: memberA.user.id, roleId: roles.find((r) => r.key === 'member')!.id, status: 'active' },
+      data: {
+        organizationId: orgA,
+        userId: memberA.user.id,
+        roleId: roles.find((r) => r.key === 'member')!.id,
+        status: 'active',
+      },
     });
 
     const B = as(ctx, userB, orgB);
-    const contactId = (await B.post('/api/v1/contacts').send({ firstName: 'Secret', email: 'secret@orgb.test' })).body.data.id;
+    const contactId = (
+      await B.post('/api/v1/contacts').send({ firstName: 'Secret', email: 'secret@orgb.test' })
+    ).body.data.id;
     const leadId = (await B.post('/api/v1/leads').send({ title: 'B lead' })).body.data.id;
-    const companyId = (await B.post('/api/v1/companies').send({ name: 'B Secret Corp' })).body.data.id;
+    const companyId = (await B.post('/api/v1/companies').send({ name: 'B Secret Corp' })).body.data
+      .id;
     const pipeline = (await B.get('/api/v1/pipelines')).body.data[0] as Pipeline;
-    const dealId = (await B.post('/api/v1/deals').send({ title: 'B secret deal', value: 99999, contactId, companyId })).body.data.id;
-    const noteId = (await B.post(`/api/v1/deals/${dealId}/notes`).send({ body: 'B private note' })).body.data.id;
-    const taskId = (await B.post('/api/v1/tasks').send({ title: 'B secret task', dealId, leadId, contactId })).body.data.id;
+    const dealId = (
+      await B.post('/api/v1/deals').send({
+        title: 'B secret deal',
+        value: 99999,
+        contactId,
+        companyId,
+      })
+    ).body.data.id;
+    const noteId = (await B.post(`/api/v1/deals/${dealId}/notes`).send({ body: 'B private note' }))
+      .body.data.id;
+    const taskId = (
+      await B.post('/api/v1/tasks').send({ title: 'B secret task', dealId, leadId, contactId })
+    ).body.data.id;
     const imp = await B.post('/api/v1/imports')
       .field('entity', 'contacts')
-      .attach('file', Buffer.from('first,email\nB,b@orgb.test\n'), { filename: 'b.csv', contentType: 'text/csv' });
+      .attach('file', Buffer.from('first,email\nB,b@orgb.test\n'), {
+        filename: 'b.csv',
+        contentType: 'text/csv',
+      });
     expect(imp.status).toBe(201);
-    b = { taskId, companyId, contactId, leadId, dealId, noteId, pipeline, importId: imp.body.data.id };
+    b = {
+      taskId,
+      companyId,
+      contactId,
+      leadId,
+      dealId,
+      noteId,
+      pipeline,
+      importId: imp.body.data.id,
+    };
   });
 
   afterAll(async () => {
     await ctx.close();
   });
 
-  type Call = [method: 'get' | 'post' | 'patch' | 'put' | 'delete', path: string, body?: Record<string, unknown>];
+  type Call = [
+    method: 'get' | 'post' | 'patch' | 'put' | 'delete',
+    path: string,
+    body?: Record<string, unknown>,
+  ];
   const endpoints = (): Call[] => {
     const st = b.pipeline.stages;
     return [
@@ -92,7 +126,11 @@ describe('Security: tasks / deals / companies / data exchange cross-tenant isola
       ['get', `/api/v1/pipelines/${b.pipeline.id}`],
       ['patch', `/api/v1/pipelines/${b.pipeline.id}`, { name: 'hacked' }],
       ['delete', `/api/v1/pipelines/${b.pipeline.id}`],
-      ['post', `/api/v1/pipelines/${b.pipeline.id}/stages`, { name: 's', kind: 'open', probability: 5 }],
+      [
+        'post',
+        `/api/v1/pipelines/${b.pipeline.id}/stages`,
+        { name: 's', kind: 'open', probability: 5 },
+      ],
       ['patch', `/api/v1/pipelines/${b.pipeline.id}/stages/${st[0]!.id}`, { name: 'hacked' }],
       ['delete', `/api/v1/pipelines/${b.pipeline.id}/stages/${st[0]!.id}`],
       ['put', `/api/v1/pipelines/${b.pipeline.id}/stages/order`, { stageIds: st.map((s) => s.id) }],
@@ -131,7 +169,10 @@ describe('Security: tasks / deals / companies / data exchange cross-tenant isola
   it('a forged x-organization-id gets 403 NOT_A_MEMBER on EVERY endpoint', async () => {
     for (const call of endpoints()) {
       const res = await send(userA, orgB, call);
-      expect({ call: `${call[0]} ${call[1]}`, status: res.status }).toEqual({ call: `${call[0]} ${call[1]}`, status: 403 });
+      expect({ call: `${call[0]} ${call[1]}`, status: res.status }).toEqual({
+        call: `${call[0]} ${call[1]}`,
+        status: 403,
+      });
       if (res.body?.error) expect(res.body.error.code).toBe('NOT_A_MEMBER');
     }
   });
@@ -148,17 +189,28 @@ describe('Security: tasks / deals / companies / data exchange cross-tenant isola
     expect(byId.length).toBeGreaterThan(30);
     for (const call of byId) {
       const res = await send(userA, orgA, call);
-      expect({ call: `${call[0]} ${call[1]}`, status: res.status }).toEqual({ call: `${call[0]} ${call[1]}`, status: 404 });
+      expect({ call: `${call[0]} ${call[1]}`, status: res.status }).toEqual({
+        call: `${call[0]} ${call[1]}`,
+        status: 404,
+      });
     }
     const db = ctx.prisma.client;
-    expect((await db.task.findUniqueOrThrow({ where: { id: b.taskId } })).title).toBe('B secret task');
-    expect((await db.company.findUniqueOrThrow({ where: { id: b.companyId } })).name).toBe('B Secret Corp');
+    expect((await db.task.findUniqueOrThrow({ where: { id: b.taskId } })).title).toBe(
+      'B secret task',
+    );
+    expect((await db.company.findUniqueOrThrow({ where: { id: b.companyId } })).name).toBe(
+      'B Secret Corp',
+    );
     const deal = await db.deal.findUniqueOrThrow({ where: { id: b.dealId } });
     expect(deal).toMatchObject({ title: 'B secret deal', stageId: b.pipeline.stages[0]!.id });
-    expect((await db.importJob.findUniqueOrThrow({ where: { id: b.importId } })).status).toBe('uploaded');
+    expect((await db.importJob.findUniqueOrThrow({ where: { id: b.importId } })).status).toBe(
+      'uploaded',
+    );
     expect(await db.dealNote.count({ where: { id: b.noteId } })).toBe(1);
     expect(await db.pipelineStage.count({ where: { pipelineId: b.pipeline.id } })).toBe(6);
-    expect((await db.contact.findUniqueOrThrow({ where: { id: b.contactId } })).companyId).toBeNull();
+    expect(
+      (await db.contact.findUniqueOrThrow({ where: { id: b.contactId } })).companyId,
+    ).toBeNull();
   });
 
   it('collections never contain org B data', async () => {
@@ -166,11 +218,27 @@ describe('Security: tasks / deals / companies / data exchange cross-tenant isola
     await A.post('/api/v1/tasks').send({ title: 'A task' }).expect(201);
     await A.post('/api/v1/deals').send({ title: 'A deal' }).expect(201);
     await A.post('/api/v1/companies').send({ name: 'A Corp' }).expect(201);
-    for (const path of ['/api/v1/tasks', '/api/v1/deals', '/api/v1/companies', '/api/v1/pipelines', '/api/v1/imports', '/api/v1/deals/board']) {
+    for (const path of [
+      '/api/v1/tasks',
+      '/api/v1/deals',
+      '/api/v1/companies',
+      '/api/v1/pipelines',
+      '/api/v1/imports',
+      '/api/v1/deals/board',
+    ]) {
       const res = await A.get(path);
       expect(res.status).toBe(200);
       const text = JSON.stringify(res.body);
-      for (const secret of ['B secret', 'B Secret', 'secret@orgb', b.dealId, b.taskId, b.companyId, b.pipeline.id, b.importId]) {
+      for (const secret of [
+        'B secret',
+        'B Secret',
+        'secret@orgb',
+        b.dealId,
+        b.taskId,
+        b.companyId,
+        b.pipeline.id,
+        b.importId,
+      ]) {
         expect(text).not.toContain(secret);
       }
     }
@@ -184,43 +252,80 @@ describe('Security: tasks / deals / companies / data exchange cross-tenant isola
   it('explicit foreign pipeline/stage ids in query or body are 404 / 400', async () => {
     const A = as(ctx, userA, orgA);
     expect((await A.get(`/api/v1/deals/board?pipelineId=${b.pipeline.id}`)).status).toBe(404);
-    expect((await A.get(`/api/v1/deals/reports/conversion?pipelineId=${b.pipeline.id}`)).status).toBe(404);
-    expect((await A.post('/api/v1/deals').send({ title: 'x', pipelineId: b.pipeline.id })).status).toBe(400);
-    expect((await A.post('/api/v1/deals').send({ title: 'x', stageId: b.pipeline.stages[0]!.id })).status).toBe(400);
-    expect((await A.post('/api/v1/deals').send({ title: 'x', contactId: b.contactId })).status).toBe(400);
-    expect((await A.post('/api/v1/deals').send({ title: 'x', companyId: b.companyId })).status).toBe(400);
-    expect((await A.post('/api/v1/deals').send({ title: 'x', ownerId: userB.user.id })).status).toBe(400);
+    expect(
+      (await A.get(`/api/v1/deals/reports/conversion?pipelineId=${b.pipeline.id}`)).status,
+    ).toBe(404);
+    expect(
+      (await A.post('/api/v1/deals').send({ title: 'x', pipelineId: b.pipeline.id })).status,
+    ).toBe(400);
+    expect(
+      (await A.post('/api/v1/deals').send({ title: 'x', stageId: b.pipeline.stages[0]!.id }))
+        .status,
+    ).toBe(400);
+    expect(
+      (await A.post('/api/v1/deals').send({ title: 'x', contactId: b.contactId })).status,
+    ).toBe(400);
+    expect(
+      (await A.post('/api/v1/deals').send({ title: 'x', companyId: b.companyId })).status,
+    ).toBe(400);
+    expect(
+      (await A.post('/api/v1/deals').send({ title: 'x', ownerId: userB.user.id })).status,
+    ).toBe(400);
     expect((await A.post('/api/v1/tasks').send({ title: 'x', dealId: b.dealId })).status).toBe(400);
     expect((await A.post('/api/v1/tasks').send({ title: 'x', leadId: b.leadId })).status).toBe(400);
-    expect((await A.post('/api/v1/tasks').send({ title: 'x', contactId: b.contactId })).status).toBe(400);
-    expect((await A.post('/api/v1/tasks').send({ title: 'x', assigneeId: userB.user.id })).status).toBe(400);
-    expect((await A.post('/api/v1/contacts').send({ firstName: 'x', companyId: b.companyId })).status).toBe(400);
+    expect(
+      (await A.post('/api/v1/tasks').send({ title: 'x', contactId: b.contactId })).status,
+    ).toBe(400);
+    expect(
+      (await A.post('/api/v1/tasks').send({ title: 'x', assigneeId: userB.user.id })).status,
+    ).toBe(400);
+    expect(
+      (await A.post('/api/v1/contacts').send({ firstName: 'x', companyId: b.companyId })).status,
+    ).toBe(400);
     expect((await A.get(`/api/v1/tasks?dealId=${b.dealId}`)).body.data).toEqual([]);
     expect((await A.get(`/api/v1/deals?companyId=${b.companyId}`)).body.data).toEqual([]);
 
     // a deal of A moved to a stage of B's pipeline, a stage of A deleted into B's stage
     const own = (await A.post('/api/v1/deals').send({ title: 'own' })).body.data;
-    expect((await A.post(`/api/v1/deals/${own.id}/move`).send({ stageId: b.pipeline.stages[2]!.id })).status).toBe(400);
+    expect(
+      (await A.post(`/api/v1/deals/${own.id}/move`).send({ stageId: b.pipeline.stages[2]!.id }))
+        .status,
+    ).toBe(400);
     const pipelineA = (await A.get('/api/v1/pipelines')).body.data[0] as Pipeline;
-    const del = await A.delete(`/api/v1/pipelines/${pipelineA.id}/stages/${pipelineA.stages[0]!.id}?moveDealsToStageId=${b.pipeline.stages[1]!.id}`);
+    const del = await A.delete(
+      `/api/v1/pipelines/${pipelineA.id}/stages/${pipelineA.stages[0]!.id}?moveDealsToStageId=${b.pipeline.stages[1]!.id}`,
+    );
     expect(del.status).toBe(409); // a foreign stage is not a valid destination; nothing is moved
-    expect((await A.get(`/api/v1/deals/${own.id}`)).body.data.stageId).toBe(pipelineA.stages[0]!.id);
-    expect((await A.post(`/api/v1/tasks/bulk-assign`).send({ taskIds: [b.taskId, UNKNOWN], assigneeId: null })).body.data).toMatchObject({
+    expect((await A.get(`/api/v1/deals/${own.id}`)).body.data.stageId).toBe(
+      pipelineA.stages[0]!.id,
+    );
+    expect(
+      (
+        await A.post(`/api/v1/tasks/bulk-assign`).send({
+          taskIds: [b.taskId, UNKNOWN],
+          assigneeId: null,
+        })
+      ).body.data,
+    ).toMatchObject({
       updated: 0,
       notFound: expect.arrayContaining([b.taskId, UNKNOWN]),
     });
-    const mapped = await A.post(`/api/v1/companies/${(await A.get('/api/v1/companies')).body.data[0].id}/contacts`).send({ contactIds: [b.contactId] });
+    const mapped = await A.post(
+      `/api/v1/companies/${(await A.get('/api/v1/companies')).body.data[0].id}/contacts`,
+    ).send({ contactIds: [b.contactId] });
     expect(mapped.body.data).toMatchObject({ associated: 0, notFound: [b.contactId] });
   });
 
   it('exports contain only the caller organization rows', async () => {
     const A = as(ctx, userA, orgA);
     for (const e of ['contacts', 'leads', 'companies', 'deals', 'tasks']) {
-      const res = await A.get(`/api/v1/export/${e}`).buffer(true).parse((r, cb) => {
-        const chunks: Buffer[] = [];
-        r.on('data', (c: Buffer) => chunks.push(c));
-        r.on('end', () => cb(null, Buffer.concat(chunks).toString('utf8')));
-      });
+      const res = await A.get(`/api/v1/export/${e}`)
+        .buffer(true)
+        .parse((r, cb) => {
+          const chunks: Buffer[] = [];
+          r.on('data', (c: Buffer) => chunks.push(c));
+          r.on('end', () => cb(null, Buffer.concat(chunks).toString('utf8')));
+        });
       expect(res.status).toBe(200);
       const text = res.body as unknown as string;
       expect(text).not.toMatch(/B secret|B Secret|secret@orgb|B lead/);
@@ -232,7 +337,11 @@ describe('Security: tasks / deals / companies / data exchange cross-tenant isola
     const deal = (await M.post('/api/v1/deals').send({ title: 'member deal' })).body.data;
     const forbidden: Call[] = [
       ['post', '/api/v1/pipelines', { name: 'nope' }],
-      ['patch', `/api/v1/pipelines/${(await M.get('/api/v1/pipelines')).body.data[0].id}`, { name: 'nope' }],
+      [
+        'patch',
+        `/api/v1/pipelines/${(await M.get('/api/v1/pipelines')).body.data[0].id}`,
+        { name: 'nope' },
+      ],
       ['get', '/api/v1/imports'],
       ['get', '/api/v1/export/contacts'],
       ['get', '/api/v1/export/deals'],
@@ -241,11 +350,20 @@ describe('Security: tasks / deals / companies / data exchange cross-tenant isola
     ];
     for (const call of forbidden) {
       const res = await send(memberA, orgA, call);
-      expect({ call: `${call[0]} ${call[1]}`, status: res.status }).toEqual({ call: `${call[0]} ${call[1]}`, status: 403 });
+      expect({ call: `${call[0]} ${call[1]}`, status: res.status }).toEqual({
+        call: `${call[0]} ${call[1]}`,
+        status: 403,
+      });
     }
     expect((await M.post('/api/v1/tasks').send({ title: 'ok' })).status).toBe(201);
     expect((await M.get('/api/v1/pipelines')).status).toBe(200);
-    expect((await M.post(`/api/v1/deals/${deal.id}/move`).send({ stageId: (await M.get('/api/v1/pipelines')).body.data[0].stages[1].id })).status).toBe(200);
+    expect(
+      (
+        await M.post(`/api/v1/deals/${deal.id}/move`).send({
+          stageId: (await M.get('/api/v1/pipelines')).body.data[0].stages[1].id,
+        })
+      ).status,
+    ).toBe(200);
   });
 
   it('unauthenticated requests are rejected', async () => {

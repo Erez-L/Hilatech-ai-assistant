@@ -53,7 +53,12 @@ describe('Security: automation cross-tenant isolation', () => {
     slugB = b.slug;
     const rolesA = (await as(ctx, userA, orgA).get('/api/v1/roles')).body.data as Role[];
     await ctx.prisma.client.organizationMember.create({
-      data: { organizationId: orgA, userId: memberA.user.id, roleId: rolesA.find((r) => r.key === 'member')!.id, status: 'active' },
+      data: {
+        organizationId: orgA,
+        userId: memberA.user.id,
+        roleId: rolesA.find((r) => r.key === 'member')!.id,
+        status: 'active',
+      },
     });
 
     // ---- Org B resources
@@ -75,7 +80,8 @@ describe('Security: automation cross-tenant isolation', () => {
           steps: [{ id: 'v', type: 'set_variable', name: 'x', value: '1' }],
         })
     ).body.data.id;
-    executionB = (await as(ctx, userB, orgB).post(`/api/v1/workflows/${workflowB}/run`).send({})).body.data.id;
+    executionB = (await as(ctx, userB, orgB).post(`/api/v1/workflows/${workflowB}/run`).send({}))
+      .body.data.id;
     const wh = await as(ctx, userB, orgB)
       .post('/api/v1/webhooks')
       .send({ url: 'https://example.com/b-hook', events: ['lead.created'] });
@@ -117,7 +123,13 @@ describe('Security: automation cross-tenant isolation', () => {
     await ctx.close();
   });
 
-  const SECRET_MARKERS = () => ['B-API-KEY-VALUE', endpointBSecret, 'encryptedSecret', 'encryptedSecrets', 'secretHash'];
+  const SECRET_MARKERS = () => [
+    'B-API-KEY-VALUE',
+    endpointBSecret,
+    'encryptedSecret',
+    'encryptedSecrets',
+    'secretHash',
+  ];
 
   describe('a forged x-organization-id header is rejected (403 NOT_A_MEMBER) on every automation route', () => {
     const routes: Array<[string, (u: string) => string]> = [
@@ -130,7 +142,9 @@ describe('Security: automation cross-tenant isolation', () => {
       ['get', () => '/api/v1/workflows/templates'],
     ];
     it.each(routes)('%s %#', async (method, url) => {
-      const res = await (as(ctx, userA, orgB) as unknown as Record<string, (u: string) => request.Test>)[method]!(url(''));
+      const res = await (
+        as(ctx, userA, orgB) as unknown as Record<string, (u: string) => request.Test>
+      )[method]!(url(''));
       expect(res.status).toBe(403);
       expect(res.body.error.code).toBe(ErrorCode.NOT_A_MEMBER);
     });
@@ -159,7 +173,9 @@ describe('Security: automation cross-tenant isolation', () => {
       }
       const row = await ctx.prisma.client.workflow.findUniqueOrThrow({ where: { id: workflowB } });
       expect(row.name).toBe('B secret flow');
-      expect(await ctx.prisma.client.workflowExecution.count({ where: { workflowId: workflowB } })).toBe(1);
+      expect(
+        await ctx.prisma.client.workflowExecution.count({ where: { workflowId: workflowB } }),
+      ).toBe(1);
     });
 
     it('executions (detail 404, list never contains foreign rows even when filtering by B workflow id)', async () => {
@@ -188,7 +204,9 @@ describe('Security: automation cross-tenant isolation', () => {
       }
       const row = await ctx.prisma.client.webhook.findUniqueOrThrow({ where: { id: webhookB } });
       expect(row.url).toBe('https://example.com/b-hook');
-      expect(await ctx.prisma.client.webhookDelivery.count({ where: { webhookId: webhookB } })).toBe(1);
+      expect(
+        await ctx.prisma.client.webhookDelivery.count({ where: { webhookId: webhookB } }),
+      ).toBe(1);
       expect(deliveryB).toBeTruthy();
       const list = await A.get('/api/v1/webhooks');
       expect(list.body.data).toEqual([]);
@@ -205,13 +223,23 @@ describe('Security: automation cross-tenant isolation', () => {
         expect(res.status).toBe(404);
       }
       // Binding A's endpoint to B's workflow must fail (workflow not found in org A).
-      const bind = await A.patch(`/api/v1/webhook-endpoints/${endpointA}`).send({ workflowId: webhookWorkflowB });
+      const bind = await A.patch(`/api/v1/webhook-endpoints/${endpointA}`).send({
+        workflowId: webhookWorkflowB,
+      });
       expect(bind.status).toBe(400);
-      const create = await A.post('/api/v1/webhook-endpoints').send({ name: 'steal', slug: 'steal', workflowId: webhookWorkflowB });
+      const create = await A.post('/api/v1/webhook-endpoints').send({
+        name: 'steal',
+        slug: 'steal',
+        workflowId: webhookWorkflowB,
+      });
       expect(create.status).toBe(400);
-      const ep = await ctx.prisma.client.webhookEndpoint.findUniqueOrThrow({ where: { id: endpointA } });
+      const ep = await ctx.prisma.client.webhookEndpoint.findUniqueOrThrow({
+        where: { id: endpointA },
+      });
       expect(ep.workflowId).toBe(workflowA);
-      expect((await A.get('/api/v1/webhook-endpoints')).body.data.map((e: { id: string }) => e.id)).toEqual([endpointA]);
+      expect(
+        (await A.get('/api/v1/webhook-endpoints')).body.data.map((e: { id: string }) => e.id),
+      ).toEqual([endpointA]);
     });
 
     it('integrations (and their credentials)', async () => {
@@ -225,7 +253,11 @@ describe('Security: automation cross-tenant isolation', () => {
         expect(res.status).toBe(404);
       }
       expect((await A.get('/api/v1/integrations')).body.data).toEqual([]);
-      expect((await A.get('/api/v1/integrations/status')).body.data.every((s: { total: number }) => s.total === 0)).toBe(true);
+      expect(
+        (await A.get('/api/v1/integrations/status')).body.data.every(
+          (s: { total: number }) => s.total === 0,
+        ),
+      ).toBe(true);
       expect(await ctx.prisma.client.integration.count({ where: { id: integrationB } })).toBe(1);
     });
 
@@ -240,11 +272,18 @@ describe('Security: automation cross-tenant isolation', () => {
           trigger: { type: 'manual' },
           steps: [
             { id: 'a', type: 'agent_run', agentId: agentB.id, input: 'x', wait: true },
-            { id: 'n', type: 'send_notification', to: { kind: 'user', userId: userB.user.id }, title: 't' },
+            {
+              id: 'n',
+              type: 'send_notification',
+              to: { kind: 'user', userId: userB.user.id },
+              title: 't',
+            },
           ],
         });
       expect(res.status).toBe(400);
-      const msgs = (res.body.error.details.issues as Array<{ message: string }>).map((i) => i.message).join('|');
+      const msgs = (res.body.error.details.issues as Array<{ message: string }>)
+        .map((i) => i.message)
+        .join('|');
       expect(msgs).toContain('Agent not found in this organization');
       expect(msgs).toContain('not an active member');
       expect(JSON.stringify(res.body)).not.toContain('secret instructions');
@@ -254,22 +293,38 @@ describe('Security: automation cross-tenant isolation', () => {
   describe('inbound hooks: credentials are per organization and endpoint', () => {
     const body = JSON.stringify({ a: 1 });
     const hit = (slug: string, endpoint: string, headers: Record<string, string>) =>
-      request(ctx.http).post(`/api/v1/hooks/${slug}/${endpoint}`).set('content-type', 'application/json').set(headers).send(body);
+      request(ctx.http)
+        .post(`/api/v1/hooks/${slug}/${endpoint}`)
+        .set('content-type', 'application/json')
+        .set(headers)
+        .send(body);
 
     it("org A's secret does not open org B's endpoint (and vice-versa) and creates no execution", async () => {
-      const before = await ctx.prisma.client.workflowExecution.count({ where: { organizationId: orgB } });
+      const before = await ctx.prisma.client.workflowExecution.count({
+        where: { organizationId: orgB },
+      });
       expect((await hit(slugB, 'b-in', { 'x-webhook-secret': endpointASecret })).status).toBe(401);
       expect((await hit(slugA, 'a-in', { 'x-webhook-secret': endpointBSecret })).status).toBe(401);
       expect((await hit(slugA, 'b-in', { 'x-webhook-secret': endpointBSecret })).status).toBe(401); // right secret, wrong org slug
       expect((await hit(slugB, 'a-in', { 'x-webhook-secret': endpointASecret })).status).toBe(401); // right secret, wrong org slug
-      expect((await hit(slugB, 'b-in', { 'x-hilatech-signature': signInboundPayload(endpointASecret, body) })).status).toBe(401);
-      expect(await ctx.prisma.client.workflowExecution.count({ where: { organizationId: orgB } })).toBe(before);
+      expect(
+        (
+          await hit(slugB, 'b-in', {
+            'x-hilatech-signature': signInboundPayload(endpointASecret, body),
+          })
+        ).status,
+      ).toBe(401);
+      expect(
+        await ctx.prisma.client.workflowExecution.count({ where: { organizationId: orgB } }),
+      ).toBe(before);
     });
 
     it('the right secret still works and creates the execution in the right organization only', async () => {
       const ok = await hit(slugB, 'b-in', { 'x-webhook-secret': endpointBSecret });
       expect(ok.status).toBe(202);
-      const row = await ctx.prisma.client.workflowExecution.findUniqueOrThrow({ where: { id: ok.body.executionId } });
+      const row = await ctx.prisma.client.workflowExecution.findUniqueOrThrow({
+        where: { id: ok.body.executionId },
+      });
       expect(row.organizationId).toBe(orgB);
       expect(row.workflowId).toBe(webhookWorkflowB);
     });
@@ -279,12 +334,22 @@ describe('Security: automation cross-tenant isolation', () => {
     it('a plain member cannot create, change, run or delete automation resources, nor read secrets', async () => {
       const M = as(ctx, memberA, orgA);
       for (const res of [
-        await M.post('/api/v1/workflows').send({ name: 'x', trigger: { type: 'manual' }, steps: [{ id: 'v', type: 'set_variable', name: 'x', value: '1' }] }),
+        await M.post('/api/v1/workflows').send({
+          name: 'x',
+          trigger: { type: 'manual' },
+          steps: [{ id: 'v', type: 'set_variable', name: 'x', value: '1' }],
+        }),
         await M.post(`/api/v1/workflows/${workflowA}/run`).send({}),
-        await M.post('/api/v1/webhooks').send({ url: 'https://example.com/x', events: ['lead.created'] }),
+        await M.post('/api/v1/webhooks').send({
+          url: 'https://example.com/x',
+          events: ['lead.created'],
+        }),
         await M.post('/api/v1/webhook-endpoints').send({ name: 'x', slug: 'xxx' }),
         await M.post(`/api/v1/webhook-endpoints/${endpointA}/rotate-secret`),
-        await M.post('/api/v1/integrations').send({ name: 'x', config: { kind: 'rest', baseUrl: 'https://example.com' } }),
+        await M.post('/api/v1/integrations').send({
+          name: 'x',
+          config: { kind: 'rest', baseUrl: 'https://example.com' },
+        }),
       ]) {
         expect(res.status).toBe(403);
         expect(res.body.error.code).toBe(ErrorCode.FORBIDDEN);
@@ -294,7 +359,10 @@ describe('Security: automation cross-tenant isolation', () => {
   });
 
   it('no response ever contains secret material', async () => {
-    for (const [user, org] of [[userA, orgA], [userB, orgB]] as const) {
+    for (const [user, org] of [
+      [userA, orgA],
+      [userB, orgB],
+    ] as const) {
       for (const url of [
         '/api/v1/workflows',
         '/api/v1/workflow-executions',
@@ -312,8 +380,12 @@ describe('Security: automation cross-tenant isolation', () => {
 
   it('stored ciphertext is bound to its organization (AAD): it only decrypts for the owning tenant', async () => {
     const box = new SecretBox(process.env.CREDENTIALS_ENCRYPTION_KEY!);
-    const rowB = await ctx.prisma.client.integration.findUniqueOrThrow({ where: { id: integrationB } });
-    expect(JSON.parse(box.decrypt(rowB.encryptedSecrets!, orgB))).toEqual({ apiKey: 'B-API-KEY-VALUE' });
+    const rowB = await ctx.prisma.client.integration.findUniqueOrThrow({
+      where: { id: integrationB },
+    });
+    expect(JSON.parse(box.decrypt(rowB.encryptedSecrets!, orgB))).toEqual({
+      apiKey: 'B-API-KEY-VALUE',
+    });
     expect(() => box.decrypt(rowB.encryptedSecrets!, orgA)).toThrow();
     const hookB = await ctx.prisma.client.webhook.findUniqueOrThrow({ where: { id: webhookB } });
     expect(box.decrypt(hookB.encryptedSecret, orgB)).toMatch(/^whsec_/);

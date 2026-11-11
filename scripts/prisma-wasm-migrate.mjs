@@ -61,7 +61,10 @@ function migrationList() {
     .sort();
   return {
     baseDir: migrationsDir,
-    lockfile: { path: 'migration_lock.toml', content: existsSync(lockPath) ? readFileSync(lockPath, 'utf8') : null },
+    lockfile: {
+      path: 'migration_lock.toml',
+      content: existsSync(lockPath) ? readFileSync(lockPath, 'utf8') : null,
+    },
     shadowDbInitScript: '',
     migrationDirectories: dirs.map((name) => {
       const file = path.join(migrationsDir, name, 'migration.sql');
@@ -69,7 +72,9 @@ function migrationList() {
         path: name,
         migrationFile: {
           path: 'migration.sql',
-          content: existsSync(file) ? { tag: 'ok', value: readFileSync(file, 'utf8') } : { tag: 'error', value: 'missing migration.sql' },
+          content: existsSync(file)
+            ? { tag: 'ok', value: readFileSync(file, 'utf8') }
+            : { tag: 'error', value: 'missing migration.sql' },
         },
       };
     }),
@@ -85,7 +90,11 @@ async function main() {
   const { bindMigrationAwareSqlAdapterFactory } = require('@prisma/driver-adapter-utils');
   // The engine expects an error-capturing adapter factory (every call returns { ok, value | error }).
   const adapter = bindMigrationAwareSqlAdapterFactory(new PrismaPg({ connectionString: url }));
-  const engine = await SchemaEngine.new({ datamodels: [[schemaPath, readFileSync(schemaPath, 'utf8')]] }, () => {}, adapter);
+  const engine = await SchemaEngine.new(
+    { datamodels: [[schemaPath, readFileSync(schemaPath, 'utf8')]] },
+    () => {},
+    adapter,
+  );
 
   try {
     switch (cmd) {
@@ -106,7 +115,10 @@ async function main() {
           console.log('No schema changes — nothing to create.');
           break;
         }
-        const ts = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+        const ts = new Date()
+          .toISOString()
+          .replace(/[-:TZ.]/g, '')
+          .slice(0, 14);
         const dirName = `${ts}_${name.replace(/[^a-zA-Z0-9_]+/g, '_')}`;
         const dir = path.join(migrationsDir, dirName);
         mkdirSync(dir, { recursive: true });
@@ -123,7 +135,11 @@ async function main() {
       }
       case 'apply': {
         const out = await engine.applyMigrations({ migrationsList: migrationList(), filters });
-        console.log(out.appliedMigrationNames.length ? `Applied: ${out.appliedMigrationNames.join(', ')}` : 'Database is up to date.');
+        console.log(
+          out.appliedMigrationNames.length
+            ? `Applied: ${out.appliedMigrationNames.join(', ')}`
+            : 'Database is up to date.',
+        );
         break;
       }
       case 'status': {

@@ -42,6 +42,9 @@ describe('toImportJob', () => {
 
   it('caps progress at the total and reports 100% for empty completed jobs', () => {
     expect(toImportJob({ ...base, processedRows: 999 } as Row).progress.processed).toBe(200);
-    expect(toImportJob({ ...base, totalRows: 0, processedRows: 0, status: 'completed' } as Row).progress.percent).toBe(100);
+    expect(
+      toImportJob({ ...base, totalRows: 0, processedRows: 0, status: 'completed' } as Row).progress
+        .percent,
+    ).toBe(100);
   });
 });

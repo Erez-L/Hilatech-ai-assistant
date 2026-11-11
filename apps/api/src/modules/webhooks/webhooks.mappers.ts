@@ -5,11 +5,7 @@ import {
   type WebhookEndpoint as WebhookEndpointDto,
   API_PREFIX,
 } from '@hilatech/contracts';
-import {
-  type Webhook,
-  type WebhookDelivery,
-  type WebhookEndpoint,
-} from '@hilatech/database';
+import { type Webhook, type WebhookDelivery, type WebhookEndpoint } from '@hilatech/database';
 
 export function toWebhook(row: Webhook): WebhookDto {
   return {
@@ -47,7 +43,10 @@ export function endpointPath(organizationSlug: string, slug: string): string {
   return `${API_PREFIX}/hooks/${organizationSlug}/${slug}`;
 }
 
-export function toWebhookEndpoint(row: WebhookEndpoint, organizationSlug: string): WebhookEndpointDto {
+export function toWebhookEndpoint(
+  row: WebhookEndpoint,
+  organizationSlug: string,
+): WebhookEndpointDto {
   return {
     id: row.id,
     organizationId: row.organizationId,

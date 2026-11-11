@@ -69,7 +69,9 @@ export class WebhooksController {
   @Post()
   @RequirePermissions(Permission.AUTOMATIONS_MANAGE)
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a subscription. The signing secret is returned ONCE in `secret`' })
+  @ApiOperation({
+    summary: 'Create a subscription. The signing secret is returned ONCE in `secret`',
+  })
   @ApiZodBody(createWebhookSchema)
   @ApiZodResponse(webhookWithSecretSchema, { status: HttpStatus.CREATED })
   @ApiErrors(...COMMON_TENANT_ERRORS)
@@ -125,18 +127,26 @@ export class WebhooksController {
   @Post(':id/rotate-secret')
   @RequirePermissions(Permission.AUTOMATIONS_MANAGE)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Issue a new signing secret (returned once); the old one stops working' })
+  @ApiOperation({
+    summary: 'Issue a new signing secret (returned once); the old one stops working',
+  })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiZodResponse(webhookWithSecretSchema)
   @ApiErrors(...COMMON_TENANT_ERRORS, NOT_FOUND)
-  rotate(@Tenant() tenant: TenantContext, @Param('id', UuidPipe) id: string, @Req() req: AppRequest) {
+  rotate(
+    @Tenant() tenant: TenantContext,
+    @Param('id', UuidPipe) id: string,
+    @Req() req: AppRequest,
+  ) {
     return this.webhooks.rotateSecret(tenant, id, requestMeta(req));
   }
 
   @Post(':id/test')
   @RequirePermissions(Permission.AUTOMATIONS_MANAGE)
   @HttpCode(HttpStatus.ACCEPTED)
-  @ApiOperation({ summary: 'Queue a signed `webhook.test` delivery; poll the deliveries list for the result' })
+  @ApiOperation({
+    summary: 'Queue a signed `webhook.test` delivery; poll the deliveries list for the result',
+  })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiZodResponse(webhookDeliverySchema, { status: HttpStatus.ACCEPTED })
   @ApiErrors(...COMMON_TENANT_ERRORS, NOT_FOUND)
@@ -154,7 +164,8 @@ export class WebhooksController {
   deliveries(
     @Tenant() tenant: TenantContext,
     @Param('id', UuidPipe) id: string,
-    @Query(new ZodValidationPipe(listWebhookDeliveriesQuerySchema)) query: ListWebhookDeliveriesQuery,
+    @Query(new ZodValidationPipe(listWebhookDeliveriesQuerySchema))
+    query: ListWebhookDeliveriesQuery,
   ) {
     return this.webhooks.listDeliveries(tenant, id, query);
   }
@@ -204,7 +215,9 @@ export class WebhookEndpointsController {
 
   @Patch(':id')
   @RequirePermissions(Permission.AUTOMATIONS_MANAGE)
-  @ApiOperation({ summary: 'Rename, enable/disable or (re)bind to a workflow with a `webhook` trigger' })
+  @ApiOperation({
+    summary: 'Rename, enable/disable or (re)bind to a workflow with a `webhook` trigger',
+  })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiZodBody(updateWebhookEndpointSchema)
   @ApiZodResponse(webhookEndpointSchema)
@@ -225,7 +238,11 @@ export class WebhookEndpointsController {
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiZodResponse(webhookEndpointWithSecretSchema)
   @ApiErrors(...COMMON_TENANT_ERRORS, NOT_FOUND)
-  rotate(@Tenant() tenant: TenantContext, @Param('id', UuidPipe) id: string, @Req() req: AppRequest) {
+  rotate(
+    @Tenant() tenant: TenantContext,
+    @Param('id', UuidPipe) id: string,
+    @Req() req: AppRequest,
+  ) {
     return this.webhooks.rotateEndpointSecret(tenant, id, requestMeta(req));
   }
 

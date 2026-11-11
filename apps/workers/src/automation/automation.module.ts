@@ -11,7 +11,13 @@ import { WebhookDeliveryProcessor } from './webhook-delivery.processor';
 /** Automation slice: workflow runner + fan-out + scheduler (`automation` queue) and `webhook-delivery`. */
 @Module({
   imports: [PrismaModule, RedisModule, AiRuntimeModule],
-  providers: [QueueProducer, DomainEventPublisher, StepHandlerFactory, AutomationProcessor, WebhookDeliveryProcessor],
+  providers: [
+    QueueProducer,
+    DomainEventPublisher,
+    StepHandlerFactory,
+    AutomationProcessor,
+    WebhookDeliveryProcessor,
+  ],
   exports: [QueueProducer, DomainEventPublisher, AutomationProcessor, WebhookDeliveryProcessor],
 })
 export class AutomationModule {}

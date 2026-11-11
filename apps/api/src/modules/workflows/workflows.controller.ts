@@ -122,7 +122,9 @@ export class WorkflowsController {
 
   @Patch(':id')
   @RequirePermissions(Permission.AUTOMATIONS_MANAGE)
-  @ApiOperation({ summary: 'Update a workflow (the resulting definition must be valid if it is enabled)' })
+  @ApiOperation({
+    summary: 'Update a workflow (the resulting definition must be valid if it is enabled)',
+  })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiZodBody(updateWorkflowSchema)
   @ApiZodResponse(workflowSchema)
@@ -158,7 +160,11 @@ export class WorkflowsController {
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiZodResponse(workflowSchema)
   @ApiErrors(...COMMON_TENANT_ERRORS, NOT_FOUND)
-  enable(@Tenant() tenant: TenantContext, @Param('id', UuidPipe) id: string, @Req() req: AppRequest) {
+  enable(
+    @Tenant() tenant: TenantContext,
+    @Param('id', UuidPipe) id: string,
+    @Req() req: AppRequest,
+  ) {
     return this.workflows.setEnabled(tenant, id, true, requestMeta(req));
   }
 
@@ -169,7 +175,11 @@ export class WorkflowsController {
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiZodResponse(workflowSchema)
   @ApiErrors(...COMMON_TENANT_ERRORS, NOT_FOUND)
-  disable(@Tenant() tenant: TenantContext, @Param('id', UuidPipe) id: string, @Req() req: AppRequest) {
+  disable(
+    @Tenant() tenant: TenantContext,
+    @Param('id', UuidPipe) id: string,
+    @Req() req: AppRequest,
+  ) {
     return this.workflows.setEnabled(tenant, id, false, requestMeta(req));
   }
 
@@ -206,7 +216,8 @@ export class WorkflowExecutionsController {
   @ApiErrors(...COMMON_TENANT_ERRORS)
   list(
     @Tenant() tenant: TenantContext,
-    @Query(new ZodValidationPipe(listWorkflowExecutionsQuerySchema)) query: ListWorkflowExecutionsQuery,
+    @Query(new ZodValidationPipe(listWorkflowExecutionsQuerySchema))
+    query: ListWorkflowExecutionsQuery,
   ) {
     return this.workflows.listExecutions(tenant, query);
   }

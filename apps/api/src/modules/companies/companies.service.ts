@@ -228,7 +228,12 @@ export class CompaniesService {
   ): Promise<void> {
     await this.require(tenant, id);
     const result = await this.prisma.client.contact.updateMany({
-      where: { id: contactId, organizationId: tenant.organizationId, companyId: id, deletedAt: null },
+      where: {
+        id: contactId,
+        organizationId: tenant.organizationId,
+        companyId: id,
+        deletedAt: null,
+      },
       data: { companyId: null },
     });
     if (result.count === 0) throw AppException.notFound('Contact');

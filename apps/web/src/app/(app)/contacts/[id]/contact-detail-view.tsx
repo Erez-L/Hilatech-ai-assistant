@@ -64,12 +64,22 @@ import { useT, useFormat } from '@/i18n/provider';
 import { useCompany } from '@/hooks/sales';
 
 /** The linked Company record (link to its page) or the free-text company name. */
-function LinkedCompany({ companyId, fallback }: { companyId: string | null; fallback?: string | null }) {
+function LinkedCompany({
+  companyId,
+  fallback,
+}: {
+  companyId: string | null;
+  fallback?: string | null;
+}) {
   const canCompanies = useCan(Permission.COMPANIES_READ);
   const company = useCompany(companyId, { enabled: canCompanies && !!companyId });
   if (companyId && company.data) {
     return (
-      <Link href={`/companies/${company.data.id}`} dir="auto" className="font-medium hover:underline">
+      <Link
+        href={`/companies/${company.data.id}`}
+        dir="auto"
+        className="font-medium hover:underline"
+      >
         {company.data.name}
       </Link>
     );
@@ -351,9 +361,7 @@ function ContactDetailsForm({
             <dt className="text-fg-muted">{t('common.phone')}</dt>
             <dd>{contact.phone ?? '—'}</dd>
             <dt className="text-fg-muted">{t('common.company')}</dt>
-            <dd>
-              {contact.company ?? '—'}
-            </dd>
+            <dd>{contact.company ?? '—'}</dd>
             <dt className="text-fg-muted">{t('contacts.companyRecord')}</dt>
             <dd>
               <LinkedCompany companyId={contact.companyId ?? null} />

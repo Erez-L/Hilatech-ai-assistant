@@ -40,7 +40,8 @@ export function CompanyPicker({
   const query = useCompanies({ search: debounced || undefined, page: 1, pageSize: 10 });
   const companies = React.useMemo(() => query.data?.data ?? [], [query.data]);
   const items: ComboboxItem[] = React.useMemo(
-    () => companies.map((c) => ({ value: c.id, label: c.name, description: c.domain ?? undefined })),
+    () =>
+      companies.map((c) => ({ value: c.id, label: c.name, description: c.domain ?? undefined })),
     [companies],
   );
   return (

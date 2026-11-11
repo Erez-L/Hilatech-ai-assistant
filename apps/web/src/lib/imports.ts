@@ -11,7 +11,13 @@ import {
 import { msg, type Msg } from '@/i18n/msg';
 
 export type WizardStep = 'upload' | 'mapping' | 'review' | 'progress' | 'result';
-export const WIZARD_STEPS: readonly WizardStep[] = ['upload', 'mapping', 'review', 'progress', 'result'];
+export const WIZARD_STEPS: readonly WizardStep[] = [
+  'upload',
+  'mapping',
+  'review',
+  'progress',
+  'result',
+];
 
 export const IMPORT_ENTITY_LABELS: Record<ImportEntity, Msg> = {
   contacts: msg('imports.entity.contacts'),
@@ -106,7 +112,8 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
       return { ...state, step: 'review' };
     case 'back':
       if (state.step === 'review') return { ...state, step: 'mapping' };
-      if (state.step === 'mapping') return { ...state, step: 'upload', upload: null, validation: null, job: null };
+      if (state.step === 'mapping')
+        return { ...state, step: 'upload', upload: null, validation: null, job: null };
       return state;
     case 'started':
       return { ...state, step: 'progress', job: action.job };
@@ -122,7 +129,11 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
 }
 
 /** Mapping problems keyed to messages the UI can translate (required fields). */
-export function missingRequiredFields(entity: ImportEntity, mapping: ImportMapping, columnCount: number): string[] {
+export function missingRequiredFields(
+  entity: ImportEntity,
+  mapping: ImportMapping,
+  columnCount: number,
+): string[] {
   const problems = validateMapping(entity, mapping, columnCount);
   if (problems.length === 0) return [];
   // Report the field keys that are required but unmapped (the UI renders their labels).
@@ -133,9 +144,7 @@ export function missingRequiredFields(entity: ImportEntity, mapping: ImportMappi
 
 export function canValidate(state: WizardState): boolean {
   if (!state.upload) return false;
-  return (
-    validateMapping(state.entity, state.mapping, state.upload.headers.length).length === 0
-  );
+  return validateMapping(state.entity, state.mapping, state.upload.headers.length).length === 0;
 }
 
 export function mappedColumnCount(mapping: ImportMapping): number {

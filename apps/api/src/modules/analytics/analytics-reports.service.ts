@@ -133,7 +133,8 @@ export class AnalyticsReportsService {
         rows,
         (row) => ({ count: row?.n ?? 0 }),
       );
-    const sum = (record: Record<string, number>) => Object.values(record).reduce((a, b) => a + b, 0);
+    const sum = (record: Record<string, number>) =>
+      Object.values(record).reduce((a, b) => a + b, 0);
 
     return {
       generatedAt: new Date().toISOString(),
@@ -166,22 +167,29 @@ export class AnalyticsReportsService {
     const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const dayEnd = new Date(dayStart.getTime() + 86_400_000);
     const open = { in: ['todo', 'in_progress'] as Array<'todo' | 'in_progress'> };
-    const [byStatus, byPriority, overdue, dueToday, createdInRange, completedInRange] = await Promise.all([
-      db.task.groupBy({ by: ['status'], where: { organizationId: org }, _count: { _all: true } }),
-      db.task.groupBy({
-        by: ['priority'],
-        where: { organizationId: org, status: open },
-        _count: { _all: true },
-      }),
-      db.task.count({ where: { organizationId: org, status: open, dueAt: { lt: now } } }),
-      db.task.count({
-        where: { organizationId: org, status: open, dueAt: { gte: dayStart, lt: dayEnd } },
-      }),
-      db.task.count({ where: { organizationId: org, createdAt: { gte: range.from, lt: range.to } } }),
-      db.task.count({
-        where: { organizationId: org, status: 'done', completedAt: { gte: range.from, lt: range.to } },
-      }),
-    ]);
+    const [byStatus, byPriority, overdue, dueToday, createdInRange, completedInRange] =
+      await Promise.all([
+        db.task.groupBy({ by: ['status'], where: { organizationId: org }, _count: { _all: true } }),
+        db.task.groupBy({
+          by: ['priority'],
+          where: { organizationId: org, status: open },
+          _count: { _all: true },
+        }),
+        db.task.count({ where: { organizationId: org, status: open, dueAt: { lt: now } } }),
+        db.task.count({
+          where: { organizationId: org, status: open, dueAt: { gte: dayStart, lt: dayEnd } },
+        }),
+        db.task.count({
+          where: { organizationId: org, createdAt: { gte: range.from, lt: range.to } },
+        }),
+        db.task.count({
+          where: {
+            organizationId: org,
+            status: 'done',
+            completedAt: { gte: range.from, lt: range.to },
+          },
+        }),
+      ]);
     const statusCounts = zeroRecord(['todo', 'in_progress', 'done', 'cancelled'] as const);
     for (const r of byStatus) statusCounts[r.status] = r._count._all;
     const priorityCounts = zeroRecord(['low', 'medium', 'high', 'urgent'] as const);
@@ -314,7 +322,11 @@ export class AnalyticsReportsService {
     };
   }
 
-  private async salesFromDeals(org: string, range: ResolvedRange, unit: Prisma.Sql): Promise<SalesAnalytics> {
+  private async salesFromDeals(
+    org: string,
+    range: ResolvedRange,
+    unit: Prisma.Sql,
+  ): Promise<SalesAnalytics> {
     const db = this.prisma.client;
     const [stageRows, closed, cycle, wonSeries] = await Promise.all([
       db.$queryRaw<
@@ -358,11 +370,19 @@ export class AnalyticsReportsService {
           AND "closedAt" >= ${range.from} AND "closedAt" < ${range.to}
         GROUP BY 1`,
     ]);
-    const currencies = new Map<string, { wonCount: number; wonValue: number; lostCount: number; lostValue: number }>();
+    const currencies = new Map<
+      string,
+      { wonCount: number; wonValue: number; lostCount: number; lostValue: number }
+    >();
     let won = 0;
     let lost = 0;
     for (const row of closed) {
-      const entry = currencies.get(row.currency) ?? { wonCount: 0, wonValue: 0, lostCount: 0, lostValue: 0 };
+      const entry = currencies.get(row.currency) ?? {
+        wonCount: 0,
+        wonValue: 0,
+        lostCount: 0,
+        lostValue: 0,
+      };
       if (row.status === 'won') {
         entry.wonCount += row.n;
         entry.wonValue += num(row.value);
@@ -571,7 +591,9 @@ export class AnalyticsReportsService {
         WHERE "organizationId" = ${org}::uuid AND "status" = 'failed' AND "error" IS NOT NULL
           AND "createdAt" >= ${range.from} AND "createdAt" < ${range.to}
         GROUP BY 1 ORDER BY n DESC, reason LIMIT ${REASONS_N}`,
-      db.$queryRaw<Array<{ workflow_id: string; name: string; n: number; succeeded: number; failed: number }>>`
+      db.$queryRaw<
+        Array<{ workflow_id: string; name: string; n: number; succeeded: number; failed: number }>
+      >`
         SELECT e."workflowId" AS workflow_id, w."name" AS name, COUNT(*)::int AS n,
                (COUNT(*) FILTER (WHERE e."status" = 'succeeded'))::int AS succeeded,
                (COUNT(*) FILTER (WHERE e."status" = 'failed'))::int AS failed
@@ -640,8 +662,15 @@ export class AnalyticsReportsService {
       workflows: {
         runs: sumValues(runCounts),
         byStatus: runCounts,
-        successRate: rate(runCounts.succeeded ?? 0, (runCounts.succeeded ?? 0) + (runCounts.failed ?? 0)),
-        durationMs: { avg: roundMs(rs?.avg_ms), p50: roundMs(rs?.p50_ms), p95: roundMs(rs?.p95_ms) },
+        successRate: rate(
+          runCounts.succeeded ?? 0,
+          (runCounts.succeeded ?? 0) + (runCounts.failed ?? 0),
+        ),
+        durationMs: {
+          avg: roundMs(rs?.avg_ms),
+          p50: roundMs(rs?.p50_ms),
+          p95: roundMs(rs?.p95_ms),
+        },
         failureReasons: runReasons.map((r) => ({ reason: r.reason, count: r.n })),
         byWorkflow: perWorkflow.map((r) => ({
           workflowId: r.workflow_id,
@@ -841,11 +870,19 @@ export class AnalyticsReportsService {
     }) => [r.requests, r.inputTokens, r.outputTokens, r.totalTokens, r.costUsd];
     const csv =
       query.section === 'series'
-        ? toCsv(['bucket', ...header], data.series.map((p) => [p.bucket, ...cells(p)]))
+        ? toCsv(
+            ['bucket', ...header],
+            data.series.map((p) => [p.bucket, ...cells(p)]),
+          )
         : toCsv(
             ['dimension', 'key', 'name', ...header],
             [
-              ...data.byModel.map((r) => ['model', `${r.provider}:${r.model}`, r.model, ...cells(r)]),
+              ...data.byModel.map((r) => [
+                'model',
+                `${r.provider}:${r.model}`,
+                r.model,
+                ...cells(r),
+              ]),
               ...data.byAgent.map((r) => ['agent', r.agentId, r.name, ...cells(r)]),
               ...data.byUser.map((r) => ['user', r.userId, r.name, ...cells(r)]),
             ],

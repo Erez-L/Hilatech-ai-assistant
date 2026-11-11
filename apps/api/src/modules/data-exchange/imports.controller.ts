@@ -119,7 +119,9 @@ export class ImportsController {
 
   @Get(':id')
   @RequirePermissions(Permission.DATA_IMPORT)
-  @ApiOperation({ summary: 'Import job with status, progress and result counters (poll while queued/running)' })
+  @ApiOperation({
+    summary: 'Import job with status, progress and result counters (poll while queued/running)',
+  })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiZodResponse(importJobSchema)
   @ApiErrors(...COMMON_TENANT_ERRORS, NOT_FOUND)
@@ -174,7 +176,10 @@ export class ImportsController {
   @Post(':id/cancel')
   @RequirePermissions(Permission.DATA_IMPORT)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Cancel an import that has not finished (a running import stops after its current batch)' })
+  @ApiOperation({
+    summary:
+      'Cancel an import that has not finished (a running import stops after its current batch)',
+  })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiZodResponse(importJobSchema)
   @ApiErrors(...COMMON_TENANT_ERRORS, NOT_FOUND, CONFLICT)
@@ -188,7 +193,10 @@ export class ImportsController {
 
   @Get(':id/report')
   @RequirePermissions(Permission.DATA_IMPORT)
-  @ApiOperation({ summary: 'Result report: created/updated/skipped/failed counts and the skipped/failed rows with reasons' })
+  @ApiOperation({
+    summary:
+      'Result report: created/updated/skipped/failed counts and the skipped/failed rows with reasons',
+  })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiZodResponse(importReportSchema)
   @ApiErrors(...COMMON_TENANT_ERRORS, NOT_FOUND)

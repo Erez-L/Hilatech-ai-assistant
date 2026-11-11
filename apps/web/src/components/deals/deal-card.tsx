@@ -20,7 +20,15 @@ export interface DealCardProps {
 }
 
 /** One card on the Kanban board. Draggable (mouse / touch-capable browsers) plus a "Move to…" menu for everyone else. */
-export function DealCard({ deal, stages, canMove, dragging, onMove, onDragStart, onDragEnd }: DealCardProps) {
+export function DealCard({
+  deal,
+  stages,
+  canMove,
+  dragging,
+  onMove,
+  onDragStart,
+  onDragEnd,
+}: DealCardProps) {
   const t = useT();
   const fmt = useFormat();
   return (
@@ -59,7 +67,11 @@ export function DealCard({ deal, stages, canMove, dragging, onMove, onDragStart,
         ) : null}
       </div>
       <p className="text-sm font-semibold tabular">
-        {deal.value != null ? fmt.currency(deal.value, deal.currency) : <span className="font-normal text-fg-subtle">{t('deals.noValue')}</span>}
+        {deal.value != null ? (
+          fmt.currency(deal.value, deal.currency)
+        ) : (
+          <span className="font-normal text-fg-subtle">{t('deals.noValue')}</span>
+        )}
       </p>
       {deal.company || deal.contact ? (
         <div className="flex flex-col gap-0.5 text-xs text-fg-muted">
@@ -81,7 +93,9 @@ export function DealCard({ deal, stages, canMove, dragging, onMove, onDragStart,
         {deal.expectedCloseAt ? (
           <span className="inline-flex items-center gap-1" title={t('deals.expectedClose')}>
             <CalendarClock className="size-3" aria-hidden />
-            <time dateTime={deal.expectedCloseAt}>{fmt.date(new Date(deal.expectedCloseAt), 'short')}</time>
+            <time dateTime={deal.expectedCloseAt}>
+              {fmt.date(new Date(deal.expectedCloseAt), 'short')}
+            </time>
           </span>
         ) : (
           <span />

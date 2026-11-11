@@ -52,7 +52,9 @@ export function ConversationPicker({
       items={items}
       value={value}
       selectedLabel={selectedLabel}
-      onValueChange={(next) => onValueChange(next, conversations.find((c) => c.id === next) ?? null)}
+      onValueChange={(next) =>
+        onValueChange(next, conversations.find((c) => c.id === next) ?? null)
+      }
       search={search}
       onSearchChange={setSearch}
       loading={query.isFetching}

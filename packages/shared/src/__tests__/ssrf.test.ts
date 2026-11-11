@@ -39,12 +39,16 @@ describe('isPrivateAddress', () => {
     expect(isPrivateAddress(ip)).toBe(true);
   });
 
-  it.each(['8.8.8.8', '1.1.1.1', '93.184.216.34', '172.32.0.1', '2606:4700:4700::1111', '::ffff:8.8.8.8'])(
-    '%s is public',
-    (ip) => {
-      expect(isPrivateAddress(ip)).toBe(false);
-    },
-  );
+  it.each([
+    '8.8.8.8',
+    '1.1.1.1',
+    '93.184.216.34',
+    '172.32.0.1',
+    '2606:4700:4700::1111',
+    '::ffff:8.8.8.8',
+  ])('%s is public', (ip) => {
+    expect(isPrivateAddress(ip)).toBe(false);
+  });
 });
 
 describe('assertSafeUrlShape', () => {
@@ -55,9 +59,15 @@ describe('assertSafeUrlShape', () => {
   });
   it('allows http only for localhost when allowLocalhost is on', () => {
     expect(() => assertSafeUrlShape('http://localhost:3000/x')).toThrow(SsrfError);
-    expect(assertSafeUrlShape('http://localhost:3000/x', { allowLocalhost: true }).port).toBe('3000');
-    expect(() => assertSafeUrlShape('http://example.com', { allowLocalhost: true })).toThrow(SsrfError);
-    expect(() => assertSafeUrlShape('http://10.0.0.1', { allowLocalhost: true })).toThrow(SsrfError);
+    expect(assertSafeUrlShape('http://localhost:3000/x', { allowLocalhost: true }).port).toBe(
+      '3000',
+    );
+    expect(() => assertSafeUrlShape('http://example.com', { allowLocalhost: true })).toThrow(
+      SsrfError,
+    );
+    expect(() => assertSafeUrlShape('http://10.0.0.1', { allowLocalhost: true })).toThrow(
+      SsrfError,
+    );
   });
   it('rejects literal private IPs, including obfuscated numeric forms', () => {
     for (const u of [
@@ -84,11 +94,15 @@ describe('resolveSafeTarget (DNS)', () => {
   });
   it('rejects when ANY of several records is private (rebinding mix)', async () => {
     await expect(
-      resolveSafeTarget('https://evil.example.com/', { resolve: async () => ['8.8.8.8', '169.254.169.254'] }),
+      resolveSafeTarget('https://evil.example.com/', {
+        resolve: async () => ['8.8.8.8', '169.254.169.254'],
+      }),
     ).rejects.toBeInstanceOf(SsrfError);
   });
   it('accepts a hostname resolving to public addresses', async () => {
-    const t = await resolveSafeTarget('https://ok.example.com/p', { resolve: async () => ['93.184.216.34'] });
+    const t = await resolveSafeTarget('https://ok.example.com/p', {
+      resolve: async () => ['93.184.216.34'],
+    });
     expect(t.addresses).toEqual(['93.184.216.34']);
   });
   it('reports DNS failures', async () => {
@@ -109,7 +123,9 @@ describe('resolveSafeTarget (DNS)', () => {
   });
   it('allows loopback names only with allowLocalhost', async () => {
     await expect(resolveSafeTarget('http://localhost:1/')).rejects.toBeInstanceOf(SsrfError);
-    await expect(resolveSafeTarget('http://localhost:1/', { allowLocalhost: true })).resolves.toBeDefined();
+    await expect(
+      resolveSafeTarget('http://localhost:1/', { allowLocalhost: true }),
+    ).resolves.toBeDefined();
   });
 });
 
@@ -142,7 +158,9 @@ describe('safeRequest', () => {
       expect(res.body.length).toBe(100);
       expect(res.truncated).toBe(true);
 
-      const redirect = await safeRequest(`http://localhost:${port}/redirect`, { allowLocalhost: true });
+      const redirect = await safeRequest(`http://localhost:${port}/redirect`, {
+        allowLocalhost: true,
+      });
       expect(redirect.status).toBe(302);
 
       await expect(safeRequest(`http://localhost:${port}/a`, {})).rejects.toBeInstanceOf(SsrfError);
@@ -179,7 +197,9 @@ describe('SEC-01: createGuardedFetch', () => {
       { resolve: async (host) => (host === 'rebind.example' ? ['10.0.0.7'] : ['93.184.216.34']) },
       base,
     );
-    await expect(guarded('http://169.254.169.254/latest/meta-data')).rejects.toBeInstanceOf(SsrfError);
+    await expect(guarded('http://169.254.169.254/latest/meta-data')).rejects.toBeInstanceOf(
+      SsrfError,
+    );
     await expect(guarded('https://rebind.example/v1')).rejects.toBeInstanceOf(SsrfError);
     expect(calls).toHaveLength(0);
     await guarded('https://api.example.com/v1/chat');

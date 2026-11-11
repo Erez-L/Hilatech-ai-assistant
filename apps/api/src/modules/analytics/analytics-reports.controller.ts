@@ -48,7 +48,8 @@ export class AnalyticsReportsController {
   @Get('sales')
   @RequirePermissions(Permission.ANALYTICS_READ)
   @ApiOperation({
-    summary: 'Pipeline and closed value per currency, win rate, cycle time (derived from leads; no Deal model)',
+    summary:
+      'Pipeline and closed value per currency, win rate, cycle time (derived from leads; no Deal model)',
   })
   @ApiZodQuery(analyticsRangeQuerySchema)
   @ApiZodResponse(salesAnalyticsSchema)

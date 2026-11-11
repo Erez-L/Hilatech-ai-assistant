@@ -122,11 +122,14 @@ function TaskForm({
           })
         : await create.mutateAsync(toCreateTaskRequest(values));
       toast.success(
-        task ? t('tasks.taskUpdated', { title: saved.title }) : t('tasks.taskCreated', { title: saved.title }),
+        task
+          ? t('tasks.taskUpdated', { title: saved.title })
+          : t('tasks.taskCreated', { title: saved.title }),
       );
       onDone(saved);
     } catch (error) {
-      if (!applyServerErrors(error, form.setError, TASK_FORM_FIELDS)) setFormError(getErrorMessage(error));
+      if (!applyServerErrors(error, form.setError, TASK_FORM_FIELDS))
+        setFormError(getErrorMessage(error));
     }
   });
 
@@ -153,7 +156,11 @@ function TaskForm({
         <Button variant="secondary" onClick={() => onDone()}>
           {t('common.cancel')}
         </Button>
-        <Button type="submit" loading={form.formState.isSubmitting} disabled={editing && !canUpdate}>
+        <Button
+          type="submit"
+          loading={form.formState.isSubmitting}
+          disabled={editing && !canUpdate}
+        >
           {editing ? t('common.saveChanges') : t('tasks.createTask')}
         </Button>
       </DialogFooter>

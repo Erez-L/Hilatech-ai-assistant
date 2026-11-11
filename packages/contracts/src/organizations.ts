@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { idSchema, timestampsSchema } from './common';
+import { idSchema, timestampsSchema, partialUpdate } from './common';
 
 export const slugSchema = z
   .string()
@@ -21,7 +21,7 @@ export const createOrganizationSchema = z.object({
 });
 export type CreateOrganizationRequest = z.infer<typeof createOrganizationSchema>;
 
-export const updateOrganizationSchema = createOrganizationSchema.partial().extend({
+export const updateOrganizationSchema = partialUpdate(createOrganizationSchema).extend({
   logoUrl: z.string().url().nullable().optional(),
   website: z.string().url().nullable().optional(),
   description: z.string().trim().max(2000).nullable().optional(),
@@ -35,7 +35,7 @@ export const organizationSettingsSchema = z
     businessHours: z
       .object({
         timezone: z.string().max(64),
-        days: z.record(
+        days: z.partialRecord(
           z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']),
           z
             .object({
@@ -123,7 +123,7 @@ export const createRoleSchema = z.object({
   permissions: z.array(z.string()).min(0),
 });
 export type CreateRoleRequest = z.infer<typeof createRoleSchema>;
-export const updateRoleSchema = createRoleSchema.omit({ key: true }).partial();
+export const updateRoleSchema = partialUpdate(createRoleSchema.omit({ key: true }));
 export type UpdateRoleRequest = z.infer<typeof updateRoleSchema>;
 
 export const memberSchema = z.object({

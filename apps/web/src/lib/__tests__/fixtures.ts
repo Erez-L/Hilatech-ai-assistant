@@ -3,7 +3,12 @@ import type { DealBoard } from '@hilatech/contracts';
 const iso = '2026-01-01T00:00:00.000Z';
 
 export function makeBoard(): DealBoard {
-  const stage = (id: string, order: number, kind: 'open' | 'won' | 'lost', probability: number) => ({
+  const stage = (
+    id: string,
+    order: number,
+    kind: 'open' | 'won' | 'lost',
+    probability: number,
+  ) => ({
     id,
     organizationId: 'o',
     pipelineId: 'p',
@@ -14,7 +19,13 @@ export function makeBoard(): DealBoard {
     createdAt: iso,
     updatedAt: iso,
   });
-  const deal = (id: string, stageId: string, value: number | null, currency: string, position: number) => ({
+  const deal = (
+    id: string,
+    stageId: string,
+    value: number | null,
+    currency: string,
+    position: number,
+  ) => ({
     id,
     organizationId: 'o',
     title: id,
@@ -35,7 +46,13 @@ export function makeBoard(): DealBoard {
     stageEnteredAt: iso,
     createdAt: iso,
     updatedAt: iso,
-    stage: { id: stageId, name: stageId.toUpperCase(), kind: 'open' as const, probability: 10, order: 0 },
+    stage: {
+      id: stageId,
+      name: stageId.toUpperCase(),
+      kind: 'open' as const,
+      probability: 10,
+      order: 0,
+    },
     owner: null,
     contact: null,
     company: null,
@@ -48,7 +65,11 @@ export function makeBoard(): DealBoard {
     columns: [
       {
         stage: s1,
-        deals: [deal('a', 's1', 1000, 'USD', 0), deal('b', 's1', 500, 'ILS', 1), deal('c', 's1', null, 'USD', 2)],
+        deals: [
+          deal('a', 's1', 1000, 'USD', 0),
+          deal('b', 's1', 500, 'ILS', 1),
+          deal('c', 's1', null, 'USD', 2),
+        ],
         count: 3,
         hasMore: false,
         totals: [
@@ -65,4 +86,3 @@ export function makeBoard(): DealBoard {
     ],
   } as unknown as DealBoard;
 }
-

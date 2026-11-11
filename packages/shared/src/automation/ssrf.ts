@@ -115,7 +115,16 @@ function parseIPv6(input: string): number[] | null {
 export function isPrivateIPv6(ip: string): boolean {
   const g = parseIPv6(ip);
   if (!g) return true;
-  const [g0, g1, g2, g3, g4, g5, g6, g7] = g as [number, number, number, number, number, number, number, number];
+  const [g0, g1, g2, g3, g4, g5, g6, g7] = g as [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ];
   const allZeroUntil5 = g0 === 0 && g1 === 0 && g2 === 0 && g3 === 0 && g4 === 0;
   if (allZeroUntil5 && g5 === 0 && g6 === 0 && (g7 === 0 || g7 === 1)) return true; // :: and ::1
   const embedded = `${g6 >> 8}.${g6 & 255}.${g7 >> 8}.${g7 & 255}`;
@@ -147,7 +156,7 @@ export function isLoopbackAddress(ip: string): boolean {
   const g = parseIPv6(clean);
   if (!g) return false;
   const mapped = g.slice(0, 5).every((x) => x === 0) && g[5] === 0xffff;
-  if (mapped) return (g[6]! >> 8) === 127;
+  if (mapped) return g[6]! >> 8 === 127;
   return g.slice(0, 7).every((x) => x === 0) && g[7] === 1;
 }
 
@@ -203,7 +212,10 @@ export function assertSafeUrlShape(raw: string, policy: OutboundPolicy = {}): UR
 }
 
 /** Validates the URL and resolves it, rejecting when ANY resolved address is non-public. */
-export async function resolveSafeTarget(raw: string, policy: OutboundPolicy = {}): Promise<SafeTarget> {
+export async function resolveSafeTarget(
+  raw: string,
+  policy: OutboundPolicy = {},
+): Promise<SafeTarget> {
   const url = assertSafeUrlShape(raw, policy);
   const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
   const hostAllowed = (policy.allowedHosts ?? []).includes(url.hostname.toLowerCase());
@@ -255,7 +267,10 @@ export interface SafeResponse {
  * Performs one HTTP(S) request to a validated, DNS-pinned address. Never follows redirects. Throws
  * `SsrfError` for blocked targets, a plain `Error` (`name: 'TimeoutError' | 'NetworkError'`) for transport failures.
  */
-export async function safeRequest(rawUrl: string, options: SafeRequestOptions = {}): Promise<SafeResponse> {
+export async function safeRequest(
+  rawUrl: string,
+  options: SafeRequestOptions = {},
+): Promise<SafeResponse> {
   const target = await resolveSafeTarget(rawUrl, options);
   const { url } = target;
   const address = target.addresses[0]!;
@@ -268,7 +283,10 @@ export async function safeRequest(rawUrl: string, options: SafeRequestOptions = 
 
   return new Promise<SafeResponse>((resolve, reject) => {
     const headers: Record<string, string> = { ...(options.headers ?? {}) };
-    if (body !== undefined && !Object.keys(headers).some((h) => h.toLowerCase() === 'content-length')) {
+    if (
+      body !== undefined &&
+      !Object.keys(headers).some((h) => h.toLowerCase() === 'content-length')
+    ) {
       headers['content-length'] = String(Buffer.byteLength(body));
     }
     const req = send(
@@ -283,11 +301,18 @@ export async function safeRequest(rawUrl: string, options: SafeRequestOptions = 
         lookup: (_hostname, opts, cb) => {
           const family = isIP(address) === 6 ? 6 : 4;
           if (opts && (opts as { all?: boolean }).all) {
-            (cb as unknown as (e: Error | null, a: Array<{ address: string; family: number }>) => void)(null, [
-              { address, family },
-            ]);
+            (
+              cb as unknown as (
+                e: Error | null,
+                a: Array<{ address: string; family: number }>,
+              ) => void
+            )(null, [{ address, family }]);
           } else {
-            (cb as unknown as (e: Error | null, a: string, f: number) => void)(null, address, family);
+            (cb as unknown as (e: Error | null, a: string, f: number) => void)(
+              null,
+              address,
+              family,
+            );
           }
         },
         servername: isHttps && !isIP(url.hostname) ? url.hostname : undefined,
@@ -325,18 +350,32 @@ export async function safeRequest(rawUrl: string, options: SafeRequestOptions = 
             durationMs: Date.now() - startedAt,
           });
         });
-        res.on('error', (e) => reject(Object.assign(new Error(e.message), { name: 'NetworkError' })));
+        res.on('error', (e) =>
+          reject(Object.assign(new Error(e.message), { name: 'NetworkError' })),
+        );
       },
     );
     const deadline = setTimeout(() => {
-      req.destroy(Object.assign(new Error(`Request timed out after ${timeoutMs}ms`), { name: 'TimeoutError' }));
+      req.destroy(
+        Object.assign(new Error(`Request timed out after ${timeoutMs}ms`), {
+          name: 'TimeoutError',
+        }),
+      );
     }, timeoutMs);
     req.on('timeout', () => {
-      req.destroy(Object.assign(new Error(`Request timed out after ${timeoutMs}ms`), { name: 'TimeoutError' }));
+      req.destroy(
+        Object.assign(new Error(`Request timed out after ${timeoutMs}ms`), {
+          name: 'TimeoutError',
+        }),
+      );
     });
     req.on('error', (e) => {
       clearTimeout(deadline);
-      reject(e.name === 'TimeoutError' ? e : Object.assign(new Error(e.message), { name: 'NetworkError' }));
+      reject(
+        e.name === 'TimeoutError'
+          ? e
+          : Object.assign(new Error(e.message), { name: 'NetworkError' }),
+      );
     });
     req.on('close', () => clearTimeout(deadline));
     if (body !== undefined) req.write(body);
@@ -361,7 +400,11 @@ export function createGuardedFetch(
 ): typeof fetch {
   return async (input, init) => {
     const raw =
-      typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url;
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.href
+          : (input as Request).url;
     await resolveSafeTarget(raw, policy);
     return base(input, { ...init, redirect: 'manual' });
   };

@@ -59,7 +59,9 @@ function isUniqueViolation(err: unknown): boolean {
  * creates nothing twice. Disabled workflows never start (queued executions are cancelled) and stop at the next step.
  */
 @Injectable()
-export class AutomationProcessor implements JobProcessor<typeof QueueName.AUTOMATION>, OnApplicationBootstrap {
+export class AutomationProcessor
+  implements JobProcessor<typeof QueueName.AUTOMATION>, OnApplicationBootstrap
+{
   readonly queue = QueueName.AUTOMATION;
   private readonly runner = new WorkflowRunner();
 
@@ -118,7 +120,10 @@ export class AutomationProcessor implements JobProcessor<typeof QueueName.AUTOMA
   // execute / resume
   // -------------------------------------------------------------------------------------------
 
-  async execute(data: ExecuteData | ResumeData, context?: Partial<JobContext>): Promise<JobOutcome> {
+  async execute(
+    data: ExecuteData | ResumeData,
+    context?: Partial<JobContext>,
+  ): Promise<JobOutcome> {
     const db = this.prisma.client;
     const { organizationId, executionId } = data;
     const execution = await db.workflowExecution.findFirst({
@@ -130,7 +135,12 @@ export class AutomationProcessor implements JobProcessor<typeof QueueName.AUTOMA
     });
     if (!execution) return { status: 'skipped', reason: 'not_found', executionId };
     if (['succeeded', 'failed', 'cancelled'].includes(execution.status)) {
-      return { status: 'skipped', reason: 'already_finished', executionId, executionStatus: execution.status };
+      return {
+        status: 'skipped',
+        reason: 'already_finished',
+        executionId,
+        executionStatus: execution.status,
+      };
     }
     const workflow = execution.workflow;
     const results = parseStepResults(execution.stepResults);
@@ -148,7 +158,12 @@ export class AutomationProcessor implements JobProcessor<typeof QueueName.AUTOMA
         results,
         startedAt: execution.startedAt,
       });
-      return { status: 'completed', executionId, executionStatus: 'cancelled', reason: 'workflow_disabled' };
+      return {
+        status: 'completed',
+        executionId,
+        executionStatus: 'cancelled',
+        reason: 'workflow_disabled',
+      };
     }
 
     // Definition safety net: the API validates before activation, but rows can be edited directly.
@@ -255,18 +270,40 @@ export class AutomationProcessor implements JobProcessor<typeof QueueName.AUTOMA
     const fresh = { ...execution, startedAt };
     switch (outcome.status) {
       case 'waiting':
-        this.logger.info({ ...context, executionId, resumeAt: outcome.resumeAt }, 'Workflow waiting on delay');
-        return { status: 'completed', executionId, executionStatus: 'running', resumeAt: outcome.resumeAt };
+        this.logger.info(
+          { ...context, executionId, resumeAt: outcome.resumeAt },
+          'Workflow waiting on delay',
+        );
+        return {
+          status: 'completed',
+          executionId,
+          executionStatus: 'running',
+          resumeAt: outcome.resumeAt,
+        };
       case 'succeeded':
         await this.finish(fresh, 'succeeded', {
           results: outcome.results,
           startedAt,
           output: { vars: outcome.vars },
         });
-        return { status: 'completed', executionId, executionStatus: 'succeeded', steps: outcome.results.length };
+        return {
+          status: 'completed',
+          executionId,
+          executionStatus: 'succeeded',
+          steps: outcome.results.length,
+        };
       case 'failed':
-        await this.finish(fresh, 'failed', { results: outcome.results, startedAt, error: outcome.error });
-        return { status: 'completed', executionId, executionStatus: 'failed', error: outcome.error };
+        await this.finish(fresh, 'failed', {
+          results: outcome.results,
+          startedAt,
+          error: outcome.error,
+        });
+        return {
+          status: 'completed',
+          executionId,
+          executionStatus: 'failed',
+          error: outcome.error,
+        };
       case 'aborted': {
         const current = await db.workflowExecution.findUnique({
           where: { id: execution.id },
@@ -289,7 +326,12 @@ export class AutomationProcessor implements JobProcessor<typeof QueueName.AUTOMA
   }
 
   private async finish(
-    execution: { id: string; organizationId: string; workflowId: string; workflow: { name: string; createdById: string | null } },
+    execution: {
+      id: string;
+      organizationId: string;
+      workflowId: string;
+      workflow: { name: string; createdById: string | null };
+    },
     status: 'succeeded' | 'failed' | 'cancelled',
     details: {
       results: WorkflowStepResult[];
@@ -332,7 +374,11 @@ export class AutomationProcessor implements JobProcessor<typeof QueueName.AUTOMA
       });
       if (status === 'failed' && execution.workflow.createdById) {
         const member = await db.organizationMember.findFirst({
-          where: { organizationId: execution.organizationId, userId: execution.workflow.createdById, status: 'active' },
+          where: {
+            organizationId: execution.organizationId,
+            userId: execution.workflow.createdById,
+            status: 'active',
+          },
           select: { userId: true },
         });
         if (member) {
@@ -350,7 +396,10 @@ export class AutomationProcessor implements JobProcessor<typeof QueueName.AUTOMA
         }
       }
     } catch (err) {
-      this.logger.error({ err, executionId: execution.id }, 'Failed to write workflow completion records');
+      this.logger.error(
+        { err, executionId: execution.id },
+        'Failed to write workflow completion records',
+      );
     }
   }
 
@@ -366,7 +415,10 @@ export class AutomationProcessor implements JobProcessor<typeof QueueName.AUTOMA
       where: {
         organizationId,
         isEnabled: true,
-        AND: [{ trigger: { path: ['type'], equals: 'event' } }, { trigger: { path: ['event'], equals: event } }],
+        AND: [
+          { trigger: { path: ['type'], equals: 'event' } },
+          { trigger: { path: ['event'], equals: event } },
+        ],
       },
       select: { id: true },
     });
@@ -479,7 +531,11 @@ export class AutomationProcessor implements JobProcessor<typeof QueueName.AUTOMA
               organizationId: workflow.organizationId,
               workflowId: workflow.id,
               status: 'queued',
-              trigger: { type: 'schedule', cron: trigger.data.cron, scheduledFor: minute.toISOString() },
+              trigger: {
+                type: 'schedule',
+                cron: trigger.data.cron,
+                scheduledFor: minute.toISOString(),
+              },
               input: {},
             },
           });
@@ -489,7 +545,10 @@ export class AutomationProcessor implements JobProcessor<typeof QueueName.AUTOMA
         }
         if (!isNew) {
           // Created by an earlier tick; only re-enqueue if that tick died before enqueueing (still queued).
-          const existing = await db.workflowExecution.findUnique({ where: { id }, select: { status: true } });
+          const existing = await db.workflowExecution.findUnique({
+            where: { id },
+            select: { status: true },
+          });
           if (existing?.status !== 'queued') continue;
         }
         await this.producer.enqueue(QueueName.AUTOMATION, {
@@ -503,7 +562,10 @@ export class AutomationProcessor implements JobProcessor<typeof QueueName.AUTOMA
         created += 1;
       }
     }
-    this.logger.debug({ ...context, workflows: workflows.length, created }, 'Schedule tick evaluated');
+    this.logger.debug(
+      { ...context, workflows: workflows.length, created },
+      'Schedule tick evaluated',
+    );
     return { status: 'completed', evaluated: workflows.length, scheduled: created };
   }
 }

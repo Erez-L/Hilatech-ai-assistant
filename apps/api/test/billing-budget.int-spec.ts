@@ -57,7 +57,8 @@ describe('Billing readiness: entitlements, budget, alerts, admission control', (
     api(actor).put('/api/v1/billing/budget').send(body);
   const sendMessage = (content = 'hello') =>
     api(member).post(`/api/v1/assistant/threads/${threadId}/messages`).send({ content });
-  const requestLogs = () => ctx.prisma.client.aiRequestLog.count({ where: { organizationId: orgId } });
+  const requestLogs = () =>
+    ctx.prisma.client.aiRequestLog.count({ where: { organizationId: orgId } });
 
   beforeAll(async () => {
     ctx = await createTestApp();
@@ -81,7 +82,9 @@ describe('Billing readiness: entitlements, budget, alerts, admission control', (
           .send({ provider: 'mock', name: 'Mock', defaultModel: 'mock-chat' })
       ).status,
     ).toBe(201);
-    threadId = ((await api(member).post('/api/v1/assistant/threads').send({})).body.data as AssistantThread).id;
+    threadId = (
+      (await api(member).post('/api/v1/assistant/threads').send({})).body.data as AssistantThread
+    ).id;
     agentId = (
       await api()
         .post('/api/v1/agents')
@@ -140,15 +143,24 @@ describe('Billing readiness: entitlements, budget, alerts, admission control', (
       expect(usage.metrics.documents).toEqual({ used: 2, limit: 10 });
       expect(usage.metrics.storage_mb).toEqual({ used: 5, limit: 100 });
 
-      const ent = (await api().get('/api/v1/billing/entitlements')).body.data as EntitlementsOverview;
+      const ent = (await api().get('/api/v1/billing/entitlements')).body
+        .data as EntitlementsOverview;
       expect(ent.plan).toBe('free');
       const byKey = Object.fromEntries(ent.entitlements.map((e) => [e.key, e]));
-      expect(byKey.documents).toMatchObject({ used: 2, limit: 10, percent: 20, state: 'ok', basis: 'stock' });
+      expect(byKey.documents).toMatchObject({
+        used: 2,
+        limit: 10,
+        percent: 20,
+        state: 'ok',
+        basis: 'stock',
+      });
       expect(byKey.storage_mb).toMatchObject({ used: 5, limit: 100, unit: 'mb' });
       expect(byKey.seats).toMatchObject({ used: 2, limit: 2, state: 'exceeded', enforced: true });
       expect(byKey.agents).toMatchObject({ used: 1, limit: 1, state: 'exceeded', enforced: false });
       expect(byKey.agent_executions).toMatchObject({ used: 0, limit: null });
-      await db.usageRecord.deleteMany({ where: { organizationId: orgId, metric: { in: ['documents', 'storage_mb'] } } });
+      await db.usageRecord.deleteMany({
+        where: { organizationId: orgId, metric: { in: ['documents', 'storage_mb'] } },
+      });
       await db.document.deleteMany({ where: { organizationId: orgId } });
     });
 
@@ -168,10 +180,16 @@ describe('Billing readiness: entitlements, budget, alerts, admission control', (
       const res = await api().post('/api/v1/billing/checkout').send({ plan: 'pro' });
       expect(res.status).toBe(501);
       expect(res.body.error.code).toBe(ErrorCode.PAYMENT_NOT_CONFIGURED);
-      expect((await api(member).post('/api/v1/billing/checkout').send({ plan: 'pro' })).status).toBe(403);
-      expect((await api().post('/api/v1/billing/checkout').send({ plan: 'platinum' })).status).toBe(400);
+      expect(
+        (await api(member).post('/api/v1/billing/checkout').send({ plan: 'pro' })).status,
+      ).toBe(403);
+      expect((await api().post('/api/v1/billing/checkout').send({ plan: 'platinum' })).status).toBe(
+        400,
+      );
       // nothing changed
-      const sub = await ctx.prisma.client.subscription.findUnique({ where: { organizationId: orgId } });
+      const sub = await ctx.prisma.client.subscription.findUnique({
+        where: { organizationId: orgId },
+      });
       expect(sub?.plan).toBe('free');
     });
   });
@@ -203,7 +221,11 @@ describe('Billing readiness: entitlements, budget, alerts, admission control', (
       expect(noBudget.status).toBe(400);
       expect(noBudget.body.error.code).toBe(ErrorCode.VALIDATION_ERROR);
 
-      const ok = await putBudget({ monthlyTokenBudget: 10_000, warnThresholdPct: 75, hardStopEnabled: false });
+      const ok = await putBudget({
+        monthlyTokenBudget: 10_000,
+        warnThresholdPct: 75,
+        hardStopEnabled: false,
+      });
       expect(ok.status).toBe(200);
       expect((ok.body.data as BudgetStatus).settings).toMatchObject({
         monthlyTokenBudget: 10_000,
@@ -253,7 +275,11 @@ describe('Billing readiness: entitlements, budget, alerts, admission control', (
       });
       const ownerNotes = await notificationsFor(owner.user.id);
       expect(ownerNotes).toHaveLength(1);
-      expect(ownerNotes[0]?.data).toMatchObject({ kind: 'budget_alert', scope: 'budget_tokens', level: 'warning' });
+      expect(ownerNotes[0]?.data).toMatchObject({
+        kind: 'budget_alert',
+        scope: 'budget_tokens',
+        level: 'warning',
+      });
       expect(ownerNotes[0]?.link).toBe('/settings/billing');
       // the plain member cannot manage billing: no notification, no alert listing
       expect(await notificationsFor(member.user.id)).toHaveLength(0);
@@ -272,7 +298,10 @@ describe('Billing readiness: entitlements, budget, alerts, admission control', (
       ]);
       expect(res.body.meta.total).toBe(2);
       const notes = await notificationsFor(owner.user.id);
-      expect(notes.map((n) => (n.data as { level: string }).level)).toEqual(['warning', 'exceeded']);
+      expect(notes.map((n) => (n.data as { level: string }).level)).toEqual([
+        'warning',
+        'exceeded',
+      ]);
     });
   });
 
@@ -292,7 +321,9 @@ describe('Billing readiness: entitlements, budget, alerts, admission control', (
       await setTokensUsed(10_000);
       await putBudget({ hardStopEnabled: true });
       const logsBefore = await requestLogs();
-      const messagesBefore = await ctx.prisma.client.assistantMessage.count({ where: { threadId } });
+      const messagesBefore = await ctx.prisma.client.assistantMessage.count({
+        where: { threadId },
+      });
 
       const res = await sendMessage('should be refused');
       expect(res.status).toBe(402);
@@ -304,7 +335,9 @@ describe('Billing readiness: entitlements, budget, alerts, admission control', (
         budget: 10_000,
       });
       expect(await requestLogs()).toBe(logsBefore); // the provider was never called
-      expect(await ctx.prisma.client.assistantMessage.count({ where: { threadId } })).toBe(messagesBefore);
+      expect(await ctx.prisma.client.assistantMessage.count({ where: { threadId } })).toBe(
+        messagesBefore,
+      );
 
       const status = (await api().get('/api/v1/billing/budget')).body.data as BudgetStatus;
       expect(status.blocked).toBe(true);
@@ -322,13 +355,19 @@ describe('Billing readiness: entitlements, budget, alerts, admission control', (
 
     it('agents: sync and async executes are refused with no execution row created', async () => {
       await putBudget({ hardStopEnabled: true });
-      const before = await ctx.prisma.client.agentExecution.count({ where: { organizationId: orgId } });
+      const before = await ctx.prisma.client.agentExecution.count({
+        where: { organizationId: orgId },
+      });
       for (const mode of ['sync', 'async']) {
-        const res = await api(member).post(`/api/v1/agents/${agentId}/execute`).send({ input: 'x', mode });
+        const res = await api(member)
+          .post(`/api/v1/agents/${agentId}/execute`)
+          .send({ input: 'x', mode });
         expect(res.status).toBe(402);
         expect(res.body.error.code).toBe(ErrorCode.BUDGET_EXCEEDED);
       }
-      expect(await ctx.prisma.client.agentExecution.count({ where: { organizationId: orgId } })).toBe(before);
+      expect(
+        await ctx.prisma.client.agentExecution.count({ where: { organizationId: orgId } }),
+      ).toBe(before);
     });
 
     it('raising the budget re-opens the gate; runs reconcile and release their reservation', async () => {
@@ -336,13 +375,19 @@ describe('Billing readiness: entitlements, budget, alerts, admission control', (
       const logsBefore = await requestLogs();
       const chat = await sendMessage('now it works');
       expect(chat.status).toBe(200);
-      const exec = await api(member).post(`/api/v1/agents/${agentId}/execute`).send({ input: 'hi', mode: 'sync' });
+      const exec = await api(member)
+        .post(`/api/v1/agents/${agentId}/execute`)
+        .send({ input: 'hi', mode: 'sync' });
       expect(exec.status).toBe(200);
       expect(exec.body.data.status).toBe('succeeded');
       expect(await requestLogs()).toBeGreaterThan(logsBefore);
 
       const budget = ctx.app.get(BudgetService);
-      const reservations = (budget as unknown as { reservations: { outstanding(o: string): Promise<{ tokens: number }> } }).reservations;
+      const reservations = (
+        budget as unknown as {
+          reservations: { outstanding(o: string): Promise<{ tokens: number }> };
+        }
+      ).reservations;
       expect((await reservations.outstanding(orgId)).tokens).toBe(0);
     });
 
@@ -357,12 +402,19 @@ describe('Billing readiness: entitlements, budget, alerts, admission control', (
       await putBudget({ monthlyTokenBudget: 200_000, hardStopEnabled: true });
       const res = await sendMessage('too big for the remainder');
       expect(res.status).toBe(402);
-      expect(res.body.error.details).toMatchObject({ scope: 'budget_tokens', reason: 'would_exceed' });
+      expect(res.body.error.details).toMatchObject({
+        scope: 'budget_tokens',
+        reason: 'would_exceed',
+      });
     });
 
     it('cost-only budget without any configured pricing is reported unenforceable and does not block', async () => {
       await setTokensUsed(0);
-      await putBudget({ monthlyTokenBudget: null, monthlyCostBudgetUsd: 0.01, hardStopEnabled: true });
+      await putBudget({
+        monthlyTokenBudget: null,
+        monthlyCostBudgetUsd: 0.01,
+        hardStopEnabled: true,
+      });
       const status = (await api().get('/api/v1/billing/budget')).body.data as BudgetStatus;
       expect(status.cost).toMatchObject({ enforceable: false, usedUsd: null, level: 'ok' });
       expect(status.cost.note).toMatch(/pricing/i);

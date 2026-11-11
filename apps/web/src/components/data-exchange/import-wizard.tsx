@@ -85,7 +85,11 @@ export function ImportButton({ entity }: { entity: ImportEntity }) {
   if (!allowed) return null;
   return (
     <>
-      <Button variant="secondary" leadingIcon={<Upload aria-hidden />} onClick={() => setOpen(true)}>
+      <Button
+        variant="secondary"
+        leadingIcon={<Upload aria-hidden />}
+        onClick={() => setOpen(true)}
+      >
         {t('imports.import')}
       </Button>
       <ImportWizardDialog open={open} onOpenChange={setOpen} entity={entity} />
@@ -116,14 +120,21 @@ function StepIndicator({ step }: { step: WizardStep }) {
   const t = useT();
   const current = WIZARD_STEPS.indexOf(step);
   return (
-    <ol className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs" aria-label={t('imports.steps')}>
+    <ol
+      className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs"
+      aria-label={t('imports.steps')}
+    >
       {WIZARD_STEPS.map((s, i) => (
         <li
           key={s}
           aria-current={i === current ? 'step' : undefined}
           className={cn(
             'flex items-center gap-1.5',
-            i === current ? 'font-semibold text-fg' : i < current ? 'text-fg-muted' : 'text-fg-subtle',
+            i === current
+              ? 'font-semibold text-fg'
+              : i < current
+                ? 'text-fg-muted'
+                : 'text-fg-subtle',
           )}
         >
           <span
@@ -146,11 +157,17 @@ export function ImportWizard({ entity, onClose }: { entity?: ImportEntity; onClo
   const t = useT();
   const qc = useQueryClient();
   const orgId = useSession((s) => s.activeOrganizationId);
-  const [state, dispatch] = React.useReducer(wizardReducer, entity ?? 'contacts', initialWizardState);
+  const [state, dispatch] = React.useReducer(
+    wizardReducer,
+    entity ?? 'contacts',
+    initialWizardState,
+  );
   const [file, setFile] = React.useState<File | null>(null);
   const [error, setError] = React.useState<unknown>(null);
   const mutations = useImportMutations();
-  const polled = useImportJob(state.step === 'progress' ? (state.job?.id ?? null) : null, { poll: true });
+  const polled = useImportJob(state.step === 'progress' ? (state.job?.id ?? null) : null, {
+    poll: true,
+  });
 
   React.useEffect(() => {
     if (polled.data && state.step === 'progress') dispatch({ type: 'progress', job: polled.data });
@@ -172,7 +189,10 @@ export function ImportWizard({ entity, onClose }: { entity?: ImportEntity; onClo
     if (!file) return;
     setError(null);
     try {
-      dispatch({ type: 'uploaded', upload: await mutations.upload.mutateAsync({ entity: state.entity, file }) });
+      dispatch({
+        type: 'uploaded',
+        upload: await mutations.upload.mutateAsync({ entity: state.entity, file }),
+      });
     } catch (e) {
       setError(e);
     }
@@ -181,7 +201,10 @@ export function ImportWizard({ entity, onClose }: { entity?: ImportEntity; onClo
     if (!state.job) return;
     setError(null);
     try {
-      dispatch({ type: 'validated', job: await mutations.validate.mutateAsync({ id: state.job.id, body: config }) });
+      dispatch({
+        type: 'validated',
+        job: await mutations.validate.mutateAsync({ id: state.job.id, body: config }),
+      });
     } catch (e) {
       setError(e);
     }
@@ -190,7 +213,10 @@ export function ImportWizard({ entity, onClose }: { entity?: ImportEntity; onClo
     if (!state.job) return;
     setError(null);
     try {
-      dispatch({ type: 'started', job: await mutations.execute.mutateAsync({ id: state.job.id, body: config }) });
+      dispatch({
+        type: 'started',
+        job: await mutations.execute.mutateAsync({ id: state.job.id, body: config }),
+      });
     } catch (e) {
       setError(e);
     }
@@ -205,13 +231,16 @@ export function ImportWizard({ entity, onClose }: { entity?: ImportEntity; onClo
     }
   };
 
-  const busy = mutations.upload.isPending || mutations.validate.isPending || mutations.execute.isPending;
+  const busy =
+    mutations.upload.isPending || mutations.validate.isPending || mutations.execute.isPending;
 
   return (
     <div className="flex min-h-0 flex-col" data-testid="import-wizard" data-step={state.step}>
       <DialogHeader>
         <DialogTitle>{t('imports.importData')}</DialogTitle>
-        <DialogDescription className="sr-only">{t('imports.importDataDescription')}</DialogDescription>
+        <DialogDescription className="sr-only">
+          {t('imports.importDataDescription')}
+        </DialogDescription>
         <StepIndicator step={state.step} />
       </DialogHeader>
       <DialogBody className="flex flex-col gap-5 pb-2">
@@ -257,7 +286,12 @@ export function ImportWizard({ entity, onClose }: { entity?: ImportEntity; onClo
             <Button variant="secondary" onClick={onClose}>
               {t('common.cancel')}
             </Button>
-            <Button leadingIcon={<FileUp aria-hidden />} disabled={!file} loading={mutations.upload.isPending} onClick={() => void upload()}>
+            <Button
+              leadingIcon={<FileUp aria-hidden />}
+              disabled={!file}
+              loading={mutations.upload.isPending}
+              onClick={() => void upload()}
+            >
               {t('imports.uploadAndContinue')}
             </Button>
           </>
@@ -267,7 +301,11 @@ export function ImportWizard({ entity, onClose }: { entity?: ImportEntity; onClo
             <Button variant="secondary" onClick={() => dispatch({ type: 'back' })} disabled={busy}>
               {t('imports.back')}
             </Button>
-            <Button disabled={!canValidate(state)} loading={mutations.validate.isPending} onClick={() => void validate()}>
+            <Button
+              disabled={!canValidate(state)}
+              loading={mutations.validate.isPending}
+              onClick={() => void validate()}
+            >
               {t('imports.validateDryRun')}
             </Button>
           </>
@@ -278,7 +316,11 @@ export function ImportWizard({ entity, onClose }: { entity?: ImportEntity; onClo
               {t('imports.backToMapping')}
             </Button>
             {state.stale ? (
-              <Button variant="secondary" loading={mutations.validate.isPending} onClick={() => void validate()}>
+              <Button
+                variant="secondary"
+                loading={mutations.validate.isPending}
+                onClick={() => void validate()}
+              >
                 {t('imports.rerunValidation')}
               </Button>
             ) : null}
@@ -292,13 +334,23 @@ export function ImportWizard({ entity, onClose }: { entity?: ImportEntity; onClo
           </>
         ) : null}
         {state.step === 'progress' ? (
-          <Button variant="secondary" loading={mutations.cancel.isPending} onClick={() => void cancel()}>
+          <Button
+            variant="secondary"
+            loading={mutations.cancel.isPending}
+            onClick={() => void cancel()}
+          >
             {t('imports.cancelImport')}
           </Button>
         ) : null}
         {state.step === 'result' ? (
           <>
-            <Button variant="secondary" onClick={() => { setFile(null); dispatch({ type: 'restart' }); }}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setFile(null);
+                dispatch({ type: 'restart' });
+              }}
+            >
               {t('imports.importAnother')}
             </Button>
             <Button onClick={onClose}>{t('imports.done')}</Button>
@@ -359,7 +411,8 @@ function UploadStep({
         />
         {file ? (
           <p className="text-xs text-fg-muted" dir="auto">
-            {file.name} · {t('imports.fileSizeKb', { kb: Math.max(1, Math.round(file.size / 1024)) })}
+            {file.name} ·{' '}
+            {t('imports.fileSizeKb', { kb: Math.max(1, Math.round(file.size / 1024)) })}
           </p>
         ) : null}
       </div>
@@ -390,7 +443,9 @@ function MappingStep({
           {upload.fileName}
         </span>
         <Badge variant="outline">{t('imports.rowsCount', { count: upload.totalRows })}</Badge>
-        <Badge variant="outline">{t('imports.encodingValue', { value: upload.encoding ?? '?' })}</Badge>
+        <Badge variant="outline">
+          {t('imports.encodingValue', { value: upload.encoding ?? '?' })}
+        </Badge>
         <Badge variant="outline">
           {t('imports.delimiterValue', { value: delimiterName(upload.delimiter, t) })}
         </Badge>
@@ -465,7 +520,9 @@ function MappingStep({
                       <NativeSelect
                         id={id}
                         value={col === null ? '' : String(col)}
-                        onChange={(e) => onMap(f.key, e.target.value === '' ? null : Number(e.target.value))}
+                        onChange={(e) =>
+                          onMap(f.key, e.target.value === '' ? null : Number(e.target.value))
+                        }
                       >
                         <option value="">{t('imports.notImported')}</option>
                         {upload.headers.map((h, i) => (
@@ -486,7 +543,11 @@ function MappingStep({
         </div>
       </section>
 
-      <DuplicateStrategyField value={state.duplicateStrategy} onChange={onStrategy} idPrefix="map" />
+      <DuplicateStrategyField
+        value={state.duplicateStrategy}
+        onChange={onStrategy}
+        idPrefix="map"
+      />
     </div>
   );
 }
@@ -511,8 +572,16 @@ function DuplicateStrategyField({
   const t = useT();
   const options: { value: DuplicateStrategy; label: string; hint: string }[] = [
     { value: 'skip', label: t('imports.strategy.skip'), hint: t('imports.strategy.skipHint') },
-    { value: 'update', label: t('imports.strategy.update'), hint: t('imports.strategy.updateHint') },
-    { value: 'create', label: t('imports.strategy.create'), hint: t('imports.strategy.createHint') },
+    {
+      value: 'update',
+      label: t('imports.strategy.update'),
+      hint: t('imports.strategy.updateHint'),
+    },
+    {
+      value: 'create',
+      label: t('imports.strategy.create'),
+      hint: t('imports.strategy.createHint'),
+    },
   ];
   return (
     <fieldset className="flex flex-col gap-2">
@@ -562,16 +631,36 @@ function ReviewStep({
     <div className="flex flex-col gap-5" data-testid="import-review">
       {stale ? <Alert tone="warning">{t('imports.settingsChangedRerun')}</Alert> : null}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label={t('imports.totalRows')} value={validation.total} data-testid="validation-total" />
-        <StatCard label={t('imports.willBeCreated')} value={validation.valid} data-testid="validation-valid" />
-        <StatCard label={t('imports.invalidRows')} value={validation.invalid} data-testid="validation-invalid" />
-        <StatCard label={t('imports.duplicateRows')} value={validation.duplicates} data-testid="validation-duplicates" />
+        <StatCard
+          label={t('imports.totalRows')}
+          value={validation.total}
+          data-testid="validation-total"
+        />
+        <StatCard
+          label={t('imports.willBeCreated')}
+          value={validation.valid}
+          data-testid="validation-valid"
+        />
+        <StatCard
+          label={t('imports.invalidRows')}
+          value={validation.invalid}
+          data-testid="validation-invalid"
+        />
+        <StatCard
+          label={t('imports.duplicateRows')}
+          value={validation.duplicates}
+          data-testid="validation-duplicates"
+        />
       </div>
       <DuplicateStrategyField value={strategy} onChange={onStrategy} idPrefix="review" />
       <section aria-label={t('imports.rowsWithProblems')} className="flex flex-col gap-2">
         <h3 className="text-sm font-semibold">{t('imports.rowsWithProblems')}</h3>
         {validation.rows.length === 0 ? (
-          <EmptyState compact title={t('imports.noProblems')} description={t('imports.noProblemsHint')} />
+          <EmptyState
+            compact
+            title={t('imports.noProblems')}
+            description={t('imports.noProblemsHint')}
+          />
         ) : (
           <>
             <div className="max-h-72 overflow-auto rounded-md border border-border">
@@ -596,14 +685,20 @@ function ReviewStep({
                         <ul className="flex flex-col gap-0.5 text-sm" dir="auto">
                           {r.errors.map((e, i) => (
                             <li key={i}>
-                              {e.field ? <span className="font-medium">{enumLabel(t, 'imports.field', e.field)}: </span> : null}
+                              {e.field ? (
+                                <span className="font-medium">
+                                  {enumLabel(t, 'imports.field', e.field)}:{' '}
+                                </span>
+                              ) : null}
                               {e.message}
                             </li>
                           ))}
                           {r.duplicateOf ? (
                             <li>
                               {r.duplicateOf.source === 'existing'
-                                ? t('imports.duplicateOfExisting', { by: enumLabel(t, 'imports.matchedBy', r.duplicateOf.matchedBy) })
+                                ? t('imports.duplicateOfExisting', {
+                                    by: enumLabel(t, 'imports.matchedBy', r.duplicateOf.matchedBy),
+                                  })
                                 : t('imports.duplicateOfRow', {
                                     row: r.duplicateOf.row ?? 0,
                                     by: enumLabel(t, 'imports.matchedBy', r.duplicateOf.matchedBy),
@@ -617,7 +712,9 @@ function ReviewStep({
                 </TableBody>
               </Table>
             </div>
-            {validation.truncated ? <p className="text-xs text-fg-muted">{t('imports.validationTruncated')}</p> : null}
+            {validation.truncated ? (
+              <p className="text-xs text-fg-muted">{t('imports.validationTruncated')}</p>
+            ) : null}
           </>
         )}
       </section>
@@ -625,7 +722,11 @@ function ReviewStep({
   );
 }
 
-function ProgressStep({ job }: { job: { progress: { processed: number; total: number; percent: number }; status: string } }) {
+function ProgressStep({
+  job,
+}: {
+  job: { progress: { processed: number; total: number; percent: number }; status: string };
+}) {
   const t = useT();
   const { processed, total, percent } = job.progress;
   return (
@@ -634,7 +735,9 @@ function ProgressStep({ job }: { job: { progress: { processed: number; total: nu
         <span className="font-medium">
           {job.status === 'queued' ? t('imports.queued') : t('imports.importing')}
         </span>
-        <span className="tabular text-fg-muted">{t('imports.processedOf', { processed, total })}</span>
+        <span className="tabular text-fg-muted">
+          {t('imports.processedOf', { processed, total })}
+        </span>
       </div>
       <div
         role="progressbar"
@@ -645,7 +748,10 @@ function ProgressStep({ job }: { job: { progress: { processed: number; total: nu
         aria-valuetext={t('imports.percentDone', { percent: Math.round(percent) })}
         className="h-2.5 w-full overflow-hidden rounded-full bg-accent-soft"
       >
-        <div className="h-full rounded-full bg-accent transition-[width] duration-300" style={{ width: `${Math.min(100, Math.max(2, percent))}%` }} />
+        <div
+          className="h-full rounded-full bg-accent transition-[width] duration-300"
+          style={{ width: `${Math.min(100, Math.max(2, percent))}%` }}
+        />
       </div>
     </div>
   );

@@ -31,7 +31,7 @@ describe('ZodValidationPipe', () => {
     expect(error!.code).toBe(ErrorCode.VALIDATION_ERROR);
     expect(error!.details).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ path: 'email', code: 'invalid_string' }),
+        expect.objectContaining({ path: 'email', code: 'invalid_format' }),
         expect.objectContaining({ path: 'password', code: 'invalid_type' }),
       ]),
     );

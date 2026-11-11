@@ -88,16 +88,27 @@ describe('admissionCaps', () => {
 describe('decideAdmission', () => {
   const none = { tokens: 0, costMicroUsd: 0 };
   it('allows when the estimate fits into the headroom after outstanding reservations', () => {
-    expect(decideAdmission({ tokens: 600, costMicroUsd: null }, none, { tokens: 600, costMicroUsd: null })).toEqual({
+    expect(
+      decideAdmission({ tokens: 600, costMicroUsd: null }, none, {
+        tokens: 600,
+        costMicroUsd: null,
+      }),
+    ).toEqual({
       allowed: true,
     });
     expect(
-      decideAdmission({ tokens: 600, costMicroUsd: null }, { tokens: 300, costMicroUsd: 0 }, { tokens: 301, costMicroUsd: null }),
+      decideAdmission(
+        { tokens: 600, costMicroUsd: null },
+        { tokens: 300, costMicroUsd: 0 },
+        { tokens: 301, costMicroUsd: null },
+      ),
     ).toEqual({ allowed: false, scope: 'tokens', reason: 'would_exceed' });
   });
 
   it('refuses everything once exhausted, even a tiny request', () => {
-    expect(decideAdmission({ tokens: 0, costMicroUsd: null }, none, { tokens: 1, costMicroUsd: null })).toEqual({
+    expect(
+      decideAdmission({ tokens: 0, costMicroUsd: null }, none, { tokens: 1, costMicroUsd: null }),
+    ).toEqual({
       allowed: false,
       scope: 'tokens',
       reason: 'exhausted',
@@ -105,15 +116,21 @@ describe('decideAdmission', () => {
   });
 
   it('cost: unpriced models are only refused by an exhausted cost budget', () => {
-    expect(decideAdmission({ tokens: null, costMicroUsd: 5 }, none, { tokens: 100, costMicroUsd: null })).toEqual({
+    expect(
+      decideAdmission({ tokens: null, costMicroUsd: 5 }, none, { tokens: 100, costMicroUsd: null }),
+    ).toEqual({
       allowed: true,
     });
-    expect(decideAdmission({ tokens: null, costMicroUsd: 0 }, none, { tokens: 100, costMicroUsd: null })).toEqual({
+    expect(
+      decideAdmission({ tokens: null, costMicroUsd: 0 }, none, { tokens: 100, costMicroUsd: null }),
+    ).toEqual({
       allowed: false,
       scope: 'cost',
       reason: 'exhausted',
     });
-    expect(decideAdmission({ tokens: null, costMicroUsd: 5 }, none, { tokens: 1, costMicroUsd: 6 })).toEqual({
+    expect(
+      decideAdmission({ tokens: null, costMicroUsd: 5 }, none, { tokens: 1, costMicroUsd: 6 }),
+    ).toEqual({
       allowed: false,
       scope: 'cost',
       reason: 'would_exceed',
@@ -121,7 +138,12 @@ describe('decideAdmission', () => {
   });
 
   it('no caps = always allowed', () => {
-    expect(decideAdmission({ tokens: null, costMicroUsd: null }, none, { tokens: 1e12, costMicroUsd: 1e12 })).toEqual({ allowed: true });
+    expect(
+      decideAdmission({ tokens: null, costMicroUsd: null }, none, {
+        tokens: 1e12,
+        costMicroUsd: 1e12,
+      }),
+    ).toEqual({ allowed: true });
   });
 });
 

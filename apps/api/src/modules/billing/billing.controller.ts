@@ -139,7 +139,9 @@ export class BillingController {
   @Get('alerts')
   @ApiSecurity('organization')
   @RequirePermissions(Permission.ORG_BILLING_MANAGE)
-  @ApiOperation({ summary: 'Budget / plan-allowance threshold alerts raised for this organization' })
+  @ApiOperation({
+    summary: 'Budget / plan-allowance threshold alerts raised for this organization',
+  })
   @ApiZodQuery(listBudgetAlertsQuerySchema)
   @ApiZodResponse(budgetAlertSchema, { paginated: true })
   @ApiErrors(...COMMON_TENANT_ERRORS)

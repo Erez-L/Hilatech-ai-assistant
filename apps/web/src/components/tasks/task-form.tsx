@@ -83,7 +83,10 @@ export function taskFormDefaults(
     title: task?.title ?? '',
     description: task?.description ?? '',
     priority: task?.priority ?? 'medium',
-    status: task && task.status !== 'done' ? (task.status as 'todo' | 'in_progress' | 'cancelled') : 'todo',
+    status:
+      task && task.status !== 'done'
+        ? (task.status as 'todo' | 'in_progress' | 'cancelled')
+        : 'todo',
     dueAt: isoToLocalInput(task?.dueAt),
     reminderAt: isoToLocalInput(task?.reminderAt),
     assigneeId: task?.assigneeId ?? '',
@@ -112,7 +115,10 @@ export function toCreateTaskRequest(values: TaskFormValues): CreateTaskRequest {
 }
 
 /** PATCH body: cleared fields are sent as null so they clear on the server. */
-export function toUpdateTaskRequest(values: TaskFormValues, allowStatus: boolean): UpdateTaskRequest {
+export function toUpdateTaskRequest(
+  values: TaskFormValues,
+  allowStatus: boolean,
+): UpdateTaskRequest {
   return {
     title: values.title,
     description: values.description || null,
@@ -177,7 +183,11 @@ export function TaskFormFields({
         />
       </FormField>
 
-      <FormField id={id('description')} label={t('common.description')} error={errors.description?.message}>
+      <FormField
+        id={id('description')}
+        label={t('common.description')}
+        error={errors.description?.message}
+      >
         <Textarea rows={3} dir="auto" {...form.register('description')} />
       </FormField>
 
@@ -227,7 +237,11 @@ export function TaskFormFields({
       </div>
 
       {editing ? (
-        <FormField id={id('assigneeId')} label={t('common.assignee')} error={errors.assigneeId?.message}>
+        <FormField
+          id={id('assigneeId')}
+          label={t('common.assignee')}
+          error={errors.assigneeId?.message}
+        >
           <Controller
             control={form.control}
             name="assigneeId"
@@ -248,7 +262,12 @@ export function TaskFormFields({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <FormField id={id('dueAt')} label={t('tasks.dueDate')} error={errors.dueAt?.message}>
-          <Input type="datetime-local" dir="ltr" className="text-start" {...form.register('dueAt')} />
+          <Input
+            type="datetime-local"
+            dir="ltr"
+            className="text-start"
+            {...form.register('dueAt')}
+          />
         </FormField>
         <FormField
           id={id('reminderAt')}
@@ -256,14 +275,21 @@ export function TaskFormFields({
           description={t('tasks.reminderHint')}
           error={errors.reminderAt?.message}
         >
-          <Input type="datetime-local" dir="ltr" className="text-start" {...form.register('reminderAt')} />
+          <Input
+            type="datetime-local"
+            dir="ltr"
+            className="text-start"
+            {...form.register('reminderAt')}
+          />
         </FormField>
       </div>
 
       {(['lead', 'contact', 'deal', 'conversation'] as const).some(
         (k) =>
           !hidden.has(k) &&
-          { lead: canLeads, contact: canContacts, deal: canDeals, conversation: canConversations }[k],
+          { lead: canLeads, contact: canContacts, deal: canDeals, conversation: canConversations }[
+            k
+          ],
       ) ? (
         <div className="flex flex-col gap-4 rounded-lg border border-border p-4">
           <p className="text-sm font-medium">{t('tasks.relatedRecords')}</p>
@@ -289,7 +315,11 @@ export function TaskFormFields({
               </FormField>
             ) : null}
             {canContacts && !hidden.has('contact') ? (
-              <FormField id={id('contactId')} label={t('common.contact')} error={errors.contactId?.message}>
+              <FormField
+                id={id('contactId')}
+                label={t('common.contact')}
+                error={errors.contactId?.message}
+              >
                 <Controller
                   control={form.control}
                   name="contactId"
@@ -299,12 +329,22 @@ export function TaskFormFields({
                       value={field.value || null}
                       selected={
                         known.contact
-                          ? { id: field.value, firstName: known.contact, lastName: null, email: null, phone: null, company: null }
+                          ? {
+                              id: field.value,
+                              firstName: known.contact,
+                              lastName: null,
+                              email: null,
+                              phone: null,
+                              company: null,
+                            }
                           : null
                       }
                       onValueChange={(next, contact) => {
                         field.onChange(next ?? '');
-                        setKnown((k) => ({ ...k, contact: contact ? contactName(contact) : undefined }));
+                        setKnown((k) => ({
+                          ...k,
+                          contact: contact ? contactName(contact) : undefined,
+                        }));
                       }}
                       disabled={disabled}
                     />
@@ -348,7 +388,10 @@ export function TaskFormFields({
                       selectedLabel={known.conversation}
                       onValueChange={(next, conversation) => {
                         field.onChange(next ?? '');
-                        setKnown((k) => ({ ...k, conversation: conversation?.subject ?? undefined }));
+                        setKnown((k) => ({
+                          ...k,
+                          conversation: conversation?.subject ?? undefined,
+                        }));
                       }}
                       disabled={disabled}
                     />

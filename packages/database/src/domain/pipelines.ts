@@ -20,11 +20,20 @@ export interface PipelineWithStages {
   id: string;
   name: string;
   isDefault: boolean;
-  stages: Array<{ id: string; name: string; order: number; probability: number; kind: 'open' | 'won' | 'lost' }>;
+  stages: Array<{
+    id: string;
+    name: string;
+    order: number;
+    probability: number;
+    kind: 'open' | 'won' | 'lost';
+  }>;
 }
 
 /** Creates the default sales pipeline (Lead → Qualified → Proposal → Negotiation → Won / Lost) for an organization. */
-export async function createDefaultPipeline(db: Db, organizationId: string): Promise<PipelineWithStages> {
+export async function createDefaultPipeline(
+  db: Db,
+  organizationId: string,
+): Promise<PipelineWithStages> {
   const pipeline = await db.pipeline.create({
     data: {
       organizationId,
@@ -67,7 +76,10 @@ export async function ensureDefaultPipeline(
     include: { stages: { orderBy: { order: 'asc' } } },
   });
   if (any) {
-    await db.pipeline.updateMany({ where: { id: any.id, organizationId }, data: { isDefault: true } });
+    await db.pipeline.updateMany({
+      where: { id: any.id, organizationId },
+      data: { isDefault: true },
+    });
     return { ...any, isDefault: true };
   }
   try {

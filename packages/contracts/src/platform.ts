@@ -185,8 +185,8 @@ export const readAllNotificationsResultSchema = z.object({
 export type ReadAllNotificationsResult = z.infer<typeof readAllNotificationsResultSchema>;
 
 export const notificationPreferencesSchema = z.object({
-  inApp: z.record(NotificationType, z.boolean()).optional(),
-  email: z.record(NotificationType, z.boolean()).optional(),
+  inApp: z.partialRecord(NotificationType, z.boolean()).optional(),
+  email: z.partialRecord(NotificationType, z.boolean()).optional(),
 });
 export type NotificationPreferences = z.infer<typeof notificationPreferencesSchema>;
 
@@ -277,6 +277,9 @@ export type UsageMetric = z.infer<typeof UsageMetric>;
 export const usageSummarySchema = z.object({
   periodStart: z.string().datetime(),
   periodEnd: z.string().datetime(),
-  metrics: z.record(UsageMetric, z.object({ used: z.number(), limit: z.number().nullable() })),
+  metrics: z.partialRecord(
+    UsageMetric,
+    z.object({ used: z.number(), limit: z.number().nullable() }),
+  ),
 });
 export type UsageSummary = z.infer<typeof usageSummarySchema>;

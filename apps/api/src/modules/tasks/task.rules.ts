@@ -11,7 +11,9 @@ export const TaskRules = {
 
   /** Open task whose due date has passed. */
   isOverdue(task: { status: TaskStatus; dueAt: Date | null }, now: Date): boolean {
-    return TaskRules.isOpen(task.status) && task.dueAt !== null && task.dueAt.getTime() < now.getTime();
+    return (
+      TaskRules.isOpen(task.status) && task.dueAt !== null && task.dueAt.getTime() < now.getTime()
+    );
   },
 
   /**

@@ -99,12 +99,20 @@ function CompanyBody({ company }: { company: CompanyDetail }) {
         actions={
           <>
             {canUpdate ? (
-              <Button variant="secondary" leadingIcon={<Pencil aria-hidden />} onClick={() => setEditOpen(true)}>
+              <Button
+                variant="secondary"
+                leadingIcon={<Pencil aria-hidden />}
+                onClick={() => setEditOpen(true)}
+              >
                 {t('common.edit')}
               </Button>
             ) : null}
             {canDelete ? (
-              <Button variant="secondary" leadingIcon={<Trash2 aria-hidden />} onClick={() => setDeleteOpen(true)}>
+              <Button
+                variant="secondary"
+                leadingIcon={<Trash2 aria-hidden />}
+                onClick={() => setDeleteOpen(true)}
+              >
                 {t('common.delete')}
               </Button>
             ) : null}
@@ -239,15 +247,28 @@ function CompanyContacts({ company, canUpdate }: { company: CompanyDetail; canUp
           loading={<Skeleton className="h-16 w-full" />}
           isEmpty={(r) => r.data.length === 0}
           empty={
-            <EmptyState compact icon={<Users />} title={t('companies.noContactsLinked')} description={t('companies.noContactsLinkedHint')} />
+            <EmptyState
+              compact
+              icon={<Users />}
+              title={t('companies.noContactsLinked')}
+              description={t('companies.noContactsLinkedHint')}
+            />
           }
         >
           {(r) => (
             <ul className="divide-y divide-border" aria-label={t('common.contacts')}>
               {r.data.map((c) => (
-                <li key={c.id} className="flex items-center justify-between gap-3 py-2.5" data-testid="company-contact">
+                <li
+                  key={c.id}
+                  className="flex items-center justify-between gap-3 py-2.5"
+                  data-testid="company-contact"
+                >
                   <div className="flex min-w-0 flex-col">
-                    <Link href={`/contacts/${c.id}`} dir="auto" className="truncate font-medium hover:underline">
+                    <Link
+                      href={`/contacts/${c.id}`}
+                      dir="auto"
+                      className="truncate font-medium hover:underline"
+                    >
                       {contactName(c)}
                     </Link>
                     <span className="truncate text-xs text-fg-muted" dir="auto">
@@ -298,14 +319,25 @@ function CompanyDeals({ companyId }: { companyId: string }) {
           compact
           loading={<Skeleton className="h-16 w-full" />}
           isEmpty={(r) => r.data.length === 0}
-          empty={<EmptyState compact icon={<Handshake />} title={t('companies.noDealsYet')} description={t('companies.noDealsYetHint')} />}
+          empty={
+            <EmptyState
+              compact
+              icon={<Handshake />}
+              title={t('companies.noDealsYet')}
+              description={t('companies.noDealsYetHint')}
+            />
+          }
         >
           {(r) => (
             <ul className="divide-y divide-border" aria-label={t('deals.deals')}>
               {r.data.map((d) => (
                 <li key={d.id} className="flex items-center justify-between gap-3 py-2.5">
                   <div className="flex min-w-0 flex-col">
-                    <Link href={`/deals/${d.id}`} dir="auto" className="truncate font-medium hover:underline">
+                    <Link
+                      href={`/deals/${d.id}`}
+                      dir="auto"
+                      className="truncate font-medium hover:underline"
+                    >
                       {d.title}
                     </Link>
                     <span className="text-xs text-fg-muted">

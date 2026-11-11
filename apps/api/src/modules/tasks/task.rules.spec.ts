@@ -11,10 +11,16 @@ describe('TaskRules', () => {
     expect(TaskRules.isOpen('todo')).toBe(true);
     expect(TaskRules.isOpen('in_progress')).toBe(true);
     expect(TaskRules.isOpen('done')).toBe(false);
-    expect(TaskRules.isOverdue({ status: 'todo', dueAt: new Date('2029-12-31T00:00:00Z') }, NOW)).toBe(true);
-    expect(TaskRules.isOverdue({ status: 'done', dueAt: new Date('2029-12-31T00:00:00Z') }, NOW)).toBe(false);
+    expect(
+      TaskRules.isOverdue({ status: 'todo', dueAt: new Date('2029-12-31T00:00:00Z') }, NOW),
+    ).toBe(true);
+    expect(
+      TaskRules.isOverdue({ status: 'done', dueAt: new Date('2029-12-31T00:00:00Z') }, NOW),
+    ).toBe(false);
     expect(TaskRules.isOverdue({ status: 'todo', dueAt: null }, NOW)).toBe(false);
-    expect(TaskRules.isOverdue({ status: 'todo', dueAt: new Date('2030-01-02T00:00:00Z') }, NOW)).toBe(false);
+    expect(
+      TaskRules.isOverdue({ status: 'todo', dueAt: new Date('2030-01-02T00:00:00Z') }, NOW),
+    ).toBe(false);
   });
 
   it('only tasks:assign may give a task to someone else', () => {
@@ -23,14 +29,22 @@ describe('TaskRules', () => {
     expect(() => TaskRules.assertCanSetAssignee(plain, null, 'u2')).not.toThrow();
     expect(() => TaskRules.assertCanSetAssignee(plain, 'u2', 'u2')).not.toThrow();
     expect(() => TaskRules.assertCanSetAssignee(plain, 'u2', null)).toThrow(AppException);
-    expect(() => TaskRules.assertCanSetAssignee(tenant([Permission.TASKS_ASSIGN]), 'u2', null)).not.toThrow();
+    expect(() =>
+      TaskRules.assertCanSetAssignee(tenant([Permission.TASKS_ASSIGN]), 'u2', null),
+    ).not.toThrow();
   });
 
   it('completes and reopens only when the state changes', () => {
-    expect(TaskRules.completionData({ status: 'todo' }, NOW)).toEqual({ status: 'done', completedAt: NOW });
+    expect(TaskRules.completionData({ status: 'todo' }, NOW)).toEqual({
+      status: 'done',
+      completedAt: NOW,
+    });
     expect(TaskRules.completionData({ status: 'done' }, NOW)).toBeNull();
     expect(TaskRules.reopenData({ status: 'done' })).toEqual({ status: 'todo', completedAt: null });
-    expect(TaskRules.reopenData({ status: 'cancelled' })).toEqual({ status: 'todo', completedAt: null });
+    expect(TaskRules.reopenData({ status: 'cancelled' })).toEqual({
+      status: 'todo',
+      completedAt: null,
+    });
     expect(TaskRules.reopenData({ status: 'in_progress' })).toBeNull();
   });
 

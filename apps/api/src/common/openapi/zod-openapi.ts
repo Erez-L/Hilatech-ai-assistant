@@ -2,20 +2,24 @@ import { ErrorCode, apiErrorSchema, paginationMetaSchema } from '@hilatech/contr
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import { ApiBody, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { type SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
-import { type ZodObject, type ZodRawShape, type ZodTypeAny } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { z, type ZodObject, type ZodRawShape, type ZodTypeAny } from 'zod';
 
 /**
  * Swagger documentation derived from the zod contracts (ADR-007): the same schema validates the
  * request and documents it, so the OpenAPI document can never drift from what the API enforces.
  */
 export function zodToOpenApi(schema: ZodTypeAny): SchemaObject {
-  // The library's conditional return type is too deep for tsc with arbitrary schemas; we only need the plain object.
-  const convert = zodToJsonSchema as unknown as (
-    s: ZodTypeAny,
-    o: { target: string; $refStrategy: string },
-  ) => Record<string, unknown>;
-  const json = convert(schema, { target: 'openApi3', $refStrategy: 'none' });
+  // Request shapes are documented as sent (`io: 'input'`); types JSON Schema cannot express degrade to "any".
+  const json = z.toJSONSchema(schema, {
+    target: 'openapi-3.0',
+    io: 'input',
+    unrepresentable: 'any',
+    reused: 'inline',
+    override: ({ jsonSchema }) => {
+      if (jsonSchema.format !== undefined && jsonSchema.pattern !== undefined)
+        delete jsonSchema.pattern;
+    },
+  }) as Record<string, unknown>;
   delete json.$schema;
   return json as SchemaObject;
 }
@@ -30,7 +34,8 @@ export function ApiZodBody(schema: ZodTypeAny, description?: string): MethodDeco
 /** Documents each top-level key of an object schema as a query parameter. */
 export function ApiZodQuery(schema: ZodObject<ZodRawShape>): MethodDecorator {
   const decorators: MethodDecorator[] = [];
-  for (const [name, field] of Object.entries(schema.shape)) {
+  for (const [name, raw] of Object.entries(schema.shape)) {
+    const field = raw as ZodTypeAny;
     const required = !field.isOptional();
     decorators.push(ApiQuery({ name, required, schema: zodToOpenApi(field) }));
   }
