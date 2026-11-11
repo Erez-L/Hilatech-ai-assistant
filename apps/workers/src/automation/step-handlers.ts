@@ -783,6 +783,24 @@ export class StepHandlerFactory {
       return { executionId, status: 'queued', output: null, error: null };
     }
 
+    const budget = await this.runtime.checkBudget(organizationId);
+    if (budget.blocked) {
+      await this.runtime.store.finish(executionId, {
+        status: 'failed',
+        output: null,
+        error: budget.message,
+        stepCount: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        estimatedCostUsd: null,
+        finishedAt: new Date(),
+        durationMs: 0,
+      });
+      throw new StepError(`Agent run failed: ${budget.message}`, {
+        output: this.agentOutput(executionId, 'failed', null, budget.message),
+      });
+    }
+
     const org = await db.organization.findUnique({
       where: { id: organizationId },
       select: { name: true },

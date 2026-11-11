@@ -147,7 +147,10 @@ describe('NotificationsService.replacePreferences', () => {
     client.user.findUnique.mockResolvedValue({ preferences: { theme: 'dark', locale: 'he' } });
     client.user.update.mockResolvedValue({});
     const prefs = { inApp: { lead_assigned: false }, email: { conversation_assigned: true } };
-    await service.replacePreferences({ userId: 'u1', email: 'x', sessionId: 's', emailVerified: true }, prefs);
+    await service.replacePreferences(
+      { userId: 'u1', email: 'x', sessionId: 's', emailVerified: true },
+      prefs,
+    );
     expect(client.user.update).toHaveBeenCalledWith({
       where: { id: 'u1' },
       data: { preferences: { theme: 'dark', locale: 'he', notifications: prefs } },

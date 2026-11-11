@@ -16,7 +16,8 @@ const ORG = '22222222-2222-4222-8222-222222222222';
 const principal = {
   userId: '11111111-1111-4111-8111-111111111111',
   email: 'a@example.com',
-  sessionId: 's', emailVerified: true
+  sessionId: 's',
+  emailVerified: true,
 };
 
 function contextFor(

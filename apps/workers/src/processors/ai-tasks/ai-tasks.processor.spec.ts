@@ -78,6 +78,7 @@ function setup() {
   const runtime = {
     prisma: { client: { agentExecution, organizationMember, conversation } },
     runner,
+    checkBudget: jest.fn().mockResolvedValue({ blocked: false }),
     store,
     usage,
     resolver,

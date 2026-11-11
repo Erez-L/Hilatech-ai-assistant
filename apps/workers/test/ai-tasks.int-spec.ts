@@ -559,4 +559,84 @@ describe('ai-tasks (integration)', () => {
     });
     expect(result).toMatchObject({ status: 'skipped', reason: 'not_implemented' });
   });
+  describe('budget hard stop (worker-side re-check)', () => {
+    const queueExecution = () =>
+      prisma.client.agentExecution.create({
+        data: {
+          organizationId,
+          agentId,
+          trigger: 'manual',
+          status: 'queued',
+          input: 'What time is it?',
+          triggeredByUserId: userId,
+        },
+        select: { id: true },
+      });
+
+    afterEach(async () => {
+      await prisma.client.organizationBudget.deleteMany({ where: { organizationId } });
+      await prisma.client.usageRecord.deleteMany({
+        where: { organizationId, metadata: { path: ['source'], equals: 'budget-test' } },
+      });
+    });
+
+    const useTokens = (quantity: number) => {
+      const now = new Date();
+      return prisma.client.usageRecord.create({
+        data: {
+          organizationId,
+          metric: 'ai_tokens',
+          quantity,
+          periodStart: now,
+          periodEnd: now,
+          metadata: { source: 'budget-test' },
+        },
+      });
+    };
+
+    it('fails a queued execution without calling a provider when the token budget is used up', async () => {
+      await prisma.client.organizationBudget.create({
+        data: { organizationId, monthlyTokenBudget: 1, hardStopEnabled: true },
+      });
+      await useTokens(5);
+      const execution = await queueExecution();
+      const requestsBefore = await prisma.client.aiRequestLog.count({ where: { organizationId } });
+
+      const { result } = await enqueue({
+        ...base(),
+        organizationId,
+        idempotencyKey: `ai-exec-budget-${randomUUID()}`,
+        kind: 'agent_execution',
+        targetId: execution.id,
+        requestedByUserId: userId,
+      });
+
+      expect(result).toMatchObject({ status: 'completed', result: { status: 'failed' } });
+      const row = await prisma.client.agentExecution.findUniqueOrThrow({
+        where: { id: execution.id },
+      });
+      expect(row.status).toBe('failed');
+      expect(row.error).toMatch(/monthly AI token budget is used up/);
+      expect(await prisma.client.aiRequestLog.count({ where: { organizationId } })).toBe(
+        requestsBefore,
+      );
+    });
+
+    it('runs normally when the hard stop is off, even above the budget', async () => {
+      await prisma.client.organizationBudget.create({
+        data: { organizationId, monthlyTokenBudget: 1, hardStopEnabled: false },
+      });
+      await useTokens(5);
+      const execution = await queueExecution();
+      const { result } = await enqueue({
+        ...base(),
+        organizationId,
+        idempotencyKey: `ai-exec-budget-off-${randomUUID()}`,
+        kind: 'agent_execution',
+        targetId: execution.id,
+        requestedByUserId: userId,
+      });
+      expect(result).toMatchObject({ status: 'completed', result: { status: 'succeeded' } });
+    });
+  });
 });

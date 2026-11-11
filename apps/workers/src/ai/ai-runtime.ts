@@ -26,6 +26,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { outboundPolicyFor } from '../automation/outbound-policy';
 import { toAgentDefinition } from './agent-definition.mapper';
 import { toEngineLogger } from './engine-logger';
+import { type BudgetVerdict, checkAiBudget } from './budget-gate';
 import { RedisCancellationSignal } from './redis-cancellation.signal';
 import { createToolAuditHook } from './tool-audit';
 
@@ -132,6 +133,13 @@ export class AiRuntime {
       { tools: this.registry.keys().length, pricedModels: this.pricing.size() },
       'AI runtime ready',
     );
+  }
+
+  /** Re-checks the organization's AI budget (hard stop) before queued work calls a provider. */
+  checkBudget(organizationId: string): Promise<BudgetVerdict> {
+    return checkAiBudget(this.prisma.client, organizationId, {
+      pricingConfigured: this.pricing.size() > 0,
+    });
   }
 
   /** Load an organization's agent as an `AgentDefinition` (used for delegation targets). */

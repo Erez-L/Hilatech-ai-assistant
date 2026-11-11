@@ -64,6 +64,16 @@ export class DocumentProcessingProcessor implements JobProcessor<
     const { organizationId, documentId, knowledgeBaseId } = job.data;
     const ingestor = await this.getIngestor();
     try {
+      // Embedding a document spends AI tokens: refuse it when the organization's hard stop is reached.
+      const budget = await this.runtime.checkBudget(organizationId);
+      if (budget.blocked) {
+        const pending = await this.runtime.prisma.client.document.updateMany({
+          where: { id: documentId, organizationId, status: { not: 'ready' } },
+          data: { status: 'failed', error: budget.message },
+        });
+        if (pending.count === 0) return { status: 'skipped', reason: 'duplicate' };
+        throw new DocumentIngestError(budget.message, true, 'budget_exceeded');
+      }
       const result = await ingestor.process({
         organizationId,
         documentId,

@@ -172,6 +172,32 @@ export class AiTasksProcessor implements JobProcessor<typeof QueueName.AI_TASKS>
       };
     }
 
+    // The API admitted this run when it was queued; the month's budget may be used up by now.
+    const budget = await this.runtime.checkBudget(organizationId);
+    if (budget.blocked) {
+      await this.runtime.store.finish(execution.id, {
+        status: 'failed',
+        output: null,
+        error: budget.message,
+        stepCount: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        estimatedCostUsd: null,
+        finishedAt: new Date(),
+        durationMs: 0,
+      });
+      this.logger.warn(
+        { ...context, executionId, scope: budget.scope, used: budget.used, budget: budget.budget },
+        'AI budget is used up; execution failed without calling a provider',
+      );
+      return {
+        status: 'completed',
+        kind,
+        executionId,
+        result: { status: 'failed', stepCount: 0, error: budget.message },
+      };
+    }
+
     // ADR-010: a human-triggered run never exceeds the human's permissions. Automation/schedule
     // triggers carry no user and run with the admin-configured tool grants (userPermissions: null).
     let userPermissions: readonly string[] | null = null;
