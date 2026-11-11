@@ -39,7 +39,8 @@ import {
   useAuthSessions,
   useChangePassword,
   useRevokeSession,
-  useUpdatePreferences,
+  useNotificationPreferences,
+  useUpdateNotificationPreferences,
   useUpdateProfile,
 } from '@/hooks/queries';
 import { applyServerErrors } from '@/lib/forms/server-errors';
@@ -51,6 +52,11 @@ import { QueryState } from '@/components/common/query-state';
 import { SettingsTabs } from '@/components/settings/settings-tabs';
 import { NotificationPreferencesCard } from '@/components/settings/notification-preferences-card';
 import { PasswordInput } from '@/components/auth/password-input';
+import {
+  isChannelFullyEnabled,
+  setChannelForAll,
+  type NotificationChannel,
+} from '@/lib/notification-prefs';
 import { useT, useFormat, type T } from '@/i18n/provider';
 import { useChangeLocale } from '@/components/shell/language-switcher';
 import type { Locale } from '@/i18n/config';
@@ -202,17 +208,14 @@ function PreferencesCard() {
   const t = useT();
   const { theme, setTheme } = useThemePreference();
   const prefs = usePreferences();
-  const update = useUpdatePreferences();
   const changeLocale = useChangeLocale();
 
-  const save = (patch: Partial<{ notifications: { email: boolean; inApp: boolean } }>) => {
-    const next = {
-      theme: prefs.theme,
-      locale: prefs.locale,
-      notifications: patch.notifications ?? prefs.notifications,
-    };
-    prefs.setPreferences(next);
-    update.mutate(next, {
+  const notificationPrefs = useNotificationPreferences();
+  const updateNotifications = useUpdateNotificationPreferences();
+
+  /** Master switch for a channel: writes the per-type maps the API expects (never plain booleans). */
+  const setChannel = (channel: NotificationChannel, enabled: boolean) => {
+    updateNotifications.mutate(setChannelForAll(notificationPrefs.data, channel, enabled), {
       onSuccess: () => toast.success(t('settings.preferencesSaved')),
       onError: (e) => toast.error(getErrorMessage(e)),
     });
@@ -293,8 +296,9 @@ function PreferencesCard() {
               </span>
             </span>
             <Switch
-              checked={prefs.notifications.inApp}
-              onCheckedChange={(c) => save({ notifications: { ...prefs.notifications, inApp: c } })}
+              checked={isChannelFullyEnabled(notificationPrefs.data, 'inApp')}
+              disabled={!notificationPrefs.data || updateNotifications.isPending}
+              onCheckedChange={(c) => setChannel('inApp', c)}
               aria-label={t('settings.inAppNotifications')}
             />
           </label>
@@ -304,8 +308,9 @@ function PreferencesCard() {
               <span className="text-xs text-fg-muted">{t('settings.sendASummaryOfImportant')}</span>
             </span>
             <Switch
-              checked={prefs.notifications.email}
-              onCheckedChange={(c) => save({ notifications: { ...prefs.notifications, email: c } })}
+              checked={isChannelFullyEnabled(notificationPrefs.data, 'email')}
+              disabled={!notificationPrefs.data || updateNotifications.isPending}
+              onCheckedChange={(c) => setChannel('email', c)}
               aria-label={t('settings.emailNotifications')}
             />
           </label>

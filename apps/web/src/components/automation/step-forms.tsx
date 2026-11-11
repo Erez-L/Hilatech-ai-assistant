@@ -449,6 +449,113 @@ export function StepFields({
         </div>
       );
 
+    case 'create_task': {
+      const optionalNumber = (raw: string) => (raw.trim() === '' ? undefined : Math.max(0, Math.floor(Number(raw))));
+      const templateField = (
+        name: 'leadId' | 'contactId' | 'dealId' | 'conversationId',
+        label: string,
+      ) => (
+        <FormField id={fid(name)} label={label} description={t('automation.taskRelatedHint')} error={errors[name]}>
+          <Input
+            dir="ltr"
+            value={step[name] ?? ''}
+            onChange={(e) => onChange({ ...step, [name]: e.target.value || undefined })}
+          />
+        </FormField>
+      );
+      return (
+        <div className="grid gap-4">
+          <FormField id={fid('title')} label={t('common.title')} required description={TEMPLATE_HINT} error={errors.title}>
+            <Input value={step.title} onChange={(e) => onChange({ ...step, title: e.target.value })} />
+          </FormField>
+          <FormField id={fid('description')} label={t('common.description')} error={errors.description}>
+            <Textarea
+              rows={3}
+              value={step.description ?? ''}
+              onChange={(e) => onChange({ ...step, description: e.target.value || undefined })}
+            />
+          </FormField>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField id={fid('priority')} label={t('tasks.priority')} error={errors.priority}>
+              <NativeSelect
+                value={step.priority}
+                onChange={(e) => onChange({ ...step, priority: e.target.value as typeof step.priority })}
+              >
+                {(['low', 'medium', 'high', 'urgent'] as const).map((p) => (
+                  <option key={p} value={p}>
+                    {t(`tasks.priority.${p}`)}
+                  </option>
+                ))}
+              </NativeSelect>
+            </FormField>
+            <FormField id={fid('assignee-kind')} label={t('tasks.assignee')} error={errors.assignee}>
+              <NativeSelect
+                value={step.assignee?.kind ?? 'none'}
+                onChange={(e) => {
+                  const kind = e.target.value;
+                  onChange({
+                    ...step,
+                    assignee:
+                      kind === 'user' ? { kind: 'user', userId: '' } : kind === 'assignee' ? { kind: 'assignee' } : undefined,
+                  });
+                }}
+              >
+                <option value="none">{t('tasks.unassigned')}</option>
+                <option value="assignee">{t('automation.theLeadConversationAssignee')}</option>
+                <option value="user">{t('automation.aSpecificPerson')}</option>
+              </NativeSelect>
+            </FormField>
+          </div>
+          {step.assignee?.kind === 'user' ? (
+            <FormField id={fid('assignee-user')} label={t('automation.person')} required error={errors['assignee.userId']}>
+              <UserPicker
+                id={fid('assignee-user')}
+                value={step.assignee.userId}
+                invalid={!!errors['assignee.userId']}
+                onChange={(userId) => onChange({ ...step, assignee: { kind: 'user', userId } })}
+              />
+            </FormField>
+          ) : null}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField
+              id={fid('dueInHours')}
+              label={t('automation.taskDueInHours')}
+              description={t('automation.taskDueInHoursHint')}
+              error={errors.dueInHours}
+            >
+              <Input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={step.dueInHours ?? ''}
+                onChange={(e) => onChange({ ...step, dueInHours: optionalNumber(e.target.value) })}
+              />
+            </FormField>
+            <FormField
+              id={fid('reminderBeforeHours')}
+              label={t('automation.taskReminderBeforeHours')}
+              description={t('automation.taskReminderHint')}
+              error={errors.reminderBeforeHours}
+            >
+              <Input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={step.reminderBeforeHours ?? ''}
+                onChange={(e) => onChange({ ...step, reminderBeforeHours: optionalNumber(e.target.value) })}
+              />
+            </FormField>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {templateField('leadId', t('common.lead'))}
+            {templateField('contactId', t('common.contact'))}
+            {templateField('dealId', t('tasks.relatedDeal'))}
+            {templateField('conversationId', t('tasks.relatedConversation'))}
+          </div>
+        </div>
+      );
+    }
+
     case 'set_variable':
       return (
         <div className="grid gap-4 sm:grid-cols-2">

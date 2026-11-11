@@ -24,6 +24,7 @@ import {
 } from './report-parts';
 import { useT, useFormat } from '@/i18n/provider';
 import { tm } from '@/i18n/msg';
+import { enumLabel } from '@/i18n/enums';
 
 export function BusinessTab({ ctx }: { ctx: ReportContext }) {
   const t = useT();
@@ -185,13 +186,39 @@ export function BusinessTab({ ctx }: { ctx: ReportContext }) {
               </div>
 
               {d.tasks.modelled ? (
-                <ReportNote title={t('analytics.tasks')} testId="tasks-modelled">
-                  {t('analytics.tasksSummary', {
-                    open: d.tasks.open,
-                    overdue: d.tasks.overdue,
-                    dueToday: d.tasks.dueToday,
-                  })}
-                </ReportNote>
+                <section className="flex flex-col gap-4" aria-label={t('analytics.tasks')} data-testid="tasks-stats">
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                    <StatCard label={t('analytics.tasksOpen')} value={d.tasks.open} />
+                    <StatCard label={t('analytics.tasksOverdue')} value={d.tasks.overdue} />
+                    <StatCard label={t('analytics.tasksDueToday')} value={d.tasks.dueToday} />
+                    <StatCard label={t('analytics.tasksCreated')} value={d.tasks.createdInRange} />
+                    <StatCard label={t('analytics.tasksCompleted')} value={d.tasks.completedInRange} />
+                  </div>
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <SectionCard title={t('analytics.tasksByStatus')}>
+                      <BreakdownList
+                        label={t('analytics.tasksByStatus')}
+                        items={recordToRows(d.tasks.byStatus).map((s) => ({
+                          key: s.key,
+                          label: enumLabel(t, 'tasks.status', s.key, s.key),
+                          count: s.count,
+                        }))}
+                        emptyText={t('analytics.noTasksInRange')}
+                      />
+                    </SectionCard>
+                    <SectionCard title={t('analytics.tasksByPriority')}>
+                      <BreakdownList
+                        label={t('analytics.tasksByPriority')}
+                        items={recordToRows(d.tasks.byPriority).map((s) => ({
+                          key: s.key,
+                          label: enumLabel(t, 'tasks.priority', s.key, s.key),
+                          count: s.count,
+                        }))}
+                        emptyText={t('analytics.noTasksInRange')}
+                      />
+                    </SectionCard>
+                  </div>
+                </section>
               ) : (
                 <ReportNote title={t('analytics.tasksAreNotTracked')} testId="tasks-not-modelled">
                   {d.tasks.reason}

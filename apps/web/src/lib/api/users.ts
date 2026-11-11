@@ -15,7 +15,7 @@ export const usersApi = {
    * Merges a partial change into the server-side preferences (GET + PUT). The server stores per-type
    * notification maps, which the web mirror does not model, so they are passed through untouched.
    */
-  patchPreferences: async (patch: Partial<Pick<UserPreferences, 'theme' | 'locale'>>) => {
+  patchPreferences: async (patch: Partial<UserPreferences>) => {
     const saved = await api.get<Record<string, unknown>>('/users/me/preferences', {
       organization: false,
     });

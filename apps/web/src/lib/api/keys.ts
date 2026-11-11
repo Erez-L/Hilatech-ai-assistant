@@ -65,6 +65,42 @@ export const keys = {
   messages: (orgId: string | null, conversationId: string) =>
     ['org', orgId, 'conversations', 'detail', conversationId, 'messages'] as const,
 
+  // Tasks
+  tasksRoot: (orgId: string | null) => ['org', orgId, 'tasks'] as const,
+  tasks: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'tasks', 'list', params ?? {}] as const,
+
+  // Companies
+  companiesRoot: (orgId: string | null) => ['org', orgId, 'companies'] as const,
+  companies: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'companies', 'list', params ?? {}] as const,
+  company: (orgId: string | null, id: string) => ['org', orgId, 'companies', 'detail', id] as const,
+  companyContacts: (orgId: string | null, id: string, params?: object) =>
+    ['org', orgId, 'companies', 'detail', id, 'contacts', params ?? {}] as const,
+
+  // Deals & pipelines
+  dealsRoot: (orgId: string | null) => ['org', orgId, 'deals'] as const,
+  deals: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'deals', 'list', params ?? {}] as const,
+  deal: (orgId: string | null, id: string) => ['org', orgId, 'deals', 'detail', id] as const,
+  dealBoard: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'deals', 'board', params ?? {}] as const,
+  dealNotes: (orgId: string | null, id: string) =>
+    ['org', orgId, 'deals', 'detail', id, 'notes'] as const,
+  dealActivities: (orgId: string | null, id: string) =>
+    ['org', orgId, 'deals', 'detail', id, 'activities'] as const,
+  dealConversion: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'deals', 'conversion', params ?? {}] as const,
+  pipelines: (orgId: string | null) => ['org', orgId, 'pipelines'] as const,
+
+  // Imports
+  importsRoot: (orgId: string | null) => ['org', orgId, 'imports'] as const,
+  imports: (orgId: string | null, params?: object) =>
+    ['org', orgId, 'imports', 'list', params ?? {}] as const,
+  importJob: (orgId: string | null, id: string) => ['org', orgId, 'imports', 'detail', id] as const,
+  importReport: (orgId: string | null, id: string) =>
+    ['org', orgId, 'imports', 'detail', id, 'report'] as const,
+
   // AI platform
   aiRoot: (orgId: string | null) => ['org', orgId, 'ai'] as const,
   aiProviders: (orgId: string | null) => ['org', orgId, 'ai', 'providers'] as const,

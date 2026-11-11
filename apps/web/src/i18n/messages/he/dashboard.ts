@@ -63,4 +63,15 @@ export const dashboard = {
   'dashboard.yourRoleCanTView':
     'התפקיד שלכם אינו מאפשר לצפות באנליטיקה של הארגון. בקשו ממנהל את הרשאת האנליטיקה.',
   'dashboard.yourRoleCanTView2': 'התפקיד שלכם אינו מאפשר לצפות ביומן הביקורת.',
+  'dashboard.acrossOpenDeals': {
+    one: 'על פני עסקה פתוחה אחת',
+    two: 'על פני שתי עסקאות פתוחות',
+    other: 'על פני {count} עסקאות פתוחות',
+  },
+  'dashboard.dealsOtherCurrency': 'וגם {value} במטבע אחר',
+  'dashboard.dealsWeighted': '{value} משוקלל',
+  'dashboard.dealsWonLost': '{won} נסגרו, {lost} אבדו ({words})',
+  'dashboard.openDeals': 'עסקאות פתוחות',
+  'dashboard.openTasks': 'משימות פתוחות',
+  'dashboard.tasksOverdueDueToday': '{overdue} באיחור · {dueToday} ליום זה',
 } as const;

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { notificationPreferencesSchema } from '@hilatech/contracts';
 
 /**
  * Shapes used by the web app that are NOT yet in @hilatech/contracts.
@@ -27,18 +28,16 @@ export interface AuthSessionInfo {
 /** PUT /users/me/preferences */
 export const userPreferencesSchema = z.object({
   theme: z.enum(['light', 'dark', 'system']),
-  locale: z.enum(['en', 'he']),
-  notifications: z.object({
-    email: z.boolean(),
-    inApp: z.boolean(),
-  }),
+  locale: z.string().trim().min(2).max(16),
+  /** Per-type maps per channel, exactly as the API stores them (missing type = enabled). */
+  notifications: notificationPreferencesSchema,
 });
 export type UserPreferences = z.infer<typeof userPreferencesSchema>;
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
   theme: 'system',
   locale: 'en',
-  notifications: { email: true, inApp: true },
+  notifications: {},
 };
 
 /** PATCH /users/me */

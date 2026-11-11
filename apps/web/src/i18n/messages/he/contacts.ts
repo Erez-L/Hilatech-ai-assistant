@@ -35,4 +35,7 @@ export const contacts = {
   'contacts.tryAnotherSearchTermTag': 'נסו מונח חיפוש, תגית או אחראי אחרים.',
   'contacts.yourRoleCanTView': 'התפקיד שלכם אינו מאפשר לצפות בלידים.',
   'contacts.yourRoleCanViewThis': 'התפקיד שלכם מאפשר לראות את איש הקשר אך לא לערוך אותו.',
+  'contacts.companyRecord': 'רשומת חברה',
+  'contacts.companyRecordHint': 'קשרו את איש הקשר לרשומת חברה.',
+  'contacts.contactsLower': 'אנשי קשר',
 } as const;

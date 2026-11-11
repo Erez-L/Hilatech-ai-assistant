@@ -83,4 +83,5 @@ export const leads = {
   'leads.whatTheyNeedBudgetTimeline': 'מה הם צריכים, תקציב, לוח זמנים…',
   'leads.writeDownWhatYouLearned': 'רשמו מה למדתם בשיחה האחרונה או מה לעשות בהמשך.',
   'leads.yourRoleCanViewThis': 'התפקיד שלכם מאפשר לראות את הליד אך לא לערוך אותו.',
+  'leads.leadsLower': 'לידים',
 } as const;

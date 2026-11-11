@@ -38,4 +38,8 @@ export const shell = {
   'shell.unreadNotifications': 'Unread notifications',
   'shell.youReAllCaughtUp': 'You’re all caught up.',
   'shell.yourProfile': 'Your profile',
+  'shell.companies': 'Companies',
+  'shell.deals': 'Deals',
+  'shell.imports': 'Imports',
+  'shell.tasks': 'Tasks',
 } as const;

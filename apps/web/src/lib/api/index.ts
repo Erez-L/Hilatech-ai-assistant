@@ -36,3 +36,13 @@ export {
   type ListWorkflowExecutionsParams,
 } from './automation';
 export { integrationsApi, type IntegrationStatusEntry } from './integrations';
+export { tasksApi, type ListTasksParams } from './tasks';
+export { companiesApi, type ListCompaniesParams } from './companies';
+export { dealsApi, pipelinesApi, type ListDealsParams, type BoardParams } from './deals';
+export {
+  importsApi,
+  exportsApi,
+  type ListImportsParams,
+  type ImportConfigBody,
+  type ExportEntity,
+} from './data-exchange';

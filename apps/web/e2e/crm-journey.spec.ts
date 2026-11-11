@@ -46,7 +46,7 @@ test.describe('crm journey', () => {
     await dialog.getByLabel('First name').fill('Dana');
     await dialog.getByLabel('Last name').fill('Cohen');
     await dialog.getByLabel('Email').fill(contactEmail);
-    await dialog.getByLabel('Company').fill('Acme');
+    await dialog.getByLabel('Company', { exact: true }).fill('Acme');
     await dialog.getByRole('button', { name: 'Create contact' }).click();
     await expect(page.getByText('Dana Cohen added to contacts')).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`/contacts/${UUID}$`));

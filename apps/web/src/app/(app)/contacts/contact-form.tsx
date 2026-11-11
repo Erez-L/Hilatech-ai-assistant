@@ -12,11 +12,14 @@ import {
 import { FormField, Input, TagInput, Textarea } from '@hilatech/ui';
 import { useContactTags } from '@/hooks/queries';
 import { AssigneePicker } from '@/components/crm/assignee-picker';
+import { CompanyPicker } from '@/components/crm/company-picker';
+import { Permission } from '@hilatech/contracts';
+import { useCan } from '@/hooks/use-can';
 import { useT } from '@/i18n/provider';
 
 /** Contract rules with browser-friendly inputs ('' for empty optional strings). */
 export const contactFormSchema = createContactSchema
-  .omit({ firstName: true, email: true, customFields: true, ownerId: true })
+  .omit({ firstName: true, email: true, customFields: true, ownerId: true, companyId: true })
   .extend({
     firstName: z
       .string()
@@ -25,6 +28,8 @@ export const contactFormSchema = createContactSchema
       .max(80, 'Keep it under 80 characters'),
     email: z.union([z.literal(''), z.string().trim().toLowerCase().email('Enter a valid email')]),
     ownerId: z.string(),
+    /** Linked Company record ('' = none). */
+    companyId: z.string(),
   });
 export type ContactFormInput = z.input<typeof contactFormSchema>;
 export type ContactFormValues = z.output<typeof contactFormSchema>;
@@ -43,6 +48,7 @@ export function contactFormDefaults(
     tags: contact?.tags ?? [],
     notes: contact?.notes ?? '',
     ownerId: contact?.ownerId ?? '',
+    companyId: contact?.companyId ?? '',
     ...overrides,
   };
 }
@@ -59,6 +65,7 @@ export function toCreateContactRequest(values: ContactFormValues): CreateContact
     notes: values.notes || undefined,
     customFields: {},
     ownerId: values.ownerId || undefined,
+    companyId: values.companyId || undefined,
   });
 }
 
@@ -74,6 +81,7 @@ export function toUpdateContactRequest(values: ContactFormValues): UpdateContact
     tags: values.tags,
     notes: values.notes ?? '',
     ownerId: values.ownerId || undefined,
+    companyId: values.companyId || null,
   };
 }
 
@@ -87,6 +95,7 @@ export const CONTACT_FORM_FIELDS = [
   'tags',
   'notes',
   'ownerId',
+  'companyId',
 ] as const;
 
 export function ContactFormFields({
@@ -95,16 +104,21 @@ export function ContactFormFields({
   idPrefix = 'contact',
   autoFocusName = false,
   disabled = false,
+  contactCompanyName,
 }: {
   form: UseFormReturn<ContactFormInput, unknown, ContactFormValues>;
   withOwner: boolean;
   idPrefix?: string;
   autoFocusName?: boolean;
   disabled?: boolean;
+  /** Name of the linked company record when editing (so the picker can show it). */
+  contactCompanyName?: string;
 }) {
   const t = useT();
   const errors = form.formState.errors;
   const tags = useContactTags();
+  const canCompanies = useCan(Permission.COMPANIES_READ);
+  const [companyName, setCompanyName] = React.useState<string | undefined>(contactCompanyName);
   const id = (name: string) => `${idPrefix}-${name}`;
   return (
     <fieldset disabled={disabled} className="flex flex-col gap-5">
@@ -145,6 +159,33 @@ export function ContactFormFields({
           <Input autoComplete="organization-title" {...form.register('jobTitle')} />
         </FormField>
       </div>
+      {canCompanies ? (
+        <FormField
+          id={id('companyId')}
+          label={t('contacts.companyRecord')}
+          description={t('contacts.companyRecordHint')}
+          error={errors.companyId?.message}
+        >
+          <Controller
+            control={form.control}
+            name="companyId"
+            render={({ field, fieldState }) => (
+              <CompanyPicker
+                id={id('companyId')}
+                aria-invalid={fieldState.error ? true : undefined}
+                value={field.value || null}
+                selectedLabel={companyName}
+                onValueChange={(next, company) => {
+                  field.onChange(next ?? '');
+                  setCompanyName(company?.name);
+                  if (company && !form.getValues('company')) form.setValue('company', company.name);
+                }}
+                disabled={disabled}
+              />
+            )}
+          />
+        </FormField>
+      ) : null}
       <div className={withOwner ? 'grid gap-5 sm:grid-cols-2' : 'grid gap-5'}>
         <FormField
           id={id('tags')}

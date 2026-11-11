@@ -61,4 +61,14 @@ export const dashboard = {
   'dashboard.yourRoleCanTView':
     'Your role can’t view organization analytics. Ask an admin for the analytics permission.',
   'dashboard.yourRoleCanTView2': 'Your role can’t view the audit log.',
+  'dashboard.acrossOpenDeals': {
+    one: 'Across {count} open deal',
+    other: 'Across {count} open deals',
+  },
+  'dashboard.dealsOtherCurrency': 'Also {value} in another currency',
+  'dashboard.dealsWeighted': '{value} weighted',
+  'dashboard.dealsWonLost': '{won} won, {lost} lost in the {words}',
+  'dashboard.openDeals': 'Open deals',
+  'dashboard.openTasks': 'Open tasks',
+  'dashboard.tasksOverdueDueToday': '{overdue} overdue · {dueToday} due today',
 } as const;

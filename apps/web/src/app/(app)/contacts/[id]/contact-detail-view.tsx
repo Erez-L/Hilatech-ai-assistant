@@ -48,6 +48,7 @@ import { PermissionGate } from '@/components/common/permission-gate';
 import { QueryState } from '@/components/common/query-state';
 import { LeadStatusBadge } from '@/components/crm/badges';
 import { RelatedConversations } from '@/components/crm/related-conversations';
+import { TaskPanel } from '@/components/tasks/task-panel';
 import { UserChip } from '@/components/crm/user-chip';
 import { LeadDialog } from '../../leads/lead-dialog';
 import {
@@ -60,6 +61,21 @@ import {
   type ContactFormValues,
 } from '../contact-form';
 import { useT, useFormat } from '@/i18n/provider';
+import { useCompany } from '@/hooks/sales';
+
+/** The linked Company record (link to its page) or the free-text company name. */
+function LinkedCompany({ companyId, fallback }: { companyId: string | null; fallback?: string | null }) {
+  const canCompanies = useCan(Permission.COMPANIES_READ);
+  const company = useCompany(companyId, { enabled: canCompanies && !!companyId });
+  if (companyId && company.data) {
+    return (
+      <Link href={`/companies/${company.data.id}`} dir="auto" className="font-medium hover:underline">
+        {company.data.name}
+      </Link>
+    );
+  }
+  return <span dir="auto">{fallback ?? '—'}</span>;
+}
 
 export function ContactDetailView({ id }: { id: string }) {
   const t = useT();
@@ -194,6 +210,12 @@ function ContactDetailBody({ contact }: { contact: ContactDetail }) {
             contact={contact}
             onCreate={canCreateLead ? () => setLeadOpen(true) : undefined}
           />
+          <TaskPanel
+            relationKey="contactId"
+            recordId={contact.id}
+            idPrefix="contact"
+            relation={{ contact: name }}
+          />
         </div>
         <div className="flex min-w-0 flex-col gap-6">
           <Card>
@@ -205,6 +227,10 @@ function ContactDetailBody({ contact }: { contact: ContactDetail }) {
                 <dt className="text-fg-muted">{t('contacts.owner')}</dt>
                 <dd>
                   <UserChip user={contact.owner} emptyLabel={t('contacts.noOwner')} />
+                </dd>
+                <dt className="text-fg-muted">{t('common.company')}</dt>
+                <dd className="min-w-0">
+                  <LinkedCompany companyId={contact.companyId ?? null} fallback={contact.company} />
                 </dd>
                 <dt className="text-fg-muted">{t('common.leads')}</dt>
                 <dd className="tabular">{contact.leadCount}</dd>
@@ -285,6 +311,8 @@ function ContactDetailsForm({
   const update = useUpdateContact();
   const canReadMembers = useCan(Permission.MEMBERS_READ);
   const [formError, setFormError] = React.useState<string | null>(null);
+  const canCompanies = useCan(Permission.COMPANIES_READ);
+  const linkedCompany = useCompany(contact.companyId ?? null, { enabled: canCompanies });
   const defaults = React.useMemo(() => contactFormDefaults(contact), [contact]);
   const form = useForm<ContactFormInput, unknown, ContactFormValues>({
     resolver: zodResolver(contactFormSchema),
@@ -323,7 +351,13 @@ function ContactDetailsForm({
             <dt className="text-fg-muted">{t('common.phone')}</dt>
             <dd>{contact.phone ?? '—'}</dd>
             <dt className="text-fg-muted">{t('common.company')}</dt>
-            <dd>{contact.company ?? '—'}</dd>
+            <dd>
+              {contact.company ?? '—'}
+            </dd>
+            <dt className="text-fg-muted">{t('contacts.companyRecord')}</dt>
+            <dd>
+              <LinkedCompany companyId={contact.companyId ?? null} />
+            </dd>
             <dt className="text-fg-muted">{t('contacts.jobTitle')}</dt>
             <dd>{contact.jobTitle ?? '—'}</dd>
             <dt className="text-fg-muted">{t('common.notes')}</dt>
@@ -347,6 +381,7 @@ function ContactDetailsForm({
             form={form}
             withOwner={canReadMembers}
             idPrefix={`contact-${contact.id}`}
+            contactCompanyName={linkedCompany.data?.name}
           />
         </CardContent>
         <CardFooter className="justify-end">

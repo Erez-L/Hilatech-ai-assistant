@@ -233,4 +233,9 @@ export const automation = {
   'automation.xHilatechSignatureSha256Hmac': 'x-hilatech-signature: sha256=<hmac>',
   'automation.xHilatechTimestamp': 'x-hilatech-timestamp',
   'automation.youCanViewThisWorkflow': 'אפשר לצפות בתהליך העבודה הזה אך לא לשנות אותו.',
+  'automation.taskDueInHours': 'מועד יעד אחרי (שעות)',
+  'automation.taskDueInHoursHint': 'שעות מרגע תחילת ההרצה. השאירו ריק ללא מועד יעד.',
+  'automation.taskRelatedHint': 'אופציונלי. מזהה או תבנית; ברירת המחדל לקוחה מהטריגר.',
+  'automation.taskReminderBeforeHours': 'תזכורת לפני היעד (שעות)',
+  'automation.taskReminderHint': 'דורש מועד יעד. 0 פירושו תזכורת במועד היעד.',
 } as const;

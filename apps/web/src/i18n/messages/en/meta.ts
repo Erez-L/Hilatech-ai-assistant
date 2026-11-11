@@ -35,4 +35,13 @@ export const meta = {
   'meta.workflowExecutions': 'Workflow executions',
   'meta.workflowTemplates': 'Workflow templates',
   'meta.yourProfile': 'Your profile',
+  'meta.companies': 'Companies',
+  'meta.company': 'Company',
+  'meta.deal': 'Deal',
+  'meta.deals': 'Deals',
+  'meta.dealsReport': 'Deals report',
+  'meta.import': 'Import',
+  'meta.imports': 'Imports',
+  'meta.pipelines': 'Pipelines',
+  'meta.tasks': 'Tasks',
 } as const;

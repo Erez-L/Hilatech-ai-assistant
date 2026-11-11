@@ -4,7 +4,9 @@ import * as React from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
+  Handshake,
   Inbox,
+  ListChecks,
   MailPlus,
   MessageSquare,
   ScrollText,
@@ -350,7 +352,11 @@ function DashboardBody({
             label={t('dashboard.pipelineValue')}
             value={fmt.currency(d.leads.pipelineValue, currency, { compact: true })}
             icon={<Wallet />}
-            hint={t('dashboard.acrossOpenLeads', { count: d.leads.open })}
+            hint={
+              d.leads.valueBasis === 'deals' && d.deals
+                ? t('dashboard.acrossOpenDeals', { count: d.deals.open })
+                : t('dashboard.acrossOpenLeads', { count: d.leads.open })
+            }
           />
           <StatCard
             label={t('dashboard.won', { words })}
@@ -389,6 +395,34 @@ function DashboardBody({
                 : t('dashboard.everythingHasAnOwner')
             }
           />
+          {d.deals ? (
+            <StatCard
+              label={t('dashboard.openDeals')}
+              value={d.deals.open}
+              icon={<Handshake />}
+              data-testid="dashboard-deals"
+              hint={[
+                t('dashboard.dealsWeighted', {
+                  value: fmt.currency(d.deals.weightedPipelineValue, d.deals.currency, { compact: true }),
+                }),
+                t('dashboard.dealsWonLost', { won: d.deals.wonInPeriod, lost: d.deals.lostInPeriod, words }),
+                ...d.deals.otherCurrencies.map((o) =>
+                  t('dashboard.dealsOtherCurrency', {
+                    value: fmt.currency(o.pipelineValue, o.currency, { compact: true }),
+                  }),
+                ),
+              ].join(' · ')}
+            />
+          ) : null}
+          {d.tasks ? (
+            <StatCard
+              label={t('dashboard.openTasks')}
+              value={d.tasks.open}
+              icon={<ListChecks />}
+              data-testid="dashboard-tasks"
+              hint={t('dashboard.tasksOverdueDueToday', { overdue: d.tasks.overdue, dueToday: d.tasks.dueToday })}
+            />
+          ) : null}
           <StatCard
             label={t('dashboard.teamMembers')}
             value={d.members.active}

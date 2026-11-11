@@ -237,4 +237,10 @@ export const automation = {
   'automation.xHilatechSignatureSha256Hmac': 'x-hilatech-signature: sha256=<hmac>',
   'automation.xHilatechTimestamp': 'x-hilatech-timestamp',
   'automation.youCanViewThisWorkflow': 'You can view this workflow but not change it.',
+  'automation.taskDueInHours': 'Due after (hours)',
+  'automation.taskDueInHoursHint': 'Hours after the run starts. Leave empty for no due date.',
+  'automation.taskRelatedHint':
+    'Optional. An ID or a template; defaults to the one in the trigger.',
+  'automation.taskReminderBeforeHours': 'Remind before due (hours)',
+  'automation.taskReminderHint': 'Needs a due date. Use 0 to remind at the due date.',
 } as const;

@@ -6,6 +6,10 @@ import {
   Building2,
   Contact,
   CreditCard,
+  FileUp,
+  Handshake,
+  ListChecks,
+  Factory,
   LayoutDashboard,
   MessageSquare,
   Plug,
@@ -55,6 +59,24 @@ export const NAV_SECTIONS: NavSection[] = [
         permission: Permission.CONTACTS_READ,
       },
       {
+        href: '/companies',
+        label: msg('shell.companies'),
+        icon: Factory,
+        permission: Permission.COMPANIES_READ,
+      },
+      {
+        href: '/deals',
+        label: msg('shell.deals'),
+        icon: Handshake,
+        permission: Permission.DEALS_READ,
+      },
+      {
+        href: '/tasks',
+        label: msg('shell.tasks'),
+        icon: ListChecks,
+        permission: Permission.TASKS_READ,
+      },
+      {
         href: '/conversations',
         label: msg('shell.conversations'),
         icon: MessageSquare,
@@ -99,6 +121,12 @@ export const NAV_SECTIONS: NavSection[] = [
         label: msg('shell.integrations'),
         icon: Plug,
         permission: Permission.INTEGRATIONS_READ,
+      },
+      {
+        href: '/imports',
+        label: msg('shell.imports'),
+        icon: FileUp,
+        permission: Permission.DATA_IMPORT,
       },
       {
         href: '/analytics',

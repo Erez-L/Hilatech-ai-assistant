@@ -199,3 +199,14 @@ One of two consecutive full API integration runs reported 10 suites failing to c
 | Perf | 50,000 DAU capacity | MODEL (extrapolation), not measured | same |
 | Engine | Duration-limit race (`failed` instead of `timed_out`, ~1 in 6 runs) | Fixed, 25/25 repeat runs | `runner.test.ts` |
 | Docs | Product, design, architecture, tenant-isolation, gap analysis, implementation plan | Written from code | `docs/product`, `docs/design`, `docs/development` |
+
+## Phase 7 — sales objects, data exchange, Hebrew/RTL (2026-11-11)
+
+| Area | Item | Status | Evidence |
+| ---- | ---- | ------ | -------- |
+| API | Tasks (reminders worker), companies, pipelines, deals (Kanban board, conversion report), CSV import (dry run, duplicates, async) and export, `create_task` step, AI tools | Verified | 404 API integration + 68 workers integration tests; `sales-cross-tenant.int-spec` (49 endpoints) |
+| Web | Tasks, deals Kanban (drag and "Move to…"), deal detail, pipelines, conversion report, companies, import wizard, export buttons | Verified in Chrome via Playwright | 199 unit tests; `sales-journey.spec` (9 steps) |
+| Web | Hebrew + English, RTL layout, Heebo font, locale persistence | Verified (automated + screenshot review); Hebrew copy is a draft without native review | `i18n-rtl.spec`, key-parity and hardcoded-text guards |
+| Web | Profile notification switches (was sending a shape the API rejected) | Fixed | `sales-journey.spec` step 8 |
+| E2E | Full suite | 17/17 passing on 2026-11-11 | — |
+| Known gaps | Touch drag on the Kanban (use "Move to…"); engine/workflow tools do not emit domain events; some server-generated text and emails stay English; mixed-currency dashboard totals are unconverted; date inputs show the browser locale | Open | `gap-analysis.md` (needs a refresh — it still lists tasks/deals/import/Hebrew as missing) |

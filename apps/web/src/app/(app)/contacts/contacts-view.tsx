@@ -32,6 +32,8 @@ import { getErrorMessage } from '@/lib/api';
 import { useContactTags, useContacts, useMembers } from '@/hooks/queries';
 import { useCan } from '@/hooks/use-can';
 import { contactName, fullName } from '@/lib/crm';
+import { ExportButton } from '@/components/data-exchange/export-button';
+import { ImportButton } from '@/components/data-exchange/import-wizard';
 import { PermissionGate } from '@/components/common/permission-gate';
 import { ContactDialog } from './contact-dialog';
 import { useT, useFormat } from '@/i18n/provider';
@@ -93,11 +95,25 @@ export function ContactsView() {
           title={t('common.contacts')}
           description={t('contacts.thePeopleAndCompaniesYour')}
           actions={
-            canCreate ? (
-              <Button leadingIcon={<Plus aria-hidden />} onClick={() => setCreateOpen(true)}>
-                {t('contacts.newContact')}
-              </Button>
-            ) : undefined
+            <div className="flex flex-wrap items-center gap-2">
+              <ImportButton entity="contacts" />
+              <ExportButton
+                entity="contacts"
+                label={t('common.contacts')}
+                filters={{
+                  search: search || undefined,
+                  tag: tag || undefined,
+                  ownerId: ownerId || undefined,
+                  sortBy: sort.key,
+                  sortOrder: sort.direction,
+                }}
+              />
+              {canCreate ? (
+                <Button leadingIcon={<Plus aria-hidden />} onClick={() => setCreateOpen(true)}>
+                  {t('contacts.newContact')}
+                </Button>
+              ) : null}
+            </div>
           }
         />
 
@@ -188,7 +204,7 @@ export function ContactsView() {
                   pageSize={contacts.data.meta.pageSize}
                   total={contacts.data.meta.total}
                   onPageChange={setPage}
-                  itemLabel="contacts"
+                  itemLabel={t('contacts.contactsLower')}
                 />
               </div>
             ) : null}
@@ -335,7 +351,21 @@ function ContactRow({
       <TableCell>
         <div className="flex min-w-0 flex-col">
           <span className="truncate">
-            {contact.company ?? <span className="text-fg-subtle">—</span>}
+            {contact.company ? (
+              contact.companyId ? (
+                <Link
+                  href={`/companies/${contact.companyId}`}
+                  dir="auto"
+                  className="hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                >
+                  {contact.company}
+                </Link>
+              ) : (
+                contact.company
+              )
+            ) : (
+              <span className="text-fg-subtle">—</span>
+            )}
           </span>
           {contact.jobTitle ? (
             <span className="truncate text-xs text-fg-muted">{contact.jobTitle}</span>

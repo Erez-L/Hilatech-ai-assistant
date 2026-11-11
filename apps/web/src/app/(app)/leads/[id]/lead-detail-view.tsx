@@ -53,6 +53,7 @@ import { QueryState } from '@/components/common/query-state';
 import { AssigneeMenu } from '@/components/crm/assignee-menu';
 import { LeadStatusBadge } from '@/components/crm/badges';
 import { RelatedConversations } from '@/components/crm/related-conversations';
+import { TaskPanel } from '@/components/tasks/task-panel';
 import {
   LEAD_FORM_FIELDS,
   LeadFormFields,
@@ -265,6 +266,12 @@ function LeadDetail({ lead }: { lead: LeadWithRelations }) {
         <div className="flex min-w-0 flex-col gap-6">
           <LeadDetailsForm lead={lead} canUpdate={canUpdate} />
           <LeadNotes leadId={lead.id} canWrite={canUpdate} />
+          <TaskPanel
+            relationKey="leadId"
+            recordId={lead.id}
+            idPrefix="lead"
+            relation={{ lead: lead.title }}
+          />
           <LeadActivity leadId={lead.id} />
         </div>
         <div className="flex min-w-0 flex-col gap-6">

@@ -35,4 +35,7 @@ export const contacts = {
   'contacts.tryAnotherSearchTermTag': 'Try another search term, tag or owner.',
   'contacts.yourRoleCanTView': 'Your role can’t view leads.',
   'contacts.yourRoleCanViewThis': 'Your role can view this contact but not edit it.',
+  'contacts.companyRecord': 'Company record',
+  'contacts.companyRecordHint': 'Link this contact to a company record.',
+  'contacts.contactsLower': 'contacts',
 } as const;

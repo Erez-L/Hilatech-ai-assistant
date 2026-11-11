@@ -66,10 +66,16 @@ test.describe('analytics & billing journey', () => {
     await expect(page).toHaveURL(/\/analytics$/);
     await expect(page.getByRole('heading', { name: 'Analytics', level: 1 })).toBeVisible();
 
-    // Business: tiles, funnel and the honest "tasks are not tracked" note.
+    // Business: tiles, funnel and the task statistics (the Task model exists).
     await expect(page.getByText('Leads created', { exact: true })).toBeVisible();
     await expect(page.getByRole('table', { name: 'Lead funnel' })).toBeVisible();
-    await expect(page.getByTestId('tasks-not-modelled')).toContainText('Tasks are not tracked');
+    const taskStats = page.getByTestId('tasks-stats');
+    await expect(taskStats).toBeVisible();
+    await expect(taskStats).toContainText('Open tasks');
+    await expect(taskStats).toContainText('Overdue');
+    await expect(taskStats).toContainText('Due today');
+    await expect(taskStats).toContainText('Completed in range');
+    await expect(page.getByTestId('tasks-not-modelled')).toHaveCount(0);
 
     // Granularity and range controls are labelled and change the summary line.
     await page.getByRole('radio', { name: 'Week' }).click();
@@ -77,7 +83,7 @@ test.describe('analytics & billing journey', () => {
     await page.getByRole('radio', { name: '7 days' }).click();
     await expect(page.getByTestId('analytics-range-summary')).toContainText('UTC');
 
-    // Sales: derived from leads (no deals model).
+    // Sales: this org has no deals yet, so the figures are derived from leads and say so.
     await page.getByRole('tab', { name: 'Sales' }).click();
     await expect(page.getByTestId('deals-not-modelled')).toContainText('derived from leads');
     await expect(page.getByText('Win rate', { exact: true })).toBeVisible();

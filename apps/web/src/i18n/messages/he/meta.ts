@@ -35,4 +35,13 @@ export const meta = {
   'meta.workflowExecutions': 'הרצות תהליכי עבודה',
   'meta.workflowTemplates': 'תבניות תהליכי עבודה',
   'meta.yourProfile': 'הפרופיל שלכם',
+  'meta.companies': 'חברות',
+  'meta.company': 'חברה',
+  'meta.deal': 'עסקה',
+  'meta.deals': 'עסקאות',
+  'meta.dealsReport': 'דוח עסקאות',
+  'meta.import': 'ייבוא',
+  'meta.imports': 'ייבואים',
+  'meta.pipelines': 'צינורות מכירה',
+  'meta.tasks': 'משימות',
 } as const;

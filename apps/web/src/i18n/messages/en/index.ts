@@ -9,12 +9,15 @@ import { automation } from './automation';
 import { automations } from './automations';
 import { billing } from './billing';
 import { common } from './common';
+import { companies } from './companies';
 import { contacts } from './contacts';
 import { conversations } from './conversations';
 import { crm } from './crm';
 import { dashboard } from './dashboard';
 import { days } from './days';
+import { deals } from './deals';
 import { errors } from './errors';
+import { imports } from './imports';
 import { industry } from './industry';
 import { integrations } from './integrations';
 import { knowledge } from './knowledge';
@@ -31,6 +34,7 @@ import { roles } from './roles';
 import { settings } from './settings';
 import { shell } from './shell';
 import { status } from './status';
+import { tasks } from './tasks';
 import { team } from './team';
 import { toolCategory } from './toolCategory';
 import { ui } from './ui';
@@ -76,4 +80,8 @@ export const en = {
   ...ui,
   ...usage,
   ...validation,
+  ...companies,
+  ...deals,
+  ...imports,
+  ...tasks,
 } as const;

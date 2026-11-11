@@ -45,6 +45,8 @@ import {
   contactName,
   fullName,
 } from '@/lib/crm';
+import { ExportButton } from '@/components/data-exchange/export-button';
+import { ImportButton } from '@/components/data-exchange/import-wizard';
 import { PermissionGate } from '@/components/common/permission-gate';
 import { LeadStatusBadge } from '@/components/crm/badges';
 import { UserChip } from '@/components/crm/user-chip';
@@ -131,11 +133,28 @@ export function LeadsView() {
           title={t('common.leads')}
           description={t('leads.everyOpportunityFromFirstContact')}
           actions={
-            canCreate ? (
-              <Button leadingIcon={<Plus aria-hidden />} onClick={() => setCreateOpen(true)}>
-                {t('common.newLead')}
-              </Button>
-            ) : undefined
+            <div className="flex flex-wrap items-center gap-2">
+              <ImportButton entity="leads" />
+              <ExportButton
+                entity="leads"
+                label={t('common.leads')}
+                filters={{
+                  search: search || undefined,
+                  status: status || undefined,
+                  source: source || undefined,
+                  assigneeId: assigneeId || undefined,
+                  contactId: contactId || undefined,
+                  tag: tag || undefined,
+                  sortBy: sort.key,
+                  sortOrder: sort.direction,
+                }}
+              />
+              {canCreate ? (
+                <Button leadingIcon={<Plus aria-hidden />} onClick={() => setCreateOpen(true)}>
+                  {t('common.newLead')}
+                </Button>
+              ) : null}
+            </div>
           }
         />
 
@@ -278,7 +297,7 @@ export function LeadsView() {
                   pageSize={leads.data.meta.pageSize}
                   total={leads.data.meta.total}
                   onPageChange={setPage}
-                  itemLabel="leads"
+                  itemLabel={t('leads.leadsLower')}
                 />
               </div>
             ) : null}

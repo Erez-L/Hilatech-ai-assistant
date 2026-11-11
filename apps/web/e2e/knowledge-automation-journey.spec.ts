@@ -91,7 +91,7 @@ test.describe('knowledge & automation journey', () => {
 
     // --- Automations: workflow from a template -------------------------------------------------
     await page.getByRole('link', { name: /^Automations/ }).click();
-    await page.getByRole('link', { name: 'Templates' }).click();
+    await page.getByRole('link', { name: 'Templates', exact: true }).click();
     await expect(page).toHaveURL(/\/automations\/templates$/);
     await page
       .getByRole('button', { name: 'Use template Alert admins from an inbound webhook' })

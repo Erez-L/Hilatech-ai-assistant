@@ -85,4 +85,5 @@ export const leads = {
   'leads.writeDownWhatYouLearned':
     'Write down what you learned on the last call or what to do next.',
   'leads.yourRoleCanViewThis': 'Your role can view this lead but not edit it.',
+  'leads.leadsLower': 'leads',
 } as const;
