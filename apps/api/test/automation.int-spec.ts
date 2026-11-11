@@ -75,7 +75,7 @@ describe('Automation (workflows, webhooks, integrations, domain events)', () => 
       }
       res.writeHead(200, { 'content-type': 'application/json' }).end('{"ok":true}');
     });
-    await new Promise<void>((r) => remote.listen(0, '127.0.0.1', r));
+    await new Promise<void>((r) => remote.listen(0, r));
     remoteUrl = `http://localhost:${(remote.address() as AddressInfo).port}`;
   });
 

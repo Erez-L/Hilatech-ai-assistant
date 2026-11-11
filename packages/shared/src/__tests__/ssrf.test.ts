@@ -144,7 +144,7 @@ describe('safeRequest', () => {
         res.end(`echo:${body}:` + 'x'.repeat(5000));
       });
     });
-    await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+    await new Promise<void>((r) => server.listen(0, r));
     const port = (server.address() as AddressInfo).port;
     try {
       const res = await safeRequest(`http://localhost:${port}/a`, {
@@ -173,7 +173,7 @@ describe('safeRequest', () => {
     const server = createServer(() => {
       /* never respond */
     });
-    await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+    await new Promise<void>((r) => server.listen(0, r));
     const port = (server.address() as AddressInfo).port;
     try {
       await expect(

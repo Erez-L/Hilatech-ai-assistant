@@ -210,7 +210,7 @@ describe('automation (integration)', () => {
         res.end(JSON.stringify({ ok: serverStatus < 400 }));
       });
     });
-    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    await new Promise<void>((resolve) => server.listen(0, resolve));
     serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 
     app = await NestFactory.createApplicationContext(AppModule, { logger: false });
@@ -477,7 +477,7 @@ describe('automation (integration)', () => {
         });
         res.end('{}');
       });
-      await new Promise<void>((resolve) => otherServer.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>((resolve) => otherServer.listen(0, resolve));
       const otherUrl = `http://127.0.0.1:${(otherServer.address() as AddressInfo).port}/hook`;
       try {
         const wf = await createWorkflow(orgA, 'n8n', { type: 'manual' }, [
