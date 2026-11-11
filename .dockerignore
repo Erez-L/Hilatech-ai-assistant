@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+.git
+.env
+.env.*
+!.env.example
+infra/cdk/cdk.out
+tests/load/results
+**/test-results
+**/playwright-report
+packages/database/src/generated

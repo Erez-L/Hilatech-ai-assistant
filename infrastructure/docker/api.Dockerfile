@@ -12,14 +12,17 @@ COPY packages/contracts/package.json packages/contracts/
 COPY packages/shared/package.json packages/shared/
 COPY packages/types/package.json packages/types/
 COPY packages/database/package.json packages/database/
+COPY packages/ai-engine/package.json packages/ai-engine/
+COPY packages/storage/package.json packages/storage/
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --filter @hilatech/api...
 
 FROM deps AS build
 COPY packages ./packages
 COPY apps/api ./apps/api
-RUN pnpm --filter @hilatech/database generate \
+# `prisma generate` only needs the variable to exist; no database is contacted at build time.
+RUN DATABASE_URL=postgresql://build:build@localhost:5432/build pnpm --filter @hilatech/database generate \
  && pnpm --filter @hilatech/api... build \
- && pnpm --filter @hilatech/api deploy --prod /out
+ && pnpm --filter @hilatech/api deploy --legacy --prod /out
 
 FROM node:22-bookworm-slim AS runtime
 ENV NODE_ENV=production
