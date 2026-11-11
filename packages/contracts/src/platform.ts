@@ -17,6 +17,7 @@ export const AuditAction = {
   AUTH_PASSWORD_RESET: 'auth.password_reset',
   AUTH_PASSWORD_CHANGED: 'auth.password_changed',
   AUTH_EMAIL_VERIFIED: 'auth.email_verified',
+  AUTH_EMAIL_VERIFICATION_RESENT: 'auth.email_verification_resent',
   // organization
   ORG_CREATED: 'organization.created',
   ORG_UPDATED: 'organization.updated',

@@ -33,7 +33,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     // Cheap PK lookup so deactivated/deleted accounts are locked out immediately (not only after TTL).
     const user = await this.prisma.client.user.findUnique({
       where: { id: claims.data.sub },
-      select: { id: true, email: true, isActive: true },
+      select: { id: true, email: true, isActive: true, emailVerifiedAt: true },
     });
     if (!user || !user.isActive) {
       throw AppException.unauthorized('Account is not active');
@@ -49,6 +49,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (!liveSession) {
       throw AppException.unauthorized('Session has been revoked', ErrorCode.TOKEN_INVALID);
     }
-    return { userId: user.id, email: user.email, sessionId: claims.data.sid };
+    return {
+      userId: user.id,
+      email: user.email,
+      sessionId: claims.data.sid,
+      emailVerified: user.emailVerifiedAt !== null,
+    };
   }
 }

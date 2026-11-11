@@ -66,6 +66,7 @@ const LOCALIZED_CODES = new Set([
   'TOKEN_INVALID',
   'TOKEN_REUSED',
   'FORBIDDEN',
+  'EMAIL_NOT_VERIFIED',
   'ORGANIZATION_REQUIRED',
   'NOT_A_MEMBER',
   'NOT_FOUND',
@@ -188,6 +189,10 @@ async function toApiError(res: Response): Promise<ApiError> {
     typeof error?.message === 'string' && error.message
       ? error.message
       : defaultMessageForStatus(res.status);
+  if (code === ErrorCode.EMAIL_NOT_VERIFIED) {
+    // The server enforces email verification: switch the app to the verification gate.
+    useSession.getState().setEmailVerificationRequired(true);
+  }
   return new ApiError({
     status: res.status,
     code,

@@ -40,7 +40,14 @@ import {
 import { type Response } from 'express';
 import { z } from 'zod';
 
-import { AuthThrottle, CurrentUser, NoTenant, Public, Req } from '../../common/decorators';
+import {
+  AllowUnverified,
+  AuthThrottle,
+  CurrentUser,
+  NoTenant,
+  Public,
+  Req,
+} from '../../common/decorators';
 import {
   ApiErrors,
   ApiZodBody,
@@ -63,6 +70,7 @@ import { TokenService } from './token.service';
 export const REFRESH_COOKIE_SECURITY = 'refreshCookie';
 
 @ApiTags('auth')
+@AllowUnverified()
 @Controller('auth')
 @NoTenant()
 export class AuthController {
@@ -232,6 +240,22 @@ export class AuthController {
     @Req() req: AppRequest,
   ): Promise<void> {
     await this.auth.verifyEmail(body, requestMeta(req));
+  }
+
+  @Post('resend-verification')
+  @ApiBearerAuth()
+  @AuthThrottle()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Send a new verification email to the signed-in user (no-op when already verified)',
+  })
+  @ApiZodResponse(null)
+  @ApiErrors(...COMMON_AUTH_ERRORS, [HttpStatus.TOO_MANY_REQUESTS, ErrorCode.RATE_LIMITED])
+  async resendVerification(
+    @CurrentUser() principal: Principal,
+    @Req() req: AppRequest,
+  ): Promise<void> {
+    await this.auth.resendVerification(principal, requestMeta(req));
   }
 
   @Post('change-password')

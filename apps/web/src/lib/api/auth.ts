@@ -37,6 +37,8 @@ export const authApi = {
     api.post<void>('/auth/reset-password', body, { auth: false, organization: false }),
   verifyEmail: (body: VerifyEmailRequest) =>
     api.post<void>('/auth/verify-email', body, { auth: false, organization: false }),
+  resendVerification: () =>
+    api.post<void>('/auth/resend-verification', undefined, { organization: false }),
   changePassword: (body: ChangePasswordRequest) =>
     api.post<void>('/auth/change-password', body, { organization: false }),
   sessions: async (): Promise<AuthSessionInfo[]> => {

@@ -209,7 +209,7 @@ describe('InvitationsService', () => {
       role,
       invitedBy: { id: 'inviter', firstName: 'Ann', lastName: 'Admin', email: 'ann@example.com' },
     };
-    const principal = { userId: USER, email: 'x@example.com', sessionId: 's' };
+    const principal = { userId: USER, email: 'x@example.com', sessionId: 's', emailVerified: true };
 
     it('rejects a mismatching account email with 403 and does not create a membership', async () => {
       const { service, client } = build();

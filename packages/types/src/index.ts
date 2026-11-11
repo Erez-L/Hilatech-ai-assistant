@@ -18,6 +18,8 @@ export interface Principal {
   userId: string;
   email: string;
   sessionId: string;
+  /** Whether the account's email address has been verified. */
+  emailVerified: boolean;
 }
 
 export type Nullable<T> = T | null;

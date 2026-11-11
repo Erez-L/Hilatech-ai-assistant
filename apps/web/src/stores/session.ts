@@ -17,6 +17,8 @@ export interface SessionState {
   permissions: string[];
   /** True once GET /auth/me has resolved at least once for the current token. */
   sessionLoaded: boolean;
+  /** True once the API refused a request with EMAIL_NOT_VERIFIED: the app shows the verification gate. */
+  emailVerificationRequired: boolean;
 
   setStatus: (status: SessionStatus) => void;
   setAccessToken: (token: string | null) => void;
@@ -25,6 +27,7 @@ export interface SessionState {
   applySession: (session: Session, requestedOrganizationId?: string | null) => void;
   setActiveOrganization: (id: string | null) => void;
   updateUser: (user: Partial<AuthUser>) => void;
+  setEmailVerificationRequired: (required: boolean) => void;
   clear: () => void;
 }
 
@@ -66,6 +69,7 @@ const initialState = {
   activeOrganization: null,
   permissions: [] as string[],
   sessionLoaded: false,
+  emailVerificationRequired: false,
 };
 
 export const useSession = create<SessionState>()((set, get) => ({
@@ -131,6 +135,10 @@ export const useSession = create<SessionState>()((set, get) => ({
     const user = get().user;
     if (!user) return;
     set({ user: { ...user, ...patch } });
+  },
+
+  setEmailVerificationRequired: (required) => {
+    if (get().emailVerificationRequired !== required) set({ emailVerificationRequired: required });
   },
 
   clear: () => {

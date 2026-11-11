@@ -3,7 +3,7 @@ import { type Principal } from '@hilatech/types';
 import { Body, Controller, Get, HttpStatus, Patch, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { CurrentUser, NoTenant } from '../../common/decorators';
+import { AllowUnverified, CurrentUser, NoTenant } from '../../common/decorators';
 import {
   ApiErrors,
   ApiZodBody,
@@ -21,6 +21,7 @@ import { UsersService } from './users.service';
 
 @ApiTags('users')
 @ApiBearerAuth()
+@AllowUnverified()
 @Controller('users')
 @NoTenant()
 export class UsersController {

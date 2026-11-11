@@ -7,6 +7,7 @@ import { authApi, keys } from '@/lib/api';
 import { useSession } from '@/stores/session';
 import { FullPageLoader } from '@/components/common/full-page-loader';
 import { useT } from '@/i18n/provider';
+import { VerifyEmailGate } from './verify-email-gate';
 
 export interface AuthGateProps {
   children: React.ReactNode;
@@ -20,6 +21,7 @@ export interface AuthGateProps {
  * 2. Unauthenticated → /login?next=<current path>.
  * 3. Authenticated → GET /auth/me (keyed by the active organization) to resolve permissions.
  * 4. No organizations → /onboarding (unless requireOrganization is false).
+ * 5. The API answered EMAIL_NOT_VERIFIED for an unverified account → the verification gate.
  */
 export function AuthGate({ children, requireOrganization = true }: AuthGateProps) {
   const t = useT();
@@ -33,6 +35,9 @@ export function AuthGate({ children, requireOrganization = true }: AuthGateProps
   const orgId = useSession((s) => s.activeOrganizationId);
   const sessionLoaded = useSession((s) => s.sessionLoaded);
   const applySession = useSession((s) => s.applySession);
+  const mustVerifyEmail = useSession(
+    (s) => s.emailVerificationRequired && s.user !== null && !s.user.emailVerifiedAt,
+  );
 
   // 1. Bootstrap from the refresh cookie.
   React.useEffect(() => {
@@ -70,6 +75,7 @@ export function AuthGate({ children, requireOrganization = true }: AuthGateProps
     requireOrganization &&
     status === 'authenticated' &&
     sessionLoaded &&
+    !mustVerifyEmail &&
     organizations.length === 0;
   React.useEffect(() => {
     if (needsOnboarding) router.replace('/onboarding');
@@ -89,6 +95,8 @@ export function AuthGate({ children, requireOrganization = true }: AuthGateProps
     }
     return <FullPageLoader />;
   }
+  // The API enforces email verification and refused a request: nothing else works until it is done.
+  if (mustVerifyEmail) return <VerifyEmailGate />;
   if (needsOnboarding) return <FullPageLoader label={t('auth.settingUpYourWorkspace')} />;
   return <>{children}</>;
 }

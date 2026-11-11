@@ -120,6 +120,10 @@ export const envSchema = z
     EMAIL_VERIFICATION_TTL: durationVar('24h'),
     INVITATION_TTL: durationVar('7d'),
     COOKIE_SECURE: boolVar(false),
+    /** Block everything except the session/profile/verification routes until the email address is verified. */
+    REQUIRE_EMAIL_VERIFICATION: boolVar(false),
+    /** Minimum time between two verification emails for the same account. */
+    EMAIL_VERIFICATION_RESEND_COOLDOWN: durationVar('60s'),
     COOKIE_DOMAIN: optionalString(),
 
     // Rate limiting
@@ -261,6 +265,7 @@ export const envSchema = z
     refreshTtlMs: parseDuration(env.JWT_REFRESH_TTL),
     passwordResetTtlMs: parseDuration(env.PASSWORD_RESET_TTL),
     emailVerificationTtlMs: parseDuration(env.EMAIL_VERIFICATION_TTL),
+    emailVerificationResendCooldownMs: parseDuration(env.EMAIL_VERIFICATION_RESEND_COOLDOWN),
     invitationTtlMs: parseDuration(env.INVITATION_TTL),
   }));
 

@@ -178,7 +178,7 @@ describe('AuthService.me', () => {
       roleName: 'Owner',
     };
     organizations.listForUser.mockResolvedValue([org]);
-    const principal = { userId: user.id, email: user.email, sessionId: 's' };
+    const principal = { userId: user.id, email: user.email, sessionId: 's', emailVerified: true };
 
     tenancy.resolveTenant.mockResolvedValue(null);
     const none = await service.me(principal, '33333333-3333-4333-8333-333333333333');

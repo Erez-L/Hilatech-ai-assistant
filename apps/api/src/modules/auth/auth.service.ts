@@ -484,6 +484,30 @@ export class AuthService {
     };
   }
 
+  /**
+   * Sends a fresh verification email to the signed-in user. A no-op for verified accounts; at most one
+   * email per `EMAIL_VERIFICATION_RESEND_COOLDOWN` (429 otherwise). Older unused tokens stay valid
+   * until they expire, so a link from an earlier email still works.
+   */
+  async resendVerification(principal: Principal, meta: RequestMeta): Promise<void> {
+    const user = await this.prisma.client.user.findUnique({ where: { id: principal.userId } });
+    if (!user || user.emailVerifiedAt) return;
+    const cooldownMs = this.config.get('emailVerificationResendCooldownMs');
+    const recent = await this.prisma.client.emailVerificationToken.findFirst({
+      where: { userId: user.id, createdAt: { gt: new Date(Date.now() - cooldownMs) } },
+      select: { id: true },
+    });
+    if (recent) throw AppException.rateLimited();
+    await this.sendVerificationEmail(user, meta);
+    await this.audit.log({
+      action: AuditAction.AUTH_EMAIL_VERIFICATION_RESENT,
+      actorUserId: user.id,
+      targetType: 'user',
+      targetId: user.id,
+      request: meta,
+    });
+  }
+
   private async sendVerificationEmail(user: User, meta: RequestMeta): Promise<void> {
     const raw = generateOpaqueToken();
     const token = await this.prisma.client.emailVerificationToken.create({

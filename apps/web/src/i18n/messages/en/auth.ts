@@ -77,4 +77,14 @@ export const auth = {
     'You’re signed in as {email}, but this invitation was sent to {email2}. Sign out and continue with the invited address.',
   'auth.youVeBeenInvitedAs': 'You’ve been invited as {roleName}.',
   'auth.youVeBeenInvitedAs2': 'You’ve been invited as {roleName}. Set up your account to accept.',
+  'auth.verifyGateTitle': 'Verify your email address',
+  'auth.verifyGateBody':
+    'We sent a verification link to {email}. Open it to continue. The link may take a minute to arrive; check your spam folder too.',
+  'auth.resendVerificationEmail': 'Resend verification email',
+  'auth.verificationEmailSent': 'Verification email sent. Check your inbox.',
+  'auth.verificationEmailRecentlySent':
+    'An email was sent a moment ago. Wait a minute before asking for another one.',
+  'auth.iHaveVerified': 'I’ve verified my email',
+  'auth.emailStillNotVerified':
+    'This address is not verified yet. Open the link in the email first.',
 } as const;

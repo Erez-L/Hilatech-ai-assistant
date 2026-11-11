@@ -29,8 +29,11 @@ import {
   cn,
   toast,
 } from '@hilatech/ui';
+import { useMutation } from '@tanstack/react-query';
 import {
+  authApi,
   getErrorMessage,
+  isApiError,
   updateProfileSchema,
   type AuthSessionInfo,
   type UpdateProfileRequest,
@@ -136,9 +139,12 @@ function ProfileForm({ user }: { user: AuthUser }) {
                     {t('settings.verified')}
                   </Badge>
                 ) : (
-                  <Badge variant="warning" dot>
-                    {t('settings.notVerified')}
-                  </Badge>
+                  <>
+                    <Badge variant="warning" dot>
+                      {t('settings.notVerified')}
+                    </Badge>
+                    <ResendVerificationButton />
+                  </>
                 )}
                 <span>
                   {t('settings.memberSince', {
@@ -544,5 +550,24 @@ function SessionsCard() {
         }}
       />
     </Card>
+  );
+}
+
+function ResendVerificationButton() {
+  const t = useT();
+  const resend = useMutation({
+    mutationFn: authApi.resendVerification,
+    onSuccess: () => toast.success(t('auth.verificationEmailSent')),
+    onError: (e) =>
+      toast.error(
+        isApiError(e) && e.code === 'RATE_LIMITED'
+          ? t('auth.verificationEmailRecentlySent')
+          : getErrorMessage(e),
+      ),
+  });
+  return (
+    <Button variant="link" size="sm" onClick={() => resend.mutate()} loading={resend.isPending}>
+      {t('auth.resendVerificationEmail')}
+    </Button>
   );
 }

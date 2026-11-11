@@ -72,4 +72,12 @@ export const auth = {
     'אתם מחוברים בתור {email}, אך ההזמנה הזו נשלחה אל {email2}. התנתקו והמשיכו עם הכתובת שהוזמנה.',
   'auth.youVeBeenInvitedAs': 'הוזמנתם בתפקיד {roleName}.',
   'auth.youVeBeenInvitedAs2': 'הוזמנתם בתפקיד {roleName}. הגדירו את החשבון שלכם כדי לאשר.',
+  'auth.verifyGateTitle': 'אמתו את כתובת האימייל',
+  'auth.verifyGateBody':
+    'שלחנו קישור אימות אל {email}. פתחו אותו כדי להמשיך. ייתכן שיעברו דקה או שתיים עד שהאימייל יגיע; בדקו גם בתיקיית הספאם.',
+  'auth.resendVerificationEmail': 'שליחת אימייל אימות מחדש',
+  'auth.verificationEmailSent': 'אימייל האימות נשלח. בדקו את תיבת הדואר.',
+  'auth.verificationEmailRecentlySent': 'אימייל נשלח לפני רגע. המתינו דקה לפני בקשה נוספת.',
+  'auth.iHaveVerified': 'אימתתי את האימייל',
+  'auth.emailStillNotVerified': 'הכתובת עדיין לא אומתה. פתחו קודם את הקישור שבאימייל.',
 } as const;

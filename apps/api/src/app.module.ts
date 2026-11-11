@@ -5,6 +5,7 @@ import { LoggerModule } from 'nestjs-pino';
 
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppThrottlerGuard } from './common/guards/app-throttler.guard';
+import { EmailVerifiedGuard } from './common/guards/email-verified.guard';
 import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
@@ -110,9 +111,10 @@ import { WorkflowsModule } from './modules/workflows/workflows.module';
     IntegrationsModule,
   ],
   providers: [
-    // Global guards run in registration order: rate limit → authentication → tenant → permissions.
+    // Global guards run in registration order: rate limit → authentication → email verification → tenant → permissions.
     { provide: APP_GUARD, useClass: AppThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: EmailVerifiedGuard },
     { provide: APP_GUARD, useClass: OrganizationGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },

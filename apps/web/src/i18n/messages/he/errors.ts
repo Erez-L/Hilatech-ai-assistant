@@ -3,6 +3,7 @@ export const errors = {
   'errors.AI_PROVIDER_ERROR': 'ספק ה-AI החזיר שגיאה. נסו שוב מאוחר יותר.',
   'errors.CONFLICT': 'הפעולה מתנגשת עם רשומה קיימת.',
   'errors.FORBIDDEN': 'אין לכם הרשאה לבצע פעולה זו.',
+  'errors.EMAIL_NOT_VERIFIED': 'יש לאמת את כתובת האימייל כדי להמשיך.',
   'errors.INTERNAL_ERROR': 'משהו השתבש מצידנו. נסו שוב.',
   'errors.INVALID_CREDENTIALS': 'האימייל או הסיסמה שגויים.',
   'errors.NETWORK_ERROR': 'לא ניתן היה להתחבר לשרת. בדקו את החיבור ונסו שוב.',

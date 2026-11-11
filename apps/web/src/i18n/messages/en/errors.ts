@@ -3,6 +3,7 @@ export const errors = {
   'errors.AI_PROVIDER_ERROR': 'The AI provider returned an error. Try again later.',
   'errors.CONFLICT': 'This conflicts with an existing record.',
   'errors.FORBIDDEN': 'You do not have permission to do that.',
+  'errors.EMAIL_NOT_VERIFIED': 'Verify your email address to continue.',
   'errors.INTERNAL_ERROR': 'Something went wrong on our side. Please try again.',
   'errors.INVALID_CREDENTIALS': 'The email or password is incorrect.',
   'errors.NETWORK_ERROR': 'The server could not be reached. Check your connection and try again.',
