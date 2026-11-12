@@ -31,7 +31,9 @@ RUN pnpm --filter @hilatech/database generate \
 FROM node:22-bookworm-slim AS runtime
 ENV NODE_ENV=production
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates wget && rm -rf /var/lib/apt/lists/* \
- && groupadd -r app && useradd -r -g app app
+ && groupadd -r app && useradd -r -g app app \
+ # Local document storage (single-host deployments mount a shared volume here).
+ && mkdir -p /data/uploads && chown app:app /data/uploads
 WORKDIR /app
 COPY --from=build --chown=app:app /out ./
 COPY --from=build --chown=app:app /repo/packages/database/prisma ./prisma

@@ -1,4 +1,5 @@
-# Production-style compose template (single host). Images come from GHCR via .github/workflows/deploy.yml.
+# Production-style compose template (single host): the demo / early-pilot deployment.
+# Images come from GHCR via .github/workflows/deploy.yml. GITHUB_REPOSITORY must be lowercase (owner/repo).
 # Copy next to a production .env (never commit it) and run:
 #   docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
 name: hilatech-ai-assistant
@@ -8,6 +9,9 @@ x-common-env: &common-env
   LOG_LEVEL: info
   DATABASE_URL: ${DATABASE_URL}
   REDIS_URL: redis://redis:6379
+  # Uploaded documents: one volume shared by the API (writes) and the workers (read and process).
+  # Ignored when STORAGE_DRIVER=s3 is set in .env.
+  STORAGE_LOCAL_PATH: /data/uploads
 
 services:
   postgres:
@@ -39,12 +43,9 @@ services:
 
   migrate:
     image: ghcr.io/${GITHUB_REPOSITORY}/api:${IMAGE_TAG:-latest}
-    command:
-      [
-        'sh',
-        '-c',
-        'node node_modules/prisma/build/index.js migrate deploy --config node_modules/@hilatech/database/prisma.config.ts',
-      ]
+    # The API image carries a migration bundle in /app/migrate (see infrastructure/docker/api.Dockerfile).
+    working_dir: /app/migrate
+    command: ['node', 'node_modules/prisma/build/index.js', 'migrate', 'deploy']
     environment:
       <<: *common-env
     depends_on:
@@ -59,6 +60,8 @@ services:
     environment:
       <<: *common-env
       API_PORT: 4000
+    volumes:
+      - uploads:/data/uploads
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -77,6 +80,8 @@ services:
     environment:
       <<: *common-env
       WORKERS_HEALTH_PORT: 4100
+    volumes:
+      - uploads:/data/uploads
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -96,6 +101,9 @@ services:
   proxy:
     image: caddy:2-alpine
     restart: unless-stopped
+    environment:
+      # The Caddyfile reads the public hostname from this variable.
+      APP_DOMAIN: ${APP_DOMAIN:?set APP_DOMAIN}
     ports:
       - '80:80'
       - '443:443'
@@ -110,5 +118,6 @@ services:
 volumes:
   postgres-data:
   redis-data:
+  uploads:
   caddy-data:
   caddy-config:

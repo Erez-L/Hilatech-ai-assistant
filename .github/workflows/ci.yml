@@ -205,6 +205,43 @@ jobs:
             -d '{"name":"Smoke Org"}' | python3 -c 'import json,sys; d=json.load(sys.stdin)["data"]; assert d["name"]=="Smoke Org", d; print("organization", d["id"])'
           curl -fsSI http://localhost:3000/login | grep -i '^content-security-policy'
 
+      # The single-host deployment (docker-compose.prod.yml + Caddy), end to end, with the images built above.
+      - name: Single-host compose smoke test
+        run: |
+          docker rm -f api workers web
+          for svc in api workers web; do docker tag "hilatech-$svc:ci" "ghcr.io/ci/hilatech/$svc:ci"; done
+          mkdir -p /tmp/single-host && cp infrastructure/deployment/docker-compose.prod.yml infrastructure/deployment/Caddyfile /tmp/single-host/
+          cd /tmp/single-host
+          cat > .env <<'ENVFILE'
+          GITHUB_REPOSITORY=ci/hilatech
+          IMAGE_TAG=ci
+          APP_DOMAIN=localhost
+          POSTGRES_PASSWORD=ci-smoke-password
+          DATABASE_URL=postgresql://postgres:ci-smoke-password@postgres:5432/hilatech?schema=public
+          JWT_ACCESS_SECRET=ci-smoke-access-secret-0123456789abcdef0123
+          JWT_REFRESH_SECRET=ci-smoke-refresh-secret-0123456789abcdef012
+          CREDENTIALS_ENCRYPTION_KEY=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+          COOKIE_SECURE=true
+          APP_URL=https://localhost
+          API_URL=https://localhost
+          CORS_ORIGINS=https://localhost
+          ENVFILE
+          sed -i 's/^          //' .env
+          docker compose -f docker-compose.prod.yml up -d
+          wait_for() { for i in $(seq 1 60); do curl -kfsS "$1" >/dev/null 2>&1 && return 0; sleep 2; done; echo "timeout waiting for $1"; return 1; }
+          # Through Caddy (TLS with its local certificate authority): API and web on one origin.
+          wait_for https://localhost/api/v1/health/ready
+          wait_for https://localhost/login
+          curl -kfsS https://localhost/api/v1/health/ready
+          # The API and the workers share the uploads volume, and both run as the unprivileged user.
+          docker compose -f docker-compose.prod.yml exec -T api sh -c 'id -un && echo ok > /data/uploads/.smoke'
+          docker compose -f docker-compose.prod.yml exec -T workers sh -c 'id -un && cat /data/uploads/.smoke'
+          docker compose -f docker-compose.prod.yml ps
+
+      - name: Single-host compose logs
+        if: always()
+        run: cd /tmp/single-host 2>/dev/null && docker compose -f docker-compose.prod.yml logs --tail 60 || true
+
       - name: Container logs
         if: always()
         run: |

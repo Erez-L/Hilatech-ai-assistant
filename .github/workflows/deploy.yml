@@ -26,19 +26,22 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Image metadata
         id: meta
-        run: echo "tag=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        # GHCR image names must be lowercase; the repository owner/name may not be.
+        run: |
+          echo "tag=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          echo "repo=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
       - uses: docker/build-push-action@v6
         with:
           context: .
           file: infrastructure/docker/api.Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}/api:${{ steps.meta.outputs.tag }}
+          tags: ghcr.io/${{ steps.meta.outputs.repo }}/api:${{ steps.meta.outputs.tag }}
       - uses: docker/build-push-action@v6
         with:
           context: .
           file: infrastructure/docker/workers.Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}/workers:${{ steps.meta.outputs.tag }}
+          tags: ghcr.io/${{ steps.meta.outputs.repo }}/workers:${{ steps.meta.outputs.tag }}
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -47,7 +50,7 @@ jobs:
           build-args: |
             NEXT_PUBLIC_API_URL=${{ vars.PUBLIC_API_URL || 'http://localhost:4000' }}
             NEXT_PUBLIC_APP_URL=${{ vars.PUBLIC_APP_URL || 'http://localhost:3000' }}
-          tags: ghcr.io/${{ github.repository }}/web:${{ steps.meta.outputs.tag }}
+          tags: ghcr.io/${{ steps.meta.outputs.repo }}/web:${{ steps.meta.outputs.tag }}
 
   deploy:
     name: Deploy (requires DEPLOY_SSH_KEY secret)
