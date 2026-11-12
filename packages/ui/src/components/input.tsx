@@ -207,7 +207,7 @@ export const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProp
         <select
           ref={ref}
           aria-invalid={invalid || props['aria-invalid'] ? true : undefined}
-          className={cn(inputClassName, 'appearance-none pe-9', className)}
+          className={cn(inputClassName, 'select-rounded appearance-none pe-9', className)}
           {...props}
         >
           {children}

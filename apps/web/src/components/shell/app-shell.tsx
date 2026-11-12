@@ -3,13 +3,13 @@
 import * as React from 'react';
 import { usePathname } from 'next/navigation';
 import { Menu } from 'lucide-react';
-import { IconButton, Sheet, SheetContent, Spinner, TopBar } from '@hilatech/ui';
+import { IconButton, PageIconProvider, Sheet, SheetContent, Spinner, TopBar } from '@hilatech/ui';
 import { useSession } from '@/stores/session';
 import { AppSidebar } from './app-sidebar';
 import { NotificationsMenu } from './notifications-menu';
 import { ThemeToggle } from './theme-toggle';
 import { UserMenu } from './user-menu';
-import { pageTitleFor } from './nav';
+import { navItemFor, pageTitleFor } from './nav';
 import { useT } from '@/i18n/provider';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -18,6 +18,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const sessionLoaded = useSession((s) => s.sessionLoaded);
   const title = pageTitleFor(pathname, t);
+  const area = navItemFor(pathname);
+  const AreaIcon = area?.icon;
 
   return (
     <div className="flex min-h-dvh bg-bg">
@@ -70,11 +72,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main
           id="main"
           tabIndex={-1}
+          data-tone={area?.tone}
           className="relative flex-1 px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8"
         >
           <div className="mx-auto w-full max-w-6xl">
             {sessionLoaded ? (
-              children
+              <PageIconProvider icon={AreaIcon ? <AreaIcon /> : null}>{children}</PageIconProvider>
             ) : (
               <div className="flex min-h-[40vh] items-center justify-center" role="status">
                 <Spinner label={t('shell.switchingOrganization')} />

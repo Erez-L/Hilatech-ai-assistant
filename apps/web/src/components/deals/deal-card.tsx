@@ -43,7 +43,8 @@ export function DealCard({
       }}
       onDragEnd={onDragEnd}
       className={cn(
-        'flex flex-col gap-2 rounded-md border border-border bg-surface p-3 shadow-xs',
+        'flex flex-col gap-2 rounded-md border border-t-4 border-border border-t-tone bg-surface p-3 shadow-xs',
+        'transition-[translate,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-popover',
         canMove && 'cursor-grab active:cursor-grabbing',
         dragging && 'opacity-40',
       )}

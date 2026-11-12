@@ -10,8 +10,10 @@
  * `.dark` class on <html>; utilities read the semantic variables through `@theme inline` so
  * `bg-surface`, `text-fg-muted`, `border-border` etc. flip with the theme.
  *
- * Palette: cool neutral greys with a single deep-teal accent. Status colours are reserved for
- * state; chart series use a separately validated categorical order (see --chart-*).
+ * Palette: cool neutral greys with a deep-teal brand accent for primary actions. Each area of the
+ * app also has its own "tone" (see [data-tone] below) so screens are told apart at a glance.
+ * Status colours are reserved for state; chart series use a separately validated categorical order
+ * (see --chart-*).
  */
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -19,18 +21,18 @@
 :root {
   color-scheme: light;
 
-  --bg: #f4f5f7;
+  --bg: #f5f6fa;
   --surface: #ffffff;
-  --surface-muted: #eef0f3;
+  --surface-muted: #eef1f6;
   --surface-raised: #ffffff;
   --overlay: rgb(16 20 26 / 0.45);
 
-  --border: #e2e5ea;
-  --border-strong: #c9ced7;
+  --border: #dfe3ec;
+  --border-strong: #c9d0dc;
 
-  --fg: #171a20;
-  --fg-muted: #5b6472;
-  --fg-subtle: #8a93a1;
+  --fg: #131a2a;
+  --fg-muted: #566175;
+  --fg-subtle: #6f7a8c;
   --fg-inverted: #ffffff;
 
   --accent: #0b7a75;
@@ -66,6 +68,8 @@
   --chart-grid: #e2e5ea;
   --chart-track: #e2e5ea;
 
+  --sidebar: #0f1729;
+
   --shadow-xs: 0 1px 2px rgb(23 26 32 / 0.05);
   --shadow-sm: 0 1px 3px rgb(23 26 32 / 0.06), 0 1px 2px rgb(23 26 32 / 0.04);
   --shadow-popover: 0 8px 24px rgb(23 26 32 / 0.12), 0 1px 3px rgb(23 26 32 / 0.08);
@@ -75,18 +79,18 @@
 .dark {
   color-scheme: dark;
 
-  --bg: #0e1116;
-  --surface: #151a21;
-  --surface-muted: #1b212a;
-  --surface-raised: #1b212a;
+  --bg: #0b101b;
+  --surface: #141b2b;
+  --surface-muted: #1c2538;
+  --surface-raised: #1c2538;
   --overlay: rgb(0 0 0 / 0.6);
 
-  --border: #262d37;
-  --border-strong: #353e4a;
+  --border: #283349;
+  --border-strong: #3a4763;
 
-  --fg: #e8ebef;
-  --fg-muted: #9aa4b2;
-  --fg-subtle: #6b7785;
+  --fg: #e8ecf4;
+  --fg-muted: #9eabc2;
+  --fg-subtle: #7f8ca3;
   --fg-inverted: #0e1116;
 
   --accent: #3fbfb2;
@@ -121,6 +125,8 @@
   --chart-8: #e66767;
   --chart-grid: #262d37;
   --chart-track: #262d37;
+
+  --sidebar: #070b14;
 
   --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.3);
   --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.4), 0 1px 2px rgb(0 0 0 / 0.3);
@@ -170,6 +176,12 @@
 
   --color-ring: var(--ring);
 
+  --color-tone: var(--tone);
+  --color-tone-soft: var(--tone-soft);
+  --color-tone-fg: var(--tone-fg);
+  --color-tone-bright: var(--tone-bright);
+  --color-tone-on: var(--tone-on);
+
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -179,11 +191,11 @@
   --color-chart-7: var(--chart-7);
   --color-chart-8: var(--chart-8);
 
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
   --radius-2xl: 24px;
 
   --shadow-xs: var(--shadow-xs);
@@ -194,8 +206,10 @@
   --text-2xs: 0.6875rem;
   --text-2xs--line-height: 1rem;
 
-  --animate-fade-in: fade-in 150ms ease-out;
-  --animate-scale-in: scale-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-fade-in: fade-in 200ms ease-out;
+  --animate-scale-in: scale-in 280ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  --animate-rise: rise 450ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-grow-x: grow-x 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-slide-in-start: slide-in-start 200ms cubic-bezier(0.16, 1, 0.3, 1);
   --animate-shimmer: shimmer 1.6s linear infinite;
 
@@ -210,7 +224,7 @@
   @keyframes scale-in {
     from {
       opacity: 0;
-      transform: translateY(4px) scale(0.98);
+      transform: translateY(14px) scale(0.95);
     }
     to {
       opacity: 1;
@@ -223,6 +237,24 @@
     }
     to {
       transform: translateX(0);
+    }
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes grow-x {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
     }
   }
   @keyframes shimmer {
@@ -302,6 +334,140 @@
 @utility scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border-strong) transparent;
+}
+
+/* Area tones --------------------------------------------------------------------------------------
+   Every area of the app has a tone. Set `data-tone` on a container and use the `tone` colour
+   utilities (bg-tone, bg-tone-soft, text-tone-fg, bg-tone-bright, text-tone-on) inside it.
+   Stat tiles without an explicit tone cycle through the tones by position, so a row of tiles is
+   never a single colour. */
+:root {
+  --tone: #0b7a75;
+  --tone-soft: #e2f3f1;
+  --tone-fg: #075f5b;
+  --tone-bright: #5fd4c8;
+  --tone-on: #ffffff;
+}
+[data-tone='teal'],
+.stat-card:not([data-tone]):nth-child(6n + 5) {
+  --tone: #0b7a75;
+  --tone-soft: #e2f3f1;
+  --tone-fg: #075f5b;
+  --tone-bright: #5fd4c8;
+}
+[data-tone='blue'],
+.stat-card:not([data-tone]):nth-child(6n + 1) {
+  --tone: #2459c4;
+  --tone-soft: #e7eefc;
+  --tone-fg: #1c4aa8;
+  --tone-bright: #6ea0ff;
+}
+[data-tone='violet'],
+.stat-card:not([data-tone]):nth-child(6n + 2) {
+  --tone: #6941d6;
+  --tone-soft: #eee9fd;
+  --tone-fg: #5a34c2;
+  --tone-bright: #a48bff;
+}
+[data-tone='pink'],
+.stat-card:not([data-tone]):nth-child(6n + 3) {
+  --tone: #b82e86;
+  --tone-soft: #fbe8f4;
+  --tone-fg: #a02474;
+  --tone-bright: #f27cc4;
+}
+[data-tone='orange'],
+.stat-card:not([data-tone]):nth-child(6n + 4) {
+  --tone: #b4500a;
+  --tone-soft: #fdeedd;
+  --tone-fg: #954008;
+  --tone-bright: #ffa45c;
+}
+[data-tone='green'],
+.stat-card:not([data-tone]):nth-child(6n + 6) {
+  --tone: #2f7d4f;
+  --tone-soft: #e4f3ea;
+  --tone-fg: #23633d;
+  --tone-bright: #6fd08c;
+}
+[data-tone='slate'] {
+  --tone: #475569;
+  --tone-soft: #e9edf3;
+  --tone-fg: #3b4658;
+  --tone-bright: #a9b6cc;
+}
+.dark,
+.dark [data-tone],
+.dark .stat-card {
+  --tone-soft: color-mix(in srgb, var(--tone-bright) 18%, transparent);
+  --tone-fg: var(--tone-bright);
+  --tone-on: #0f1729;
+}
+.dark :is([data-tone], .stat-card, body) {
+  --tone: var(--tone-bright);
+}
+
+/* The navigation rail is always dark; inside it the neutral tokens are remapped so existing
+   components (wordmark, organization switcher) render correctly without their own dark variant. */
+.sidebar-scope {
+  --surface: var(--sidebar);
+  --surface-muted: rgb(255 255 255 / 0.08);
+  --surface-raised: var(--sidebar);
+  --border: rgb(255 255 255 / 0.14);
+  --border-strong: rgb(255 255 255 / 0.26);
+  --fg: #ffffff;
+  --fg-muted: #c7d0e0;
+  --fg-subtle: #8d99b0;
+  --fg-inverted: #0f1729;
+  --accent: #5fd4c8;
+  --accent-soft: rgb(255 255 255 / 0.12);
+  --accent-soft-fg: #ffffff;
+  --ring: #5fd4c8;
+  color-scheme: dark;
+}
+
+/* Native <select>: where the browser supports customizable selects, the option list gets the same
+   rounded popover as every other menu. Other browsers keep their built-in list. */
+@supports (appearance: base-select) {
+  select.select-rounded,
+  select.select-rounded::picker(select) {
+    appearance: base-select;
+  }
+  select.select-rounded {
+    display: flex;
+    align-items: center;
+  }
+  select.select-rounded::picker-icon {
+    display: none;
+  }
+  select.select-rounded::picker(select) {
+    margin-block: 6px;
+    padding: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-raised);
+    color: var(--color-fg);
+    box-shadow: var(--shadow-popover);
+    /* A keyframe animation (not a transition on :popover-open) so the list can never be left
+       invisible if a build tool drops a selector it does not know. */
+    animation: scale-in 200ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  }
+  select.select-rounded option {
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    outline: none;
+  }
+  select.select-rounded option::checkmark {
+    display: none;
+  }
+  select.select-rounded option:is(:hover, :focus-visible) {
+    background: var(--color-surface-muted);
+  }
+  select.select-rounded option:checked {
+    background: var(--color-accent-soft);
+    color: var(--color-accent-soft-fg);
+    font-weight: 600;
+  }
 }
 
 /* Direction helpers ------------------------------------------------------------------------------ */

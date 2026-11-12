@@ -54,7 +54,7 @@ export function Pagination({
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="h-8 rounded-sm border border-border bg-surface px-2 text-xs text-fg focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring/40"
+              className="select-rounded h-8 rounded-sm border border-border bg-surface px-2 text-xs text-fg focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring/40"
             >
               {pageSizeOptions.map((n) => (
                 <option key={n} value={n}>

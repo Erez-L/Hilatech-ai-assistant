@@ -9,7 +9,7 @@ import { cn } from '../lib/cn';
 export const buttonVariants = cva(
   [
     'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-sm font-medium',
-    'transition-[background-color,border-color,color,box-shadow] duration-150',
+    'transition-[background-color,border-color,color,box-shadow,scale] duration-150 active:scale-[0.97]',
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
     'disabled:pointer-events-none disabled:opacity-50',
     '[&_svg]:pointer-events-none [&_svg]:shrink-0',
@@ -17,7 +17,8 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-accent text-accent-fg shadow-xs hover:bg-accent-hover',
+        primary:
+          'bg-accent text-accent-fg font-semibold shadow-[0_8px_18px_-8px_var(--color-accent)] hover:bg-accent-hover hover:shadow-[0_10px_22px_-8px_var(--color-accent)]',
         secondary:
           'border border-border bg-surface text-fg shadow-xs hover:bg-surface-muted hover:border-border-strong',
         ghost: 'text-fg-muted hover:bg-surface-muted hover:text-fg',

@@ -7,6 +7,17 @@ import { CheckCircle2, CircleAlert, Info, Loader2, TriangleAlert } from 'lucide-
 
 export { toast };
 
+/** Coloured tile behind a toast's status icon. */
+function ToastIcon({ className, icon }: { className: string; icon: React.ReactNode }) {
+  return (
+    <span
+      className={`flex size-8 shrink-0 items-center justify-center rounded-sm text-white [&_svg]:size-4 ${className}`}
+    >
+      {icon}
+    </span>
+  );
+}
+
 /** Sonner toaster themed with design tokens. Mount once in the root layout. */
 export function Toaster(props: ToasterProps) {
   const dir = useDirection();
@@ -18,24 +29,24 @@ export function Toaster(props: ToasterProps) {
       duration={4500}
       gap={8}
       icons={{
-        success: <CheckCircle2 className="size-4 text-success" aria-hidden />,
-        error: <CircleAlert className="size-4 text-danger" aria-hidden />,
-        warning: <TriangleAlert className="size-4 text-warning" aria-hidden />,
-        info: <Info className="size-4 text-info" aria-hidden />,
+        success: <ToastIcon className="bg-success" icon={<CheckCircle2 aria-hidden />} />,
+        error: <ToastIcon className="bg-danger" icon={<CircleAlert aria-hidden />} />,
+        warning: <ToastIcon className="bg-warning" icon={<TriangleAlert aria-hidden />} />,
+        info: <ToastIcon className="bg-info" icon={<Info aria-hidden />} />,
         loading: <Loader2 className="size-4 animate-spin text-fg-muted" aria-hidden />,
       }}
       toastOptions={{
         unstyled: false,
         classNames: {
           toast:
-            '!rounded-md !border !border-border !bg-surface-raised !text-fg !shadow-popover !font-sans !text-sm !items-start !gap-3 !px-4 !py-3',
-          title: '!font-medium !text-fg',
+            '!rounded-lg !border !border-border !bg-surface-raised !text-fg !shadow-popover !font-sans !text-sm !items-start !gap-3 !px-3.5 !py-3',
+          title: '!font-semibold !text-fg',
           description: '!text-fg-muted !text-xs',
           actionButton: '!bg-accent !text-accent-fg !rounded-sm !text-xs !font-medium',
           cancelButton: '!bg-surface-muted !text-fg-muted !rounded-sm !text-xs',
           closeButton:
             '!bg-surface-raised !border-border !text-fg-muted hover:!bg-surface-muted hover:!text-fg',
-          icon: '!mt-0.5',
+          icon: '!m-0 !size-8',
         },
       }}
       {...props}

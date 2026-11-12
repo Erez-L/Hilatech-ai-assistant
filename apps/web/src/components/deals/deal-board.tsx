@@ -15,6 +15,9 @@ import { DealCard } from './deal-card';
 import { useFormat, useT } from '@/i18n/provider';
 
 /** Per-currency totals: one line per currency, never summed across currencies. */
+/** Stage columns take a tone by position so the pipeline reads as a sequence of colours. */
+const COLUMN_TONES = ['blue', 'teal', 'orange', 'violet', 'pink', 'green'] as const;
+
 export function CurrencyTotals({
   totals,
   compact = false,
@@ -107,7 +110,7 @@ export function DealBoardView({
       aria-label={t('deals.dealsBoard')}
       data-testid="deal-board"
     >
-      {board.columns.map((column) => {
+      {board.columns.map((column, columnIndex) => {
         const over = drop?.stageId === column.stage.id;
         return (
           <section
@@ -116,9 +119,10 @@ export function DealBoardView({
             data-testid="deal-column"
             data-stage-id={column.stage.id}
             data-stage-kind={column.stage.kind}
+            data-tone={COLUMN_TONES[columnIndex % COLUMN_TONES.length]}
             className={cn(
-              'flex w-72 shrink-0 flex-col gap-3 rounded-lg border bg-surface-muted/50 p-3 transition-colors',
-              over ? 'border-accent bg-accent-soft/40' : 'border-border',
+              'flex w-72 shrink-0 flex-col gap-3 rounded-lg border-2 bg-tone-soft p-3 transition-colors',
+              over ? 'border-tone' : 'border-transparent',
             )}
             onDragOver={(e) => {
               if (!dragging) return;

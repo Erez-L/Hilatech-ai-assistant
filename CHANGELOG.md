@@ -5,6 +5,8 @@ All notable changes to this project are documented here. Format: Keep a Changelo
 ## [Unreleased]
 ### Added
 
+- Visual redesign (styling only, no behaviour change): per-area colour tones, dark navigation rail with coloured icon tiles, area icon beside page titles, coloured stat tiles and deal-board columns, larger radii, press/hover/enter motion, coloured toast icons, and rounded option lists for native selects in browsers that support customizable selects.
+
 - Email-verification enforcement (`REQUIRE_EMAIL_VERIFICATION`) with `POST /auth/resend-verification` and a verification gate in the web app.
 - Per-account login lockout (`LOGIN_MAX_FAILED_ATTEMPTS`, `LOGIN_LOCKOUT_WINDOW`) and a Content-Security-Policy for the web app.
 - Workers re-check the AI budget hard stop before queued agent runs, workflow agent steps, evaluation cases and embeddings.

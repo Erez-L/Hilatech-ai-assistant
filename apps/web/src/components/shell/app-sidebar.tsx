@@ -57,7 +57,7 @@ export function AppSidebar({
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               const Icon = item.icon;
               return (
-                <SidebarNavItem key={item.href} asChild active={active}>
+                <SidebarNavItem key={item.href} asChild active={active} data-tone={item.tone}>
                   <Link href={item.href} onClick={onNavigate}>
                     <SidebarNavItemContent
                       active={active}

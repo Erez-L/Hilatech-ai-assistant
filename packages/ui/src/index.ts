@@ -134,7 +134,7 @@ export { ErrorState } from './components/error-state';
 export type { ErrorStateProps } from './components/error-state';
 export { Alert } from './components/alert';
 export type { AlertProps } from './components/alert';
-export { PageHeader, SectionHeader } from './components/page-header';
+export { PageHeader, PageIconProvider, SectionHeader } from './components/page-header';
 export type { PageHeaderProps } from './components/page-header';
 export {
   Sidebar,

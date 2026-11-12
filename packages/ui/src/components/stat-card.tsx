@@ -35,7 +35,8 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'flex flex-col gap-3 rounded-lg border border-border bg-surface px-5 py-4 shadow-xs',
+        'stat-card flex animate-rise flex-col gap-3 rounded-lg border border-border bg-surface px-5 py-4 shadow-xs',
+        'transition-[translate,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-popover',
         className,
       )}
       {...props}
@@ -43,7 +44,10 @@ export function StatCard({
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-fg-muted">{label}</p>
         {icon ? (
-          <span className="text-fg-subtle [&_svg]:size-4" aria-hidden>
+          <span
+            className="flex size-9 shrink-0 items-center justify-center rounded-md bg-tone-soft text-tone-fg [&_svg]:size-4"
+            aria-hidden
+          >
             {icon}
           </span>
         ) : null}
@@ -51,7 +55,7 @@ export function StatCard({
       {loading ? (
         <Skeleton className="h-8 w-24" />
       ) : (
-        <p className="text-[1.75rem] leading-none font-semibold tracking-tight tabular text-fg">
+        <p className="text-[1.875rem] leading-none font-extrabold tracking-tight tabular text-fg">
           {display}
         </p>
       )}
@@ -73,7 +77,7 @@ export function StatCard({
             </span>
           ) : null}
           {deltaLabel ? <span className="text-fg-subtle">{deltaLabel}</span> : null}
-          {hint ? <span className="text-fg-subtle">{hint}</span> : null}
+          {hint ? <span className="font-medium text-tone-fg">{hint}</span> : null}
         </div>
       ) : null}
     </div>

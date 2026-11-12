@@ -17,10 +17,7 @@ export function Sidebar({ header, footer, className, children, ...props }: Sideb
   const ui = useUiStrings();
   return (
     <aside
-      className={cn(
-        'flex h-full w-64 flex-col border-e border-border bg-surface text-fg',
-        className,
-      )}
+      className={cn('sidebar-scope flex h-full w-64 flex-col bg-surface text-fg', className)}
       {...props}
     >
       {header ? <div className="flex flex-col gap-2 px-3 pt-4 pb-2">{header}</div> : null}
@@ -49,7 +46,7 @@ export function SidebarSection({ label, className, children, ...props }: Sidebar
       {...props}
     >
       {label ? (
-        <p id={id} className="mt-1 mb-1.5 px-2.5 text-xs font-medium text-fg-subtle">
+        <p id={id} className="mt-1 mb-1.5 px-2.5 text-xs font-semibold text-fg-subtle">
           {label}
         </p>
       ) : null}
@@ -57,6 +54,10 @@ export function SidebarSection({ label, className, children, ...props }: Sidebar
     </div>
   );
 }
+
+/** Icon tile of a nav item: filled with the item's tone (set `data-tone` on the item). */
+const navIconClassName =
+  'flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-tone-bright text-[#0f1729] transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-6';
 
 export interface SidebarNavItemProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   /** Render the child (e.g. Next.js Link) instead of an <a>. */
@@ -80,8 +81,8 @@ export const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItem
         aria-current={active ? 'page' : undefined}
         aria-disabled={disabled || undefined}
         className={cn(
-          'group flex h-9 items-center gap-2.5 rounded-sm px-2.5 text-sm font-medium outline-none',
-          'transition-colors duration-100',
+          'group flex h-10 items-center gap-2.5 rounded-sm px-2 text-sm font-medium outline-none',
+          'transition-[background-color,color,translate] duration-150 hover:-translate-x-0.5 rtl:hover:translate-x-0.5',
           'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
           active
             ? 'bg-accent-soft text-accent-soft-fg'
@@ -96,16 +97,7 @@ export const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItem
           children
         ) : (
           <>
-            {icon ? (
-              <span
-                className={cn(
-                  'flex items-center',
-                  active ? 'text-accent' : 'text-fg-subtle group-hover:text-fg-muted',
-                )}
-              >
-                {icon}
-              </span>
-            ) : null}
+            {icon ? <span className={navIconClassName}>{icon}</span> : null}
             <span className="flex-1 truncate">{children}</span>
             {trailing ? <span className="flex items-center">{trailing}</span> : null}
           </>
@@ -119,21 +111,11 @@ export const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItem
 export function SidebarNavItemContent({
   icon,
   trailing,
-  active,
   children,
 }: Pick<SidebarNavItemProps, 'icon' | 'trailing' | 'active' | 'children'>) {
   return (
     <>
-      {icon ? (
-        <span
-          className={cn(
-            'flex items-center',
-            active ? 'text-accent' : 'text-fg-subtle group-hover:text-fg-muted',
-          )}
-        >
-          {icon}
-        </span>
-      ) : null}
+      {icon ? <span className={navIconClassName}>{icon}</span> : null}
       <span className="flex-1 truncate">{children}</span>
       {trailing ? <span className="flex items-center">{trailing}</span> : null}
     </>
