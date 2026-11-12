@@ -38,6 +38,7 @@ export {
 export { integrationsApi, type IntegrationStatusEntry } from './integrations';
 export { tasksApi, type ListTasksParams } from './tasks';
 export { companiesApi, type ListCompaniesParams } from './companies';
+export { evaluationsApi } from './evaluations';
 export { dealsApi, pipelinesApi, type ListDealsParams, type BoardParams } from './deals';
 export {
   importsApi,

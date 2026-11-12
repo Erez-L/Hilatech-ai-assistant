@@ -77,6 +77,9 @@ export const AuditAction = {
   AGENT_UPDATED: 'agent.updated',
   AGENT_DELETED: 'agent.deleted',
   AGENT_EXECUTED: 'agent.executed',
+  EVALUATION_DATASET_CREATED: 'evaluation.dataset_created',
+  EVALUATION_DATASET_DELETED: 'evaluation.dataset_deleted',
+  EVALUATION_RUN_STARTED: 'evaluation.run_started',
   // knowledge
   KNOWLEDGE_BASE_CREATED: 'knowledge_base.created',
   KNOWLEDGE_BASE_UPDATED: 'knowledge_base.updated',

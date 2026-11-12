@@ -639,4 +639,135 @@ describe('ai-tasks (integration)', () => {
       expect(result).toMatchObject({ status: 'completed', result: { status: 'succeeded' } });
     });
   });
+  describe('evaluation_run', () => {
+    const makeDataset = async (
+      cases: Array<{ name: string; input: string; checks: Array<{ type: string; value: string }> }>,
+    ) => {
+      const dataset = await prisma.client.evaluationDataset.create({
+        data: { organizationId, name: `Eval ${randomUUID().slice(0, 6)}` },
+        select: { id: true },
+      });
+      await prisma.client.evaluationCase.createMany({
+        data: cases.map((c, position) => ({
+          organizationId,
+          datasetId: dataset.id,
+          position,
+          ...c,
+        })),
+      });
+      return prisma.client.evaluationRun.create({
+        data: {
+          organizationId,
+          datasetId: dataset.id,
+          agentId,
+          totalCases: cases.length,
+          triggeredByUserId: userId,
+        },
+        select: { id: true },
+      });
+    };
+    const start = (runId: string) =>
+      enqueue({
+        ...base(),
+        organizationId,
+        idempotencyKey: `evaluation-run-${runId}-${randomUUID().slice(0, 6)}`,
+        kind: 'evaluation_run',
+        targetId: runId,
+        requestedByUserId: userId,
+      });
+
+    it('runs the agent on every case, scores the answers and stores per-case results', async () => {
+      // The mock provider answers "mock: <input>".
+      const run = await makeDataset([
+        { name: 'greets', input: 'Say hello', checks: [{ type: 'contains', value: 'HELLO' }] },
+        { name: 'wrong', input: 'Say hello', checks: [{ type: 'contains', value: 'goodbye' }] },
+        {
+          name: 'all checks must pass',
+          input: 'Order 42',
+          checks: [
+            { type: 'regex', value: 'order\\s+\\d+' },
+            { type: 'not_contains', value: 'refund' },
+            { type: 'equals', value: 'mock:   order 42' },
+          ],
+        },
+      ]);
+
+      const { result } = await start(run.id);
+      expect(result).toMatchObject({
+        status: 'completed',
+        result: { status: 'completed', passed: 2, failed: 1, errored: 0 },
+      });
+
+      const row = await prisma.client.evaluationRun.findUniqueOrThrow({
+        where: { id: run.id },
+        include: { results: { orderBy: { createdAt: 'asc' } } },
+      });
+      expect(row).toMatchObject({ status: 'completed', passed: 2, failed: 1, errored: 0 });
+      expect(row.startedAt).not.toBeNull();
+      expect(row.finishedAt).not.toBeNull();
+      expect(row.results.map((r) => [r.caseName, r.status])).toEqual([
+        ['greets', 'passed'],
+        ['wrong', 'failed'],
+        ['all checks must pass', 'passed'],
+      ]);
+      expect(row.results[0]!.output).toBe('mock: Say hello');
+      expect(row.results[1]!.checks).toEqual([
+        { type: 'contains', value: 'goodbye', passed: false },
+      ]);
+      // Every case ran as a real, tenant-scoped agent execution.
+      const executions = await prisma.client.agentExecution.findMany({
+        where: { id: { in: row.results.map((r) => r.executionId!) } },
+        select: { organizationId: true, status: true },
+      });
+      expect(executions).toHaveLength(3);
+      expect(executions.every((e) => e.organizationId === organizationId)).toBe(true);
+
+      // Re-delivery is a no-op.
+      const again = await start(run.id);
+      expect(again.result).toMatchObject({ status: 'skipped', reason: 'already_processed' });
+      expect(await prisma.client.evaluationResult.count({ where: { runId: run.id } })).toBe(3);
+    });
+
+    it('does not execute a cancelled run, and ignores a run of another organization', async () => {
+      const run = await makeDataset([
+        { name: 'a', input: 'x', checks: [{ type: 'contains', value: 'x' }] },
+      ]);
+      await prisma.client.evaluationRun.update({
+        where: { id: run.id },
+        data: { status: 'cancelled' },
+      });
+      const cancelled = await start(run.id);
+      expect(cancelled.result).toMatchObject({ status: 'skipped', reason: 'already_processed' });
+      expect(await prisma.client.evaluationResult.count({ where: { runId: run.id } })).toBe(0);
+
+      const foreign = await enqueue({
+        ...base(),
+        organizationId: randomUUID(),
+        idempotencyKey: `evaluation-run-foreign-${randomUUID()}`,
+        kind: 'evaluation_run',
+        targetId: run.id,
+        requestedByUserId: null,
+      });
+      expect(foreign.result).toMatchObject({ status: 'skipped', reason: 'not_found' });
+    });
+
+    it('stops with a failed run when the budget hard stop is reached', async () => {
+      const run = await makeDataset([
+        { name: 'a', input: 'x', checks: [{ type: 'contains', value: 'x' }] },
+      ]);
+      await prisma.client.organizationBudget.create({
+        data: { organizationId, monthlyTokenBudget: 1, hardStopEnabled: true },
+      });
+      try {
+        const { result } = await start(run.id);
+        expect(result).toMatchObject({ status: 'completed', result: { status: 'failed' } });
+        const row = await prisma.client.evaluationRun.findUniqueOrThrow({ where: { id: run.id } });
+        expect(row.status).toBe('failed');
+        expect(row.error).toMatch(/budget is used up/);
+        expect(await prisma.client.evaluationResult.count({ where: { runId: run.id } })).toBe(0);
+      } finally {
+        await prisma.client.organizationBudget.deleteMany({ where: { organizationId } });
+      }
+    });
+  });
 });

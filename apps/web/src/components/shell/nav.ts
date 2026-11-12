@@ -3,6 +3,7 @@ import {
   BarChart3,
   BookOpen,
   Bot,
+  FlaskConical,
   Building2,
   Contact,
   CreditCard,
@@ -97,6 +98,12 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/agents',
         label: msg('shell.agents'),
         icon: Bot,
+        permission: Permission.AGENTS_READ,
+      },
+      {
+        href: '/evaluations',
+        label: msg('shell.evaluations'),
+        icon: FlaskConical,
         permission: Permission.AGENTS_READ,
       },
       {

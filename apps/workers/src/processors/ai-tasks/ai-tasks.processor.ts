@@ -19,6 +19,7 @@ import { isPlainObject, toAgentDefinition } from '../../ai/agent-definition.mapp
 import { resolveUserPermissions } from '../../ai/user-permissions';
 import type { JobContext, JobOutcome, JobPayload, JobProcessor } from '../../queue/job-processor';
 import { NOT_IMPLEMENTED_OUTCOME } from '../stubs/not-implemented.processor';
+import { runEvaluation } from './evaluation-run';
 
 type Payload = JobPayload<typeof QueueName.AI_TASKS>;
 
@@ -82,6 +83,7 @@ export function normaliseExecutionInput(value: Prisma.JsonValue): RunRequest['in
  * - `conversation_summary`: summarises the newest 50 messages of a Conversation (targetId) with the
  *   organization's default provider (`generateStructured`) and stores `Conversation.summary`.
  *   Sentiment / next steps are logged and returned in the job result (the schema has no column).
+ * - `evaluation_run`: runs an agent against every case of an evaluation dataset (see `evaluation-run.ts`).
  * - `lead_enrichment`: not implemented yet → `skipped` / `not_implemented` (no work performed).
  */
 @Injectable()
@@ -101,6 +103,8 @@ export class AiTasksProcessor implements JobProcessor<typeof QueueName.AI_TASKS>
         return this.runAgentExecution(job.data, context);
       case 'conversation_summary':
         return this.summariseConversation(job.data, context);
+      case 'evaluation_run':
+        return runEvaluation(this.runtime, this.logger, job.data, context);
       case 'lead_enrichment':
         this.logger.warn(
           { ...context, kind },

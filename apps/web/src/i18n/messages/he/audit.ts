@@ -98,4 +98,7 @@ export const audit = {
   'audit.to': 'עד',
   'audit.userAgent': 'User agent',
   'audit.widenTheDateRangeOr': 'הרחיבו את טווח התאריכים או נקו את המסננים.',
+  'audit.action.evaluation.dataset_created': 'יצר סט הערכה',
+  'audit.action.evaluation.dataset_deleted': 'מחק סט הערכה',
+  'audit.action.evaluation.run_started': 'התחיל הרצת הערכה',
 } as const;

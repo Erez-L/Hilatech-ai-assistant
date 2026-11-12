@@ -71,6 +71,8 @@ export const keys = {
     ['org', orgId, 'tasks', 'list', params ?? {}] as const,
 
   // Companies
+  evaluations: (orgId: string | null, ...rest: unknown[]) =>
+    ['org', orgId, 'evaluations', ...rest] as const,
   companiesRoot: (orgId: string | null) => ['org', orgId, 'companies'] as const,
   companies: (orgId: string | null, params?: object) =>
     ['org', orgId, 'companies', 'list', params ?? {}] as const,

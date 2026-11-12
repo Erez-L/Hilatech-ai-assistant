@@ -44,4 +44,5 @@ export const meta = {
   'meta.imports': 'Imports',
   'meta.pipelines': 'Pipelines',
   'meta.tasks': 'Tasks',
+  'meta.evaluations': 'Evaluations',
 } as const;

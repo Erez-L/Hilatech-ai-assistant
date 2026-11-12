@@ -21,6 +21,7 @@ import { QueueModule } from './infrastructure/queue/queue.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
 import { StorageModule } from './infrastructure/storage/storage.module';
 import { AgentsModule } from './modules/ai/agents/agents.module';
+import { EvaluationsModule } from './modules/ai/evaluations/evaluations.module';
 import { AiPlatformModule } from './modules/ai/ai-platform.module';
 import { AssistantModule } from './modules/ai/assistant/assistant.module';
 import { AiCoreModule } from './modules/ai/core/ai-core.module';
@@ -103,6 +104,7 @@ import { WorkflowsModule } from './modules/workflows/workflows.module';
     AiPlatformModule,
     AssistantModule,
     AgentsModule,
+    EvaluationsModule,
     // Priority 4 — knowledge base, documents and retrieval
     KnowledgeModule,
     // Priority 4 — automation: workflows, webhooks (in/out), integrations

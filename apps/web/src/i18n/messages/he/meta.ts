@@ -44,4 +44,5 @@ export const meta = {
   'meta.imports': 'ייבואים',
   'meta.pipelines': 'צינורות מכירה',
   'meta.tasks': 'משימות',
+  'meta.evaluations': 'הערכות',
 } as const;

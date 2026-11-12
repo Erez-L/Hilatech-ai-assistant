@@ -98,4 +98,7 @@ export const audit = {
   'audit.to': 'To',
   'audit.userAgent': 'User agent',
   'audit.widenTheDateRangeOr': 'Widen the date range or clear the filters.',
+  'audit.action.evaluation.dataset_created': 'Created an evaluation dataset',
+  'audit.action.evaluation.dataset_deleted': 'Deleted an evaluation dataset',
+  'audit.action.evaluation.run_started': 'Started an evaluation run',
 } as const;

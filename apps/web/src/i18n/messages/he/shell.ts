@@ -42,4 +42,5 @@ export const shell = {
   'shell.deals': 'עסקאות',
   'shell.imports': 'ייבואים',
   'shell.tasks': 'משימות',
+  'shell.evaluations': 'הערכות',
 } as const;

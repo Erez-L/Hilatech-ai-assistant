@@ -42,4 +42,5 @@ export const shell = {
   'shell.deals': 'Deals',
   'shell.imports': 'Imports',
   'shell.tasks': 'Tasks',
+  'shell.evaluations': 'Evaluations',
 } as const;

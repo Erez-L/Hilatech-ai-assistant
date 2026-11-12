@@ -17,3 +17,4 @@ export * from './tasks';
 export * from './deal-rules';
 export * from './deals';
 export * from './import-export';
+export * from './evaluations';

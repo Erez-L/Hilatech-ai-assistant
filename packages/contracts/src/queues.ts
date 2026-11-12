@@ -71,7 +71,7 @@ export type EmbeddingsJob = z.infer<typeof embeddingsJobSchema>;
 
 export const aiTaskJobSchema = baseJobSchema.extend({
   organizationId: idSchema,
-  kind: z.enum(['conversation_summary', 'agent_execution', 'lead_enrichment']),
+  kind: z.enum(['conversation_summary', 'agent_execution', 'lead_enrichment', 'evaluation_run']),
   targetId: idSchema,
   requestedByUserId: idSchema.nullable(),
 });

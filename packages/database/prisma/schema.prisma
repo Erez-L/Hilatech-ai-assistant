@@ -119,6 +119,8 @@ model Organization {
   dealActivities    DealActivity[]
   dealStageChanges  DealStageChange[]
   importJobs        ImportJob[]
+  evaluationDatasets EvaluationDataset[]
+  evaluationRuns     EvaluationRun[]
 
   @@index([deletedAt])
 }
@@ -794,6 +796,7 @@ model Agent {
   createdBy      User?             @relation("AgentCreator", fields: [createdById], references: [id], onDelete: SetNull)
   executions     AgentExecution[]
   requestLogs    AiRequestLog[]
+  evaluationRuns EvaluationRun[]
 
   @@unique([organizationId, name])
   @@index([organizationId, isEnabled])
@@ -1414,4 +1417,106 @@ model ImportJob {
 
   @@index([organizationId, createdAt(sort: Desc)])
   @@index([organizationId, status])
+}
+
+// ---------------------------------------------------------------------------
+// Agent evaluation (datasets, cases, runs, per-case results)
+// ---------------------------------------------------------------------------
+
+model EvaluationDataset {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  name           String   @db.VarChar(120)
+  description    String?
+  createdById    String?  @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  cases        EvaluationCase[]
+  runs         EvaluationRun[]
+
+  @@index([organizationId, createdAt(sort: Desc)])
+}
+
+model EvaluationCase {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  datasetId      String   @db.Uuid
+  name           String   @db.VarChar(160)
+  input          String
+  /// Array of `{ type, value }` checks; a case passes when every check passes.
+  checks         Json
+  position       Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  dataset EvaluationDataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  results EvaluationResult[]
+
+  @@index([organizationId, datasetId, position])
+}
+
+enum EvaluationRunStatus {
+  queued
+  running
+  completed
+  failed
+  cancelled
+}
+
+model EvaluationRun {
+  id                String              @id @default(uuid()) @db.Uuid
+  organizationId    String              @db.Uuid
+  datasetId         String              @db.Uuid
+  agentId           String              @db.Uuid
+  status            EvaluationRunStatus @default(queued)
+  totalCases        Int                 @default(0)
+  passed            Int                 @default(0)
+  failed            Int                 @default(0)
+  errored           Int                 @default(0)
+  error             String?
+  triggeredByUserId String?             @db.Uuid
+  startedAt         DateTime?
+  finishedAt        DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  dataset      EvaluationDataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  agent        Agent              @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  results      EvaluationResult[]
+
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([organizationId, datasetId, createdAt(sort: Desc)])
+}
+
+enum EvaluationResultStatus {
+  passed
+  failed
+  error
+}
+
+model EvaluationResult {
+  id             String                 @id @default(uuid()) @db.Uuid
+  organizationId String                 @db.Uuid
+  runId          String                 @db.Uuid
+  caseId         String?                @db.Uuid
+  /// Snapshot of the case at run time, so results stay readable after the case is edited or deleted.
+  caseName       String                 @db.VarChar(160)
+  input          String
+  status         EvaluationResultStatus
+  output         String?
+  error          String?
+  /// Array of `{ type, value, passed }`.
+  checks         Json
+  executionId    String?                @db.Uuid
+  durationMs     Int?
+  createdAt      DateTime               @default(now())
+
+  run  EvaluationRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  case EvaluationCase? @relation(fields: [caseId], references: [id], onDelete: SetNull)
+
+  @@unique([runId, caseId])
+  @@index([organizationId, runId])
 }
