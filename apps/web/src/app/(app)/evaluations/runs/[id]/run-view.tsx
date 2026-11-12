@@ -90,7 +90,10 @@ export function RunView({ id }: { id: string }) {
             label={t('evaluations.passRate')}
             value={data.passRate !== null ? `${data.passRate}%` : '—'}
           />
-          <StatCard label={t('evaluations.passed')} value={`${data.passed} / ${data.totalCases}`} />
+          <StatCard
+            label={t('evaluations.passed')}
+            value={`\u2066${data.passed} / ${data.totalCases}\u2069`}
+          />
           <StatCard label={t('evaluations.failed')} value={String(data.failed)} />
           <StatCard label={t('evaluations.errored')} value={String(data.errored)} />
         </div>
@@ -128,7 +131,7 @@ export function RunView({ id }: { id: string }) {
                           )}
                           <span>
                             {t(`evaluations.check.${check.type}` as MessageKey)}:{' '}
-                            <bdi className="font-mono text-xs">{check.value}</bdi>
+                            <bdi className="font-medium">{check.value}</bdi>
                             <span className="sr-only">
                               {' — '}
                               {t(
