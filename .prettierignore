@@ -9,3 +9,4 @@ infra/cdk/cdk.out
 infra/cdk/package-lock.json
 tests/load/results
 packages/database/src/generated
+docs/operations/aws-growth-guide.he.html

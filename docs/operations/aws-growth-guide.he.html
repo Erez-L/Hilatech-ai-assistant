@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מדריך צמיחה ב-AWS ל-HilaTech</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Heebo:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one readable column of numbered step cards; a sticky section index; code blocks stay left-to-right. */
+:root {
+  --bg: #f4f6f5; --surface: #ffffff; --ink: #14201f; --muted: #57686a; --line: #d9e1df;
+  --accent: #0b6b66; --accent-soft: #e0f1ef; --code-bg: #0f1c1b; --code-ink: #e3efed;
+  --free: #1f7a43; --free-bg: #e2f3e8; --small: #8a5a00; --small-bg: #fbefd2; --cost: #a3261b; --cost-bg: #fbe3df;
+  --display: "Frank Ruhl Libre", "David Libre", Georgia, serif;
+  --body: Heebo, "Segoe UI", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d1716; --surface: #142120; --ink: #e6efed; --muted: #9db0ae; --line: #263735;
+    --accent: #5fd0c6; --accent-soft: #16302e; --code-bg: #081110; --code-ink: #d7e6e3;
+    --free: #7fd69e; --free-bg: #173524; --small: #f0c26a; --small-bg: #3a2c0d; --cost: #ff9c90; --cost-bg: #43201b;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d1716; --surface: #142120; --ink: #e6efed; --muted: #9db0ae; --line: #263735;
+  --accent: #5fd0c6; --accent-soft: #16302e; --code-bg: #081110; --code-ink: #d7e6e3;
+  --free: #7fd69e; --free-bg: #173524; --small: #f0c26a; --small-bg: #3a2c0d; --cost: #ff9c90; --cost-bg: #43201b;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.7; }
+main { max-width: 820px; margin: 0 auto; padding: 28px 18px 80px; display: flex; flex-direction: column; gap: 28px; }
+header h1 { font-family: var(--display); font-size: clamp(30px, 6vw, 44px); line-height: 1.2; margin: 0 0 10px; text-wrap: balance; }
+header p { margin: 0; color: var(--muted); }
+h2 { font-family: var(--display); font-size: 27px; line-height: 1.3; margin: 0; text-wrap: balance; padding-top: 8px; }
+h3 { font-size: 19px; margin: 0; line-height: 1.4; }
+p { margin: 0; }
+a { color: var(--accent); }
+code { font-family: var(--mono); font-size: .86em; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; direction: ltr; unicode-bidi: isolate; overflow-wrap: anywhere; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.warn { border-inline-start: 5px solid var(--cost); }
+.toc { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 8px; position: sticky; top: 0; background: var(--bg); padding: 10px 0; z-index: 5; border-bottom: 1px solid var(--line); }
+.toc a { flex: none; text-decoration: none; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 13px; font-size: 15px; color: var(--ink); }
+.toc a:hover, .toc a:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+.section { display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 70px; }
+.section > p { color: var(--muted); }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 70px; }
+.step.done { opacity: .62; }
+.head { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.num { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: var(--surface); font-weight: 700; display: grid; place-items: center; font-variant-numeric: tabular-nums; }
+.head h3 { flex: 1; min-width: 180px; padding-top: 5px; }
+.tag { font-size: 13px; font-weight: 700; border-radius: 6px; padding: 2px 9px; white-space: nowrap; margin-top: 7px; }
+.tag.free { color: var(--free); background: var(--free-bg); }
+.tag.small { color: var(--small); background: var(--small-bg); }
+.tag.cost { color: var(--cost); background: var(--cost-bg); }
+.check { display: flex; align-items: center; gap: 7px; font-size: 14px; color: var(--muted); margin-top: 6px; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+ol, ul { margin: 0; padding-inline-start: 22px; display: flex; flex-direction: column; gap: 6px; }
+.note { border-radius: 8px; padding: 10px 14px; font-size: 16px; }
+.note > b:first-child { display: block; font-size: 14px; margin-bottom: 4px; }
+.note ul { margin-top: 4px; }
+.expect { background: var(--free-bg); }
+.expect b { color: var(--free); }
+.wrong { background: var(--small-bg); }
+.wrong b { color: var(--small); }
+.codewrap { position: relative; direction: ltr; }
+pre { margin: 0; background: var(--code-bg); color: var(--code-ink); border-radius: 10px; padding: 40px 14px 14px; overflow-x: auto; font-family: var(--mono); font-size: 13.5px; line-height: 1.6; text-align: left; }
+.copy { position: absolute; top: 7px; right: 8px; font-family: var(--body); font-size: 13px; background: transparent; color: var(--code-ink); border: 1px solid rgba(255,255,255,.3); border-radius: 6px; padding: 2px 10px; cursor: pointer; }
+.copy:hover, .copy:focus-visible { background: rgba(255,255,255,.14); outline: none; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 15.5px; }
+th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: start; vertical-align: top; }
+th { background: var(--accent-soft); }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 15px; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.progress { font-size: 15px; color: var(--muted); }
+
+.stagehead { display: flex; flex-direction: column; gap: 10px; background: var(--accent-soft); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.stagehead .k { font-size: 14px; font-weight: 700; color: var(--accent); }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.fact { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 15.5px; }
+.fact b { display: block; font-size: 13px; color: var(--muted); font-weight: 500; }
+.num { font-size: 15px; }
+h4 { margin: 0; font-size: 17px; }
+td.n, th.n { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tablewrap table { min-width: 620px; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>מדריך צמיחה ב-AWS ל-HilaTech AI Assistant</h1>
+  <p>מדמו ראשון ועד מוצר עם הרבה משתמשים: מה מקימים בכל שלב, כמה זה עולה, ומתי עוברים לשלב הבא.</p>
+</header>
+
+<div class="box warn">
+  <h3>לקרוא לפני שמתחילים</h3>
+  <p>המדריך נכתב לפי התיעוד של AWS ולפי הקוד במאגר. <b>אף שלב כאן לא הורץ מול חשבון AWS אמיתי.</b> צפויות תקלות קטנות, ולכל שלב מצורף "מה יכול להשתבש".</p>
+  <p>מה שנבדק אוטומטית בכל push ל-GitHub: בניית שלוש תמונות ה-Docker, הרצת המיגרציות מתוך התמונה, עליית הקונטיינרים במצב production, והרמת פריסת השרת היחיד (Docker Compose עם Caddy) כולל בדיקת בריאות.</p>
+  <p>כל הסכומים הם הערכות לפי מחירי מחירון של <code>us-east-1</code> מנובמבר 2026, בלי מע"מ ובלי שימוש ב-AI. אמת אותם ב-AWS Pricing Calculator לפני החלטה.</p>
+</div>
+
+<section class="section" id="roadmap">
+  <h2>מפת הדרך</h2>
+  <div class="tablewrap"><table>
+    <tr><th>שלב</th><th>מטרה</th><th>תשתית</th><th class="n">עלות חודשית משוערת</th><th>עוברים הלאה כש...</th></tr>
+    <tr><td><a href="#stage-0">0. הכנה</a></td><td>לוודא שה-AI עובד עם מודל אמיתי</td><td>המחשב שלך ו-Bedrock</td><td class="n">טוקנים בלבד</td><td>שיחה, סוכן עם כלי וחיפוש במסמך עובדים מול Bedrock</td></tr>
+    <tr><td><a href="#stage-1">1. דמו</a></td><td>קישור שאפשר להראות ללקוחות</td><td>שרת EC2 אחד עם Docker Compose</td><td class="n">כ-36 דולר</td><td>עסק ראשון מסכים לנסות עם נתונים אמיתיים</td></tr>
+    <tr><td><a href="#stage-2">2. פיילוט</a></td><td>2 עד 10 עסקים עובדים במערכת</td><td>אותו שרת, ועוד גיבוי, מיילים וניטור</td><td class="n">כ-40 עד 60 דולר</td><td>לקוח משלם תלוי במערכת, או יותר מ-10 ארגונים פעילים</td></tr>
+    <tr><td><a href="#stage-3">3. השקה</a></td><td>מכירה פתוחה לקהל היעד</td><td>תשתית מנוהלת (CDK): ECS, RDS, Redis, WAF</td><td class="n">כ-430 עד 500 דולר</td><td>העומס מתקרב לגבולות שבטבלת ההתרחבות</td></tr>
+    <tr><td><a href="#stage-4">4. התרחבות</a></td><td>מאות עד אלפי משתמשים</td><td>אותה תשתית, מוגדלת ומיועלת</td><td class="n">גדל עם השימוש</td><td>—</td></tr>
+  </table></div>
+  <p>העיקרון: לא משלמים על תשתית של השלב הבא לפני שיש סיבה. כל מעבר שומר על אותו קוד ועל אותן תמונות Docker, ורק המעטפת משתנה.</p>
+  <p class="progress" id="progress"></p>
+</section>
+
+<div class="box">
+  <h3>סימונים</h3>
+  <div class="legend">
+    <span><span class="tag free">חינם</span> לא צפוי חיוב</span>
+    <span><span class="tag small">עלות קטנה</span> סנטים עד דולרים בודדים</span>
+    <span><span class="tag cost">עולה כסף</span> חיוב לפי שעה עד שמכבים או מוחקים</span>
+  </div>
+  <p><code>&lt;ערך&gt;</code> בסוגריים משולשים: להחליף בערך שלך. כל השאר מוכן להעתקה ל-bash.</p>
+</div>
+
+<nav class="toc" aria-label="חלקי המדריך">
+  <a href="#roadmap">מפת הדרך</a><a href="#stage-0">0. הכנה</a><a href="#stage-1">1. דמו</a><a href="#stage-2">2. פיילוט</a><a href="#stage-3">3. השקה</a><a href="#stage-4">4. התרחבות</a><a href="#costs">עלויות</a><a href="#part-g">תפעול</a><a href="#decisions">החלטות</a><a href="#reference">קיצורים</a>
+</nav>
+
+<section class="section" id="stage-0">
+  <h2>שלב 0: הכנה</h2>
+  <div class="stagehead"><span class="k">חד-פעמי, שעה עד שעתיים</span><div class="facts">
+    <div class="fact"><b>מטרה</b>חשבון מאובטח, כלים, וה-AI עובד מול מודל אמיתי</div><div class="fact"><b>תשתית</b>המחשב שלך, Bedrock בענן</div><div class="fact"><b>עלות חודשית משוערת</b>טוקנים בלבד: סנטים עד דולרים בודדים</div><div class="fact"><b>עוברים הלאה כש...</b>שיחה, סוכן עם כלי וחיפוש במסמך עובדים מול Bedrock</div></div></div>
+  <h3>א. פתיחה ואבטחה של החשבון</h3>
+  
+
+  <article class="step" id="step-1">
+    <div class="head"><span class="num">1</span><h3>פתיחת חשבון AWS</h3><span class="tag free">חינם</span></div>
+    <ol>
+      <li>היכנס ל-<a href="https://aws.amazon.com/">aws.amazon.com</a> ובחר Create an AWS Account. השתמש בתיבת מייל של העסק שתישאר אצלך (למשל <code>aws-root@your-domain</code>), לא בתיבה אישית. שם החשבון: <code>hilatech</code>.</li>
+      <li>הוסף כרטיס אשראי, אמת מספר טלפון ובחר בתוכנית התמיכה Basic (חינם).</li>
+      <li>התחבר כ-Root user עם אותו מייל.</li>
+    </ol>
+    <div class="note expect"><b>צפוי</b>מגיעים לדף הבית של הקונסולה.</div>
+    <div class="note wrong"><b>מה יכול להשתבש</b>אימות הכרטיס נכשל (צריך כרטיס שמאשר עסקאות בינלאומיות באינטרנט). הפעלת החשבון יכולה לקחת כמה דקות ועד יום: חכה למייל ה-welcome.</div>
+  </article>
+
+  <article class="step" id="step-2">
+    <div class="head"><span class="num">2</span><h3>נעילת משתמש ה-root</h3><span class="tag free">חינם</span></div>
+    <ol>
+      <li>בתפריט החשבון (למעלה) בחר Security credentials, אחר כך Multi-factor authentication (MFA) ו-Assign MFA device. עדיף passkey או מפתח אבטחה, וגם אפליקציית אימות בסדר. רשום שני מכשירי MFA אם אפשר, ושמור את פרטי השחזור מחוץ למחשב.</li>
+      <li>אל תיצור access keys ל-root.</li>
+      <li>מכאן והלאה לא משתמשים ב-root, חוץ מפעולות שרק הוא יכול לבצע (שינוי תוכנית תמיכה, סגירת החשבון).</li>
+    </ol>
+    <div class="note expect"><b>צפוי</b>ב-Security credentials מופיע "MFA device: assigned".</div>
+    <div class="note wrong"><b>מה יכול להשתבש</b>אובדן מכשיר ה-MFA בלי מכשיר שני מחייב תהליך שחזור מול התמיכה של AWS.</div>
+  </article>
+
+  <article class="step" id="step-3">
+    <div class="head"><span class="num">3</span><h3>התראות תקציב, לפני הכול</h3><span class="tag free">חינם</span></div>
+    <ol>
+      <li>חפש Billing and Cost Management, בתפריט בחר Budgets ואז Create budget.</li>
+      <li>בחר Use a template (simplified) ואז Monthly cost budget. שם: <code>account-monthly</code>. סכום: לפי הסבולת שלך (התחל נמוך). הזן את המייל שלך וצור.</li>
+      <li>ב-Billing preferences סמן Receive AWS Free Tier alerts ושמור.</li>
+      <li>ב-Account settings גלול ל-IAM user and role access to Billing information, לחץ Edit ואז Activate IAM Access. בלי זה משתמש הניהול משלב 4 לא יראה חיובים.</li>
+      <li>ב-Cost Anomaly Detection צור מוניטור ל-"AWS services" עם התראה במייל (חינם).</li>
+    </ol>
+    <div class="note expect"><b>צפוי</b>תקציב ברשימה בסטטוס OK.</div>
+    <div class="note wrong"><b>חשוב</b>תקציב הוא התראה ולא מגבלה, ונתוני העלות מתעדכנים באיחור של שעות. הוא לא יעצור משאב שרץ בלי שליטה.</div>
+  </article>
+
+  <article class="step" id="step-4">
+    <div class="head"><span class="num">4</span><h3>IAM Identity Center ומשתמש ניהול</h3><span class="tag free">חינם</span></div>
+    <p>בלי משתמשי IAM ובלי מפתחות ארוכי טווח.</p>
+    <ol>
+      <li>בחר בקונסולה את האזור הראשי שלך (ראה שלב 7). ל-Identity Center קשה לשנות אזור אחר כך.</li>
+      <li>חפש IAM Identity Center ולחץ Enable. אם נשאלת, הפעל עם AWS Organizations (חינם).</li>
+      <li>ב-Settings, תחת Authentication, הגדר MFA: "Every time they sign in".</li>
+      <li>ב-Users לחץ Add user והזן שם ומייל. תקבל הזמנה במייל: אשר, קבע סיסמה ורשום MFA.</li>
+      <li>ב-Permission sets צור permission set מסוג Predefined בשם <code>AdministratorAccess</code>, עם session של 4 שעות.</li>
+      <li>ב-AWS accounts בחר את החשבון, לחץ Assign users or groups, בחר את המשתמש שלך ואת <code>AdministratorAccess</code>.</li>
+      <li>רשום את כתובת ה-AWS access portal, בצורת <code>https://d-xxxxxxxxxx.awsapps.com/start</code>.</li>
+    </ol>
+    <div class="note expect"><b>צפוי</b>פתיחת כתובת הפורטל מציגה את החשבון עם קישור AdministratorAccess.</div>
+    <div class="note wrong"><b>מה יכול להשתבש</b>מייל ההזמנה נוחת בספאם. כתובת הפורטל תלויה באזור. האזור של Identity Center לא מגביל היכן מריצים את המערכת.</div>
+  </article>
+
+  <h3>ב. כלים מקומיים</h3>
+  <article class="step" id="step-5">
+    <div class="head"><span class="num">5</span><h3>התקנת כלים</h3><span class="tag free">חינם</span></div>
+    <p>נדרשים: Node 22 ומעלה, pnpm 10 ומעלה, Docker, git, <code>jq</code> ו-AWS CLI v2. תוסף Session Manager נדרש רק לדיבוג (שלב 22).</p>
+    <pre># AWS CLI v2 - Linux x86_64 (macOS: brew install awscli ; Windows: MSI installer)
+curl -sS "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+unzip -q -o /tmp/awscliv2.zip -d /tmp &amp;&amp; sudo /tmp/aws/install --update
+aws --version        # expect: aws-cli/2.x
+# jq: sudo apt-get install -y jq   |   brew install jq</pre>
+    <div class="note wrong"><b>מה יכול להשתבש</b>גרסת AWS CLI v1 ישנה נמצאת ראשונה ב-PATH (בדוק עם <code>which -a aws</code>). פקודות Bedrock דורשות גרסת v2 עדכנית (2.27.42 ומעלה לפי התיעוד).</div>
+  </article>
+
+  <article class="step" id="step-6">
+    <div class="head"><span class="num">6</span><h3>התחברות מה-CLI עם SSO</h3><span class="tag free">חינם</span></div>
+    <pre>aws configure sso
+# SSO session name:        hilatech
+# SSO start URL:           &lt;ACCESS PORTAL URL from step 4&gt;
+# SSO region:              &lt;home region of Identity Center&gt;
+# SSO registration scopes: (Enter for the default)
+# -&gt; a browser opens; approve. Choose your account + AdministratorAccess.
+# Default client Region:   &lt;the region you will deploy to&gt;
+# CLI default output:      json
+# Profile name:            hilatech-dev
+aws sso login --profile hilatech-dev
+export AWS_PROFILE=hilatech-dev
+aws sts get-caller-identity</pre>
+    <div class="note expect"><b>צפוי</b>JSON עם מספר החשבון ו-Arn שמכיל <code>AWSReservedSSO_AdministratorAccess</code>.</div>
+    <div class="note wrong"><b>מה יכול להשתבש</b>ההודעה <code>The SSO session ... has expired</code>: הרץ שוב <code>aws sso login --profile hilatech-dev</code>. ה-session תקף כמה שעות, כך שזה יקרה הרבה. בעבודה על מכונה מרוחקת הוסף <code>--no-browser</code>.</div>
+  </article>
+
+  <h3>ג. אזור ו-Bedrock</h3>
+  <article class="step" id="step-7">
+    <div class="head"><span class="num">7</span><h3>בחירת אזור</h3><span class="tag free">חינם</span></div>
+    <p>בחר אזור אחד ל-dev. השיקולים לפי הסדר: זמינות המודלים שאתה רוצה, דרישות פרטיות ומיקום נתונים (לקוחות באירופה מחייבים אזור אירופי), השהיה ומחיר. ברירות מחדל סבירות: <code>us-east-1</code> (הכי הרבה מודלים) או <code>eu-central-1</code> (אירופה, קרוב לישראל). לא הצלחתי לאמת איזה מודל זמין באיזה אזור, ולכן בדוק בחשבון שלך:</p>
+    <pre>export AWS_REGION=&lt;REGION, e.g. us-east-1&gt;
+# Models that can be called on-demand in this region:
+aws bedrock list-foundation-models --region $AWS_REGION \
+  --query 'modelSummaries[].{id:modelId,provider:providerName,io:outputModalities[0],inference:inferenceTypesSupported}' --output table
+# Inference profiles (newer Claude models usually need one of these ids):
+aws bedrock list-inference-profiles --region $AWS_REGION \
+  --query 'inferenceProfileSummaries[].inferenceProfileId' --output text | tr '\t' '\n' | sort</pre>
+    <p>רשום שלושה מזהים: מודל צ'אט זול (למשל מודל Amazon Nova), מזהה של Claude אם אתה רוצה Claude, ו-<code>amazon.titan-embed-text-v2:0</code> ל-embeddings. <b>השתמש במזהים בדיוק כפי שהודפסו אצלך</b>, לא במזהים שברשימה בקוד, שאינם מאומתים.</p>
+    <div class="note wrong"><b>מה יכול להשתבש</b><code>AccessDeniedException</code>: לפרופיל אין הרשאות Bedrock. רשימה ריקה: Bedrock לא זמין באזור הזה, בחר אחר. אם בחרת אזור שאינו <code>us-east-1</code>, הגדר אותו בעקביות ב-<code>AWS_REGION</code> ובפרופיל ה-CLI.</div>
+  </article>
+
+  <article class="step" id="step-8">
+    <div class="head"><span class="num">8</span><h3>גישה למודלים של Bedrock</h3><span class="tag small">עלות קטנה</span></div>
+    <p>ברוב האזורים רוב המודלים נפתחים בשימוש הראשון. מודלים של Anthropic (Claude) דורשים טופס חד-פעמי.</p>
+    <ol>
+      <li>בקונסולה פתח Amazon Bedrock (ודא את האזור למעלה), בחר Model catalog, פתח מודל של Anthropic ומלא את טופס פרטי השימוש: תיאור החברה או הפרויקט וכתובת אתר (גם GitHub או פורטפוליו מתקבלים).</li>
+      <li>בדוק את הסטטוס:</li>
+    </ol>
+    <pre>aws bedrock get-foundation-model-availability --model-id &lt;MODEL_ID&gt; --region $AWS_REGION \
+  --query 'agreementAvailability.status' --output text      # AVAILABLE | PENDING | NOT_AVAILABLE | ERROR</pre>
+    <p>הוכח שקריאה אמיתית עובדת מה-CLI:</p>
+    <pre>aws bedrock-runtime converse --region $AWS_REGION --model-id &lt;CHAT_MODEL_OR_PROFILE_ID&gt; \
+  --messages '[{"role":"user","content":[{"text":"Say hello in five words."}]}]' \
+  --inference-config '{"maxTokens":50}' --query 'output.message.content[0].text' --output text</pre>
+    <p>הוכח ש-embeddings עובדים:</p>
+    <pre>aws bedrock-runtime invoke-model --region $AWS_REGION --model-id amazon.titan-embed-text-v2:0 \
+  --content-type application/json --cli-binary-format raw-in-base64-out \
+  --body '{"inputText":"hello","dimensions":1024,"normalize":true}' /tmp/titan.json
+jq '{dims: (.embedding|length), tokens: .inputTextTokenCount}' /tmp/titan.json     # expect dims 1024</pre>
+    <div class="note expect"><b>צפוי</b>משפט קצר, ואחר כך <code>dims: 1024</code>.</div>
+    <div class="note wrong"><b>מה יכול להשתבש</b>
+      <ul>
+        <li><code>AccessDeniedException ... PENDING</code>: הטופס של Anthropic עדיין בטיפול. חכה ובדוק שוב (עד כרבע שעה).</li>
+        <li><code>on-demand throughput isn't supported</code>: המודל דורש מזהה inference profile (קידומת <code>global.</code>, <code>us.</code> או <code>eu.</code>). קח מזהה מ-<code>list-inference-profiles</code>.</li>
+        <li><code>ThrottlingException</code> בחשבון חדש: מכסות ברירת מחדל נמוכות. בדוק ב-Service Quotas, תחת Amazon Bedrock.</li>
+      </ul>
+    </div>
+  </article>
+
+  <h3>ד. הרצה מקומית מול Bedrock</h3>
+  
+
+  <article class="step" id="step-9">
+    <div class="head"><span class="num">9</span><h3>חיבור האפליקציה לפרופיל ה-SSO</h3><span class="tag small">עלות קטנה</span></div>
+    <p>למתאם ל-Bedrock אין מפתח API. הוא משתמש בשרשרת האישורים הרגילה של ה-AWS SDK, כלומר מקומית בפרופיל ה-SSO שלך.</p>
+    <ol>
+      <li>הרם את הסביבה המקומית לפי <code>docs/development/setup.md</code>:</li>
+    </ol>
+    <pre>docker compose up -d postgres redis
+pnpm install
+pnpm db:generate
+pnpm db:migrate:dev
+SEED_DEMO=true pnpm db:seed</pre>
+    <ol start="2">
+      <li>הוסף ל-<code>.env</code> המקומי (עותק של <code>.env.example</code>):</li>
+    </ol>
+    <pre>AI_BEDROCK_ENABLED=true
+AWS_PROFILE=hilatech-dev
+AWS_REGION=&lt;REGION from step 7&gt;</pre>
+    <ol start="3">
+      <li>ודא שה-session חי והפעל:</li>
+    </ol>
+    <pre>aws sso login --profile hilatech-dev
+pnpm dev</pre>
+    <div class="note expect"><b>צפוי</b>ה-API על פורט 4000, ה-web על פורט 3000, בלי שגיאות AWS בעלייה.</div>
+    <div class="note wrong"><b>מה יכול להשתבש</b>האישורים נבדקים רק בקריאה הראשונה ל-Bedrock, ולכן session שפג יתגלה אז ולא בעלייה. עם <code>AI_BEDROCK_ENABLED=false</code> הספק נעלם ממסך ההגדרות.</div>
+  </article>
+
+  <article class="step" id="step-10">
+    <div class="head"><span class="num">10</span><h3>הוספת ספק Bedrock בממשק</h3><span class="tag small">עלות קטנה</span></div>
+    <ol>
+      <li>פתח <code>http://localhost:3000</code> והתחבר עם נתוני ה-seed: <code>owner@demo.local</code> והסיסמה <code>DemoPassw0rd!</code>.</li>
+      <li>עבור ל-Settings, אחר כך AI, ולחץ Add provider.</li>
+      <li>Provider: <code>Amazon Bedrock</code>. Name: <code>Bedrock dev</code>. AWS region: האזור שלך, או ריק כדי להשתמש ב-<code>AWS_REGION</code>. אין שדה מפתח ואין שדה כתובת, וזה מכוון.</li>
+      <li>Default model: הקלד את המזהה המדויק שאימתת בשלבים 7 עד 8. Embedding model: <code>amazon.titan-embed-text-v2:0</code>. סמן Use as the default provider ושמור.</li>
+      <li>בטבלת הספקים לחץ Check בשורה החדשה.</li>
+    </ol>
+    <div class="note expect"><b>צפוי</b>התווית הופכת ל-healthy עם זמן תגובה במילישניות.</div>
+    <div class="note wrong"><b>מה יכול להשתבש</b>
+      <ul>
+        <li>המודל לא מוצע ברשימה: לא מזיק, פשוט הקלד את המזהה. הרשימה מסומנת "unverified availability".</li>
+        <li><code>AWS credentials could not be resolved</code>: ה-session פג, או ש-<code>AWS_PROFILE</code> לא מוגדר לתהליך ה-API.</li>
+        <li><code>AccessDeniedException</code>: טופס Anthropic בהמתנה, המודל לא פתוח באזור, או שנדרש inference profile.</li>
+        <li>Bedrock לא מופיע בבחירה: <code>AI_BEDROCK_ENABLED=true</code> לא נטען. הפעל מחדש את ה-API.</li>
+      </ul>
+    </div>
+    <p>אחרי שזה עובד, בדוק שיחה אמיתית במסך Assistant, סוכן שמשתמש בכלי, והעלאת מסמך טקסט קטן לבסיס ידע. וקטורי Titan הם באורך 1,024 ומרופדים ל-1,536 באפליקציה, וזה תקין. בזמן בדיקות הגדר <code>maxTokens</code> נמוך.</p>
+    <div class="note expect"><b>נקודת עצירה</b>אם הגעת עד כאן והכול עובד, יש לך מערכת עובדת עם Bedrock בעלות של טוקנים בלבד.</div>
+  </article>
+
+</section>
+
+<section class="section" id="stage-1">
+  <h2>שלב 1: דמו</h2>
+  <div class="stagehead"><span class="k">חצי יום עבודה</span><div class="facts">
+    <div class="fact"><b>מטרה</b>קישור עם HTTPS שאפשר להראות ולתת לנסות</div><div class="fact"><b>תשתית</b>שרת EC2 אחד (t3.medium) שמריץ הכול ב-Docker Compose: האפליקציה, PostgreSQL, Redis ו-Caddy</div><div class="fact"><b>עלות חודשית משוערת</b>כ-36 דולר כשהוא דולק כל הזמן, כ-6 דולר כשהוא כבוי</div><div class="fact"><b>עוברים הלאה כש...</b>עסק ראשון מסכים לנסות עם נתונים אמיתיים</div></div></div>
+  <p>מה אין בשלב הזה, בכוונה: גיבוי, שרידות, מיילים אמיתיים והתרחבות אוטומטית. אם השרת נופל, הדמו למטה. נתוני הדמו הם נתוני דוגמה בלבד.</p>
+  
+  <article class="step" id="step-d1">
+    <div class="head"><span class="num">ד1</span><h3>בניית התמונות ב-GitHub</h3><span class="tag free">חינם</span></div>
+    <p>ה-workflow בשם <code>Deploy</code> בונה את שלוש התמונות ודוחף אותן ל-GitHub Container Registry (GHCR). כתובת האתר נצרבת בתמונת ה-web בזמן הבנייה, ולכן מגדירים אותה קודם.</p>
+    <pre>export DOMAIN=&lt;demo.your-domain.com&gt;
+gh variable set PUBLIC_API_URL --body "https://$DOMAIN"
+gh variable set PUBLIC_APP_URL --body "https://$DOMAIN"
+git tag v0.1.0 &amp;&amp; git push origin v0.1.0     # triggers the Deploy workflow
+gh run watch</pre>
+    <div class="note expect"><b>צפוי</b>שלוש חבילות ב-GitHub, תחת Packages: <code>api</code>, <code>workers</code>, <code>web</code>, עם התג <code>0.1.0</code>.</div>
+    <div class="note wrong"><b>מה יכול להשתבש</b>ה-workflow הזה לא רץ אף פעם. שינוי דומיין מחייב בנייה מחדש של תמונת ה-web (תג חדש). החבילות פרטיות כברירת מחדל, ולכן השרת יצטרך התחברות (שלב ד5).</div>
+  </article>
+  <article class="step" id="step-d2">
+    <div class="head"><span class="num">ד2</span><h3>הרשאת Bedrock לשרת</h3><span class="tag free">חינם</span></div>
+    <p>השרת מקבל תפקיד IAM שמתיר רק קריאה למודלים. כך אין מפתחות AWS על השרת.</p>
+    <pre>cat &gt; /tmp/ec2-trust.json &lt;&lt;'EOF'
+{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}
+EOF
+cat &gt; /tmp/bedrock.json &lt;&lt;'EOF'
+{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["bedrock:InvokeModel","bedrock:InvokeModelWithResponseStream"],"Resource":"*"}]}
+EOF
+aws iam create-role --role-name hilatech-demo-server --assume-role-policy-document file:///tmp/ec2-trust.json
+aws iam put-role-policy --role-name hilatech-demo-server --policy-name bedrock --policy-document file:///tmp/bedrock.json
+aws iam create-instance-profile --instance-profile-name hilatech-demo-server
+aws iam add-role-to-instance-profile --instance-profile-name hilatech-demo-server --role-name hilatech-demo-server</pre>
+    <div class="note wrong"><b>לדעת</b><code>"Resource":"*"</code> מתיר כל מודל. אחרי שבחרת מודלים, צמצם ל-ARN שלהם. כל השימוש ב-AI של כל מי שנכנס לדמו מחויב בחשבון שלך.</div>
+  </article>
+  <article class="step" id="step-d3">
+    <div class="head"><span class="num">ד3</span><h3>יצירת השרת</h3><span class="tag cost">עולה כסף</span></div>
+    <p>בקונסולה: EC2, ואז Launch instance.</p>
+    <ol>
+      <li>Name: <code>hilatech-demo</code>. מערכת הפעלה: Ubuntu Server 24.04 LTS, ארכיטקטורה <b>64-bit (x86)</b>. התמונות נבנות ל-x86, ולכן לא לבחור מכונת Arm (משפחת t4g).</li>
+      <li>Instance type: <code>t3.medium</code> (2 vCPU, 4GB). מכונה קטנה יותר לא תחזיק את חמשת הקונטיינרים יחד עם PostgreSQL.</li>
+      <li>Key pair: צור חדש ושמור את קובץ ה-<code>.pem</code>.</li>
+      <li>Network settings: התר HTTPS ו-HTTP מכל מקום, ו-SSH <b>רק מה-IP שלך</b> (My IP).</li>
+      <li>Storage: 30GB מסוג gp3.</li>
+      <li>Advanced details: ב-IAM instance profile בחר <code>hilatech-demo-server</code>. ב-Metadata response hop limit הזן <b>2</b>. בלי זה הקונטיינרים לא מגיעים לאישורי ה-AWS של השרת, ו-Bedrock ייכשל.</li>
+    </ol>
+    <div class="note expect"><b>צפוי</b>השרת במצב Running. מכאן הוא מחויב לפי שעה.</div>
+  </article>
+  <article class="step" id="step-d4">
+    <div class="head"><span class="num">ד4</span><h3>כתובת קבועה ודומיין</h3><span class="tag small">עלות קטנה</span></div>
+    <ol>
+      <li>ב-EC2, תחת Elastic IPs: Allocate, ואז Associate לשרת. כך הכתובת נשארת גם אחרי כיבוי והדלקה.</li>
+      <li>אצל ספק ה-DNS צור רשומת A מהדומיין שבחרת לכתובת הזו.</li>
+    </ol>
+    <pre>dig +short $DOMAIN        # expect: the Elastic IP</pre>
+    <div class="note wrong"><b>לדעת</b>כתובת IPv4 ציבורית מחויבת לפי שעה (כ-3.65 דולר בחודש), גם כשהשרת כבוי.</div>
+  </article>
+  <article class="step" id="step-d5">
+    <div class="head"><span class="num">ד5</span><h3>התקנת Docker והתחברות ל-GHCR</h3><span class="tag free">חינם</span></div>
+    <pre>ssh -i &lt;key.pem&gt; ubuntu@$DOMAIN
+# on the server:
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker ubuntu &amp;&amp; newgrp docker
+sudo mkdir -p /opt/hilatech &amp;&amp; sudo chown ubuntu /opt/hilatech
+# GitHub token with the read:packages scope only (Settings, Developer settings, Personal access tokens)
+echo &lt;GITHUB_TOKEN&gt; | docker login ghcr.io -u &lt;github-username&gt; --password-stdin</pre>
+  </article>
+  <article class="step" id="step-d6">
+    <div class="head"><span class="num">ד6</span><h3>קובצי הפריסה וההגדרות</h3><span class="tag free">חינם</span></div>
+    <p>מהמחשב שלך, מתוך תיקיית המאגר, העתק את שני קובצי הפריסה:</p>
+    <pre>scp -i &lt;key.pem&gt; infrastructure/deployment/docker-compose.prod.yml infrastructure/deployment/Caddyfile ubuntu@$DOMAIN:/opt/hilatech/</pre>
+    <p>על השרת צור את <code>/opt/hilatech/.env</code>. הפקודה מייצרת סודות אקראיים:</p>
+    <pre>cd /opt/hilatech
+PG=$(openssl rand -hex 16)
+cat &gt; .env &lt;&lt;EOF
+IMAGE_REPOSITORY=&lt;github-owner-lowercase&gt;/hilatech-ai-assistant
+IMAGE_TAG=0.1.0
+APP_DOMAIN=&lt;demo.your-domain.com&gt;
+POSTGRES_PASSWORD=$PG
+DATABASE_URL=postgresql://postgres:$PG@postgres:5432/hilatech?schema=public
+JWT_ACCESS_SECRET=$(openssl rand -hex 32)
+JWT_REFRESH_SECRET=$(openssl rand -hex 32)
+CREDENTIALS_ENCRYPTION_KEY=$(openssl rand -base64 32)
+COOKIE_SECURE=true
+TRUST_PROXY=true
+APP_URL=https://&lt;demo.your-domain.com&gt;
+API_URL=https://&lt;demo.your-domain.com&gt;
+CORS_ORIGINS=https://&lt;demo.your-domain.com&gt;
+AI_BEDROCK_ENABLED=true
+AWS_REGION=&lt;REGION from step 7&gt;
+EMAIL_DRIVER=log
+EOF
+chmod 600 .env</pre>
+    <div class="note wrong"><b>חשוב</b>שם המאגר ב-<code>IMAGE_REPOSITORY</code> חייב להיות באותיות קטנות. גבה את <code>CREDENTIALS_ENCRYPTION_KEY</code> ואת <code>POSTGRES_PASSWORD</code> במנהל סיסמאות: בלי מפתח ההצפנה אי אפשר לקרוא אישורי AI שמורים.</div>
+  </article>
+  <article class="step" id="step-d7">
+    <div class="head"><span class="num">ד7</span><h3>הפעלה ובדיקה</h3><span class="tag small">עלות קטנה</span></div>
+    <pre>cd /opt/hilatech
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml ps
+curl -fsS https://$APP_DOMAIN/api/v1/health/ready</pre>
+    <p>שירות ה-<code>migrate</code> מריץ את המיגרציות ויוצא לפני שה-API עולה. Caddy מנפיק תעודת HTTPS לבד בעלייה הראשונה.</p>
+    <p>אחר כך בדפדפן: הירשם, צור ארגון, הוסף ספק Amazon Bedrock ב-Settings (כמו בשלב 10), ושלח הודעה לעוזר.</p>
+    <div class="note expect"><b>צפוי</b>חמישה שירותים במצב running או healthy, ו-JSON עם <code>status: ok</code>.</div>
+    <div class="note wrong"><b>מה יכול להשתבש</b>
+      <ul>
+        <li>אין תעודה: ה-DNS עדיין לא מצביע לשרת, או שפורט 80 סגור. בדוק עם <code>docker compose -f docker-compose.prod.yml logs proxy</code>.</li>
+        <li><code>AWS credentials could not be resolved</code>: ה-hop limit לא הוגדר ל-2, או שאין לשרת instance profile (שלב ד3).</li>
+        <li>ה-API לא עולה: <code>docker compose -f docker-compose.prod.yml logs api</code>. הלוג נוקב בשם המשתנה החסר.</li>
+        <li>מיילים: <code>EMAIL_DRIVER=log</code>, ולכן קישורי אימות ואיפוס מופיעים רק בלוג של ה-workers.</li>
+      </ul>
+    </div>
+    <div class="note expect"><b>חיסכון</b>כשלא מציגים דמו אפשר לעצור את השרת (Stop instance). משלמים אז רק על הדיסק ועל הכתובת, כ-6 דולר בחודש, והנתונים נשמרים. הדלקה מחזירה הכול בתוך כדקה.</div>
+  </article>
+</section>
+
+<section class="section" id="stage-2">
+  <h2>שלב 2: פיילוט</h2>
+  <div class="stagehead"><span class="k">יום עד יומיים</span><div class="facts">
+    <div class="fact"><b>מטרה</b>2 עד 10 עסקים עובדים במערכת עם נתונים אמיתיים</div><div class="fact"><b>תשתית</b>אותו שרת, בתוספת גיבוי לילי ל-S3, מיילים דרך SES וניטור</div><div class="fact"><b>עלות חודשית משוערת</b>כ-40 עד 60 דולר, ועוד Bedrock לפי שימוש</div><div class="fact"><b>עוברים הלאה כש...</b>לקוח משלם תלוי במערכת, או שיש יותר מ-10 ארגונים פעילים</div></div></div>
+  <p>הסיכון שנשאר: שרת יחיד. תקלה בו משביתה את כל הלקוחות עד לשחזור, ואפשר לאבד עד יממה של נתונים. זה מקובל בפיילוט כשהלקוחות יודעים שזו גרסת ניסיון, ולא מקובל אחריו.</p>
+  
+  <article class="step" id="step-p1">
+    <div class="head"><span class="num">פ1</span><h3>גיבוי לילי של המסד ל-S3</h3><span class="tag small">עלות קטנה</span></div>
+    <p>מהרגע שיש נתונים של לקוח, גיבוי הוא חובה. יוצרים דלי פרטי, מתירים לשרת לכתוב אליו, ומתזמנים גיבוי לילי.</p>
+    <pre># from your computer
+export BUCKET=hilatech-backups-$ACCOUNT
+aws s3api create-bucket --bucket $BUCKET --region $AWS_REGION \
+  $( [ "$AWS_REGION" != us-east-1 ] &amp;&amp; echo --create-bucket-configuration LocationConstraint=$AWS_REGION )
+aws s3api put-public-access-block --bucket $BUCKET \
+  --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+aws s3api put-bucket-lifecycle-configuration --bucket $BUCKET --lifecycle-configuration \
+  '{"Rules":[{"ID":"expire","Status":"Enabled","Filter":{},"Expiration":{"Days":30}}]}'
+cat &gt; /tmp/backup.json &lt;&lt;EOF
+{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:PutObject"],"Resource":"arn:aws:s3:::$BUCKET/*"}]}
+EOF
+aws iam put-role-policy --role-name hilatech-demo-server --policy-name backup --policy-document file:///tmp/backup.json</pre>
+    <pre># on the server
+sudo apt-get install -y awscli || sudo snap install aws-cli --classic
+cat &gt; /opt/hilatech/backup.sh &lt;&lt;'EOF'
+#!/bin/sh
+set -eu
+cd /opt/hilatech
+STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+docker compose -f docker-compose.prod.yml exec -T postgres pg_dump -U postgres -Fc hilatech &gt; /tmp/hilatech-$STAMP.dump
+aws s3 cp /tmp/hilatech-$STAMP.dump s3://&lt;BUCKET&gt;/postgres/ &amp;&amp; rm /tmp/hilatech-$STAMP.dump
+EOF
+chmod +x /opt/hilatech/backup.sh
+( crontab -l 2&gt;/dev/null; echo "15 1 * * * /opt/hilatech/backup.sh &gt;&gt; /var/log/hilatech-backup.log 2&gt;&amp;1" ) | crontab -
+/opt/hilatech/backup.sh &amp;&amp; aws s3 ls s3://&lt;BUCKET&gt;/postgres/</pre>
+    <div class="note wrong"><b>לדעת</b>הגיבוי מכסה את המסד בלבד. המסמכים שהועלו יושבים על הדיסק של השרת (ה-volume בשם <code>uploads</code>). גיבוי שלא שוחזר אף פעם אינו גיבוי: בצע שחזור ניסיון אחד (שלב פ4) לפני הלקוח הראשון.</div>
+  </article>
+  <article class="step" id="step-p2">
+    <div class="head"><span class="num">פ2</span><h3>שליחת מיילים אמיתית</h3><span class="tag small">עלות קטנה</span></div>
+    <p>הזמנות ואיפוס סיסמה לא עובדים בלי מיילים. האפליקציה שולחת דרך SMTP, ואפשר להשתמש ב-Amazon SES.</p>
+    <ol>
+      <li>בקונסולה: Amazon SES, ואז Identities, ואז Create identity לדומיין שלך. הוסף את רשומות ה-DKIM אצל ספק ה-DNS.</li>
+      <li>חשבון SES חדש נמצא ב-sandbox ושולח רק לכתובות מאומתות. בקש יציאה ל-production ב-Account dashboard (מענה תוך יום בערך).</li>
+      <li>ב-SMTP settings צור SMTP credentials ושמור את שם המשתמש והסיסמה.</li>
+      <li>עדכן את <code>.env</code> על השרת והפעל מחדש:</li>
+    </ol>
+    <pre>EMAIL_DRIVER=smtp
+EMAIL_FROM=HilaTech &lt;no-reply@your-domain.com&gt;
+SMTP_HOST=email-smtp.&lt;REGION&gt;.amazonaws.com
+SMTP_PORT=587
+SMTP_USER=&lt;SES SMTP username&gt;
+SMTP_PASSWORD=&lt;SES SMTP password&gt;
+REQUIRE_EMAIL_VERIFICATION=true</pre>
+    <pre>docker compose -f docker-compose.prod.yml up -d</pre>
+    <div class="note expect"><b>צפוי</b>הרשמה חדשה מקבלת מייל אימות בעברית או באנגלית, לפי שפת הממשק.</div>
+    <div class="note wrong"><b>לדעת</b>שום מייל לא נשלח עדיין מהמערכת הזו, כך שזו הבדיקה הראשונה. הפעל את <code>REQUIRE_EMAIL_VERIFICATION</code> רק אחרי שמייל אימות הגיע בפועל.</div>
+  </article>
+  <article class="step" id="step-p3">
+    <div class="head"><span class="num">פ3</span><h3>ניטור: לדעת כשהמערכת למטה</h3><span class="tag small">עלות קטנה</span></div>
+    <ol>
+      <li><b>בדיקת זמינות חיצונית.</b> שירות חינמי כמו UptimeRobot, או Route 53 health check, על הכתובת <code>https://&lt;domain&gt;/api/v1/health/ready</code>, עם התראה למייל או לטלפון.</li>
+      <li><b>שחזור אוטומטי של השרת.</b> ב-EC2, על השרת: Actions, Monitor and troubleshoot, Manage CloudWatch alarms. צור התראה על Status check failed עם הפעולה Recover.</li>
+      <li><b>דיסק.</b> PostgreSQL נעצר כשהדיסק מתמלא. בדוק פעם בשבוע עם <code>df -h</code>, והגדל את הדיסק לפני 80%.</li>
+      <li><b>תקציב.</b> ודא שהתראת התקציב משלב 3 פעילה ומותאמת לסכום של השלב הזה.</li>
+    </ol>
+  </article>
+  <article class="step" id="step-p4">
+    <div class="head"><span class="num">פ4</span><h3>עדכון גרסה ושחזור</h3><span class="tag free">חינם</span></div>
+    <p>עדכון גרסה: בונים תג חדש (שלב ד1), מעדכנים את <code>IMAGE_TAG</code> ב-<code>.env</code>, ומריצים:</p>
+    <pre>cd /opt/hilatech
+/opt/hilatech/backup.sh                                   # always back up first
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d            # migrations run automatically</pre>
+    <p>חזרה לגרסה קודמת: מחזירים את <code>IMAGE_TAG</code> הקודם ומריצים שוב <code>up -d</code>. מיגרציות לא מתבטלות לבד, ולכן אם הגרסה החדשה שינתה את הסכמה משחזרים מהגיבוי:</p>
+    <pre>aws s3 cp s3://&lt;BUCKET&gt;/postgres/&lt;file&gt;.dump /tmp/restore.dump
+docker compose -f docker-compose.prod.yml stop api workers web
+docker compose -f docker-compose.prod.yml exec -T postgres dropdb -U postgres hilatech
+docker compose -f docker-compose.prod.yml exec -T postgres createdb -U postgres hilatech
+docker compose -f docker-compose.prod.yml exec -T postgres pg_restore -U postgres -d hilatech &lt; /tmp/restore.dump
+docker compose -f docker-compose.prod.yml up -d</pre>
+    <div class="note wrong"><b>לדעת</b>תהליך השחזור הזה לא נוסה. הרץ אותו פעם אחת על נתוני דוגמה לפני שיש לקוח.</div>
+  </article>
+  <article class="step" id="step-p5">
+    <div class="head"><span class="num">פ5</span><h3>מתחילים למדוד עלות ללקוח</h3><span class="tag free">חינם</span></div>
+    <p>מהפיילוט והלאה כל החלטת מחיר נשענת על מספר אחד: כמה עולה לך ארגון פעיל בחודש. אוספים אותו כבר עכשיו.</p>
+    <ol>
+      <li><b>עלות AI לארגון.</b> הגדר <code>AI_PRICING_JSON</code> עם מחירי המודלים שבחרת. מסך AI usage יראה אז עלות משוערת לכל ארגון.</li>
+      <li><b>תקציב AI לכל ארגון.</b> ב-Settings, תחת Billing, הגדר לכל ארגון בפיילוט תקציב חודשי עם עצירה קשיחה. כך לקוח אחד לא יכול לייצר חשבון Bedrock בלתי צפוי.</li>
+      <li><b>רישום חודשי.</b> פעם בחודש רשום: עלות התשתית, עלות Bedrock, מספר ארגונים פעילים ומספר משתמשים. הנוסחה נמצאת בפרק העלויות.</li>
+    </ol>
+  </article>
+</section>
+
+<section class="section" id="stage-3">
+  <h2>שלב 3: השקה רשמית</h2>
+  <div class="stagehead"><span class="k">יומיים עד שלושה בפעם הראשונה</span><div class="facts">
+    <div class="fact"><b>מטרה</b>מוצר שנמכר לקהל היעד, עם זמינות וגיבוי מנוהלים</div><div class="fact"><b>תשתית</b>CDK: ECS Fargate בשני אזורי זמינות, RDS עם עותק חם, Redis עם עותק, WAF, גיבויים של 35 יום</div><div class="fact"><b>עלות חודשית משוערת</b>כ-430 עד 500 דולר לסביבת production, ועוד Bedrock</div><div class="fact"><b>עוברים הלאה כש...</b>העומס מתקרב לגבולות שבטבלת ההתרחבות</div></div></div>
+  <div class="box">
+    <h3>איך עוברים מהשרת היחיד</h3>
+    <ol>
+      <li><b>חזרה גנרלית בסביבת dev.</b> בצע את שלבים 11 עד 19 עם <code>ENV=dev</code> (כ-115 עד 125 דולר לחודש, ומוחקים בסוף). זו הפעם הראשונה שקוד התשתית רץ באמת, וכדאי שהתקלות יתגלו כאן.</li>
+      <li><b>הקמת production.</b> חזור על אותם שלבים עם <code>ENV=prod</code> ודומיין הייצור. ההגדרות לכל סביבה נמצאות ב-<code>infra/cdk/lib/config.ts</code>.</li>
+      <li><b>העברת הנתונים.</b> עוצרים את השרת הישן לכתיבה, מריצים גיבוי אחרון (שלב פ1), ומשחזרים אותו אל ה-RDS דרך port-forward (ראה <code>docs/operations/runbooks.md</code>). את המסמכים שהועלו מעתיקים מה-volume אל דלי ה-S3 של הסביבה.</li>
+      <li><b>החלפת הדומיין.</b> מפנים את ה-DNS אל ה-Load Balancer (שלב 18) ומשאירים את השרת הישן כבוי שבוע לפני מחיקה.</li>
+    </ol>
+    <div class="note wrong"><b>לדעת</b>העברת נתונים משרת יחיד ל-RDS לא נוסתה ואין לה סקריפט מוכן. היא דורשת חלון השבתה קצר. גם סודות ה-JWT ומפתח ההצפנה צריכים לעבור, אחרת משתמשים יתנתקו ואישורי AI שמורים לא ייקראו.</div>
+  </div>
+  <div class="box">
+    <h3>מה צריך להיות מוכן לפני ההשקה, מעבר לתשתית</h3>
+    <ul>
+      <li><b>תשלומים.</b> לא נבנו. אפשר להתחיל בחשבונית ידנית, אבל מכירה פתוחה דורשת ספק סליקה.</li>
+      <li><b>ערוץ לקוח אחד לפחות</b> (צ'אט באתר או WhatsApp). לא נבנה.</li>
+      <li><b>תנאי שימוש, מדיניות פרטיות והסכם עיבוד נתונים.</b> דורשים עורך דין.</li>
+      <li><b>בדיקת חדירה חיצונית</b> ובדיקת העברית על ידי דובר שפה.</li>
+      <li><b>מודל חיוב ל-AI.</b> <code>AI_BEDROCK_ENABLED</code> מחייב את כל השימוש בחשבון שלך, ולכן המחיר ללקוח חייב לכסות אותו (ראה פרק העלויות).</li>
+    </ul>
+  </div>
+  <h3>ה. פריסת התשתית המנוהלת</h3>
+
+  <div class="box">
+    <h3>משתני סביבה לכל החלק</h3>
+    <pre>cd infra/cdk
+npm ci
+export AWS_PROFILE=hilatech-dev AWS_REGION=&lt;REGION&gt;
+export ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+export ENV=dev
+export DOMAIN=&lt;app-dev.your-domain.com&gt;      # public hostname that will point at the load balancer
+export ALARM_EMAIL=&lt;you@your-domain.com&gt;</pre>
+  </div>
+
+  <article class="step" id="step-11">
+    <div class="head"><span class="num">11</span><h3>דומיין ותעודת TLS</h3><span class="tag free">חינם</span></div>
+    <p>במצב production ה-API שולח עוגיות עם הדגל Secure, ולכן התחברות עובדת רק ב-HTTPS. בלי תעודה הסביבה לא שמישה.</p>
+    <ol>
+      <li>בקונסולה פתח Certificate Manager (ACM) <b>באזור הפריסה</b>, לחץ Request, בחר תעודה ציבורית לדומיין שלך עם DNS validation.</li>
+      <li>פתח את התעודה, העתק את רשומת ה-CNAME (שם וערך) וצור אותה אצל ספק ה-DNS שלך.</li>
+      <li>חכה לסטטוס Issued (דקות) ושמור את ה-ARN:</li>
+    </ol>
+    <pre>export CERT_ARN=$(aws acm list-certificates --region $AWS_REGION \
+  --query "CertificateSummaryList[?DomainName=='${DOMAIN}'].CertificateArn | [0]" --output text)
+echo "$CERT_ARN"</pre>
+    <div class="note wrong"><b>מה יכול להשתבש</b>התעודה תקועה ב-Pending validation: ה-CNAME הוזן עם סיומת הדומיין פעמיים (הרבה ממשקי DNS מוסיפים אותה לבד) או באזור DNS לא נכון. התעודה חייבת להיות באותו אזור AWS כמו ה-Load Balancer.</div>
+  </article>
+
+  <article class="step" id="step-12">
+    <div class="head"><span class="num">12</span><h3>Bootstrap ל-CDK</h3><span class="tag small">עלות קטנה</span></div>
+    <p>פעם אחת לכל חשבון ואזור. יוצר את ה-stack בשם <code>CDKToolkit</code>: דלי S3, מאגר ECR ותפקידי IAM שה-CDK משתמש בהם.</p>
+    <pre>npx cdk bootstrap "aws://${ACCOUNT}/${AWS_REGION}"</pre>
+    <p>תצוגה מקדימה של מה ש-dev ייצור (עדיין חינם, שום דבר לא נוצר):</p>
+    <pre>npx cdk synth -c env=$ENV --quiet &amp;&amp; echo synth-ok
+npx cdk diff HilaTech-$ENV-Network -c env=$ENV</pre>
+    <div class="note expect"><b>צפוי</b><code>Environment aws://.../... bootstrapped</code>.</div>
+    <div class="note wrong"><b>מה יכול להשתבש</b><code>no credentials</code>: הרץ <code>aws sso login</code>.</div>
+  </article>
+
+  <article class="step" id="step-13">
+    <div class="head"><span class="num">13</span><h3>פריסת רשת, registry ונתונים</h3><span class="tag cost">עולה כסף</span></div>
+    <p>נוצרים: VPC עם NAT gateway אחד, מאגרי ECR, מסד RDS PostgreSQL, ElastiCache Redis, דלי S3 וסודות. <b>מהרגע הזה השעון רץ</b>: NAT, RDS ו-Redis מחויבים לפי שעה.</p>
+    <pre>npx cdk deploy HilaTech-$ENV-Network HilaTech-$ENV-Registry HilaTech-$ENV-Data \
+  -c env=$ENV -c alarmEmail="$ALARM_EMAIL"</pre>
+    <p>ה-CDK מציג טבלת שינויים ב-IAM וב-security groups ושואל אם לפרוס. עבור עליה וענה <code>y</code>. יצירת ה-RDS לוקחת 5 עד 15 דקות.</p>
+    <div class="note expect"><b>צפוי</b>שלושה stacks מסומנים ב-✅, עם הפלטים <code>DbEndpoint</code>, <code>DocumentsBucketName</code>, <code>CredentialsKeySecretName</code> וכתובות ה-ECR.</div>
+    <div class="note wrong"><b>מה יכול להשתבש</b>
+      <ul>
+        <li><code>secret with this name is scheduled for deletion</code>: מחיקה קודמת השאירה סודות בחלון שחזור. ראה שלב 23.</li>
+        <li>שגיאות מכסה (Elastic IP, VPC): בדוק ב-Service Quotas.</li>
+        <li><code>engine version ... not available</code>: באזור שלך אין את גרסת ה-PostgreSQL הזו. שנה את <code>PostgresEngineVersion</code> ב-<code>lib/stacks/data-stack.ts</code>.</li>
+        <li>פריסה שנקטעה: הרץ שוב את אותה פקודה. stack שנכשל ביצירה הראשונה נשאר ב-<code>ROLLBACK_COMPLETE</code> וצריך למחוק אותו לפני ניסיון חוזר: <code>aws cloudformation delete-stack --stack-name &lt;name&gt;</code>.</li>
+      </ul>
+    </div>
+  </article>
+
+  <article class="step" id="step-14">
+    <div class="head"><span class="num">14</span><h3>הגדרת הסודות הנדרשים</h3><span class="tag free">חינם</span></div>
+    <p>מפתח ההצפנה של אישורי ה-AI השמורים לא יכול להיווצר אוטומטית, ולכן ה-stack יוצר ערך זמני שגורם לאפליקציה לסרב לעלות עד שמחליפים אותו.</p>
+    <pre>aws secretsmanager put-secret-value --secret-id hilatech/$ENV/credentials-encryption-key \
+  --secret-string "$(openssl rand -base64 32)"</pre>
+    <p><b>גבה את הערך עכשיו</b> במנהל סיסמאות. אם הוא אובד, כל אישורי ה-AI השמורים של הארגונים הופכים לבלתי קריאים, כולל בגיבויים.</p>
+    <pre>aws secretsmanager get-secret-value --secret-id hilatech/$ENV/credentials-encryption-key \
+  --query SecretString --output text</pre>
+    <div class="note wrong"><b>מה יכול להשתבש</b><code>openssl</code> חסר ב-Windows: השתמש ב-Git Bash או ב-WSL. סודות ה-JWT וה-Redis נוצרים אוטומטית.</div>
+  </article>
+
+  <article class="step" id="step-15">
+    <div class="head"><span class="num">15</span><h3>בנייה ודחיפה של התמונות ל-ECR</h3><span class="tag small">עלות קטנה</span></div>
+    <pre>cd ../..          # repo root
+export TAG=$(git rev-parse --short HEAD)
+export REGISTRY="${ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin "$REGISTRY"
+
+# ECS tasks run linux/amd64 (on Apple Silicon the --platform flag is required)
+for svc in api workers; do
+  docker build --platform linux/amd64 -f infrastructure/docker/${svc}.Dockerfile \
+    -t "${REGISTRY}/hilatech-${ENV}/${svc}:${TAG}" . &amp;&amp; docker push "${REGISTRY}/hilatech-${ENV}/${svc}:${TAG}"
+done
+# web: NEXT_PUBLIC_* are baked in at BUILD time, so they must be the final public URL
+docker build --platform linux/amd64 -f infrastructure/docker/web.Dockerfile \
+  --build-arg NEXT_PUBLIC_API_URL="https://${DOMAIN}" --build-arg NEXT_PUBLIC_APP_URL="https://${DOMAIN}" \
+  -t "${REGISTRY}/hilatech-${ENV}/web:${TAG}" . &amp;&amp; docker push "${REGISTRY}/hilatech-${ENV}/web:${TAG}"</pre>
+    <div class="note expect"><b>צפוי</b>שלוש תמונות במאגר. בדיקה: <code>aws ecr describe-images --repository-name hilatech-$ENV/api --region $AWS_REGION</code>.</div>
+    <div class="note wrong"><b>מה יכול להשתבש</b><code>no basic auth credentials</code>: אסימון ההתחברות פג (תקף 12 שעות), חזור על <code>docker login</code>. שינוי דומיין בעתיד מחייב בנייה מחדש של תמונת ה-web. שלוש התמונות נבנות בהצלחה ב-CI של GitHub.</div>
+  </article>
+
+  <article class="step" id="step-16">
+    <div class="head"><span class="num">16</span><h3>פריסת האפליקציה במצב מושהה, ואז מיגרציה</h3><span class="tag cost">עולה כסף</span></div>
+    <p>פורסים עם שירותים מושהים (0 משימות), כדי ששום דבר לא יעלה לפני שלמסד יש סכמה:</p>
+    <pre>cd infra/cdk
+npx cdk deploy HilaTech-$ENV-App HilaTech-$ENV-Ops \
+  -c env=$ENV -c imageTag=$TAG -c certificateArn="$CERT_ARN" -c domainName="$DOMAIN" \
+  -c alarmEmail="$ALARM_EMAIL" -c pauseServices=true</pre>
+    <p>הפקודה יוצרת גם דשבורד, התראות (AWS שולח מייל אישור למנוי, וצריך לאשר אותו) ותקציב לסביבה. עכשיו מריצים את המיגרציות כמשימת Fargate חד-פעמית:</p>
+    <pre>export CLUSTER=hilatech-$ENV
+OUT=$(aws cloudformation describe-stacks --stack-name HilaTech-$ENV-App --query 'Stacks[0].Outputs' --output json)
+get() { echo "$OUT" | jq -r ".[] | select(.OutputKey==\"$1\").OutputValue"; }
+TASK_ARN=$(aws ecs run-task --cluster $CLUSTER --task-definition "$(get MigrateTaskDefinition)" --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={subnets=[$(get MigrateSubnets)],securityGroups=[$(get MigrateSecurityGroup)],assignPublicIp=DISABLED}" \
+  --query 'tasks[0].taskArn' --output text)
+echo "$TASK_ARN"
+aws ecs wait tasks-stopped --cluster $CLUSTER --tasks "$TASK_ARN"
+aws ecs describe-tasks --cluster $CLUSTER --tasks "$TASK_ARN" --query 'tasks[0].containers[0].{exit:exitCode,reason:reason}'
+aws logs tail /hilatech/$ENV/migrate --since 15m</pre>
+    <div class="note expect"><b>צפוי</b><code>exit: 0</code>, ובלוג רשימה של 7 מיגרציות שהוחלו, עד <code>20261111234833_evaluations</code>.</div>
+    <div class="note wrong"><b>מה יכול להשתבש (אף אחד מהמקרים לא אומת ב-AWS)</b>
+      <ul>
+        <li><code>extension "vector" is not available</code>: pgvector חסר בגרסת ה-PostgreSQL הזו ב-RDS. בחר גרסה חדשה יותר ב-<code>data-stack.ts</code> ופרוס מחדש את Data.</li>
+        <li><code>Cannot find module</code> או <code>prisma: not found</code>: התמונה ישנה מ-12.11.2026. בנה ודחוף מחדש את תמונת ה-API. המיגרציה רצה מתוך <code>/app/migrate</code> שבתמונה.</li>
+        <li><code>Failed to fetch ... binaries.prisma.sh</code>: למשימה אין יציאה לאינטרנט. בדוק את ה-NAT gateway ואת חוקי היציאה של <code>MigrateSg</code>.</li>
+        <li>שגיאות SSL מול המסד: ייתכן שהצורה <code>sslmode=no-verify</code> לא נתמכת בדרייבר. ראה "Known unverified points" ב-<code>aws-architecture.md</code>.</li>
+        <li><code>ResourceInitializationError</code>: המשימה לא הצליחה למשוך תמונה או לקרוא סודות. בדוק שה-NAT קיים, שהסוד משלב 14 הוגדר ושה-tag קיים ב-ECR.</li>
+        <li>Timeout בחיבור למסד: חוקי security group (צריך להתיר מ-<code>MigrateSg</code> ל-<code>DbSg</code> בפורט 5432).</li>
+      </ul>
+    </div>
+  </article>
+
+  <article class="step" id="step-17">
+    <div class="head"><span class="num">17</span><h3>הפעלת השירותים</h3><span class="tag cost">עולה כסף</span></div>
+    <p>פורסים שוב, הפעם בלי <code>pauseServices</code>:</p>
+    <pre>npx cdk deploy HilaTech-$ENV-App -c env=$ENV -c imageTag=$TAG -c certificateArn="$CERT_ARN" \
+  -c domainName="$DOMAIN" -c alarmEmail="$ALARM_EMAIL"
+aws ecs wait services-stable --cluster $CLUSTER \
+  --services hilatech-$ENV-api hilatech-$ENV-web hilatech-$ENV-workers</pre>
+    <div class="note expect"><b>צפוי</b>בכל שירות מספר המשימות הרצות שווה למבוקש (1, 1, 1).</div>
+    <div class="note wrong"><b>מה יכול להשתבש</b>
+      <ul>
+        <li>משימות עולות ונופלות בלולאה: הרץ <code>aws logs tail /hilatech/$ENV/api --since 15m</code>. הסיבות הנפוצות: סוד שנשאר ערך זמני, tag שגוי, או משתנה סביבה חסר (הלוג נוקב בשמו).</li>
+        <li>Targets במצב unhealthy: נתיב הבריאות של ה-web (<code>/</code>) או של ה-API (<code>/api/v1/health</code>) לא מחזיר 200. בדוק את הסיבה ב-EC2, תחת Target groups.</li>
+      </ul>
+    </div>
+  </article>
+
+  <article class="step" id="step-18">
+    <div class="head"><span class="num">18</span><h3>הפניית הדומיין ל-Load Balancer</h3><span class="tag free">חינם</span></div>
+    <pre>aws cloudformation describe-stacks --stack-name HilaTech-$ENV-App \
+  --query "Stacks[0].Outputs[?OutputKey=='AlbDnsName'].OutputValue" --output text</pre>
+    <p>אצל ספק ה-DNS צור רשומת CNAME מהדומיין שלך לכתובת שהודפסה. ב-Route 53 יוצרים רשומת alias מסוג A.</p>
+    <div class="note expect"><b>צפוי אחרי התפשטות ה-DNS (דקות)</b><code>curl -sS https://$DOMAIN/api/v1/health</code> מחזיר JSON עם <code>status: ok</code>.</div>
+    <div class="note wrong"><b>מה יכול להשתבש</b>אי התאמה בשם התעודה (היא חייבת להיות בדיוק לדומיין הזה). ב-Cloudflare התחל במצב DNS-only (ענן אפור). מטמון DNS ישן.</div>
+  </article>
+
+  <article class="step" id="step-19">
+    <div class="head"><span class="num">19</span><h3>בדיקות עשן</h3><span class="tag small">עלות קטנה</span></div>
+    <pre>curl -fsS https://$DOMAIN/api/v1/health            # liveness
+curl -fsS https://$DOMAIN/api/v1/health/ready      # database + redis
+curl -fsSI https://$DOMAIN/ | head -1              # web: HTTP/2 200</pre>
+    <p>אחר כך בדפדפן, בכתובת הדומיין:</p>
+    <ol>
+      <li>הירשם וצור ארגון.</li>
+      <li>ב-Settings, תחת AI, הוסף ספק Amazon Bedrock עם אזור ה-stack והמודלים משלב 8, ולחץ Check. כאן הקריאה נעשית בזהות של משימת ה-ECS ולא בפרופיל ה-SSO שלך, ולכן <code>AccessDenied</code> פירושו אי התאמה ב-IAM או במזהה המודל.</li>
+      <li>שלח הודעה ב-Assistant, והעלה מסמך קטן לבסיס ידע וחפש בו. זה בודק S3, workers, Redis ו-embeddings.</li>
+      <li>ב-CloudWatch, תחת Dashboards, פתח את <code>hilatech-dev</code>: אמורה להופיע תנועה, ואף התראה לא אמורה לפעול.</li>
+    </ol>
+    <div class="note wrong"><b>שלושה דברים לדעת</b>
+      <ul>
+        <li><b>מיילים לא נשלחים.</b> ה-stack מגדיר <code>EMAIL_DRIVER=log</code>, כך שמיילי אימות, איפוס והזמנה רק נרשמים בלוג. קישור אפשר לקחת עם <code>aws logs tail /hilatech/$ENV/api --since 10m --filter-pattern verify</code>.</li>
+        <li><b>השאר <code>REQUIRE_EMAIL_VERIFICATION=false</code></b> (ברירת המחדל) עד שיש שליחת מיילים אמיתית. אחרת משתמשים חדשים ייתקעו במסך האימות.</li>
+        <li><b>קטלוג ההרשאות:</b> לא צריך להריץ seed. ה-API מעדכן אותו בעצמו בכל עלייה. לעולם אל תריץ <code>SEED_DEMO=true</code> על סביבה משותפת.</li>
+      </ul>
+    </div>
+    <div class="note expect"><b>נקודת סיום</b>אם כל זה עובד, יש לך סביבת dev חיה. השאר אותה פועלת רק כל עוד אתה צריך אותה (שלב 23).</div>
+  </article>
+
+  <h3>ו. פריסה אוטומטית מ-GitHub</h3>
+
+
+  <article class="step" id="step-20">
+    <div class="head"><span class="num">20</span><h3>תפקיד פריסה ל-GitHub דרך OIDC</h3><span class="tag free">חינם</span></div>
+    <p>ה-workflow בשם <code>deploy-aws.yml</code> כבוי כברירת מחדל. הוא מקבל תפקיד ב-AWS דרך OpenID Connect, כך שלא שמורים מפתחות AWS ב-GitHub. <b>מדיניות ה-IAM כאן היא נקודת פתיחה שלא נבדקה</b>: הדק ואמת אותה לפני שסומכים עליה.</p>
+    <pre>export GH_OWNER=&lt;github-user-or-org&gt; GH_REPO=hilatech-ai-assistant
+# 1) One-time OIDC provider for GitHub Actions (skip if it already exists)
+aws iam create-open-id-connect-provider --url https://token.actions.githubusercontent.com \
+  --client-id-list sts.amazonaws.com \
+  --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
+
+# 2) Trust policy: ONLY this repo, ONLY the GitHub Environment aws-dev
+cat &gt; /tmp/trust.json &lt;&lt;EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"Federated": "arn:aws:iam::${ACCOUNT}:oidc-provider/token.actions.githubusercontent.com"},
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+        "token.actions.githubusercontent.com:sub": "repo:${GH_OWNER}/${GH_REPO}:environment:aws-dev"
+      }
+    }
+  }]
+}
+EOF
+aws iam create-role --role-name hilatech-github-deploy-dev \
+  --assume-role-policy-document file:///tmp/trust.json --max-session-duration 3600
+
+# 3) Permissions
+cat &gt; /tmp/perms.json &lt;&lt;EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {"Sid":"CdkBootstrapRoles","Effect":"Allow","Action":"sts:AssumeRole",
+     "Resource":"arn:aws:iam::${ACCOUNT}:role/cdk-hnb659fds-*-role-${ACCOUNT}-${AWS_REGION}"},
+    {"Sid":"EcrLogin","Effect":"Allow","Action":"ecr:GetAuthorizationToken","Resource":"*"},
+    {"Sid":"EcrPush","Effect":"Allow","Action":["ecr:BatchCheckLayerAvailability","ecr:InitiateLayerUpload","ecr:UploadLayerPart","ecr:CompleteLayerUpload","ecr:PutImage","ecr:BatchGetImage","ecr:DescribeImages"],
+     "Resource":"arn:aws:ecr:${AWS_REGION}:${ACCOUNT}:repository/hilatech-dev/*"},
+    {"Sid":"MigrateTask","Effect":"Allow","Action":["ecs:RunTask","ecs:DescribeTasks","ecs:DescribeTaskDefinition"],"Resource":"*"},
+    {"Sid":"PassTaskRoles","Effect":"Allow","Action":"iam:PassRole","Resource":"arn:aws:iam::${ACCOUNT}:role/HilaTech-dev-App-*",
+     "Condition":{"StringEquals":{"iam:PassedToService":"ecs-tasks.amazonaws.com"}}},
+    {"Sid":"ReadOutputs","Effect":"Allow","Action":["cloudformation:DescribeStacks"],"Resource":"arn:aws:cloudformation:${AWS_REGION}:${ACCOUNT}:stack/HilaTech-dev-*/*"}
+  ]
+}
+EOF
+aws iam put-role-policy --role-name hilatech-github-deploy-dev --policy-name deploy \
+  --policy-document file:///tmp/perms.json
+echo "arn:aws:iam::${ACCOUNT}:role/hilatech-github-deploy-dev"</pre>
+    <ol start="4">
+      <li>ב-GitHub, תחת Settings ואז Environments, צור סביבה בשם <code>aws-dev</code> עם Required reviewers. זה שער האישור הידני.</li>
+      <li>הגדר את המשתנים:</li>
+    </ol>
+    <pre>gh variable set AWS_DEPLOY_ENABLED --body true
+gh variable set AWS_REGION --body "$AWS_REGION"
+gh variable set AWS_DEPLOY_ROLE_ARN --body "arn:aws:iam::${ACCOUNT}:role/hilatech-github-deploy-dev"
+gh variable set CERTIFICATE_ARN --body "$CERT_ARN"
+gh variable set DOMAIN_NAME --body "$DOMAIN"
+gh variable set ALARM_EMAIL --body "$ALARM_EMAIL"
+gh variable set PUBLIC_API_URL --body "https://$DOMAIN"
+gh variable set PUBLIC_APP_URL --body "https://$DOMAIN"</pre>
+    <ol start="6">
+      <li>ב-Actions הרץ את Deploy to AWS (סביבה <code>dev</code>, הקלד <code>DEPLOY</code>) ואשר בשער הסביבה.</li>
+    </ol>
+    <div class="note wrong"><b>מה יכול להשתבש</b><code>Not authorized to perform sts:AssumeRoleWithWebIdentity</code>: תנאי ה-<code>sub</code> לא תואם. <code>AccessDenied</code> על <code>iam:PassRole</code>: התבנית של שמות התפקידים היא ניחוש, הרחב אותה לפי מה שהשגיאה נוקבת. ה-workflow והמדיניות לא רצו אף פעם. אל תשתמש בתפקיד הזה ל-production.</div>
+  </article>
+
+</section>
+
+<section class="section" id="stage-4">
+  <h2>שלב 4: התרחבות</h2>
+  <div class="stagehead"><span class="k">מתמשך</span><div class="facts">
+    <div class="fact"><b>מטרה</b>מאות עד אלפי משתמשים בלי שהמערכת תאט ובלי שהעלות תברח</div><div class="fact"><b>תשתית</b>אותה תשתית. מגדילים רק את מה שהמדדים מראים שהוא צוואר הבקבוק</div><div class="fact"><b>עלות חודשית משוערת</b>גדל עם השימוש. המטרה: עלות לארגון שיורדת ככל שגדלים</div><div class="fact"><b>עוברים הלאה כש...</b>—</div></div></div>
+  <p>לא מגדילים מראש. כל שורה בטבלה היא סימן שרואים בדשבורד של CloudWatch או באפליקציה, והפעולה שמתאימה לו. המספרים הם נקודות פתיחה ולא תוצאות של בדיקת עומס על AWS.</p>
+  <div class="tablewrap"><table>
+    <tr><th>הסימן</th><th>הפעולה</th><th>איפה</th></tr>
+    <tr><td>CPU של ה-API מעל 60% לאורך זמן, או זמני תגובה עולים</td><td>ההתרחבות האוטומטית מוסיפה משימות עד <code>maxTasks</code> (10 ב-prod). אם מגיעים לתקרה, מעלים אותה או מגדילים את המשימה</td><td><code>config.ts</code>, תחת <code>services.api</code></td></tr>
+    <tr><td>תורים מתארכים (מסמכים, הרצות סוכנים, ייבוא)</td><td>מוסיפים משימות workers. ההתרחבות שלהם היום לפי CPU ולא לפי אורך התור, וזה שיפור שכדאי לבנות</td><td><code>services.workers</code></td></tr>
+    <tr><td>CPU או זיכרון של המסד מעל 70%, או חיבורים קרובים למקסימום</td><td>מגדילים את מכונת ה-RDS (t4g.medium, אחר כך large או משפחת m). בהמשך: מאגר חיבורים (RDS Proxy או PgBouncer) ועותק לקריאה לדוחות</td><td><code>database.instanceClass</code></td></tr>
+    <tr><td>חיפוש בבסיס הידע מאט כשיש מאות אלפי קטעים</td><td>יותר זיכרון למסד, כי אינדקס ה-HNSW צריך להיכנס לזיכרון. בודקים את <code>docs/operations/load-test-results.md</code></td><td>RDS</td></tr>
+    <tr><td>זיכרון Redis מעל 70%</td><td>מגדילים את ה-node. Redis מחזיק תורים בלבד, ולכן הגידול איטי</td><td><code>redis.nodeType</code></td></tr>
+    <tr><td><code>ThrottlingException</code> מ-Bedrock</td><td>מבקשים הגדלת מכסה ב-Service Quotas, ומפזרים עומס עם inference profile חוצה אזורים</td><td>קונסולת AWS</td></tr>
+    <tr><td>יותר ממופע API אחד רץ באופן קבוע</td><td>מגבלת הקצב לפי IP נשמרת היום בזיכרון של כל מופע. צריך להעביר אותה ל-Redis</td><td>קוד: <code>AppThrottlerGuard</code></td></tr>
+    <tr><td>לקוח אחד צורך חלק גדול מהמשאבים</td><td>תקציב AI ומגבלות תוכנית לארגון. מגבלות על מספר סוכנים ואוטומציות מוצגות אבל עדיין לא נאכפות</td><td>Settings, Billing</td></tr>
+    <tr><td>חשבון ה-NAT גדל</td><td>מוסיפים VPC endpoints לשירותי AWS (<code>interfaceEndpoints: true</code>), כך שהתעבורה אליהם לא עוברת ב-NAT</td><td><code>config.ts</code></td></tr>
+    <tr><td>לקוחות מחוץ לישראל, או דרישת מיקום נתונים</td><td>סביבה נוספת באזור אחר. אין היום תמיכה בריבוי אזורים באותה סביבה</td><td>החלטה עסקית</td></tr>
+  </table></div>
+  <div class="box">
+    <h3>לפני שמגיעים לאלפי משתמשים</h3>
+    <ul>
+      <li><b>בדיקת עומס על AWS.</b> בדיקות העומס שנעשו רצו על מכונת פיתוח, לא על התשתית הזו.</li>
+      <li><b>תרגול שחזור.</b> שחזור RDS מגיבוי לסביבה נפרדת, פעם ברבעון.</li>
+      <li><b>סביבת staging קבועה</b> (כ-170 עד 200 דולר לחודש), כדי שגרסה חדשה לא תיבדק לראשונה על לקוחות.</li>
+      <li><b>בדיקות הדפדפן ב-CI.</b> היום הן רצות רק ידנית.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="section" id="costs">
+  <h2>עלויות: מה משלמים ואיך שולטים בזה</h2>
+  <div class="tablewrap"><table>
+    <tr><th>שלב</th><th>ממה מורכבת העלות הקבועה</th><th class="n">לחודש</th></tr>
+    <tr><td>0. הכנה</td><td>אין משאבים. טוקנים של Bedrock בלבד</td><td class="n">דולרים בודדים</td></tr>
+    <tr><td>1. דמו</td><td>שרת t3.medium (כ-30), דיסק 30GB (כ-2.5), כתובת IPv4 (כ-3.65)</td><td class="n">כ-36 דולר</td></tr>
+    <tr><td>2. פיילוט</td><td>כמו בדמו, ועוד גיבויים ב-S3, SES ודיסק גדול יותר לפי הצורך</td><td class="n">כ-40 עד 60 דולר</td></tr>
+    <tr><td>חזרה גנרלית (dev)</td><td>NAT (33), Fargate (27), Load Balancer (16 עד 22), RDS (12), Redis (12), שונות</td><td class="n">כ-115 עד 125 דולר</td></tr>
+    <tr><td>staging</td><td>כמו dev עם מכונות גדולות יותר, WAF וגיבויים</td><td class="n">כ-170 עד 200 דולר</td></tr>
+    <tr><td>3. production</td><td>שני NAT (66), Fargate עם שתי משימות לכל שירות (180), RDS עם עותק חם (95), Redis עם עותק (47), Load Balancer, WAF, גיבויים ולוגים</td><td class="n">כ-430 עד 500 דולר</td></tr>
+  </table></div>
+  <p>כל הסכומים הם לפני Bedrock, שמחויב לפי טוקנים ותלוי במודל ובכמות השימוש. את החלק הזה מודדים, לא מנחשים (שלב פ5).</p>
+
+  <div class="box">
+    <h3>החשבון שקובע אם יש עסק</h3>
+    <p><b>עלות לארגון בחודש</b> = (עלות התשתית הקבועה חלקי מספר הארגונים המשלמים) + עלות ה-AI של הארגון + עמלת סליקה.</p>
+    <p>דוגמה להמחשה, עם מספרים שאינם תחזית: בתשתית production של 470 דולר ו-30 ארגונים משלמים, החלק הקבוע הוא כ-16 דולר לארגון. עם 150 ארגונים הוא יורד לכ-3 דולר, ואז עלות ה-AI הופכת למרכיב העיקרי.</p>
+    <ul>
+      <li><b>נקודת האיזון של ההשקה.</b> אם התוכנית הזולה נמכרת ב-X דולר לחודש, צריך בערך 470 חלקי X ארגונים משלמים רק כדי לכסות את התשתית. זה המספר שכדאי שיהיה בפיילוט לפני שעוברים לשלב 3.</li>
+      <li><b>ה-AI חייב להיות מתומחר.</b> לכל תוכנית מגדירים מכסת טוקנים חודשית, ומעליה חבילה נוספת בתשלום או עצירה. המנגנון כבר קיים: תקציב לארגון עם עצירה קשיחה.</li>
+      <li><b>חלופה:</b> לקוח שמביא מפתח משלו (Anthropic או OpenAI) משלם על ה-AI ישירות לספק, ואתה גובה רק על התוכנה. גם זה כבר נתמך.</li>
+    </ul>
+  </div>
+
+  <div class="box">
+    <h3>שליטה בעלויות מהיום הראשון</h3>
+    <ol>
+      <li><b>התראת תקציב בחשבון</b> (שלב 3), מעודכנת בכל מעבר שלב.</li>
+      <li><b>תגיות עלות.</b> הפעל את התגיות <code>app</code> ו-<code>env</code> ב-Cost allocation tags, כדי לראות עלות לפי סביבה.</li>
+      <li><b>בדיקה שבועית של Cost Explorer</b> לפי שירות. השורות שמפתיעות בדרך כלל: NAT Gateway, CloudWatch Logs ו-Bedrock.</li>
+      <li><b>כיבוי מה שלא בשימוש.</b> שרת הדמו בלילה, סביבת dev בין סבבי בדיקה (<code>cdk destroy</code>).</li>
+      <li><b>רמת לוגים.</b> <code>LOG_LEVEL=info</code> ב-production. רמת debug מכפילה את חשבון הלוגים.</li>
+    </ol>
+  </div>
+
+  <div class="box">
+    <h3>הוזלות כשהשימוש יציב (אחרי ההשקה)</h3>
+    <ul>
+      <li><b>מעבר ל-Arm (Graviton).</b> Fargate זול בכ-20% על Arm. דורש לבנות את התמונות ל-arm64 ולשנות את <code>cpuArchitecture</code> ב-<code>config.ts</code>. לא נבדק.</li>
+      <li><b>Savings Plans ו-Reserved Instances.</b> התחייבות לשנה מוזילה את Fargate ואת RDS בעשרות אחוזים. רק אחרי שלושה חודשים של שימוש יציב.</li>
+      <li><b>מודל זול למשימות פשוטות.</b> סיכומים וסיווגים לא צריכים את המודל היקר. אפשר להגדיר מודל לכל סוכן.</li>
+      <li><b>VPC endpoints</b> במקום תעבורה דרך NAT, כשהנפח גדל.</li>
+    </ul>
+  </div>
+</section>
+<section class="section" id="part-g">
+  <h2>תפעול שוטף ומחיקה</h2>
+  <p>רלוונטי לסביבות ה-CDK (חזרה גנרלית, staging ו-production).</p>
+
+  <article class="step" id="step-21">
+    <div class="head"><span class="num">21</span><h3>על מה להסתכל: עלויות ובריאות</h3><span class="tag free">חינם</span></div>
+    <div class="tablewrap"><table>
+      <tr><th>איפה</th><th>מה</th></tr>
+      <tr><td>Billing, תחת Cost Explorer (להפעיל פעם אחת, הנתונים מופיעים אחרי כיממה)</td><td>עלות יומית לפי שירות. לחפש: NAT Gateway, RDS, ElastiCache, ELB, EC2-Other, Bedrock, CloudWatch</td></tr>
+      <tr><td>Billing, תחת Cost allocation tags</td><td>להפעיל את התגיות <code>app</code> ו-<code>env</code> כדי לראות עלות לפי סביבה</td></tr>
+      <tr><td>מיילים מ-Budgets</td><td>התראות ב-50%, 80% ו-100%, וכן תחזית</td></tr>
+      <tr><td>דשבורד CloudWatch בשם <code>hilatech-dev</code> ומיילי ההתראות</td><td>בריאות המערכת</td></tr>
+      <tr><td>באפליקציה: Settings, תחת AI usage</td><td>שימוש בטוקנים. הערכת עלות דורשת <code>AI_PRICING_JSON</code></td></tr>
+      <tr><td>Service Quotas, תחת Amazon Bedrock</td><td>מרווח לפני throttling</td></tr>
+    </table></div>
+    <p>הפריטים שמחויבים גם כשאין שימוש: NAT gateway, RDS, ElastiCache, Load Balancer ומשימות Fargate. הנוסחאות נמצאות ב-<code>docs/operations/cost-model.md</code>. שתי דרכים לחסוך: להשהות את הקונטיינרים עם <code>-c pauseServices=true</code>, או למחוק הכול (שלב 23) ולהקים מחדש כשצריך.</p>
+  </article>
+
+  <article class="step" id="step-22">
+    <div class="head"><span class="num">22</span><h3>פקודות ליום-יום</h3><span class="tag free">חינם</span></div>
+    <p>פריסת גרסה חדשה, חזרה לגרסה קודמת, הפעלה מחדש אחרי שינוי סוד, שינוי גודל ודיבוג המסד: <code>docs/operations/runbooks.md</code>. גיבוי ושחזור: <code>docs/operations/backup-recovery.md</code>. יעדי שירות: <code>docs/operations/slos.md</code>.</p>
+  </article>
+
+  <article class="step" id="step-23">
+    <div class="head"><span class="num">23</span><h3>מחיקת הכול</h3><span class="tag free">עוצר את החיוב</span></div>
+    <p>סביבת dev בנויה למחיקה: הדליים ומאגרי ה-ECR מתרוקנים אוטומטית, והמסד נמחק <b>בלי snapshot אחרון</b>. ייצא נתונים קודם אם אתה צריך אותם.</p>
+    <pre>cd infra/cdk
+export AWS_PROFILE=hilatech-dev AWS_REGION=&lt;REGION&gt; ENV=dev
+npx cdk destroy HilaTech-$ENV-Ops HilaTech-$ENV-App HilaTech-$ENV-Data HilaTech-$ENV-Registry HilaTech-$ENV-Network \
+  -c env=$ENV --force</pre>
+    <p>אחר כך נקה את מה ש-CloudFormation משאיר בכוונה:</p>
+    <pre># Secrets Manager keeps deleted secrets for 30 days, which blocks re-creating the same names:
+for s in $(aws secretsmanager list-secrets --include-planned-deletion --region $AWS_REGION \
+    --query "SecretList[?starts_with(Name, 'hilatech/${ENV}/')].Name" --output text); do
+  aws secretsmanager delete-secret --secret-id "$s" --force-delete-without-recovery --region $AWS_REGION
+done
+# Anything tagged for this app still alive? (should be empty)
+aws resourcegroupstaggingapi get-resources --tag-filters Key=app,Values=hilatech Key=env,Values=$ENV \
+  --region $AWS_REGION --query 'ResourceTagMappingList[].ResourceARN' --output text</pre>
+    <p>מחק גם את תעודת ה-ACM ואת רשומות ה-DNS אם לא תשתמש בהן שוב. התקציב ברמת החשבון ו-<code>CDKToolkit</code> יכולים להישאר.</p>
+    <div class="note wrong"><b>מה יכול להשתבש</b><code>DELETE_FAILED</code> על ה-VPC בגלל ממשקי רשת שנשארו: חכה כמה דקות ונסה שוב. <b>בדוק למחרת ב-Cost Explorer שהעלות היומית ירדה לאפס בערך.</b> NAT gateway או RDS שנשכחו הם ההפתעה הקלאסית.</div>
+  </article>
+</section>
+
+<section class="section" id="decisions">
+  <h2>החלטות שמחכות לך</h2>
+  <div class="box">
+    <ol>
+      <li><b><code>AI_BEDROCK_ENABLED</code> לכל סביבה.</b> הקריאות ל-Bedrock נעשות בזהות ה-AWS של השרת, כלומר כל השימוש של כל הלקוחות מחויב בחשבון שלך. אל תפעיל בסביבה משותפת בלי מנגנון חיוב ללקוחות.</li>
+      <li>אזור ומזהי מודלים (שלבים 7 עד 8).</li>
+      <li>דומיין ותעודת HTTPS.</li>
+      <li>סכומי תקציב אמיתיים. הערכים בקוד (100, 300 ו-1,000 דולר) הם דוגמאות.</li>
+      <li>האם לבנות CloudFront. את SES מחברים כבר בפיילוט (שלב פ2).</li>
+      <li>האם להוסיף סיבוב סודות אוטומטי.</li>
+      <li>מתי לחבר שליחת מיילים אמיתית, ואז להפעיל <code>REQUIRE_EMAIL_VERIFICATION=true</code>.</li>
+      <li>מעבר ל-<code>verify-full</code> עם תעודת ה-CA של RDS.</li>
+    </ol>
+  </div>
+  <div class="box warn">
+    <h3>מה לא נבדק</h3>
+    <ul>
+      <li>בקשות ותשובות מול Bedrock החי, מזהי מודלים וזמינות לפי אזור.</li>
+      <li>pgvector על RDS עם PostgreSQL 16.</li>
+      <li>הרצת התמונות ב-ECS ובדיקות הבריאות שם.</li>
+      <li>שרת הדמו על EC2: התפקיד, ה-hop limit, GHCR והנפקת התעודה של Caddy מול דומיין אמיתי. פריסת ה-Compose עצמה נבדקת ב-CI.</li>
+      <li>גיבוי ושחזור של השרת היחיד, שליחת מיילים דרך SES, והעברת נתונים מהשרת היחיד ל-RDS.</li>
+      <li>אימות ל-ElastiCache, ושימוש בדלי S3 דרך תפקיד המשימה.</li>
+      <li>תפקיד ה-OIDC ל-GitHub וה-workflow של הפריסה.</li>
+      <li>AgentCore לא נבנה. הוא מתועד כמתאם אופציונלי בלבד.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="section" id="reference">
+  <h2>קיצורים</h2>
+  <div class="tablewrap"><table>
+    <tr><th>אני רוצה</th><th>פקודה או מקום</th></tr>
+    <tr><td>להתחבר מה-CLI</td><td><code>aws sso login --profile hilatech-dev</code></td></tr>
+    <tr><td>לראות מה ישתנה</td><td><code>cd infra/cdk &amp;&amp; npx cdk diff &lt;stack&gt; -c env=dev</code></td></tr>
+    <tr><td>לבדוק את התשתית בלי AWS</td><td><code>cd infra/cdk &amp;&amp; npm run validate &amp;&amp; npm test</code></td></tr>
+    <tr><td>להשהות את הקונטיינרים</td><td><code>cdk deploy HilaTech-dev-App ... -c pauseServices=true</code></td></tr>
+    <tr><td>לקרוא סוד</td><td><code>aws secretsmanager get-secret-value --secret-id hilatech/dev/&lt;name&gt;</code></td></tr>
+    <tr><td>לעקוב אחרי לוגים</td><td><code>aws logs tail /hilatech/dev/api --since 30m --follow</code></td></tr>
+    <tr><td>לבדוק גישה ל-Bedrock</td><td>שלבים 7 עד 8</td></tr>
+    <tr><td>למחוק את dev</td><td>שלב 23</td></tr>
+    <tr><td>לוגים בשרת הדמו</td><td><code>docker compose -f docker-compose.prod.yml logs -f api</code></td></tr>
+    <tr><td>גיבוי מיידי בשרת הדמו</td><td><code>/opt/hilatech/backup.sh</code></td></tr>
+  </table></div>
+  <p>הגדרות גודל, מספר NAT, WAF, גיבוי ותקציב: <code>infra/cdk/lib/config.ts</code>. דגלי CDK: <code>env</code>, <code>certificateArn</code>, <code>domainName</code>, <code>alarmEmail</code>, <code>imageTag</code>, <code>pauseServices</code>.</p>
+</section>
+</main>
+
+<script>
+(function () {
+  var KEY = 'hilatech-aws-guide-done';
+  var done = {};
+  try { done = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { done = {}; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (e) {} }
+  var steps = document.querySelectorAll('.step');
+  var progress = document.getElementById('progress');
+  function refresh() {
+    var n = 0;
+    steps.forEach(function (s) { var on = !!done[s.id]; s.classList.toggle('done', on); if (on) n++; });
+    progress.textContent = 'סומנו ' + n + ' מתוך ' + steps.length + ' שלבים. הסימון נשמר בדפדפן הזה בלבד.';
+  }
+  steps.forEach(function (s) {
+    var label = document.createElement('label');
+    label.className = 'check';
+    var box = document.createElement('input');
+    box.type = 'checkbox'; box.id = 'done-' + s.id; box.checked = !!done[s.id];
+    box.addEventListener('change', function () { done[s.id] = box.checked; save(); refresh(); });
+    label.appendChild(box); label.appendChild(document.createTextNode('בוצע'));
+    s.querySelector('.head').appendChild(label);
+  });
+  document.querySelectorAll('pre').forEach(function (pre) {
+    var wrap = document.createElement('div'); wrap.className = 'codewrap';
+    pre.parentNode.insertBefore(wrap, pre); wrap.appendChild(pre);
+    var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'copy'; btn.textContent = 'העתקה';
+    btn.addEventListener('click', function () {
+      var text = pre.textContent;
+      var ok = function () { btn.textContent = 'הועתק'; setTimeout(function () { btn.textContent = 'העתקה'; }, 1500); };
+      var fail = function () { btn.textContent = 'סמן והעתק ידנית'; setTimeout(function () { btn.textContent = 'העתקה'; }, 2500); };
+      try { navigator.clipboard.writeText(text).then(ok, fail); } catch (e) { fail(); }
+    });
+    wrap.appendChild(btn);
+  });
+  refresh();
+})();
+</script>
+</body>
+</html>

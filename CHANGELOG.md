@@ -12,10 +12,15 @@ All notable changes to this project are documented here. Format: Keep a Changelo
 - Agent evaluation datasets: `/evaluations` API, `evaluation_run` worker task, Evaluations pages (migration `20261111234833_evaluations`).
 - CI builds the three Docker images, applies migrations from the API image and smoke-tests the running containers.
 
+### Documentation
+
+- `docs/operations/aws-growth-guide.he.html`: staged Hebrew guide (preparation, demo on a single server, pilot, launch on the managed stack, scale) with cost estimates per stage.
+
 ### Fixed (deployment)
 
 - The ECS migrate task pointed at files the API image did not contain; the image now ships a migration bundle in `/app/migrate`.
 - The API syncs the permission catalog on start; a fresh environment no longer needs a seed step.
+- Single-host deployment (`docker-compose.prod.yml`): migrate service fixed, Caddy receives `APP_DOMAIN`, shared uploads volume, `IMAGE_REPOSITORY` (lowercase); CI now brings this stack up and checks it.
 
 ### Fixed
 
