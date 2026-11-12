@@ -1,5 +1,5 @@
 # Production-style compose template (single host): the demo / early-pilot deployment.
-# Images come from GHCR via .github/workflows/deploy.yml. GITHUB_REPOSITORY must be lowercase (owner/repo).
+# Images come from GHCR via .github/workflows/deploy.yml. IMAGE_REPOSITORY is the lowercase owner/repo.
 # Copy next to a production .env (never commit it) and run:
 #   docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
 name: hilatech-ai-assistant
@@ -42,7 +42,7 @@ services:
       retries: 10
 
   migrate:
-    image: ghcr.io/${GITHUB_REPOSITORY}/api:${IMAGE_TAG:-latest}
+    image: ghcr.io/${IMAGE_REPOSITORY:?set IMAGE_REPOSITORY (lowercase owner/repo)}/api:${IMAGE_TAG:-latest}
     # The API image carries a migration bundle in /app/migrate (see infrastructure/docker/api.Dockerfile).
     working_dir: /app/migrate
     command: ['node', 'node_modules/prisma/build/index.js', 'migrate', 'deploy']
@@ -54,7 +54,7 @@ services:
     restart: 'no'
 
   api:
-    image: ghcr.io/${GITHUB_REPOSITORY}/api:${IMAGE_TAG:-latest}
+    image: ghcr.io/${IMAGE_REPOSITORY:?set IMAGE_REPOSITORY (lowercase owner/repo)}/api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: .env
     environment:
@@ -74,7 +74,7 @@ services:
       retries: 10
 
   workers:
-    image: ghcr.io/${GITHUB_REPOSITORY}/workers:${IMAGE_TAG:-latest}
+    image: ghcr.io/${IMAGE_REPOSITORY:?set IMAGE_REPOSITORY (lowercase owner/repo)}/workers:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: .env
     environment:
@@ -89,7 +89,7 @@ services:
         condition: service_healthy
 
   web:
-    image: ghcr.io/${GITHUB_REPOSITORY}/web:${IMAGE_TAG:-latest}
+    image: ghcr.io/${IMAGE_REPOSITORY:?set IMAGE_REPOSITORY (lowercase owner/repo)}/web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       PORT: 3000

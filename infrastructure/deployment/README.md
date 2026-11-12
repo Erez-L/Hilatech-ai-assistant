@@ -6,7 +6,7 @@ except Postgres and Redis).
 1. Create `/opt/hilatech/.env` from `.env.example` with production values: strong `JWT_*` secrets,
    `COOKIE_SECURE=true`, `CORS_ORIGINS=https://app.example.com`, `APP_URL`, `API_URL`, SMTP settings,
    `CREDENTIALS_ENCRYPTION_KEY`, provider API keys (optional).
-2. Copy `docker-compose.prod.yml` and `Caddyfile` next to it; set `GITHUB_REPOSITORY`, `IMAGE_TAG`,
+2. Copy `docker-compose.prod.yml` and `Caddyfile` next to it; set `IMAGE_REPOSITORY` (the GitHub `owner/repo` in lowercase), `IMAGE_TAG`,
    `APP_DOMAIN`, `POSTGRES_PASSWORD`, `DATABASE_URL` in `.env`.
 3. `docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d`.
    The `migrate` one-shot service runs `prisma migrate deploy` before the API starts.
