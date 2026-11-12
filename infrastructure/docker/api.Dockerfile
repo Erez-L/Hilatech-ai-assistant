@@ -24,7 +24,9 @@ COPY apps/api ./apps/api
 ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
 RUN pnpm --filter @hilatech/database generate \
  && pnpm --filter @hilatech/api... build \
- && pnpm --filter @hilatech/api deploy --legacy --prod /out
+ && pnpm --filter @hilatech/api deploy --legacy --prod /out \
+ # Migration bundle (Prisma CLI + schema + migrations + prisma.config.ts) for the one-off migrate task.
+ && pnpm --filter @hilatech/database deploy --legacy /out-migrate
 
 FROM node:22-bookworm-slim AS runtime
 ENV NODE_ENV=production
@@ -33,6 +35,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-cert
 WORKDIR /app
 COPY --from=build --chown=app:app /out ./
 COPY --from=build --chown=app:app /repo/packages/database/prisma ./prisma
+# `cd /app/migrate && node node_modules/prisma/build/index.js migrate deploy` applies pending migrations.
+COPY --from=build --chown=app:app /out-migrate ./migrate
 USER app
 EXPOSE 4000
 CMD ["node", "dist/main.js"]

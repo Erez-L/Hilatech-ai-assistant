@@ -1,3 +1,4 @@
+import { ALL_PERMISSIONS } from '@hilatech/contracts';
 import { type PrismaClient, createPrismaClient } from '@hilatech/database';
 import { Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
 
@@ -21,6 +22,19 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit(): Promise<void> {
     await this.client.$connect();
+    await this.syncPermissionCatalog();
+  }
+
+  /**
+   * Keeps the `Permission` catalog equal to the keys in `@hilatech/contracts` on every start, so a
+   * deployed environment needs no separate seed step (and picks up keys added by a new release).
+   * Idempotent and safe with several API instances starting together. Never removes rows.
+   */
+  private async syncPermissionCatalog(): Promise<void> {
+    await this.client.permission.createMany({
+      data: ALL_PERMISSIONS.map((key) => ({ key, group: key.split(':')[0] ?? 'misc' })),
+      skipDuplicates: true,
+    });
   }
 
   async onModuleDestroy(): Promise<void> {

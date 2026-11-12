@@ -352,14 +352,9 @@ export class AppStack extends cdk.Stack {
         streamPrefix: 'migrate',
         logGroup: this.logGroups.migrate,
       }),
-      command: [
-        'node',
-        'node_modules/prisma/build/index.js',
-        'migrate',
-        'deploy',
-        '--config',
-        'node_modules/@hilatech/database/prisma.config.ts',
-      ],
+      // The API image carries a migration bundle in /app/migrate (see infrastructure/docker/api.Dockerfile).
+      workingDirectory: '/app/migrate',
+      command: ['node', 'node_modules/prisma/build/index.js', 'migrate', 'deploy'],
       environment: { NODE_ENV: 'production' },
       secrets: { DATABASE_URL: secret(data.databaseUrlSecret) },
     });

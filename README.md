@@ -52,14 +52,18 @@ pnpm dev
 
 Full instructions: [docs/development/setup.md](docs/development/setup.md).
 
-## Current status (2026-11-10)
+## Current status (2026-11-12)
 
-Built and tested: authentication and multi-tenancy, roles/permissions, CRM (contacts, leads, conversations), notifications,
-AI assistant and agents, knowledge base with RAG, workflows and webhooks, integration framework (REST, n8n), analytics,
-billing readiness (plans, entitlements, AI budget), audit log. **AI behaviour has only been verified with the mock provider**; no
-live LLM, SMTP, n8n, WhatsApp, payment or AWS call has ever been made, and Docker images and the CDK stacks have never been built or deployed.
-Not built: customer-facing channels, deals/tasks/Kanban, CSV import/export, Hebrew/RTL, payments, MFA, evaluation datasets.
-Details: [Feature matrix](docs/product/feature-matrix.md) · [Gap analysis](docs/development/gap-analysis.md) · [Task status](docs/development/task-status.md).
+Built and tested: authentication and multi-tenancy, roles/permissions, CRM (contacts, companies, leads, deals with pipelines and
+a Kanban board, tasks with reminders, conversations), CSV import/export, notifications, AI assistant and agents, agent evaluation
+datasets, knowledge base with RAG, workflows and webhooks, integration framework (REST, n8n), analytics, billing readiness (plans,
+entitlements, AI budget with a hard stop), audit log, Hebrew/RTL and English UI and emails. GitHub Actions CI is green (lint,
+typecheck, unit, integration, dependency audit, Docker image builds).
+**AI behaviour has only been verified with the mock provider**; no live LLM, SMTP, n8n, WhatsApp, payment or AWS call has ever been
+made. The Docker images build in CI but have never been run as containers, and the CDK stacks have never been deployed.
+Not built: customer-facing channels (chat widget, inbound email, WhatsApp), payments, MFA/SSO, a drag-and-drop workflow canvas,
+an agent-teams UI, model-graded evaluation scoring.
+Details: [Final delivery report](docs/development/final-delivery-report.md) · [Feature matrix](docs/product/feature-matrix.md) · [Gap analysis](docs/development/gap-analysis.md) · [Task status](docs/development/task-status.md).
 
 ## Documentation
 

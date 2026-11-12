@@ -96,11 +96,35 @@ jobs:
         run: pnpm audit --audit-level high --prod
 
   docker:
-    name: Docker build validation
+    name: Docker build and container smoke test
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     needs: [quality]
     if: github.event_name == 'push'
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hilatech_smoke
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      SMOKE_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hilatech_smoke?schema=public
+      SMOKE_REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -110,24 +134,78 @@ jobs:
           context: .
           file: infrastructure/docker/api.Dockerfile
           push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          load: true
+          tags: hilatech-api:ci
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
       - name: Build workers image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: infrastructure/docker/workers.Dockerfile
           push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          load: true
+          tags: hilatech-workers:ci
+          cache-from: type=gha,scope=workers
+          cache-to: type=gha,mode=max,scope=workers
       - name: Build web image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: infrastructure/docker/web.Dockerfile
           push: false
+          load: true
+          tags: hilatech-web:ci
           build-args: |
             NEXT_PUBLIC_API_URL=http://localhost:4000
             NEXT_PUBLIC_APP_URL=http://localhost:3000
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+      # The same command the ECS migrate task runs (infra/cdk/lib/stacks/app-stack.ts).
+      - name: Apply migrations from the API image
+        run: |
+          docker run --rm --network host -w /app/migrate \
+            -e DATABASE_URL="$SMOKE_DATABASE_URL" \
+            hilatech-api:ci node node_modules/prisma/build/index.js migrate deploy
+
+      - name: Start the containers (production mode)
+        run: |
+          docker run -d --name api --network host \
+            -e NODE_ENV=production -e API_PORT=4000 \
+            -e DATABASE_URL="$SMOKE_DATABASE_URL" -e REDIS_URL="$SMOKE_REDIS_URL" \
+            -e JWT_ACCESS_SECRET=ci-smoke-access-secret-0123456789abcdef0123 \
+            -e JWT_REFRESH_SECRET=ci-smoke-refresh-secret-0123456789abcdef012 \
+            -e CREDENTIALS_ENCRYPTION_KEY=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY= \
+            -e COOKIE_SECURE=true -e APP_URL=http://localhost:3000 -e API_URL=http://localhost:4000 \
+            -e CORS_ORIGINS=http://localhost:3000 \
+            hilatech-api:ci
+          docker run -d --name workers --network host \
+            -e NODE_ENV=production \
+            -e DATABASE_URL="$SMOKE_DATABASE_URL" -e REDIS_URL="$SMOKE_REDIS_URL" \
+            -e CREDENTIALS_ENCRYPTION_KEY=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY= \
+            -e APP_URL=http://localhost:3000 \
+            hilatech-workers:ci
+          docker run -d --name web --network host hilatech-web:ci
+
+      - name: Wait for the services and exercise the API
+        run: |
+          wait_for() { for i in $(seq 1 60); do curl -fsS "$1" >/dev/null 2>&1 && return 0; sleep 2; done; echo "timeout waiting for $1"; return 1; }
+          wait_for http://localhost:4000/api/v1/health/ready
+          wait_for http://localhost:4100/health
+          wait_for http://localhost:3000/login
+          curl -fsS http://localhost:4000/api/v1/health/ready
+          # A real write path: register a user and create an organization (needs the permission catalog).
+          REGISTER=$(curl -fsS -X POST http://localhost:4000/api/v1/auth/register \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"smoke@example.test","password":"Smoke-Passw0rd-Strong","firstName":"Smoke","lastName":"Test"}')
+          TOKEN=$(echo "$REGISTER" | python3 -c 'import json,sys; print(json.load(sys.stdin)["data"]["accessToken"])')
+          curl -fsS -X POST http://localhost:4000/api/v1/organizations \
+            -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+            -d '{"name":"Smoke Org"}' | python3 -c 'import json,sys; d=json.load(sys.stdin)["data"]; assert d["name"]=="Smoke Org", d; print("organization", d["id"])'
+          curl -fsSI http://localhost:3000/login | grep -i '^content-security-policy'
+
+      - name: Container logs
+        if: always()
+        run: |
+          for c in api workers web; do echo "::group::$c"; docker logs --tail 80 "$c" 2>&1 || true; echo "::endgroup::"; done

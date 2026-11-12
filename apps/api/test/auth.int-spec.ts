@@ -453,4 +453,13 @@ describe('Auth journey', () => {
       expect(reset!.data.locale).toBe('he');
     });
   });
+  it('restores missing permission catalog rows when the API starts (no separate seed step)', async () => {
+    await ctx.prisma.client.permission.deleteMany({ where: { key: 'leads:read' } });
+    const second = await createTestApp();
+    try {
+      expect(await second.prisma.client.permission.count({ where: { key: 'leads:read' } })).toBe(1);
+    } finally {
+      await second.close();
+    }
+  });
 });
