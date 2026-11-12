@@ -385,7 +385,8 @@ _Expected:_ `exit: 0` and the log listing the applied migrations (including `202
 _Can go wrong (likely candidates, none verified yet):_
 
 - `extension "vector" is not available` -> pgvector missing on that RDS PostgreSQL minor; choose a newer minor in `data-stack.ts` and redeploy Data (it will update/replace per CloudFormation rules - on a new dev DB that is acceptable).
-- `Cannot find module .../prisma.config.ts` or `prisma: not found` -> the command path in the migrate task (copied from `docker-compose.prod.yml`) does not match the API image layout; inspect the image (`docker run --rm --entrypoint sh <image> -c 'ls node_modules/prisma/build node_modules/@hilatech/database'`) and adjust the `command` in `lib/stacks/app-stack.ts`.
+- `Cannot find module` / `prisma: not found` -> the image is older than 2026-11-12. The migrate task runs `node node_modules/prisma/build/index.js migrate deploy` in `/app/migrate`, a bundle that `infrastructure/docker/api.Dockerfile` now builds into the API image; CI runs exactly this command from the built image against PostgreSQL on every push. Rebuild and push the API image.
+- `Failed to fetch ... binaries.prisma.sh` -> the task has no internet egress (the Prisma schema engine is fetched on first use if it was not baked in at build time): check the NAT gateway and the `MigrateSg` egress rule.
 - `self-signed certificate in certificate chain` / SSL errors -> the `sslmode=no-verify` DATABASE_URL form is not honoured by the driver; see "Known unverified points" in `aws-architecture.md`.
 - Task cannot start / `ResourceInitializationError` -> it could not pull the image or read secrets: check NAT gateway exists, `credentials-encryption-key` is set (not needed by migrate, but others are), and the image tag exists in ECR.
 - Timeout connecting to the DB -> security group rules (should allow `MigrateSg`->`DbSg:5432`).
@@ -437,11 +438,9 @@ Then in the browser at `https://$DOMAIN`:
 3. Send a message in the **Assistant**; upload a small document to a knowledge base and search it (exercises S3, workers, Redis, embeddings).
 4. CloudWatch -> Dashboards -> `hilatech-dev`: traffic should appear. Check no alarm is firing.
 
-**Known open item - permission catalog seeding:** the local setup runs `pnpm db:seed` which upserts the `Permission` catalog. The production API image
-contains no seed script and the compose-based production flow does not run it either. Check whether registration/roles work without it;
-if you see permission/role errors, run the seed once from your laptop through a port-forward (runbooks section 9), with
-`DATABASE_URL=postgresql://hilatech:<password>@localhost:5433/hilatech?schema=public&sslmode=no-verify pnpm db:seed` (no `SEED_DEMO`).
-Never set `SEED_DEMO=true` against a shared environment.
+**Permission catalog:** no seed step is needed. Since 2026-11-12 the API upserts the `Permission` catalog from `@hilatech/contracts` every time it starts (verified by the CI container smoke test, which registers a user and creates an organization on a freshly migrated database). Never run the demo seed (`SEED_DEMO=true`) against a shared environment.
+
+**Email:** the stack sets `EMAIL_DRIVER=log`, so verification, reset and invitation emails are only written to the worker log. Keep `REQUIRE_EMAIL_VERIFICATION=false` (the default) until SMTP/SES is wired; with it on and no delivery, new users cannot get past the verification screen.
 
 _If everything above works you have a functioning dev environment._ Leave it running only as long as you need it (cost) - see step 23.
 

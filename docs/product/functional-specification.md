@@ -26,16 +26,16 @@ status per feature: [feature-matrix.md](./feature-matrix.md).
 
 ## 2. Identity and access
 
-| Capability         | Behaviour and rules                                                                                                                                                                                               |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Register           | Email (lower-cased, unique) + password (≥ 10 chars, upper, lower, digit; ≤ 128). Optional `invitationToken` joins that organization. Sets refresh cookie, enqueues `verify_email` (token TTL 24 h)                |
-| Login              | Same `INVALID_CREDENTIALS` for unknown email and wrong password. Argon2id verification. Audited success and failure                                                                                               |
-| Tokens             | Access JWT 15 min (memory only in the browser). Refresh: opaque, `httpOnly; Lax`, path `/api/v1/auth`, 30 days, SHA-256 at rest, rotated on use; reuse of a rotated token revokes the whole family and is audited |
-| Password reset     | `forgot-password` always returns 202; token TTL 1 h, single use; reset revokes all sessions                                                                                                                       |
-| Change password    | Requires current password; revokes other sessions                                                                                                                                                                 |
-| Email verification | Single-use token; sets `emailVerifiedAt`. **Not enforced anywhere; no resend endpoint**                                                                                                                           |
-| Sessions           | List own sessions (user agent, IP, last active) and revoke one                                                                                                                                                    |
-| MFA, SSO, API keys | **[not built]**                                                                                                                                                                                                   |
+| Capability         | Behaviour and rules                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Register           | Email (lower-cased, unique) + password (≥ 10 chars, upper, lower, digit; ≤ 128). Optional `invitationToken` joins that organization. Sets refresh cookie, enqueues `verify_email` (token TTL 24 h)                                                                                                                                                                    |
+| Login              | Same `INVALID_CREDENTIALS` for unknown email and wrong password. Argon2id verification. Audited success and failure. After `LOGIN_MAX_FAILED_ATTEMPTS` (10) failures for one email within `LOGIN_LOCKOUT_WINDOW` (15 min) further logins for that email answer `429` until the window ends                                                                            |
+| Tokens             | Access JWT 15 min (memory only in the browser). Refresh: opaque, `httpOnly; Lax`, path `/api/v1/auth`, 30 days, SHA-256 at rest, rotated on use; reuse of a rotated token revokes the whole family and is audited                                                                                                                                                     |
+| Password reset     | `forgot-password` always returns 202; token TTL 1 h, single use; reset revokes all sessions                                                                                                                                                                                                                                                                           |
+| Change password    | Requires current password; revokes other sessions                                                                                                                                                                                                                                                                                                                     |
+| Email verification | Single-use token; sets `emailVerifiedAt`. `POST /auth/resend-verification` (signed in, one email per `EMAIL_VERIFICATION_RESEND_COOLDOWN`). With `REQUIRE_EMAIL_VERIFICATION=true` an unverified account can only reach the session, profile and verification routes; everything else answers `403 EMAIL_NOT_VERIFIED` (off by default: it needs real email delivery) |
+| Sessions           | List own sessions (user agent, IP, last active) and revoke one                                                                                                                                                                                                                                                                                                        |
+| MFA, SSO, API keys | **[not built]**                                                                                                                                                                                                                                                                                                                                                       |
 
 ## 3. Organizations, members, roles, invitations
 
@@ -84,6 +84,16 @@ Channel label (web, email, whatsapp, phone, internal, api), status `open | pendi
 - Assignment needs `conversations:assign`; creating with an initial message stores it as an agent message.
 - **[not built]** channel connectors, inbound email/WhatsApp, AI auto-reply, SLA timers, canned replies.
 
+### Companies, deals, pipelines, tasks, import/export
+
+Added 2026-11-11; the behaviour is specified by the contracts in `packages/contracts/src/{deals,tasks,import-export}.ts` and
+verified by `deals.int-spec`, `tasks.int-spec`, `data-exchange.int-spec` and `security/sales-cross-tenant.int-spec`. In short:
+companies with linked contacts; pipelines with ordered stages (probability, won/lost flags) and one default; deals that move
+between stages with a recorded history and a required reason when lost; a board endpoint with per-stage, per-currency totals and
+a conversion report; tasks with priority, due date, reminder (sent by the workers), assignee and links to a lead, contact, deal
+or conversation; CSV import with column mapping, dry run, duplicate handling and background execution; CSV export honouring the
+list filters.
+
 ### Notifications
 
 Types: `member_joined`, `invitation_received`, `lead_assigned`, `conversation_assigned`, `agent_execution_completed`, `agent_execution_failed`, `document_processed`, `document_failed`, `automation_failed`, `system` (budget alerts are delivered as notifications to billing managers).
@@ -118,6 +128,15 @@ Definition: name, instructions, provider/model, temperature, output cap, allowed
   caller holds the required permission → write/dangerous policy. Retrieved content and tool output are wrapped as data, not instructions.
 - Async runs act with the _triggering user's current_ permissions; automation/schedule runs have no user and only the agent's allow-list.
 - **[not built]** agent teams definition/UI, long-term memory, evaluation datasets, guardrail service.
+
+### Evaluations
+
+A dataset holds up to 50 cases; a case is an input plus 1–10 checks (`contains`, `not_contains`, `equals`, `regex`; text checks
+ignore case and repeated whitespace). A run executes one agent against every case in the workers (one agent execution per case,
+sequentially), stores the answer and each check's result, and reports passed / failed / errored and a pass rate. A case passes
+only when every check passes; an agent execution that does not succeed is an error, not a failed check. Runs can be cancelled, are
+resumable after a worker restart, obey the AI budget hard stop, and one dataset+agent pair can have only one active run.
+Scoring is deterministic only; there is no model-graded evaluation.
 
 ### Prompt templates
 

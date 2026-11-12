@@ -91,6 +91,10 @@ test.describe('knowledge & automation journey', () => {
 
     // --- Automations: workflow from a template -------------------------------------------------
     await page.getByRole('link', { name: /^Automations/ }).click();
+    // Let the first navigation settle before starting the next one (a click during a pending route
+    // transition can be overridden by it).
+    await expect(page).toHaveURL(/\/automations$/, { timeout: 30_000 });
+    await expect(page.getByRole('heading', { name: 'Automations', level: 1 })).toBeVisible();
     await page.getByRole('link', { name: 'Templates', exact: true }).click();
     await expect(page).toHaveURL(/\/automations\/templates$/);
     await page

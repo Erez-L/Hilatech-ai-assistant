@@ -45,7 +45,26 @@ Language selection stores a value only; the interface is English-only and left-t
 | `/contacts/[id]`                        | `contacts:read`; edit `contacts:update`; delete `contacts:delete`; related leads need `leads:read`; add lead `leads:create` | Edit form (read-only notice without `contacts:update`), related leads, related conversations, relationship counts                                                                              | skeleton, error, confirm delete                                                              | `GET/PATCH/DELETE /contacts/:id`, `GET /leads`                                                                                  |
 | `/conversations`, `/conversations/[id]` | `conversations:read`; create `conversations:create`; edit/send `conversations:update`; assign `conversations:assign`        | Two-pane inbox (list with filters, thread with composer), status change, assignee, link to contact/lead dialog, new conversation dialog. Messages are typed by staff; there is no live channel | list skeleton/empty, thread skeleton/error, composer disabled without `conversations:update` | `GET/POST /conversations`, `PATCH /conversations/:id`, `POST /conversations/:id/assign`, `GET/POST /conversations/:id/messages` |
 
-There is no Kanban/board view, import/export, or bulk action on any customer screen.
+Sales and data screens (added 2026-11-11; verified by `sales-journey.spec`):
+
+| Route                           | nav / page permission                                                      | Content                                                                                                                                                                                           |
+| ------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/companies`, `/companies/[id]` | `companies:read`; create/update/delete with the matching `companies:*` key | Searchable table with owner and tag filters; detail with linked contacts (associate, remove), import and export buttons                                                                           |
+| `/deals`                        | `deals:read`; create `deals:create`; move/edit `deals:update`              | Kanban board per pipeline: columns per stage with count and per-currency totals, drag and drop plus a "Move to…" menu (keyboard and touch alternative), lost-reason prompt, list view             |
+| `/deals/[id]`                   | `deals:read`; edit `deals:update`; delete `deals:delete`                   | Details, stage history, notes, tasks panel                                                                                                                                                        |
+| `/deals/pipelines`              | `pipelines:manage`                                                         | Pipelines and their stages (order, probability, won/lost), default pipeline                                                                                                                       |
+| `/tasks`                        | `tasks:read`; create `tasks:create`; assign to others `tasks:assign`       | Filterable task list (status, priority, assignee, due), create/edit dialog with due date and reminder, complete/reopen, bulk actions; the same task panel appears on lead, contact and deal pages |
+| `/imports`                      | `imports:manage`                                                           | Import history and the import wizard: upload CSV, map columns, dry run with row errors and duplicate handling, execute in the background, result summary                                          |
+
+AI evaluation screens (added 2026-11-12; verified by `evaluations-journey.spec`):
+
+| Route                    | nav / page permission                                           | Content                                                                                                                              |
+| ------------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `/evaluations`           | `agents:read`; create `agents:manage`                           | Datasets with case count and last run                                                                                                |
+| `/evaluations/[id]`      | `agents:read`; edit cases `agents:manage`; run `agents:execute` | Cases (name, input, checks) with add/edit/delete, agent picker and "Run evaluation", runs table that refreshes while a run is active |
+| `/evaluations/runs/[id]` | `agents:read`; cancel `agents:execute`                          | Pass rate and counts, one card per case with the agent's answer, each check's result and a link to the agent execution               |
+
+When the API enforces email verification, an unverified user sees a full-page verification gate (resend, re-check, sign out) instead of the app.
 
 ### AI
 

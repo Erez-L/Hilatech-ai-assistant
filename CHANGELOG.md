@@ -3,6 +3,20 @@
 All notable changes to this project are documented here. Format: Keep a Changelog; versioning: SemVer.
 
 ## [Unreleased]
+### Added
+
+- Email-verification enforcement (`REQUIRE_EMAIL_VERIFICATION`) with `POST /auth/resend-verification` and a verification gate in the web app.
+- Per-account login lockout (`LOGIN_MAX_FAILED_ATTEMPTS`, `LOGIN_LOCKOUT_WINDOW`) and a Content-Security-Policy for the web app.
+- Workers re-check the AI budget hard stop before queued agent runs, workflow agent steps, evaluation cases and embeddings.
+- Hebrew emails with right-to-left layout; the web app sends its UI language to the API.
+- Agent evaluation datasets: `/evaluations` API, `evaluation_run` worker task, Evaluations pages (migration `20261111234833_evaluations`).
+- CI builds the three Docker images, applies migrations from the API image and smoke-tests the running containers.
+
+### Fixed (deployment)
+
+- The ECS migrate task pointed at files the API image did not contain; the image now ships a migration bundle in `/app/migrate`.
+- The API syncs the permission catalog on start; a fresh environment no longer needs a seed step.
+
 ### Fixed
 
 - CI: packages are built before the database seed; API and workers integration suites run one after the other (they share a database); the repository is Prettier-clean and load-test result files are ignored by Prettier.
