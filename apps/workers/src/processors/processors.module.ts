@@ -14,6 +14,7 @@ import { AnalyticsProcessor } from './analytics/analytics.processor';
 import {
   EMAIL_DRIVER,
   LogEmailDriver,
+  SesEmailDriver,
   SmtpEmailDriver,
   type EmailDriver,
 } from './email/email-driver';
@@ -43,12 +44,18 @@ const PROCESSOR_CLASSES = [
   providers: [
     LogEmailDriver,
     SmtpEmailDriver,
+    SesEmailDriver,
     DocumentEvents,
     {
       provide: EMAIL_DRIVER,
-      useFactory: (env: WorkersEnv, log: LogEmailDriver, smtp: SmtpEmailDriver): EmailDriver =>
-        env.EMAIL_DRIVER === 'smtp' ? smtp : log,
-      inject: [WORKERS_ENV, LogEmailDriver, SmtpEmailDriver],
+      useFactory: (
+        env: WorkersEnv,
+        log: LogEmailDriver,
+        smtp: SmtpEmailDriver,
+        ses: SesEmailDriver,
+      ): EmailDriver =>
+        env.EMAIL_DRIVER === 'smtp' ? smtp : env.EMAIL_DRIVER === 'ses' ? ses : log,
+      inject: [WORKERS_ENV, LogEmailDriver, SmtpEmailDriver, SesEmailDriver],
     },
     // Automation processors are provided (once) by AutomationModule and resolved through its exports.
     ...PROCESSOR_CLASSES.filter((c) => c !== AutomationProcessor && c !== WebhookDeliveryProcessor),

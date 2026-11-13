@@ -14,6 +14,7 @@ import { safeNextPath } from '@/lib/navigation';
 import { useSession } from '@/stores/session';
 import { AuthCard } from '@/components/auth/auth-card';
 import { PasswordInput } from '@/components/auth/password-input';
+import { SocialSignIn } from '@/components/auth/social-sign-in';
 import { useT } from '@/i18n/provider';
 
 export function RegisterForm() {
@@ -122,55 +123,64 @@ export function RegisterForm() {
           {t('auth.askThePersonWhoInvited')}
         </Alert>
       ) : null}
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
-        {formError ? <Alert tone="danger">{formError}</Alert> : null}
-        <div className="grid gap-5 sm:grid-cols-2">
+      <div className="flex flex-col gap-5">
+        <SocialSignIn
+          next={
+            invitationUsable && inviteToken
+              ? `/invite?token=${encodeURIComponent(inviteToken)}`
+              : null
+          }
+        />
+        <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+          {formError ? <Alert tone="danger">{formError}</Alert> : null}
+          <div className="grid gap-5 sm:grid-cols-2">
+            <FormField
+              id="firstName"
+              label={t('common.firstName')}
+              error={form.formState.errors.firstName?.message}
+              required
+            >
+              <Input autoComplete="given-name" autoFocus {...form.register('firstName')} />
+            </FormField>
+            <FormField
+              id="lastName"
+              label={t('common.lastName')}
+              error={form.formState.errors.lastName?.message}
+              required
+            >
+              <Input autoComplete="family-name" {...form.register('lastName')} />
+            </FormField>
+          </div>
           <FormField
-            id="firstName"
-            label={t('common.firstName')}
-            error={form.formState.errors.firstName?.message}
+            id="email"
+            label={t('auth.workEmail')}
+            error={form.formState.errors.email?.message}
+            description={invitationUsable ? t('auth.theInvitationWasSentTo') : undefined}
             required
           >
-            <Input autoComplete="given-name" autoFocus {...form.register('firstName')} />
+            <Input
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              readOnly={invitationUsable}
+              {...form.register('email')}
+            />
           </FormField>
           <FormField
-            id="lastName"
-            label={t('common.lastName')}
-            error={form.formState.errors.lastName?.message}
+            id="password"
+            label={t('common.password')}
+            description={passwordHint}
+            error={form.formState.errors.password?.message}
             required
           >
-            <Input autoComplete="family-name" {...form.register('lastName')} />
+            <PasswordInput autoComplete="new-password" {...form.register('password')} />
           </FormField>
-        </div>
-        <FormField
-          id="email"
-          label={t('auth.workEmail')}
-          error={form.formState.errors.email?.message}
-          description={invitationUsable ? t('auth.theInvitationWasSentTo') : undefined}
-          required
-        >
-          <Input
-            type="email"
-            autoComplete="email"
-            inputMode="email"
-            readOnly={invitationUsable}
-            {...form.register('email')}
-          />
-        </FormField>
-        <FormField
-          id="password"
-          label={t('common.password')}
-          description={passwordHint}
-          error={form.formState.errors.password?.message}
-          required
-        >
-          <PasswordInput autoComplete="new-password" {...form.register('password')} />
-        </FormField>
-        <Button type="submit" size="lg" loading={form.formState.isSubmitting} className="w-full">
-          {invitationUsable ? t('auth.createAccountAndJoin') : t('common.createAccount')}
-        </Button>
-        <p className="text-center text-xs text-fg-subtle">{t('auth.byContinuingYouAgreeTo')}</p>
-      </form>
+          <Button type="submit" size="lg" loading={form.formState.isSubmitting} className="w-full">
+            {invitationUsable ? t('auth.createAccountAndJoin') : t('common.createAccount')}
+          </Button>
+          <p className="text-center text-xs text-fg-subtle">{t('auth.byContinuingYouAgreeTo')}</p>
+        </form>
+      </div>
     </AuthCard>
   );
 }

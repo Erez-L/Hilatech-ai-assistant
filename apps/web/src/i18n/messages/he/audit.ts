@@ -11,6 +11,7 @@ export const audit = {
   'audit.action.ai.config_updated': 'עדכן את הגדרות ה-AI',
   'audit.action.auth.email_verified': 'אימת כתובת אימייל',
   'audit.action.auth.email_verification_resent': 'ביקש אימייל אימות חדש',
+  'audit.action.auth.identity_linked': 'קישר חשבון של ספק כניסה חיצוני',
   'audit.action.auth.login': 'התחבר',
   'audit.action.auth.login_failed': 'ניסיון התחברות כושל',
   'audit.action.auth.logout': 'התנתק',

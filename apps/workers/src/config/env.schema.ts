@@ -29,7 +29,7 @@ export const envSchema = z
 
     APP_URL: z.string().url().default('http://localhost:3000'),
 
-    EMAIL_DRIVER: z.enum(['log', 'smtp']).default('log'),
+    EMAIL_DRIVER: z.enum(['log', 'smtp', 'ses']).default('log'),
     EMAIL_FROM: z.string().min(3).default('HilaTech AI Assistant <no-reply@localhost>'),
     SMTP_HOST: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
     SMTP_PORT: z.preprocess(

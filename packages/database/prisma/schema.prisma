@@ -44,6 +44,7 @@ model User {
   refreshTokens           RefreshToken[]
   passwordResetTokens     PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
+  identities              UserIdentity[]
   sentInvitations         Invitation[]             @relation("InvitationInviter")
   auditLogs               AuditLog[]
   notifications           Notification[]
@@ -256,6 +257,30 @@ model EmailVerificationToken {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+}
+
+enum IdentityProvider {
+  google
+  microsoft
+  facebook
+  github
+}
+
+/// A sign-in identity at an external provider ("Continue with Google"), linked to one user.
+model UserIdentity {
+  id             String           @id @default(uuid()) @db.Uuid
+  userId         String           @db.Uuid
+  provider       IdentityProvider
+  /// The provider's stable account id (OIDC `sub`, GitHub/Facebook numeric id) — never the email.
+  providerUserId String           @db.VarChar(255)
+  email          String?          @db.Citext
+  createdAt      DateTime         @default(now())
+  lastLoginAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
   @@index([userId])
 }
 

@@ -87,4 +87,14 @@ export const auth = {
   'auth.iHaveVerified': 'I’ve verified my email',
   'auth.emailStillNotVerified':
     'This address is not verified yet. Open the link in the email first.',
+  'auth.social.continueWith': 'Continue with {provider}',
+  'auth.social.orWithEmail': 'or with email and password',
+  'auth.social.errorCancelled': 'Sign-in was cancelled. You can try again.',
+  'auth.social.errorAccountExists':
+    'An account with this email address already exists. Sign in with your password.',
+  'auth.social.errorEmailMissing':
+    'The provider did not share an email address. You can sign up with email and password.',
+  'auth.social.errorInactive': 'This account is not active.',
+  'auth.social.errorNotConfigured': 'This sign-in method is not available right now.',
+  'auth.social.errorGeneric': 'Sign-in failed. Try again, or sign in with email and password.',
 } as const;

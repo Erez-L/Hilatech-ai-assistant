@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { truncate } from '@hilatech/shared';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import { createTransport, type Transporter } from 'nodemailer';
 import { WORKERS_ENV } from '../../config/config.module';
 import type { WorkersEnv } from '../../config/env.schema';
@@ -22,12 +23,12 @@ export interface OutgoingEmail extends RenderedEmail {
 }
 
 export interface EmailDeliveryResult {
-  driver: 'log' | 'smtp';
+  driver: 'log' | 'smtp' | 'ses';
   messageId: string | null;
 }
 
 export interface EmailDriver {
-  readonly name: 'log' | 'smtp';
+  readonly name: 'log' | 'smtp' | 'ses';
   send(email: OutgoingEmail): Promise<EmailDeliveryResult>;
 }
 
@@ -135,5 +136,48 @@ export class SmtpEmailDriver implements EmailDriver {
       'Email sent via SMTP',
     );
     return { driver: 'smtp', messageId };
+  }
+}
+
+/** The part of the SES client the driver uses (replaceable in tests). */
+export interface SesSender {
+  send(command: SendEmailCommand): Promise<{ MessageId?: string }>;
+}
+
+/**
+ * Amazon SES driver (`EMAIL_DRIVER=ses`): sends through the SES v2 API with the AWS identity of the process
+ * (instance / task role), so no SMTP credentials are stored. The region comes from `AWS_REGION`.
+ */
+@Injectable()
+export class SesEmailDriver implements EmailDriver {
+  readonly name = 'ses' as const;
+  /** Created lazily so that nothing touches AWS unless this driver is the active one. */
+  client?: SesSender;
+
+  constructor(@InjectPinoLogger(SesEmailDriver.name) private readonly logger: PinoLogger) {}
+
+  async send(email: OutgoingEmail): Promise<EmailDeliveryResult> {
+    this.client ??= new SESv2Client({});
+    const result = await this.client.send(
+      new SendEmailCommand({
+        FromEmailAddress: email.from,
+        Destination: { ToAddresses: [email.to] },
+        Content: {
+          Simple: {
+            Subject: { Data: email.subject, Charset: 'UTF-8' },
+            Body: {
+              Text: { Data: email.text, Charset: 'UTF-8' },
+              Html: { Data: email.html, Charset: 'UTF-8' },
+            },
+          },
+        },
+      }),
+    );
+    const messageId = result.MessageId ?? null;
+    this.logger.info(
+      { to: email.to, template: email.template, idempotencyKey: email.idempotencyKey, messageId },
+      'Email sent via Amazon SES',
+    );
+    return { driver: 'ses', messageId };
   }
 }

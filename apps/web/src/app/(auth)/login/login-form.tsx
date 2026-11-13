@@ -13,6 +13,7 @@ import { safeNextPath } from '@/lib/navigation';
 import { useSession } from '@/stores/session';
 import { AuthCard } from '@/components/auth/auth-card';
 import { PasswordInput } from '@/components/auth/password-input';
+import { SocialSignIn, useSocialError } from '@/components/auth/social-sign-in';
 import { useT } from '@/i18n/provider';
 
 export function LoginForm() {
@@ -21,6 +22,7 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get('next'));
   const [formError, setFormError] = React.useState<string | null>(null);
+  const socialError = useSocialError(searchParams.get('oauth_error'));
   const notice = searchParams.get('reset') === '1' ? t('auth.passwordChangedNotice') : null;
 
   const form = useForm<LoginRequest>({
@@ -58,43 +60,46 @@ export function LoginForm() {
         </>
       }
     >
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
-        {notice ? <Alert tone="success">{notice}</Alert> : null}
-        {formError ? <Alert tone="danger">{formError}</Alert> : null}
-        <FormField
-          id="email"
-          label={t('common.email')}
-          error={form.formState.errors.email?.message}
-          required
-        >
-          <Input
-            type="email"
-            autoComplete="email"
-            inputMode="email"
-            autoFocus
-            {...form.register('email')}
-          />
-        </FormField>
-        <FormField
-          id="password"
-          label={t('common.password')}
-          error={form.formState.errors.password?.message}
-          required
-        >
-          <PasswordInput autoComplete="current-password" {...form.register('password')} />
-        </FormField>
-        <div className="-mt-2 flex justify-end">
-          <Link
-            href="/forgot-password"
-            className="text-sm text-fg-muted hover:text-fg hover:underline"
+      <div className="flex flex-col gap-5">
+        <SocialSignIn next={searchParams.get('next') ? next : null} error={socialError} />
+        <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+          {notice ? <Alert tone="success">{notice}</Alert> : null}
+          {formError ? <Alert tone="danger">{formError}</Alert> : null}
+          <FormField
+            id="email"
+            label={t('common.email')}
+            error={form.formState.errors.email?.message}
+            required
           >
-            {t('auth.forgotYourPassword')}
-          </Link>
-        </div>
-        <Button type="submit" size="lg" loading={form.formState.isSubmitting} className="w-full">
-          {t('common.signIn')}
-        </Button>
-      </form>
+            <Input
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              autoFocus
+              {...form.register('email')}
+            />
+          </FormField>
+          <FormField
+            id="password"
+            label={t('common.password')}
+            error={form.formState.errors.password?.message}
+            required
+          >
+            <PasswordInput autoComplete="current-password" {...form.register('password')} />
+          </FormField>
+          <div className="-mt-2 flex justify-end">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-fg-muted hover:text-fg hover:underline"
+            >
+              {t('auth.forgotYourPassword')}
+            </Link>
+          </div>
+          <Button type="submit" size="lg" loading={form.formState.isSubmitting} className="w-full">
+            {t('common.signIn')}
+          </Button>
+        </form>
+      </div>
     </AuthCard>
   );
 }

@@ -30,6 +30,7 @@ import { TenancyService } from '../tenancy/tenancy.service';
 import { toAuthUser } from './auth.mappers';
 import { type AuthResult, type AuthSession } from './auth.types';
 import { LoginThrottleService } from './login-throttle.service';
+import { type OAuthProfile, SocialLoginError } from './oauth/oauth.errors';
 import { TokenService } from './token.service';
 
 const ARGON2_OPTIONS: argon2.HashOptions = {
@@ -143,6 +144,107 @@ export class AuthService {
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
     });
+    return this.issue(user, meta, AuditAction.AUTH_LOGIN);
+  }
+
+  /**
+   * Signs in (or signs up) with an identity from an external provider.
+   *
+   * - Known identity → that user.
+   * - Unknown identity, email matches an existing account → linked only when the provider verified the address.
+   *   If that account never verified its email, its password and sessions are discarded first: whoever created it
+   *   did not prove ownership of the address, so they must not keep a way in.
+   * - Otherwise a new account is created (verified when the provider verified the address).
+   */
+  async socialLogin(profile: OAuthProfile, meta: RequestMeta): Promise<AuthResult> {
+    const identity = await this.prisma.client.userIdentity.findUnique({
+      where: {
+        provider_providerUserId: {
+          provider: profile.provider,
+          providerUserId: profile.providerUserId,
+        },
+      },
+      include: { user: true },
+    });
+
+    let user: User;
+    let created = false;
+    let linked = false;
+    if (identity) {
+      user = identity.user;
+    } else {
+      const email = profile.email?.toLowerCase() ?? null;
+      if (!email || email.length > 254) throw new SocialLoginError('email_missing');
+      const existing = await this.prisma.client.user.findUnique({ where: { email } });
+      if (existing) {
+        if (!profile.emailVerified) throw new SocialLoginError('account_exists');
+        if (!existing.isActive) throw new SocialLoginError('inactive');
+        const takeover = !existing.emailVerifiedAt;
+        const passwordHash = takeover ? await hashPassword(generateOpaqueToken(32)) : null;
+        user = await this.prisma.client.$transaction(async (tx) => {
+          await tx.userIdentity.create({
+            data: {
+              userId: existing.id,
+              provider: profile.provider,
+              providerUserId: profile.providerUserId,
+              email,
+            },
+          });
+          if (!passwordHash) return existing;
+          return tx.user.update({
+            where: { id: existing.id },
+            data: { emailVerifiedAt: new Date(), passwordHash },
+          });
+        });
+        if (takeover) await this.tokens.revokeAllForUser(user.id);
+        linked = true;
+      } else {
+        // Social-only accounts get an unusable random password; "forgot password" lets the owner set a real one.
+        const passwordHash = await hashPassword(generateOpaqueToken(32));
+        const fallbackName = email.split('@')[0] ?? 'User';
+        user = await this.prisma.client.user.create({
+          data: {
+            email,
+            passwordHash,
+            firstName: (profile.firstName ?? fallbackName).slice(0, 80),
+            lastName: (profile.lastName ?? '').slice(0, 80),
+            avatarUrl: profile.avatarUrl,
+            emailVerifiedAt: profile.emailVerified ? new Date() : null,
+            identities: {
+              create: {
+                provider: profile.provider,
+                providerUserId: profile.providerUserId,
+                email,
+              },
+            },
+          },
+        });
+        created = true;
+      }
+    }
+    if (!user.isActive) throw new SocialLoginError('inactive');
+
+    const now = new Date();
+    await this.prisma.client.$transaction([
+      this.prisma.client.user.update({ where: { id: user.id }, data: { lastLoginAt: now } }),
+      this.prisma.client.userIdentity.updateMany({
+        where: { provider: profile.provider, providerUserId: profile.providerUserId },
+        data: { lastLoginAt: now },
+      }),
+    ]);
+
+    if (created || linked) {
+      await this.audit.log({
+        action: created ? AuditAction.AUTH_REGISTER : AuditAction.AUTH_IDENTITY_LINKED,
+        actorUserId: user.id,
+        targetType: 'user',
+        targetId: user.id,
+        metadata: { email: user.email, provider: profile.provider },
+        request: meta,
+      });
+    }
+    if (created && !user.emailVerifiedAt) await this.sendVerificationEmail(user, meta);
+
     return this.issue(user, meta, AuditAction.AUTH_LOGIN);
   }
 

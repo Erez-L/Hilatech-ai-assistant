@@ -15,6 +15,7 @@
     "clean": "rm -rf dist coverage .turbo *.tsbuildinfo"
   },
   "dependencies": {
+    "@aws-sdk/client-sesv2": "3.1165.0",
     "@hilatech/ai-engine": "workspace:*",
     "@hilatech/contracts": "workspace:*",
     "@hilatech/database": "workspace:*",

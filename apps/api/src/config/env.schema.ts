@@ -129,6 +129,17 @@ export const envSchema = z
     EMAIL_VERIFICATION_RESEND_COOLDOWN: durationVar('60s'),
     COOKIE_DOMAIN: optionalString(),
 
+    // Social sign-in ("Continue with Google" …). A provider is offered only when both its id and secret are set.
+    // Redirect URI to register at the provider: <API_URL>/api/v1/auth/oauth/<provider>/callback
+    OAUTH_GOOGLE_CLIENT_ID: optionalString(),
+    OAUTH_GOOGLE_CLIENT_SECRET: optionalString(),
+    OAUTH_MICROSOFT_CLIENT_ID: optionalString(),
+    OAUTH_MICROSOFT_CLIENT_SECRET: optionalString(),
+    OAUTH_FACEBOOK_CLIENT_ID: optionalString(),
+    OAUTH_FACEBOOK_CLIENT_SECRET: optionalString(),
+    OAUTH_GITHUB_CLIENT_ID: optionalString(),
+    OAUTH_GITHUB_CLIENT_SECRET: optionalString(),
+
     // Rate limiting
     RATE_LIMIT_TTL_SECONDS: intVar(60, 1),
     RATE_LIMIT_MAX: intVar(120, 1),
@@ -152,7 +163,10 @@ export const envSchema = z
     ),
 
     // Email
-    EMAIL_DRIVER: z.preprocess((v) => stripInlineComment(v) || 'log', z.enum(['log', 'smtp'])),
+    EMAIL_DRIVER: z.preprocess(
+      (v) => stripInlineComment(v) || 'log',
+      z.enum(['log', 'smtp', 'ses']),
+    ),
     EMAIL_FROM: z.preprocess(
       (v) => stripInlineComment(v) || 'HilaTech AI Assistant <no-reply@localhost>',
       z.string(),

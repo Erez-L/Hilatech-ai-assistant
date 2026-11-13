@@ -74,7 +74,7 @@ export function savedLocaleOf(user: { preferences?: unknown } | null | undefined
  */
 @Injectable()
 export class EmailService {
-  private readonly driver: 'log' | 'smtp';
+  private readonly driver: 'log' | 'smtp' | 'ses';
   private readonly appUrl: string;
 
   constructor(

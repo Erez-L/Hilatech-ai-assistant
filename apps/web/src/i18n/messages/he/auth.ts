@@ -80,4 +80,12 @@ export const auth = {
   'auth.verificationEmailRecentlySent': 'אימייל נשלח לפני רגע. המתינו דקה לפני בקשה נוספת.',
   'auth.iHaveVerified': 'אימתתי את האימייל',
   'auth.emailStillNotVerified': 'הכתובת עדיין לא אומתה. פתחו קודם את הקישור שבאימייל.',
+  'auth.social.continueWith': 'המשך עם {provider}',
+  'auth.social.orWithEmail': 'או עם אימייל וסיסמה',
+  'auth.social.errorCancelled': 'הכניסה בוטלה. אפשר לנסות שוב.',
+  'auth.social.errorAccountExists': 'כבר קיים חשבון עם כתובת האימייל הזו. היכנסו עם הסיסמה שלכם.',
+  'auth.social.errorEmailMissing': 'לא קיבלנו כתובת אימייל מהספק. אפשר להירשם עם אימייל וסיסמה.',
+  'auth.social.errorInactive': 'החשבון הזה אינו פעיל.',
+  'auth.social.errorNotConfigured': 'אמצעי הכניסה הזה אינו זמין כרגע.',
+  'auth.social.errorGeneric': 'הכניסה נכשלה. נסו שוב, או היכנסו עם אימייל וסיסמה.',
 } as const;

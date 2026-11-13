@@ -11,6 +11,7 @@ export const audit = {
   'audit.action.ai.config_updated': 'Updated AI configuration',
   'audit.action.auth.email_verified': 'Verified email',
   'audit.action.auth.email_verification_resent': 'Requested a new verification email',
+  'audit.action.auth.identity_linked': 'Linked an external sign-in account',
   'audit.action.auth.login': 'Signed in',
   'audit.action.auth.login_failed': 'Failed sign-in attempt',
   'audit.action.auth.logout': 'Signed out',

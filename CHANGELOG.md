@@ -11,6 +11,8 @@ All notable changes to this project are documented here. Format: Keep a Changelo
 
 ### Added
 
+- Social sign-in and sign-up: "Continue with Google / Microsoft / Facebook / GitHub" on the login and register pages. A provider is offered only when its `OAUTH_<PROVIDER>_CLIENT_ID` and `_CLIENT_SECRET` are set. An address the provider verified (Google, GitHub) signs in without a second verification and may be linked to an existing account; Microsoft and Facebook addresses are treated as unverified, so they never link to an existing account and a new account still has to confirm its email. Tested with stubbed provider responses only - no provider has been called live yet.
+- Amazon SES email driver (`EMAIL_DRIVER=ses`): sends through the SES API with the server's AWS identity, so no SMTP password is stored.
 - UI polish: pill-style tab bars, tone-coloured empty states and table rows, softer focus ring on inputs.
 - Visual redesign (styling only, no behaviour change): per-area colour tones, dark navigation rail with coloured icon tiles, area icon beside page titles, coloured stat tiles and deal-board columns, larger radii, press/hover/enter motion, coloured toast icons, and rounded option lists for native selects in browsers that support customizable selects.
 
