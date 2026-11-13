@@ -26,7 +26,7 @@ export function EmptyState({
         'flex flex-col items-center justify-center text-center',
         compact
           ? 'gap-2 px-4 py-8'
-          : 'gap-3 rounded-lg border border-dashed border-border bg-surface/50 px-6 py-14',
+          : 'gap-3 rounded-lg border border-dashed border-border-strong bg-surface px-6 py-14',
         className,
       )}
       {...props}
@@ -34,8 +34,8 @@ export function EmptyState({
       {icon ? (
         <div
           className={cn(
-            'flex items-center justify-center rounded-md bg-surface-muted text-fg-muted',
-            compact ? 'size-9 [&_svg]:size-4' : 'size-12 [&_svg]:size-5',
+            'flex items-center justify-center rounded-lg bg-tone-soft text-tone-fg',
+            compact ? 'size-9 [&_svg]:size-4' : 'size-14 animate-rise [&_svg]:size-6',
           )}
           aria-hidden
         >

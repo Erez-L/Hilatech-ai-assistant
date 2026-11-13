@@ -38,7 +38,7 @@ export function SettingsTabs() {
   return (
     <nav
       aria-label={t('settings.settingsSections')}
-      className="flex items-center gap-1 border-b border-border"
+      className="flex w-fit max-w-full items-center gap-1 self-start overflow-x-auto rounded-md bg-surface-muted p-1"
     >
       {visible.map((tab) => {
         const active = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
@@ -48,9 +48,9 @@ export function SettingsTabs() {
             href={tab.href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'relative -mb-px inline-flex h-10 items-center border-b-2 px-3 text-sm font-medium transition-colors',
+              'relative inline-flex h-8 shrink-0 items-center rounded-sm px-3.5 text-sm font-medium transition-colors',
               'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
-              active ? 'border-accent text-fg' : 'border-transparent text-fg-muted hover:text-fg',
+              active ? 'bg-surface font-semibold text-fg shadow-xs' : 'text-fg-muted hover:text-fg',
             )}
           >
             {t(tab.label)}

@@ -5,10 +5,12 @@ All notable changes to this project are documented here. Format: Keep a Changelo
 ## [Unreleased]
 ### Fixed
 
+- Bedrock replies no longer show the model's inline `<thinking>` text (Amazon Nova writes its reasoning into the answer); it is removed in the provider, for streamed and non-streamed replies.
 - The assistant page treated an Amazon Bedrock provider as "AI not configured" because it has no API key; found on the first live deployment.
 
 ### Added
 
+- UI polish: pill-style tab bars, tone-coloured empty states and table rows, softer focus ring on inputs.
 - Visual redesign (styling only, no behaviour change): per-area colour tones, dark navigation rail with coloured icon tiles, area icon beside page titles, coloured stat tiles and deal-board columns, larger radii, press/hover/enter motion, coloured toast icons, and rounded option lists for native selects in browsers that support customizable selects.
 
 - Email-verification enforcement (`REQUIRE_EMAIL_VERIFICATION`) with `POST /auth/resend-verification` and a verification gate in the web app.

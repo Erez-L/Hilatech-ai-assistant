@@ -31,6 +31,7 @@ import type {
   StructuredResult,
   ToolCall,
 } from './types';
+import { ThinkingTagFilter, stripThinkingTags } from './thinking-filter';
 
 const DEFAULT_MAX_TOKENS = 4096;
 const DEFAULT_TIMEOUT_MS = 60_000;
@@ -101,6 +102,7 @@ export class BedrockProvider implements AiProvider {
     }
 
     let textOut = '';
+    const thinking = new ThinkingTagFilter();
     const toolCalls: ToolCall[] = [];
     const partialTools = new Map<number, { id: string; name: string; json: string }>();
     let inputTokens = 0;
@@ -120,8 +122,11 @@ export class BedrockProvider implements AiProvider {
           const index = event.contentBlockDelta.contentBlockIndex ?? 0;
           const delta = event.contentBlockDelta.delta;
           if (delta?.text) {
-            textOut += delta.text;
-            yield { type: 'text_delta', delta: delta.text };
+            const visible = thinking.push(delta.text);
+            if (visible) {
+              textOut += visible;
+              yield { type: 'text_delta', delta: visible };
+            }
           } else if (delta?.toolUse) {
             const partial = partialTools.get(index);
             if (partial) partial.json += delta.toolUse.input ?? '';
@@ -141,6 +146,11 @@ export class BedrockProvider implements AiProvider {
           }
         } else if (event.messageStop) {
           stopReason = event.messageStop.stopReason;
+          const rest = thinking.flush();
+          if (rest) {
+            textOut += rest;
+            yield { type: 'text_delta', delta: rest };
+          }
         } else if (event.metadata?.usage) {
           inputTokens = event.metadata.usage.inputTokens ?? 0;
           outputTokens = event.metadata.usage.outputTokens ?? 0;
@@ -476,7 +486,7 @@ export function fromConverseOutput(
   let textOut = '';
   const toolCalls: ToolCall[] = [];
   for (const block of response.output?.message?.content ?? []) {
-    if (block.text !== undefined) textOut += block.text;
+    if (block.text !== undefined) textOut += stripThinkingTags(block.text);
     else if (block.toolUse) {
       toolCalls.push({
         id: block.toolUse.toolUseId ?? '',

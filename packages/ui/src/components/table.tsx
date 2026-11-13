@@ -21,7 +21,11 @@ export const TableHeader = React.forwardRef<
   React.HTMLAttributes<HTMLTableSectionElement>
 >(function TableHeader({ className, ...props }, ref) {
   return (
-    <thead ref={ref} className={cn('[&_tr]:border-b [&_tr]:border-border', className)} {...props} />
+    <thead
+      ref={ref}
+      className={cn('bg-surface-muted/70 [&_tr]:border-b [&_tr]:border-border', className)}
+      {...props}
+    />
   );
 });
 
@@ -53,7 +57,7 @@ export const TableRow = React.forwardRef<
     <tr
       ref={ref}
       className={cn(
-        'border-b border-border transition-colors hover:bg-surface-muted/60 data-[state=selected]:bg-accent-soft/50',
+        'border-b border-border transition-colors hover:bg-tone-soft/50 data-[state=selected]:bg-tone-soft',
         className,
       )}
       {...props}
@@ -70,7 +74,7 @@ export const TableHead = React.forwardRef<
       ref={ref}
       scope="col"
       className={cn(
-        'h-10 px-3 text-start align-middle text-xs font-medium whitespace-nowrap text-fg-muted first:ps-5 last:pe-5',
+        'h-10 px-3 text-start align-middle text-xs font-semibold whitespace-nowrap text-fg-muted first:ps-5 last:pe-5',
         className,
       )}
       {...props}
@@ -138,7 +142,7 @@ export function SortableHead<K extends string>({
         )}
       >
         {children}
-        <Icon className={cn('size-3.5', active ? 'text-accent' : 'text-fg-subtle')} aria-hidden />
+        <Icon className={cn('size-3.5', active ? 'text-tone' : 'text-fg-subtle')} aria-hidden />
       </button>
     </TableHead>
   );

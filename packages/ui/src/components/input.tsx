@@ -10,7 +10,7 @@ export const inputClassName = cn(
   'placeholder:text-fg-subtle',
   'transition-[border-color,box-shadow] duration-150',
   'hover:border-border-strong',
-  'focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring/40',
+  'focus-visible:border-accent focus-visible:outline-0 focus-visible:ring-4 focus-visible:ring-accent/15',
   'disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-fg-muted',
   'aria-invalid:border-danger aria-invalid:focus-visible:outline-danger/40',
   'file:border-0 file:bg-transparent file:text-sm file:font-medium',
