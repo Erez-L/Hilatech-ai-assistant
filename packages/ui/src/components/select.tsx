@@ -18,8 +18,8 @@ export const SelectTrigger = React.forwardRef<
       ref={ref}
       aria-invalid={invalid || undefined}
       className={cn(
-        'flex h-9 w-full items-center justify-between gap-2 rounded-sm border border-border bg-surface px-3 py-1 text-sm text-fg shadow-xs',
-        'transition-[border-color,box-shadow] duration-150 hover:border-border-strong',
+        'flex h-9 w-full items-center justify-between gap-2 rounded-sm border border-border-control bg-surface px-3 py-1 text-sm text-fg shadow-xs',
+        'transition-[border-color,box-shadow] duration-150 hover:border-fg-muted',
         'focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring/40',
         'disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-fg-muted',
         'data-[placeholder]:text-fg-subtle aria-invalid:border-danger',

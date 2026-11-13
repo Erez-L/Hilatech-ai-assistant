@@ -98,8 +98,8 @@ export const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(functi
   return (
     <div
       className={cn(
-        'flex min-h-9 w-full flex-wrap items-center gap-1.5 rounded-sm border border-border bg-surface px-2 py-1 text-sm shadow-xs',
-        'transition-[border-color,box-shadow] duration-150 hover:border-border-strong',
+        'flex min-h-9 w-full flex-wrap items-center gap-1.5 rounded-sm border border-border-control bg-surface px-2 py-1 text-sm shadow-xs',
+        'transition-[border-color,box-shadow] duration-150 hover:border-fg-muted',
         'focus-within:border-accent focus-within:outline-2 focus-within:outline-offset-0 focus-within:outline-ring/40',
         disabled && 'cursor-not-allowed bg-surface-muted',
         (invalid || aria['aria-invalid']) && 'border-danger',

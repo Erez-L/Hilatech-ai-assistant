@@ -29,6 +29,10 @@ export type {
 } from './components/input';
 export { Label } from './components/label';
 export type { LabelProps } from './components/label';
+export { FilterBar } from './components/filter-bar';
+export type { FilterBarProps } from './components/filter-bar';
+export { FormSection } from './components/form-section';
+export type { FormSectionProps } from './components/form-section';
 export { FormField } from './components/form-field';
 export type { FormFieldProps } from './components/form-field';
 export {

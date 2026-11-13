@@ -21,6 +21,7 @@ export const common = {
   'common.cancel': 'ביטול',
   'common.changePassword': 'שינוי סיסמה',
   'common.channel': 'ערוץ',
+  'common.filters': 'מסננים',
   'common.clear': 'ניקוי',
   'common.clearFilters': 'ניקוי מסננים',
   'common.close': 'סגירה',

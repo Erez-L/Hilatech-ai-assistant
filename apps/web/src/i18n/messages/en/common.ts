@@ -22,6 +22,7 @@ export const common = {
   'common.cancel': 'Cancel',
   'common.changePassword': 'Change password',
   'common.channel': 'Channel',
+  'common.filters': 'Filters',
   'common.clear': 'Clear',
   'common.clearFilters': 'Clear filters',
   'common.close': 'Close',

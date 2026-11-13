@@ -157,8 +157,8 @@ export function Combobox({
             aria-required={aria['aria-required'] || undefined}
             disabled={disabled}
             className={cn(
-              'flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-sm border border-border bg-surface px-3 py-1 text-start text-sm text-fg shadow-xs',
-              'transition-[border-color,box-shadow] duration-150 hover:border-border-strong',
+              'flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-sm border border-border-control bg-surface px-3 py-1 text-start text-sm text-fg shadow-xs',
+              'transition-[border-color,box-shadow] duration-150 hover:border-fg-muted',
               'focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring/40',
               'disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-fg-muted',
               'aria-invalid:border-danger',

@@ -29,10 +29,12 @@
 
   --border: #dfe3ec;
   --border-strong: #c9d0dc;
+  /* Outline of form controls: at least 3:1 against the surfaces (WCAG 1.4.11). */
+  --border-control: #7f8ba0;
 
   --fg: #131a2a;
   --fg-muted: #566175;
-  --fg-subtle: #6f7a8c;
+  --fg-subtle: #5f6a7d;
   --fg-inverted: #ffffff;
 
   --accent: #0b7a75;
@@ -49,6 +51,7 @@
   --warning-soft-fg: #8a500a;
   --danger: #c8322b;
   --danger-hover: #ab2821;
+  --danger-fg: #ffffff;
   --danger-soft: #fbe5e3;
   --danger-soft-fg: #9d2722;
   --info: #2a78d6;
@@ -87,6 +90,7 @@
 
   --border: #283349;
   --border-strong: #3a4763;
+  --border-control: #6b7994;
 
   --fg: #e8ecf4;
   --fg-muted: #9eabc2;
@@ -107,6 +111,7 @@
   --warning-soft-fg: #f0c47a;
   --danger: #ef6b63;
   --danger-hover: #f3857e;
+  --danger-fg: #2a0b09;
   --danger-soft: #3a1a18;
   --danger-soft-fg: #f6a39d;
   --info: #3987e5;
@@ -148,6 +153,7 @@
 
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
+  --color-border-control: var(--border-control);
 
   --color-fg: var(--fg);
   --color-fg-muted: var(--fg-muted);
@@ -168,6 +174,7 @@
   --color-warning-soft-fg: var(--warning-soft-fg);
   --color-danger: var(--danger);
   --color-danger-hover: var(--danger-hover);
+  --color-danger-fg: var(--danger-fg);
   --color-danger-soft: var(--danger-soft);
   --color-danger-soft-fg: var(--danger-soft-fg);
   --color-info: var(--info);
@@ -203,8 +210,11 @@
   --shadow-popover: var(--shadow-popover);
   --shadow-dialog: var(--shadow-dialog);
 
-  --text-2xs: 0.6875rem;
+  /* Helper text: 13px (Tailwind's default 12px is below the 13–14px target); the smallest label is 12px. */
+  --text-2xs: 0.75rem;
   --text-2xs--line-height: 1rem;
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.125rem;
 
   --animate-fade-in: fade-in 200ms ease-out;
   --animate-scale-in: scale-in 280ms cubic-bezier(0.2, 0.9, 0.2, 1);
@@ -415,6 +425,7 @@
   --surface-raised: var(--sidebar);
   --border: rgb(255 255 255 / 0.14);
   --border-strong: rgb(255 255 255 / 0.26);
+  --border-control: rgb(255 255 255 / 0.45);
   --fg: #ffffff;
   --fg-muted: #c7d0e0;
   --fg-subtle: #8d99b0;

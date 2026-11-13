@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FilterX, Plus, Target, X } from 'lucide-react';
+import { Plus, Target, X } from 'lucide-react';
 import {
   Permission,
   type LeadSource,
@@ -19,6 +19,7 @@ import {
   EmptyState,
   Input,
   Label,
+  FilterBar,
   NativeSelect,
   PageHeader,
   Pagination,
@@ -160,19 +161,26 @@ export function LeadsView() {
 
         <Card>
           <CardContent className="flex flex-col gap-4 py-4">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_auto] xl:items-end">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="leads-search">{t('common.search')}</Label>
-                <SearchInput
-                  id="leads-search"
-                  value={search}
-                  onValueChange={(v) => {
-                    setSearch(v);
-                    setPage(1);
-                  }}
-                  placeholder={t('leads.titleContactOrDescription')}
-                />
-              </div>
+            <FilterBar
+              labels={{ filters: t('common.filters'), clear: t('common.clear') }}
+              activeCount={[status, source, assigneeId, tag].filter(Boolean).length}
+              onClear={reset}
+              canClear={hasFilters}
+              search={
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="leads-search">{t('common.search')}</Label>
+                  <SearchInput
+                    id="leads-search"
+                    value={search}
+                    onValueChange={(v) => {
+                      setSearch(v);
+                      setPage(1);
+                    }}
+                    placeholder={t('leads.titleContactOrDescription')}
+                  />
+                </div>
+              }
+            >
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="leads-status">{t('common.stage')}</Label>
                 <NativeSelect
@@ -243,15 +251,7 @@ export function LeadsView() {
                   ))}
                 </datalist>
               </div>
-              <Button
-                variant="ghost"
-                onClick={reset}
-                disabled={!hasFilters}
-                leadingIcon={<FilterX aria-hidden />}
-              >
-                {t('common.clear')}
-              </Button>
-            </div>
+            </FilterBar>
             {contactId ? (
               <div className="flex items-center gap-2 text-sm text-fg-muted">
                 <span>{t('leads.showingLeadsFor')}</span>

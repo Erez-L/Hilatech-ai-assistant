@@ -6,10 +6,10 @@ import { cn } from '../lib/cn';
 import { useUiStrings } from '../lib/ui-strings';
 
 export const inputClassName = cn(
-  'flex h-9 w-full min-w-0 rounded-sm border border-border bg-surface px-3 py-1 text-sm text-fg shadow-xs',
+  'flex h-9 w-full min-w-0 rounded-sm border border-border-control bg-surface px-3 py-1 text-sm text-fg shadow-xs',
   'placeholder:text-fg-subtle',
   'transition-[border-color,box-shadow] duration-150',
-  'hover:border-border-strong',
+  'hover:border-fg-muted',
   'focus-visible:border-accent focus-visible:outline-0 focus-visible:ring-4 focus-visible:ring-accent/15',
   'disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-fg-muted',
   'aria-invalid:border-danger aria-invalid:focus-visible:outline-danger/40',
