@@ -5,6 +5,7 @@ All notable changes to this project are documented here. Format: Keep a Changelo
 ## [Unreleased]
 ### Fixed
 
+- Assistant chat: message bubbles follow the direction of their own text (an English reply inside the Hebrew layout no longer has its punctuation flipped), and the message box no longer shows a second focus ring inside its frame.
 - Bedrock replies no longer show the model's inline `<thinking>` text (Amazon Nova writes its reasoning into the answer); it is removed in the provider, for streamed and non-streamed replies.
 - The assistant page treated an Amazon Bedrock provider as "AI not configured" because it has no API key; found on the first live deployment.
 

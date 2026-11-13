@@ -202,7 +202,10 @@ function parseMaybeJson(text: string): unknown {
 function UserBubble({ content }: { content: string }) {
   return (
     <div className="ms-auto flex max-w-[85%] flex-col items-end gap-1 sm:max-w-[75%]">
-      <div className="rounded-xl rounded-se-sm bg-accent-soft px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words text-accent-soft-fg shadow-xs">
+      <div
+        dir="auto"
+        className="rounded-xl rounded-se-sm bg-accent-soft px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words text-accent-soft-fg shadow-xs"
+      >
         {content}
       </div>
     </div>
@@ -242,7 +245,10 @@ function AssistantBlock({ item }: { item: Extract<FoldedItem, { kind: 'assistant
           </div>
         ) : null}
         {message.content.trim() ? (
-          <div className="rounded-xl rounded-ss-sm border border-info/20 bg-surface px-3.5 py-2 text-sm leading-relaxed shadow-xs">
+          <div
+            dir="auto"
+            className="rounded-xl rounded-ss-sm border border-info/20 bg-surface px-3.5 py-2 text-sm leading-relaxed shadow-xs"
+          >
             <Markdown source={message.content} />
           </div>
         ) : null}
@@ -290,7 +296,10 @@ function LiveTurn({ state }: { state: StreamState }) {
               />
             ))}
             {state.text ? (
-              <div className="rounded-xl rounded-ss-sm border border-info/20 bg-surface px-3.5 py-2 text-sm leading-relaxed shadow-xs">
+              <div
+                dir="auto"
+                className="rounded-xl rounded-ss-sm border border-info/20 bg-surface px-3.5 py-2 text-sm leading-relaxed shadow-xs"
+              >
                 <Markdown source={state.text} />
               </div>
             ) : state.status === 'streaming' && state.tools.length === 0 ? (
@@ -397,7 +406,7 @@ export function AssistantComposer({
             event.preventDefault();
             submit();
           }}
-          className="flex-1 border-0 bg-transparent px-0 py-1 shadow-none focus-visible:outline-none"
+          className="flex-1 border-0 bg-transparent px-0 py-1 shadow-none focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none"
         />
         <Button
           type="submit"
