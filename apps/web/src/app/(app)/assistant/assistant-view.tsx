@@ -41,7 +41,10 @@ export function AssistantView() {
   const notConfigured =
     canConfigure &&
     providers.isSuccess &&
-    !providers.data.some((p) => p.isEnabled && (p.hasApiKey || p.provider === 'mock'));
+    // Amazon Bedrock authenticates with the server's AWS identity, so it never has an API key.
+    !providers.data.some(
+      (p) => p.isEnabled && (p.hasApiKey || p.provider === 'mock' || p.provider === 'bedrock'),
+    );
 
   const create = useCreateAssistantThread();
 

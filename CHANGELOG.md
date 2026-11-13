@@ -3,6 +3,10 @@
 All notable changes to this project are documented here. Format: Keep a Changelog; versioning: SemVer.
 
 ## [Unreleased]
+### Fixed
+
+- The assistant page treated an Amazon Bedrock provider as "AI not configured" because it has no API key; found on the first live deployment.
+
 ### Added
 
 - Visual redesign (styling only, no behaviour change): per-area colour tones, dark navigation rail with coloured icon tiles, area icon beside page titles, coloured stat tiles and deal-board columns, larger radii, press/hover/enter motion, coloured toast icons, and rounded option lists for native selects in browsers that support customizable selects.
