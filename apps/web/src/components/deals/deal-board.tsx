@@ -188,7 +188,7 @@ export function DealBoardView({
             {column.hasMore ? (
               <Link
                 href={listHref(column.stage.id)}
-                className="text-xs text-accent hover:underline"
+                className="text-xs text-accent-soft-fg hover:underline"
               >
                 {t('deals.moreNotShown', { count: column.count - column.deals.length })}
               </Link>

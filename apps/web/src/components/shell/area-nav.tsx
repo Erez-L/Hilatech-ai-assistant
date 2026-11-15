@@ -1,6 +1,5 @@
 'use client';
 
-import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@hilatech/ui';
@@ -18,17 +17,7 @@ function useAreas() {
   return { areas, current: areaFor(pathname), pathname };
 }
 
-function AreaLink({
-  navArea,
-  href,
-  active,
-  compact,
-}: {
-  navArea: NavArea;
-  href: string;
-  active: boolean;
-  compact?: boolean;
-}) {
+function AreaLink({ navArea, href, active }: { navArea: NavArea; href: string; active: boolean }) {
   const t = useT();
   const Icon = navArea.icon;
   return (
@@ -37,74 +26,118 @@ function AreaLink({
       data-tone={navArea.tone}
       aria-current={active ? 'true' : undefined}
       className={cn(
-        'group flex items-center font-semibold transition-colors',
+        'group flex min-w-0 flex-1 flex-col items-center gap-1 rounded-lg px-0.5 py-1 text-center text-2xs font-semibold transition-colors',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-        compact
-          ? 'min-w-0 flex-1 flex-col gap-1 rounded-lg px-0.5 py-1 text-center text-2xs'
-          : 'w-full gap-2.5 rounded-md px-2 py-1.5 text-start text-sm',
-        active
-          ? compact
-            ? 'bg-tone-soft font-bold text-tone-fg'
-            : 'bg-surface font-bold text-tone-fg shadow-xs'
-          : compact
-            ? 'text-fg hover:bg-surface-muted'
-            : 'text-fg hover:bg-surface/70',
+        active ? 'bg-tone-soft font-bold text-tone-fg' : 'text-fg hover:bg-surface-muted',
       )}
     >
       <span
         className={cn(
-          'flex shrink-0 items-center justify-center rounded-md transition-transform group-active:scale-95',
-          compact ? 'size-10 [&_svg]:size-5' : 'size-8 [&_svg]:size-[1.125rem]',
+          'flex size-10 items-center justify-center rounded-md transition-transform group-active:scale-95 [&_svg]:size-5',
           active
             ? 'bg-tone text-tone-on shadow-[0_8px_18px_-8px_var(--tone)]'
-            : compact
-              ? 'bg-tone-soft text-tone-fg'
-              : 'bg-surface text-tone-fg shadow-xs',
+            : 'bg-tone-soft text-tone-fg',
         )}
       >
         <Icon aria-hidden />
       </span>
-      <span className={cn('truncate', compact ? 'max-w-full' : 'min-w-0 flex-1')}>
-        {t(navArea.label)}
-      </span>
+      <span className="max-w-full truncate">{t(navArea.label)}</span>
     </Link>
   );
 }
 
+/** One area in the side rail: its name with a coloured tile, and under it the screens the role can open. */
+function AreaGroup({
+  navArea,
+  items,
+  pathname,
+}: {
+  navArea: NavArea;
+  items: NavArea['items'];
+  pathname: string;
+}) {
+  const t = useT();
+  const Icon = navArea.icon;
+  const headingId = `area-${navArea.key}`;
+  return (
+    <section data-tone={navArea.tone} aria-labelledby={headingId} className="flex flex-col gap-0.5">
+      <h2
+        id={headingId}
+        className="flex items-center gap-2 px-1.5 py-0.5 text-sm font-extrabold text-fg"
+      >
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-tone text-tone-on shadow-[0_6px_14px_-6px_var(--tone)] [&_svg]:size-4">
+          <Icon aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1 truncate">{t(navArea.label)}</span>
+      </h2>
+      <ul className="flex flex-col gap-0.5 ps-3">
+        {items.map((item) => {
+          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const ItemIcon = item.icon;
+          return (
+            <li key={item.href}>
+              <Link
+                href={item.href}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'flex h-7 items-center gap-2 rounded-md px-2 text-sm transition-colors [&_svg]:size-4 [&_svg]:shrink-0',
+                  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                  active
+                    ? 'bg-surface font-bold text-tone-fg shadow-xs'
+                    : 'font-medium text-fg hover:bg-surface/60',
+                )}
+              >
+                <ItemIcon aria-hidden className={active ? undefined : 'opacity-80'} />
+                <span className="min-w-0 flex-1 truncate">{t(item.label)}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 /**
- * The areas of the product. On wide screens a rail at the start edge, tinted with the current area's colour, with each area's name beside its icon; on narrow screens a bar at the
- * bottom of the screen. Each area keeps its own colour, and its first permitted screen opens on click.
+ * The areas of the product. On wide screens a rail at the start edge that lists every area with its screens;
+ * its gradient is the same in every area. On narrow screens a bar at the bottom of the screen with one link
+ * per area, and the screens of the current area are tabs above the page (see `AreaTabs`).
  */
 export function AreaRail({ placement }: { placement: 'side' | 'bottom' }) {
   const t = useT();
-  const { areas, current } = useAreas();
-  const bottom = placement === 'bottom';
+  const { areas, current, pathname } = useAreas();
+  if (placement === 'side') {
+    return (
+      <nav
+        aria-label={t('shell.areas')}
+        className="area-rail flex h-full w-[13.5rem] flex-col gap-2 overflow-y-auto border-e px-2.5 py-2.5"
+      >
+        {areas.map(({ navArea, items }) => (
+          <AreaGroup key={navArea.key} navArea={navArea} items={items} pathname={pathname} />
+        ))}
+      </nav>
+    );
+  }
   return (
     <nav
       aria-label={t('shell.areas')}
-      data-tone={bottom ? undefined : (current?.tone ?? 'slate')}
-      className={cn(
-        bottom
-          ? 'bg-surface fixed inset-x-0 bottom-0 z-30 flex items-stretch gap-0.5 border-t border-border px-1 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] lg:hidden'
-          : 'area-rail flex h-full w-[12.5rem] flex-col gap-1 border-e px-2.5 py-3',
-      )}
+      className="fixed inset-x-0 bottom-0 z-30 flex items-stretch gap-0.5 border-t border-border bg-surface px-1 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] lg:hidden"
     >
       {areas.map(({ navArea, items }) => (
-        <React.Fragment key={navArea.key}>
-          {!bottom && navArea.key === 'organization' ? <span className="flex-1" /> : null}
-          <AreaLink
-            navArea={navArea}
-            href={items[0]!.href}
-            active={current?.key === navArea.key}
-            compact={bottom}
-          />
-        </React.Fragment>
+        <AreaLink
+          key={navArea.key}
+          navArea={navArea}
+          href={items[0]!.href}
+          active={current?.key === navArea.key}
+        />
       ))}
     </nav>
   );
 }
 
-/** The screens of the current area, as pill links above the page. Hidden when the area has one screen. */
+/**
+ * The screens of the current area, as pill links above the page on narrow screens (the side
+ * rail lists them on wide ones). Hidden when the area has one screen. */
 export function AreaTabs() {
   const t = useT();
   const { areas, current, pathname } = useAreas();
@@ -113,7 +146,7 @@ export function AreaTabs() {
   return (
     <nav
       aria-label={t('shell.areaScreens', { name: t(entry.navArea.label) })}
-      className="-mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1 pb-1"
+      className="-mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1 pb-1 lg:hidden"
     >
       {entry.items.map((item) => {
         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);

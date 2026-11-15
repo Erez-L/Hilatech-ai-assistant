@@ -435,30 +435,57 @@ body[data-tone],
 .dark .area-wash[data-tone] {
   --accent-hover: color-mix(in srgb, var(--tone) 84%, #ffffff);
 }
-/* Page background of an area: white with a clear tint of the area's colour, strongest at the top corner.
-   Never plain white, so the white cards stand out from it. */
+/* One background for the whole product: a fixed gradient of the five area colours over the base background.
+   It does not change between areas; what changes with the area is the tint of the cards (below). */
+:root {
+  --wash-1: #2459c4;
+  --wash-2: #6941d6;
+  --wash-3: #b82e86;
+  --wash-4: #b4500a;
+  --wash-5: #0b7a75;
+}
+.dark {
+  --wash-1: #6ea0ff;
+  --wash-2: #a48bff;
+  --wash-3: #f27cc4;
+  --wash-4: #ffa45c;
+  --wash-5: #5fd4c8;
+}
 .area-wash {
-  --wash-top: 13%;
-  --wash-mid: 8%;
-  --wash-end: 5%;
-  /* The quietest text colour is too faint on a tinted background; use the next one up. */
-  --fg-subtle: var(--fg-muted);
+  --wash-share: 18%;
+  /* Quiet text needs more weight on a tinted background: one step towards the main text colour. */
+  --fg-muted-base: var(--fg-muted);
+  --fg-subtle: color-mix(in srgb, var(--fg-muted-base) 70%, var(--fg));
   background: linear-gradient(
-    165deg,
-    color-mix(in srgb, var(--tone) var(--wash-top), var(--bg)) 0%,
-    color-mix(in srgb, var(--tone) var(--wash-mid), var(--bg)) 40%,
-    color-mix(in srgb, var(--tone) var(--wash-end), var(--bg)) 100%
+    135deg,
+    color-mix(in srgb, var(--wash-1) var(--wash-share), var(--bg)) 0%,
+    color-mix(in srgb, var(--wash-2) var(--wash-share), var(--bg)) 28%,
+    color-mix(in srgb, var(--wash-3) var(--wash-share), var(--bg)) 52%,
+    color-mix(in srgb, var(--wash-4) var(--wash-share), var(--bg)) 76%,
+    color-mix(in srgb, var(--wash-5) var(--wash-share), var(--bg)) 100%
   );
   background-attachment: fixed;
 }
-/* The areas rail: a deeper shade of the current area's colour than the page, so the menu reads as its own strip. */
+.area-wash main {
+  --fg-muted: color-mix(in srgb, var(--fg-muted-base) 70%, var(--fg));
+}
+/* Cards take a light tint of their area's colour (stat cards: of their own colour) instead of plain white. */
+.area-wash main :where(.rounded-lg.border.bg-surface),
+.area-wash main .stat-card {
+  background-color: color-mix(in srgb, var(--tone) 9%, var(--surface));
+  border-color: color-mix(in srgb, var(--tone) 26%, var(--border));
+}
+/* The areas rail: a deeper vertical gradient of the same colours, identical in every area. */
 .area-rail {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--tone) 22%, var(--surface)) 0%,
-    color-mix(in srgb, var(--tone) 15%, var(--surface)) 100%
+    color-mix(in srgb, var(--wash-1) 30%, var(--surface)) 0%,
+    color-mix(in srgb, var(--wash-2) 30%, var(--surface)) 30%,
+    color-mix(in srgb, var(--wash-3) 28%, var(--surface)) 58%,
+    color-mix(in srgb, var(--wash-4) 28%, var(--surface)) 82%,
+    color-mix(in srgb, var(--wash-5) 30%, var(--surface)) 100%
   );
-  border-color: color-mix(in srgb, var(--tone) 28%, var(--border));
+  border-color: color-mix(in srgb, var(--wash-2) 30%, var(--border));
 }
 /* The navigation rail is always dark; inside it the neutral tokens are remapped so existing
    components (wordmark, organization switcher) render correctly without their own dark variant. */

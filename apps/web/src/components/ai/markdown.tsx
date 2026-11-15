@@ -106,7 +106,7 @@ export function renderInline(text: string): React.ReactNode[] {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-accent underline underline-offset-2"
+            className="text-accent-soft-fg underline underline-offset-2"
           >
             {link?.[1]}
           </a>

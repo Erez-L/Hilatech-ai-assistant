@@ -12,6 +12,8 @@ All notable changes to this project are documented here. Format: Keep a Changelo
 
 ### Added
 
+- One background for the whole product: a fixed gradient of the five area colours, the same in every area. What changes with the area is the tint of the cards (stat cards keep their own colour). Supersedes the per-area page background.
+- The side rail lists every area with its screens (name and icon for each), on a deeper gradient of the same colours. On wide screens the tab row above the page is no longer shown, so each screen appears once; on phones the bottom bar and the tab row are unchanged.
 - Areas rail with names: on wide screens every area shows its name beside its icon, and the rail has its own deeper shade of the current area's colour. The page background has a clear tint of the area's colour at every point instead of fading to plain white, so the white cards stand out. Contrast of text on both is checked by `scripts/check-contrast.mjs` (162 pairs).
 - Denser layout: less padding in cards, table rows, stat cards, page headers and around the page, and a wider content column.
 - Navigation by areas (version 2 of the interface). The dark sidebar is replaced by six areas - Today, Customers, Sales, AI, Operations, Organization - shown as a light rail on wide screens and as a bar at the bottom of the screen on phones. The screens of the current area are tabs above the page, and every screen belongs to exactly one area (tasks and reports are in Today; billing, AI settings and the profile stay tabs of Settings and are no longer listed twice). No route changed.

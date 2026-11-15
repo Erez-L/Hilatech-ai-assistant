@@ -23,22 +23,13 @@ const AREA_OF: Record<string, string> = {
   Settings: 'Organization',
 };
 
-/** Opens a screen the way a person does: the area in the rail first, then the screen's tab in that area. */
+/** Opens a screen the way a person does on a wide screen: its link in the areas rail. */
 export async function openScreen(page: Page, screen: string) {
-  const area = AREA_OF[screen];
-  if (!area) throw new Error(`Unknown screen: ${screen}`);
-  const areaLink = page
+  if (!AREA_OF[screen]) throw new Error(`Unknown screen: ${screen}`);
+  const link = page
     .getByRole('navigation', { name: 'Areas' })
-    .getByRole('link', { name: area, exact: true });
-  await areaLink.click();
-  // The tab row belongs to the area: wait until the area is the current one before looking for the tab.
-  await expect(areaLink).toHaveAttribute('aria-current', 'true');
-  const tab = page
-    .getByRole('navigation', { name: `${area} screens` })
+    .getByRole('region', { name: AREA_OF[screen] })
     .getByRole('link', { name: screen, exact: true });
-  // An area with a single screen has no tab row: the area link already opened it.
-  if ((await tab.count()) > 0) {
-    await tab.click();
-    await expect(tab).toHaveAttribute('aria-current', 'page');
-  }
+  await link.click();
+  await expect(link).toHaveAttribute('aria-current', 'page');
 }

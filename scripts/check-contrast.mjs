@@ -104,15 +104,20 @@ for (const [theme, t] of [
       check(theme, `tone ${name}: tone-on on tone (area button, icon tile)`, [15, 23, 41], bright, 4.5);
       check(theme, `tone ${name}: tone-fg on surface`, bright, c('surface'), 4.5);
     }
-    // Area page background (.area-wash, strongest stop 13%) and the areas rail (.area-rail, strongest stop 22%).
+    // Cards inside an area: 9% of the area's colour over the surface; quiet text is 70% muted + 30% fg there.
     const toneNow = theme === 'light' ? hex(tone.tone) : bright;
     const toneFg = theme === 'light' ? hex(tone['tone-fg']) : bright;
-    const wash = mix(toneNow, c('bg'), 0.13);
-    const areaRail = mix(toneNow, c('surface'), 0.22);
-    check(theme, `tone ${name}: fg on area background`, c('fg'), wash, 4.5);
-    check(theme, `tone ${name}: fg-muted on area background`, c('fg-muted'), wash, 4.5);
-    check(theme, `tone ${name}: tone-fg on area background`, toneFg, wash, 4.5);
-    check(theme, `tone ${name}: fg on areas rail`, c('fg'), areaRail, 4.5);
+    const card = mix(toneNow, c('surface'), 0.09);
+    const quiet = mix(c('fg-muted'), c('fg'), 0.7);
+    check(theme, `tone ${name}: fg on tinted card`, c('fg'), card, 4.5);
+    check(theme, `tone ${name}: quiet text on tinted card`, quiet, card, 4.5);
+    check(theme, `tone ${name}: tone-fg on tinted card`, toneFg, card, 4.5);
+    // The shared page gradient (18% of each colour over bg) and the rail (30% over surface) use these colours.
+    const wash = mix(toneNow, c('bg'), 0.18);
+    const areaRail = mix(toneNow, c('surface'), 0.3);
+    check(theme, `wash ${name}: fg on page gradient`, c('fg'), wash, 4.5);
+    check(theme, `wash ${name}: quiet text on page gradient`, quiet, wash, 4.5);
+    check(theme, `wash ${name}: fg on rail gradient`, c('fg'), areaRail, 4.5);
   }
 }
 

@@ -45,7 +45,7 @@ test.describe('knowledge & automation journey', () => {
     // Knowledge lives in the AI area; automations and integrations in Operations.
     const areas = page.getByRole('navigation', { name: 'Areas' });
     for (const name of ['AI', 'Operations']) {
-      await expect(areas.getByRole('link', { name, exact: true })).toBeVisible();
+      await expect(areas.getByRole('region', { name, exact: true })).toBeVisible();
     }
 
     // --- Settings → AI: enable the mock provider ----------------------------------------------

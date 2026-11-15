@@ -312,7 +312,7 @@ export function DatasetView({ id }: { id: string }) {
                       <TableCell>
                         <Link
                           href={`/evaluations/runs/${r.id}`}
-                          className="text-accent hover:underline"
+                          className="text-accent-soft-fg hover:underline"
                         >
                           {t('evaluations.viewRun')}
                         </Link>

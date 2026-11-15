@@ -147,7 +147,7 @@ export function RunView({ id }: { id: string }) {
                     {r.executionId ? (
                       <Link
                         href={`/agents/executions/${r.executionId}`}
-                        className="text-sm text-accent hover:underline"
+                        className="text-sm text-accent-soft-fg hover:underline"
                       >
                         {t('evaluations.viewExecution')}
                       </Link>
