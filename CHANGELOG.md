@@ -14,6 +14,7 @@ All notable changes to this project are documented here. Format: Keep a Changelo
 
 ### Added
 
+- Hover motion in the rail and the top bar: the icon slides forward and grows slightly, the link gets a halo in its area's colour, and the area's tile lifts. Off when the user prefers reduced motion.
 - Top bar on a dark gradient (the rail's colour through deep blue and violet to deep magenta), with a larger brand mark that animates gently (off when the user prefers reduced motion).
 - One background for the whole product: a fixed gradient of the five area colours, the same in every area. What changes with the area is the tint of the cards (stat cards keep their own colour). Supersedes the per-area page background.
 - The side rail lists every area with its screens (name and icon for each), on one dark colour in both themes, so the rail does not compete with the page gradient; the current screen is marked with its area's colour. On wide screens the tab row above the page is no longer shown, so each screen appears once; on phones the bottom bar and the tab row are unchanged.

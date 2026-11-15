@@ -483,6 +483,69 @@ body[data-tone],
   --fg: #ffffff;
   --surface: rgb(255 255 255 / 0.12);
 }
+/* Hover motion in the rail: the screen's icon slides forward and grows a little, the link gets a halo in its
+   area's colour, and the area's tile lifts when any of its screens is hovered. */
+.area-rail a {
+  transition:
+    background-color 160ms ease,
+    box-shadow 200ms ease,
+    transform 200ms ease;
+}
+.area-rail a svg {
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.9, 0.2, 1.4),
+    color 160ms ease,
+    filter 200ms ease;
+}
+.area-rail a:is(:hover, :focus-visible) {
+  background-color: color-mix(in srgb, var(--tone-bright) 16%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--tone-bright) 55%, transparent),
+    0 0 16px -2px color-mix(in srgb, var(--tone-bright) 60%, transparent);
+}
+.area-rail a:is(:hover, :focus-visible) svg {
+  color: var(--tone-bright);
+  transform: translateX(3px) scale(1.18);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--tone-bright) 80%, transparent));
+}
+[dir='rtl'] .area-rail a:is(:hover, :focus-visible) svg {
+  transform: translateX(-3px) scale(1.18);
+}
+.area-rail a:active svg {
+  transform: scale(0.92);
+}
+.area-rail h2 > span:first-child {
+  transition:
+    transform 260ms cubic-bezier(0.2, 0.9, 0.2, 1.4),
+    box-shadow 220ms ease;
+}
+.area-rail section:hover h2 > span:first-child {
+  transform: translateY(-1px) scale(1.1) rotate(-6deg);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--tone-bright) 45%, transparent),
+    0 0 18px 0 color-mix(in srgb, var(--tone-bright) 70%, transparent);
+}
+/* The same idea for the icon buttons of the top bar. */
+.top-bar-dark :is(button, a) svg {
+  transition: transform 220ms cubic-bezier(0.2, 0.9, 0.2, 1.4);
+}
+.top-bar-dark :is(button, a):hover svg:not(.logo-animated) {
+  transform: scale(1.15) rotate(-6deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .area-rail a,
+  .area-rail a svg,
+  .area-rail h2 > span:first-child,
+  .top-bar-dark :is(button, a) svg {
+    transition: none;
+  }
+  .area-rail a:is(:hover, :focus-visible) svg,
+  [dir='rtl'] .area-rail a:is(:hover, :focus-visible) svg,
+  .area-rail section:hover h2 > span:first-child,
+  .top-bar-dark :is(button, a):hover svg:not(.logo-animated) {
+    transform: none;
+  }
+}
 /* The top bar: a dark gradient that starts in the rail's colour and moves through deep blue and violet to
    deep magenta. Used together with .sidebar-scope, which remaps the neutral tokens for a dark background. */
 .top-bar-dark {
