@@ -80,11 +80,11 @@ function AreaGroup({
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex h-7 items-center gap-2 rounded-md px-2 text-sm transition-colors [&_svg]:size-4 [&_svg]:shrink-0',
+                  'flex h-7 items-center gap-2 rounded-md border-s-[3px] px-2 text-sm transition-colors [&_svg]:size-4 [&_svg]:shrink-0',
                   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                   active
-                    ? 'bg-surface font-bold text-tone-fg shadow-xs'
-                    : 'font-medium text-fg hover:bg-surface/60',
+                    ? 'border-tone-bright bg-surface font-bold text-fg'
+                    : 'border-transparent font-medium text-fg hover:bg-surface/60',
                 )}
               >
                 <ItemIcon aria-hidden className={active ? undefined : 'opacity-80'} />
@@ -100,7 +100,7 @@ function AreaGroup({
 
 /**
  * The areas of the product. On wide screens a rail at the start edge that lists every area with its screens;
- * its gradient is the same in every area. On narrow screens a bar at the bottom of the screen with one link
+ * it is dark in both themes and the same in every area. On narrow screens a bar at the bottom of the screen with one link
  * per area, and the screens of the current area are tabs above the page (see `AreaTabs`).
  */
 export function AreaRail({ placement }: { placement: 'side' | 'bottom' }) {

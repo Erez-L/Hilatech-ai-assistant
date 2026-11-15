@@ -475,17 +475,13 @@ body[data-tone],
   background-color: color-mix(in srgb, var(--tone) 9%, var(--surface));
   border-color: color-mix(in srgb, var(--tone) 26%, var(--border));
 }
-/* The areas rail: a deeper vertical gradient of the same colours, identical in every area. */
+/* The areas rail: one dark colour in both themes, so it never competes with the page gradient. The area
+   colours appear on it as icon tiles and as the marker of the current screen. */
 .area-rail {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--wash-1) 30%, var(--surface)) 0%,
-    color-mix(in srgb, var(--wash-2) 30%, var(--surface)) 30%,
-    color-mix(in srgb, var(--wash-3) 28%, var(--surface)) 58%,
-    color-mix(in srgb, var(--wash-4) 28%, var(--surface)) 82%,
-    color-mix(in srgb, var(--wash-5) 30%, var(--surface)) 100%
-  );
-  border-color: color-mix(in srgb, var(--wash-2) 30%, var(--border));
+  background: var(--sidebar);
+  border-color: var(--sidebar);
+  --fg: #ffffff;
+  --surface: rgb(255 255 255 / 0.12);
 }
 /* The navigation rail is always dark; inside it the neutral tokens are remapped so existing
    components (wordmark, organization switcher) render correctly without their own dark variant. */

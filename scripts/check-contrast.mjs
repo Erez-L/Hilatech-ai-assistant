@@ -112,12 +112,10 @@ for (const [theme, t] of [
     check(theme, `tone ${name}: fg on tinted card`, c('fg'), card, 4.5);
     check(theme, `tone ${name}: quiet text on tinted card`, quiet, card, 4.5);
     check(theme, `tone ${name}: tone-fg on tinted card`, toneFg, card, 4.5);
-    // The shared page gradient (18% of each colour over bg) and the rail (30% over surface) use these colours.
+    // The shared page gradient (18% of each colour over bg) uses these colours.
     const wash = mix(toneNow, c('bg'), 0.18);
-    const areaRail = mix(toneNow, c('surface'), 0.3);
     check(theme, `wash ${name}: fg on page gradient`, c('fg'), wash, 4.5);
     check(theme, `wash ${name}: quiet text on page gradient`, quiet, wash, 4.5);
-    check(theme, `wash ${name}: fg on rail gradient`, c('fg'), areaRail, 4.5);
   }
 }
 
@@ -132,6 +130,8 @@ for (const [theme, t] of [
   }
   for (const [name, tone] of Object.entries(tones)) {
     check(`${theme} rail`, `tone ${name}: bright icon on sidebar`, hex(tone['tone-bright']), rail, 3);
+    // Current screen in the rail: rail text on 12% white over the rail.
+    check(`${theme} rail`, `tone ${name}: fg on current screen`, resolve(sidebar.fg, rail), mix([255, 255, 255], rail, 0.12), 4.5);
   }
 }
 
