@@ -29,7 +29,7 @@ export function AutomationsShell({ children }: { children: React.ReactNode }) {
         />
         <nav
           aria-label={t('automations.automationSections')}
-          className="flex items-center w-fit max-w-full gap-1 self-start overflow-x-auto rounded-md bg-surface-muted p-1"
+          className="flex items-center w-fit max-w-full gap-1 self-start overflow-x-auto rounded-md border border-border-control bg-surface p-1"
         >
           {TABS.map((tab) => {
             const active =
@@ -45,8 +45,8 @@ export function AutomationsShell({ children }: { children: React.ReactNode }) {
                   'relative inline-flex h-8 shrink-0 items-center rounded-sm px-3.5 text-sm font-medium whitespace-nowrap transition-colors',
                   'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
                   active
-                    ? 'bg-surface font-semibold text-fg shadow-xs'
-                    : 'text-fg-muted hover:text-fg',
+                    ? 'bg-accent font-semibold text-accent-fg shadow-xs'
+                    : 'text-fg hover:bg-accent-soft',
                 )}
               >
                 {t(tab.label)}

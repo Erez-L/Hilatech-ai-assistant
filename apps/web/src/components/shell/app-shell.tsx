@@ -49,6 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div data-tone={tone} className="area-wash flex min-w-0 flex-1 flex-col">
         <TopBar
+          className="sidebar-scope top-bar-dark"
           start={
             <>
               <Link
@@ -56,7 +57,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 aria-label={t('app.productNameShort')}
                 className="flex h-9 items-center rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
-                <Wordmark compact />
+                <Wordmark
+                  compact
+                  prominent
+                  className="[&>span:last-child]:hidden sm:[&>span:last-child]:flex"
+                />
               </Link>
               <OrgSwitcher className="w-auto max-w-[11rem] sm:max-w-[14rem]" />
             </>

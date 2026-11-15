@@ -135,6 +135,24 @@ for (const [theme, t] of [
   }
 }
 
+// The top bar: a dark gradient from the rail colour through three fixed stops; text and bright icons on each.
+{
+  const bar = /\.top-bar-dark\s*\{([\s\S]*?)\n\}/.exec(css)[1];
+  const stops = [...bar.matchAll(/--topbar-\d:\s*(#[0-9a-f]{6});/gi)].map((m) => hex(m[1]));
+  for (const [theme, t] of [
+    ['light', light],
+    ['dark', dark],
+  ]) {
+    for (const [i, stop] of [hex(t.sidebar), ...stops].entries()) {
+      for (const name of ['fg', 'fg-muted']) {
+        check(`${theme} top bar`, `${name} on stop ${i + 1}`, resolve(sidebar[name], stop), stop, 4.5);
+      }
+      check(`${theme} top bar`, `accent (logo tile, focus ring) on stop ${i + 1}`, hex(sidebar.accent), stop, 3);
+      check(`${theme} top bar`, `pink bright (assistant) on stop ${i + 1}`, hex(tones.pink['tone-bright']), stop, 3);
+    }
+  }
+}
+
 let failed = 0;
 for (const row of rows) {
   if (!row.ok) failed += 1;

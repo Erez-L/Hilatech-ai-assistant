@@ -483,6 +483,74 @@ body[data-tone],
   --fg: #ffffff;
   --surface: rgb(255 255 255 / 0.12);
 }
+/* The top bar: a dark gradient that starts in the rail's colour and moves through deep blue and violet to
+   deep magenta. Used together with .sidebar-scope, which remaps the neutral tokens for a dark background. */
+.top-bar-dark {
+  --topbar-2: #1a2a6c;
+  --topbar-3: #3c1f72;
+  --topbar-4: #5e1a5a;
+  --surface: rgb(255 255 255 / 0.1);
+  --accent-fg: #0f1729;
+  background: linear-gradient(
+    90deg,
+    var(--sidebar) 0%,
+    var(--topbar-2) 38%,
+    var(--topbar-3) 70%,
+    var(--topbar-4) 100%
+  );
+  border-color: transparent;
+}
+[dir='rtl'] .top-bar-dark {
+  background: linear-gradient(
+    270deg,
+    var(--sidebar) 0%,
+    var(--topbar-2) 38%,
+    var(--topbar-3) 70%,
+    var(--topbar-4) 100%
+  );
+}
+.top-bar-dark [data-tone] {
+  --tone: var(--tone-bright);
+  --tone-fg: var(--tone-bright);
+  --tone-soft: rgb(255 255 255 / 0.16);
+  --tone-on: #0f1729;
+}
+/* Animated brand mark: the tile breathes with a soft glow and the signal line pulses. */
+@keyframes logo-breathe {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    transform: scale(1.07) rotate(-3deg);
+    filter: drop-shadow(0 0 7px color-mix(in srgb, var(--accent) 75%, transparent));
+  }
+}
+@keyframes logo-signal {
+  0%,
+  100% {
+    stroke-opacity: 0.35;
+    transform: translateX(0);
+  }
+  50% {
+    stroke-opacity: 1;
+    transform: translateX(1.5px);
+  }
+}
+.logo-animated {
+  animation: logo-breathe 3.6s ease-in-out infinite;
+  transform-origin: center;
+}
+.logo-animated .logo-signal {
+  animation: logo-signal 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-animated,
+  .logo-animated .logo-signal {
+    animation: none;
+  }
+}
 /* The navigation rail is always dark; inside it the neutral tokens are remapped so existing
    components (wordmark, organization switcher) render correctly without their own dark variant. */
 .sidebar-scope {

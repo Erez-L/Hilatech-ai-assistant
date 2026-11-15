@@ -38,7 +38,7 @@ export function SettingsTabs() {
   return (
     <nav
       aria-label={t('settings.settingsSections')}
-      className="flex w-fit max-w-full items-center gap-1 self-start overflow-x-auto rounded-md bg-surface-muted p-1"
+      className="flex w-fit max-w-full items-center gap-1 self-start overflow-x-auto rounded-md border border-border-control bg-surface p-1"
     >
       {visible.map((tab) => {
         const active = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
@@ -50,7 +50,9 @@ export function SettingsTabs() {
             className={cn(
               'relative inline-flex h-8 shrink-0 items-center rounded-sm px-3.5 text-sm font-medium transition-colors',
               'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
-              active ? 'bg-surface font-semibold text-fg shadow-xs' : 'text-fg-muted hover:text-fg',
+              active
+                ? 'bg-accent font-semibold text-accent-fg shadow-xs'
+                : 'text-fg hover:bg-accent-soft',
             )}
           >
             {t(tab.label)}

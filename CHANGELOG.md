@@ -5,6 +5,7 @@ All notable changes to this project are documented here. Format: Keep a Changelo
 ## [Unreleased]
 ### Fixed
 
+- The tab rows of Deals, Settings and Automations, the search-and-pick lists and the action menus still showed the chosen or focused item as white on a near-white card; they now use the area's colour like the other controls.
 - Selected states were hard to see on the tinted cards: the chosen option of a segmented control, a tab row and a dropdown list is now filled with the area's colour (hover is the soft shade), secondary buttons, dropdown lists and segmented controls have a visible outline, and a switch that is off is darker.
 - Dark theme: the hint text and icon tiles of the dashboard's stat cards kept their light-theme colours and were hard to read.
 - Assistant chat: message bubbles follow the direction of their own text (an English reply inside the Hebrew layout no longer has its punctuation flipped), and the message box no longer shows a second focus ring inside its frame.
@@ -13,6 +14,7 @@ All notable changes to this project are documented here. Format: Keep a Changelo
 
 ### Added
 
+- Top bar on a dark gradient (the rail's colour through deep blue and violet to deep magenta), with a larger brand mark that animates gently (off when the user prefers reduced motion).
 - One background for the whole product: a fixed gradient of the five area colours, the same in every area. What changes with the area is the tint of the cards (stat cards keep their own colour). Supersedes the per-area page background.
 - The side rail lists every area with its screens (name and icon for each), on one dark colour in both themes, so the rail does not compete with the page gradient; the current screen is marked with its area's colour. On wide screens the tab row above the page is no longer shown, so each screen appears once; on phones the bottom bar and the tab row are unchanged.
 - Areas rail with names: on wide screens every area shows its name beside its icon, and the rail has its own deeper shade of the current area's colour. The page background has a clear tint of the area's colour at every point instead of fading to plain white, so the white cards stand out. Contrast of text on both is checked by `scripts/check-contrast.mjs` (162 pairs).

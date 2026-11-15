@@ -3,13 +3,15 @@ import { cn } from '../lib/cn';
 
 export interface LogoMarkProps extends React.SVGAttributes<SVGSVGElement> {
   size?: number;
+  /** Gentle motion: the tile breathes and the signal line pulses. Off when the user prefers reduced motion. */
+  animated?: boolean;
 }
 
 /**
  * Brand mark: a rounded tile holding an "h" whose ascender becomes a signal line —
  * the assistant listening and speaking for the business.
  */
-export function LogoMark({ size = 28, className, ...props }: LogoMarkProps) {
+export function LogoMark({ size = 28, animated, className, ...props }: LogoMarkProps) {
   return (
     <svg
       width={size}
@@ -18,7 +20,7 @@ export function LogoMark({ size = 28, className, ...props }: LogoMarkProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
-      className={cn('shrink-0', className)}
+      className={cn('shrink-0', animated && 'logo-animated', className)}
       {...props}
     >
       <rect width="32" height="32" rx="8" className="fill-accent" />
@@ -32,6 +34,7 @@ export function LogoMark({ size = 28, className, ...props }: LogoMarkProps) {
       />
       <path
         d="M17 8.5h2.5M22 8.5h1.5"
+        className="logo-signal"
         stroke="var(--color-accent-fg)"
         strokeWidth="3"
         strokeLinecap="round"
@@ -43,14 +46,22 @@ export function LogoMark({ size = 28, className, ...props }: LogoMarkProps) {
 
 export interface WordmarkProps extends React.HTMLAttributes<HTMLSpanElement> {
   compact?: boolean;
+  /** Larger, animated mark for the product's top bar. */
+  prominent?: boolean;
 }
 
-export function Wordmark({ compact, className, ...props }: WordmarkProps) {
+export function Wordmark({ compact, prominent, className, ...props }: WordmarkProps) {
   return (
     <span className={cn('flex items-center gap-2.5 text-fg', className)} {...props}>
-      <LogoMark size={compact ? 24 : 28} />
+      <LogoMark size={prominent ? 34 : compact ? 24 : 28} animated={prominent} />
       <span className="flex flex-col leading-none">
-        <span className={cn('font-semibold tracking-tight', compact ? 'text-sm' : 'text-[15px]')}>
+        <span
+          className={cn(
+            'tracking-tight',
+            prominent ? 'text-lg font-extrabold' : 'font-semibold',
+            !prominent && (compact ? 'text-sm' : 'text-[15px]'),
+          )}
+        >
           HilaTech
         </span>
         {compact ? null : <span className="mt-0.5 text-xs text-fg-muted">AI Assistant</span>}

@@ -252,7 +252,8 @@ export function Combobox({
                     onClick={() => choose(item)}
                     className={cn(
                       'flex cursor-default items-center gap-2 rounded-xs py-1.5 pe-2 ps-2 text-sm select-none',
-                      isActive && 'bg-surface-muted text-fg',
+                      isActive && 'bg-accent-soft text-accent-soft-fg',
+                      isSelected && 'font-semibold',
                       item.disabled && 'pointer-events-none opacity-50',
                     )}
                   >

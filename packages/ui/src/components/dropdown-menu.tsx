@@ -26,7 +26,7 @@ export const DropdownMenuSubTrigger = React.forwardRef<
       ref={ref}
       className={cn(
         'flex cursor-default items-center gap-2 rounded-xs px-2 py-1.5 text-sm outline-none select-none',
-        'focus:bg-surface-muted data-[state=open]:bg-surface-muted',
+        'focus:bg-accent-soft data-[state=open]:bg-accent-soft',
         inset && 'ps-8',
         className,
       )}
@@ -80,7 +80,7 @@ export const DropdownMenuItem = React.forwardRef<
       ref={ref}
       className={cn(
         'relative flex cursor-default items-center gap-2 rounded-xs px-2 py-1.5 text-sm outline-none select-none',
-        'transition-colors focus:bg-surface-muted focus:text-fg',
+        'transition-colors focus:bg-accent-soft focus:text-accent-soft-fg',
         'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         '[&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-fg-subtle',
         tone === 'danger' &&
@@ -103,7 +103,7 @@ export const DropdownMenuCheckboxItem = React.forwardRef<
       checked={checked}
       className={cn(
         'relative flex cursor-default items-center rounded-xs py-1.5 pe-2 ps-8 text-sm outline-none select-none',
-        'focus:bg-surface-muted data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'focus:bg-accent-soft focus:text-accent-soft-fg data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className,
       )}
       {...props}
@@ -127,7 +127,7 @@ export const DropdownMenuRadioItem = React.forwardRef<
       ref={ref}
       className={cn(
         'relative flex cursor-default items-center rounded-xs py-1.5 pe-2 ps-8 text-sm outline-none select-none',
-        'focus:bg-surface-muted data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'focus:bg-accent-soft focus:text-accent-soft-fg data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className,
       )}
       {...props}

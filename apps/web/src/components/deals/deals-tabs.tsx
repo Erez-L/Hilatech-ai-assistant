@@ -22,7 +22,7 @@ export function DealsTabs() {
   return (
     <nav
       aria-label={t('deals.dealsSections')}
-      className="flex items-center w-fit max-w-full gap-1 self-start overflow-x-auto rounded-md bg-surface-muted p-1"
+      className="flex items-center w-fit max-w-full gap-1 self-start overflow-x-auto rounded-md border border-border-control bg-surface p-1"
     >
       {tabs.map((tab) => {
         const active = tab.exact ? pathname === tab.href : pathname.startsWith(tab.href);
@@ -34,7 +34,9 @@ export function DealsTabs() {
             className={cn(
               'relative inline-flex h-8 shrink-0 items-center rounded-sm px-3.5 text-sm font-medium whitespace-nowrap transition-colors',
               'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
-              active ? 'bg-surface font-semibold text-fg shadow-xs' : 'text-fg-muted hover:text-fg',
+              active
+                ? 'bg-accent font-semibold text-accent-fg shadow-xs'
+                : 'text-fg hover:bg-accent-soft',
             )}
           >
             {tab.label}
