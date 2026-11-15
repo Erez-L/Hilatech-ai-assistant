@@ -69,7 +69,7 @@ export function SegmentedControl<V extends string>({
       role="radiogroup"
       onKeyDown={onKeyDown}
       className={cn(
-        'inline-flex items-center gap-0.5 rounded-md border border-border bg-surface-muted p-0.5',
+        'inline-flex items-center gap-0.5 rounded-md border border-border-control bg-surface p-0.5',
         disabled && 'opacity-60',
         className,
       )}
@@ -97,8 +97,8 @@ export function SegmentedControl<V extends string>({
                 ? 'h-6 px-2 text-xs [&_svg]:size-3.5'
                 : 'h-7 px-2.5 text-xs [&_svg]:size-4',
               active
-                ? 'bg-surface text-fg shadow-xs'
-                : 'text-fg-muted hover:text-fg [&:not(:disabled)]:hover:bg-surface/60',
+                ? 'bg-accent font-semibold text-accent-fg shadow-xs'
+                : 'text-fg hover:text-fg [&:not(:disabled)]:hover:bg-accent-soft',
             )}
           >
             {option.icon ? <span aria-hidden>{option.icon}</span> : null}

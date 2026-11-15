@@ -46,7 +46,7 @@ export const SelectContent = React.forwardRef<
         ref={ref}
         position={position}
         className={cn(
-          'relative z-50 max-h-[var(--radix-select-content-available-height)] min-w-[8rem] overflow-hidden rounded-md border border-border bg-surface-raised text-fg shadow-popover',
+          'relative z-50 max-h-[var(--radix-select-content-available-height)] min-w-[8rem] overflow-hidden rounded-md border border-border-control bg-surface-raised text-fg shadow-popover',
           'animate-scale-in',
           position === 'popper' &&
             'w-[var(--radix-select-trigger-width)] data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1',
@@ -88,8 +88,9 @@ export const SelectItem = React.forwardRef<
       ref={ref}
       className={cn(
         'relative flex w-full cursor-default items-center rounded-sm py-2 pe-8 ps-2.5 text-sm outline-none select-none',
-        'data-[state=checked]:bg-accent-soft data-[state=checked]:font-semibold data-[state=checked]:text-accent-soft-fg',
-        'data-[highlighted]:bg-surface-muted data-[highlighted]:text-fg',
+        'data-[highlighted]:bg-accent-soft data-[highlighted]:text-accent-soft-fg',
+        'data-[state=checked]:bg-accent data-[state=checked]:font-semibold data-[state=checked]:text-accent-fg',
+        'data-[state=checked]:data-[highlighted]:bg-accent data-[state=checked]:data-[highlighted]:text-accent-fg',
         'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className,
       )}
@@ -97,7 +98,7 @@ export const SelectItem = React.forwardRef<
     >
       <span className="absolute end-2 flex size-4 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <Check className="size-4 text-accent" aria-hidden />
+          <Check className="size-4" aria-hidden />
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>

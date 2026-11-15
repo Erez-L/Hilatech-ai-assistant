@@ -20,7 +20,7 @@ export const buttonVariants = cva(
         primary:
           'bg-accent text-accent-fg font-semibold shadow-[0_8px_18px_-8px_var(--color-accent)] hover:bg-accent-hover hover:shadow-[0_10px_22px_-8px_var(--color-accent)]',
         secondary:
-          'border border-border bg-surface text-fg shadow-xs hover:bg-surface-muted hover:border-border-strong',
+          'border border-border-control bg-surface text-fg shadow-xs hover:bg-accent-soft hover:border-accent',
         ghost: 'text-fg-muted hover:bg-surface-muted hover:text-fg',
         danger: 'bg-danger text-danger-fg shadow-xs hover:bg-danger-hover',
         'danger-outline':
@@ -101,7 +101,7 @@ export const iconButtonVariants = cva(
       variant: {
         ghost: 'text-fg-muted hover:bg-surface-muted hover:text-fg',
         secondary:
-          'border border-border bg-surface text-fg-muted shadow-xs hover:bg-surface-muted hover:text-fg',
+          'border border-border-control bg-surface text-fg shadow-xs hover:bg-accent-soft hover:text-fg',
         danger: 'text-fg-muted hover:bg-danger-soft hover:text-danger',
       },
       size: {

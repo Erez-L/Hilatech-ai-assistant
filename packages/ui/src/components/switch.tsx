@@ -16,7 +16,7 @@ export const Switch = React.forwardRef<
         'transition-colors duration-150',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
         'disabled:cursor-not-allowed disabled:opacity-50',
-        'data-[state=checked]:bg-accent data-[state=unchecked]:bg-border-strong',
+        'data-[state=checked]:bg-accent data-[state=unchecked]:bg-border-control',
         className,
       )}
       {...props}

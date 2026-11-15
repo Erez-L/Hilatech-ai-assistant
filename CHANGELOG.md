@@ -5,6 +5,7 @@ All notable changes to this project are documented here. Format: Keep a Changelo
 ## [Unreleased]
 ### Fixed
 
+- Selected states were hard to see on the tinted cards: the chosen option of a segmented control, a tab row and a dropdown list is now filled with the area's colour (hover is the soft shade), secondary buttons, dropdown lists and segmented controls have a visible outline, and a switch that is off is darker.
 - Dark theme: the hint text and icon tiles of the dashboard's stat cards kept their light-theme colours and were hard to read.
 - Assistant chat: message bubbles follow the direction of their own text (an English reply inside the Hebrew layout no longer has its punctuation flipped), and the message box no longer shows a second focus ring inside its frame.
 - Bedrock replies no longer show the model's inline `<thinking>` text (Amazon Nova writes its reasoning into the answer); it is removed in the provider, for streamed and non-streamed replies.
