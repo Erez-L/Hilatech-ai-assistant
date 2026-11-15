@@ -36,22 +36,20 @@ export function PageHeader({
 }: PageHeaderProps) {
   const icon = React.useContext(PageIconContext);
   return (
-    <header className={cn('flex animate-rise flex-col gap-4', className)} {...props}>
+    <header className={cn('flex animate-rise flex-col gap-3', className)} {...props}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3.5">
+        <div className="flex min-w-0 items-start gap-3">
           {icon ? (
             <span
               aria-hidden
-              className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-tone text-tone-on shadow-[0_8px_18px_-8px_var(--color-tone)] [&_svg]:size-6"
+              className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-tone text-tone-on shadow-[0_8px_18px_-8px_var(--color-tone)] [&_svg]:size-5"
             >
               {icon}
             </span>
           ) : null}
           <div className="flex min-w-0 flex-col gap-1">
             {breadcrumb ? <div className="text-xs text-fg-muted">{breadcrumb}</div> : null}
-            <h1 className="text-2xl leading-tight font-extrabold tracking-tight text-fg">
-              {title}
-            </h1>
+            <h1 className="text-xl leading-tight font-extrabold tracking-tight text-fg">{title}</h1>
             {description ? <p className="max-w-2xl text-sm text-fg-muted">{description}</p> : null}
           </div>
         </div>

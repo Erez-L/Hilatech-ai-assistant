@@ -85,9 +85,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main
           id="main"
           tabIndex={-1}
-          className="relative flex-1 px-4 pt-5 pb-24 outline-none sm:px-6 lg:px-8 lg:pt-6 lg:pb-8"
+          className="relative flex-1 px-3 pt-3 pb-24 outline-none sm:px-5 lg:px-6 lg:pt-4 lg:pb-6"
         >
-          <div className="mx-auto w-full max-w-6xl">
+          <div className="mx-auto w-full max-w-[90rem]">
             {sessionLoaded ? (
               <>
                 <AreaTabs />

@@ -435,15 +435,30 @@ body[data-tone],
 .dark .area-wash[data-tone] {
   --accent-hover: color-mix(in srgb, var(--tone) 84%, #ffffff);
 }
-/* Page background of an area: almost white, with a hint of the area's colour at the top corner. */
+/* Page background of an area: white with a clear tint of the area's colour, strongest at the top corner.
+   Never plain white, so the white cards stand out from it. */
 .area-wash {
+  --wash-top: 13%;
+  --wash-mid: 8%;
+  --wash-end: 5%;
+  /* The quietest text colour is too faint on a tinted background; use the next one up. */
+  --fg-subtle: var(--fg-muted);
   background: linear-gradient(
     165deg,
-    color-mix(in srgb, var(--tone) 9%, var(--bg)) 0%,
-    color-mix(in srgb, var(--tone) 3%, var(--bg)) 38%,
-    var(--bg) 70%
+    color-mix(in srgb, var(--tone) var(--wash-top), var(--bg)) 0%,
+    color-mix(in srgb, var(--tone) var(--wash-mid), var(--bg)) 40%,
+    color-mix(in srgb, var(--tone) var(--wash-end), var(--bg)) 100%
   );
   background-attachment: fixed;
+}
+/* The areas rail: a deeper shade of the current area's colour than the page, so the menu reads as its own strip. */
+.area-rail {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--tone) 22%, var(--surface)) 0%,
+    color-mix(in srgb, var(--tone) 15%, var(--surface)) 100%
+  );
+  border-color: color-mix(in srgb, var(--tone) 28%, var(--border));
 }
 /* The navigation rail is always dark; inside it the neutral tokens are remapped so existing
    components (wordmark, organization switcher) render correctly without their own dark variant. */

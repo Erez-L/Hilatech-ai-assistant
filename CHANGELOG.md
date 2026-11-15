@@ -12,6 +12,8 @@ All notable changes to this project are documented here. Format: Keep a Changelo
 
 ### Added
 
+- Areas rail with names: on wide screens every area shows its name beside its icon, and the rail has its own deeper shade of the current area's colour. The page background has a clear tint of the area's colour at every point instead of fading to plain white, so the white cards stand out. Contrast of text on both is checked by `scripts/check-contrast.mjs` (162 pairs).
+- Denser layout: less padding in cards, table rows, stat cards, page headers and around the page, and a wider content column.
 - Navigation by areas (version 2 of the interface). The dark sidebar is replaced by six areas - Today, Customers, Sales, AI, Operations, Organization - shown as a light rail on wide screens and as a bar at the bottom of the screen on phones. The screens of the current area are tabs above the page, and every screen belongs to exactly one area (tasks and reports are in Today; billing, AI settings and the profile stay tabs of Settings and are no longer listed twice). No route changed.
 - Each area has one colour that is also its accent: the primary button, links, focus rings, selected states, and the dialogs and toasts opened from that area. The page background is almost white with a hint of the area's colour.
 - The assistant is one click away from every screen through the bar at the top (it opens the assistant; it does not act from the bar).

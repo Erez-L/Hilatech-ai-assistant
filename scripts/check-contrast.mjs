@@ -104,6 +104,15 @@ for (const [theme, t] of [
       check(theme, `tone ${name}: tone-on on tone (area button, icon tile)`, [15, 23, 41], bright, 4.5);
       check(theme, `tone ${name}: tone-fg on surface`, bright, c('surface'), 4.5);
     }
+    // Area page background (.area-wash, strongest stop 13%) and the areas rail (.area-rail, strongest stop 22%).
+    const toneNow = theme === 'light' ? hex(tone.tone) : bright;
+    const toneFg = theme === 'light' ? hex(tone['tone-fg']) : bright;
+    const wash = mix(toneNow, c('bg'), 0.13);
+    const areaRail = mix(toneNow, c('surface'), 0.22);
+    check(theme, `tone ${name}: fg on area background`, c('fg'), wash, 4.5);
+    check(theme, `tone ${name}: fg-muted on area background`, c('fg-muted'), wash, 4.5);
+    check(theme, `tone ${name}: tone-fg on area background`, toneFg, wash, 4.5);
+    check(theme, `tone ${name}: fg on areas rail`, c('fg'), areaRail, 4.5);
   }
 }
 

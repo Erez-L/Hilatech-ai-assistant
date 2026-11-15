@@ -35,7 +35,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'stat-card flex animate-rise flex-col gap-3 rounded-lg border border-border bg-surface px-5 py-4 shadow-xs',
+        'stat-card flex animate-rise flex-col gap-2 rounded-lg border border-border bg-surface px-4 py-3 shadow-xs',
         'transition-[translate,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-popover',
         className,
       )}
