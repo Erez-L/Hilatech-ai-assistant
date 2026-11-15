@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Contact as ContactIcon, FilterX, Plus } from 'lucide-react';
+import { Contact as ContactIcon, Plus } from 'lucide-react';
 import { Permission, type Contact, type ListContactsQuery } from '@hilatech/contracts';
 import {
   Avatar,
@@ -13,6 +13,7 @@ import {
   CardContent,
   EmptyState,
   Label,
+  FilterBar,
   NativeSelect,
   PageHeader,
   Pagination,
@@ -119,19 +120,27 @@ export function ContactsView() {
 
         <Card>
           <CardContent className="flex flex-col gap-4 py-4">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_auto] lg:items-end">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="contacts-search">{t('common.search')}</Label>
-                <SearchInput
-                  id="contacts-search"
-                  value={search}
-                  onValueChange={(v) => {
-                    setSearch(v);
-                    setPage(1);
-                  }}
-                  placeholder={t('contacts.nameEmailPhoneOrCompany')}
-                />
-              </div>
+            <FilterBar
+              labels={{ filters: t('common.filters'), clear: t('common.clear') }}
+              activeCount={[tag, ownerId].filter(Boolean).length}
+              onClear={reset}
+              canClear={hasFilters}
+              columnsClassName="md:grid-cols-2"
+              search={
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="contacts-search">{t('common.search')}</Label>
+                  <SearchInput
+                    id="contacts-search"
+                    value={search}
+                    onValueChange={(v) => {
+                      setSearch(v);
+                      setPage(1);
+                    }}
+                    placeholder={t('contacts.nameEmailPhoneOrCompany')}
+                  />
+                </div>
+              }
+            >
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="contacts-tag">{t('common.tag')}</Label>
                 <NativeSelect
@@ -169,15 +178,7 @@ export function ContactsView() {
                   ))}
                 </NativeSelect>
               </div>
-              <Button
-                variant="ghost"
-                onClick={reset}
-                disabled={!hasFilters}
-                leadingIcon={<FilterX aria-hidden />}
-              >
-                {t('common.clear')}
-              </Button>
-            </div>
+            </FilterBar>
           </CardContent>
         </Card>
 

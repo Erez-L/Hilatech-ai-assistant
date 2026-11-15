@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Building2, FilterX, Plus } from 'lucide-react';
+import { Building2, Plus } from 'lucide-react';
 import { Permission, type Company } from '@hilatech/contracts';
 import {
   Badge,
@@ -13,6 +13,7 @@ import {
   EmptyState,
   Input,
   Label,
+  FilterBar,
   NativeSelect,
   PageHeader,
   Pagination,
@@ -108,19 +109,27 @@ export function CompaniesView() {
 
         <Card>
           <CardContent className="flex flex-col gap-4 py-4">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.6fr_1fr_1fr_auto] xl:items-end">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="companies-search">{t('common.search')}</Label>
-                <SearchInput
-                  id="companies-search"
-                  value={search}
-                  onValueChange={(v) => {
-                    setSearch(v);
-                    setPage(1);
-                  }}
-                  placeholder={t('companies.nameOrDomain')}
-                />
-              </div>
+            <FilterBar
+              labels={{ filters: t('common.filters'), clear: t('common.clear') }}
+              activeCount={[ownerId, tag].filter(Boolean).length}
+              onClear={reset}
+              canClear={hasFilters}
+              columnsClassName="md:grid-cols-2"
+              search={
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="companies-search">{t('common.search')}</Label>
+                  <SearchInput
+                    id="companies-search"
+                    value={search}
+                    onValueChange={(v) => {
+                      setSearch(v);
+                      setPage(1);
+                    }}
+                    placeholder={t('companies.nameOrDomain')}
+                  />
+                </div>
+              }
+            >
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="companies-owner">{t('contacts.owner')}</Label>
                 <NativeSelect
@@ -148,15 +157,7 @@ export function CompaniesView() {
                   onChange={(e) => setTagDraft(e.target.value)}
                 />
               </div>
-              <Button
-                variant="ghost"
-                onClick={reset}
-                disabled={!hasFilters}
-                leadingIcon={<FilterX aria-hidden />}
-              >
-                {t('common.clear')}
-              </Button>
-            </div>
+            </FilterBar>
           </CardContent>
         </Card>
 
