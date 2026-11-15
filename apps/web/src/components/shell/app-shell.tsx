@@ -8,6 +8,7 @@ import { Permission } from '@hilatech/contracts';
 import { PageIconProvider, Spinner, TopBar, Wordmark } from '@hilatech/ui';
 import { useSession } from '@/stores/session';
 import { AreaRail, AreaTabs } from './area-nav';
+import { ScreenGuide, ScreenGuideButton } from './screen-guide';
 import { OrgSwitcher } from './org-switcher';
 import { NotificationsMenu } from './notifications-menu';
 import { ThemeToggle } from './theme-toggle';
@@ -68,6 +69,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           }
           end={
             <>
+              <ScreenGuideButton />
               <NotificationsMenu />
               <ThemeToggle />
               <div className="mx-1 h-5 w-px bg-border" aria-hidden />
@@ -96,6 +98,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {sessionLoaded ? (
               <>
                 <AreaTabs />
+                <ScreenGuide />
                 <PageIconProvider icon={AreaIcon ? <AreaIcon /> : null}>
                   {children}
                 </PageIconProvider>

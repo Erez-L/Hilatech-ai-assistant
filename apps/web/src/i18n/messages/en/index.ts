@@ -19,6 +19,7 @@ import { days } from './days';
 import { deals } from './deals';
 import { errors } from './errors';
 import { evaluations } from './evaluations';
+import { guide } from './guide';
 import { imports } from './imports';
 import { industry } from './industry';
 import { integrations } from './integrations';
@@ -86,6 +87,7 @@ export const en = {
   ...companies,
   ...deals,
   ...evaluations,
+  ...guide,
   ...imports,
   ...tasks,
 } as const;

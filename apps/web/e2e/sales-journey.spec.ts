@@ -117,6 +117,14 @@ test.describe('sales journey', () => {
     await expect(proposal.getByTestId('column-totals')).toContainText('5,000');
     await expect(lead.getByTestId('column-count')).toHaveText('0');
 
+    // The first-visit guide sits above the board; close it so the whole board is inside the viewport
+    // for the mouse-driven drag below.
+    const guide = page.getByRole('region', { name: 'Guide to this screen' });
+    if (await guide.isVisible()) {
+      await guide.getByRole('button', { name: 'Got it' }).last().click();
+      await expect(guide).toBeHidden();
+    }
+
     // Drag and drop to the next column (native HTML5 DnD).
     const card = proposal.getByTestId('deal-card').filter({ hasText: dealTitle });
     const negotiation = board.getByTestId('deal-column').filter({ hasText: 'Negotiation' }).first();

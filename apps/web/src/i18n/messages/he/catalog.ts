@@ -26,6 +26,12 @@ export const catalog = {
   'catalog.tool.crm.get_conversation_messages.name': 'הודעות בשיחה',
   'catalog.tool.crm.get_conversation_messages.description':
     'קורא את ההודעות האחרונות בשיחה עם לקוח, מהישנה לחדשה.',
+  'catalog.tool.agents.delegate.name': 'האצלה לסוכן אחר',
+  'catalog.tool.agents.delegate.description':
+    'מעביר תת-משימה מוגדרת לסוכן אחר בארגון וממתין לתוצאה. פועל רק כשלסוכן מותר להאציל.',
+  'catalog.tool.agents.delegate_parallel.name': 'האצלה במקביל',
+  'catalog.tool.agents.delegate_parallel.description':
+    'מריץ כמה תת-משימות עצמאיות על סוכנים אחרים בו-זמנית ומאחד את התוצאות. פועל רק כשלסוכן מותר להאציל.',
   'catalog.tool.time.now.name': 'השעה הנוכחית',
   'catalog.tool.time.now.description': 'מחזיר את התאריך, השעה והיום בשבוע.',
   'catalog.tool.knowledge.search.name': 'חיפוש במאגר הידע',

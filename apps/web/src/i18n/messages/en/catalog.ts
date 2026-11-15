@@ -30,6 +30,12 @@ export const catalog = {
   'catalog.tool.crm.get_conversation_messages.name': 'Get conversation messages',
   'catalog.tool.crm.get_conversation_messages.description':
     'Read the latest messages of a customer conversation (newest last).',
+  'catalog.tool.agents.delegate.name': 'Delegate to agent',
+  'catalog.tool.agents.delegate.description':
+    'Hands a well-defined sub-task to another agent of the organization and waits for its result. Works only when the agent is allowed to delegate.',
+  'catalog.tool.agents.delegate_parallel.name': 'Delegate in parallel',
+  'catalog.tool.agents.delegate_parallel.description':
+    'Runs several independent sub-tasks on other agents at the same time and combines their results. Works only when the agent is allowed to delegate.',
   'catalog.tool.time.now.name': 'Current time',
   'catalog.tool.time.now.description': 'Returns the current date and time and the day of week.',
   'catalog.tool.knowledge.search.name': 'Search knowledge base',

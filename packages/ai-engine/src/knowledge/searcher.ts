@@ -87,7 +87,10 @@ export class PgVectorKnowledgeSearcher implements KnowledgeSearcher {
         query: params.query,
         knowledgeBaseIds: params.knowledgeBaseIds,
         limit: params.limit,
-        minScore: 0.2,
+        // Low on purpose: multilingual embedding models score relevant Hebrew passages around 0.15-0.5
+        // (measured with amazon.titan-embed-text-v2 on the live demo), and the model reading the passages
+        // judges relevance. A 0.2 cut returned nothing for a question the document answered.
+        minScore: 0.1,
       },
       { userId: params.userId ?? null },
     );

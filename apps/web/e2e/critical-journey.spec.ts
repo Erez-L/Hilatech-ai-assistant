@@ -55,7 +55,7 @@ test.describe('critical journey', () => {
     // Session survives a reload (refresh cookie → access token).
     await page.reload();
     await expect(page).toHaveURL(/\/team/);
-    await expect(page.getByRole('heading', { name: 'Team' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Team', exact: true })).toBeVisible();
 
     await signOut(page);
     await expect(page).toHaveURL(/\/login/);

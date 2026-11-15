@@ -5,6 +5,8 @@ All notable changes to this project are documented here. Format: Keep a Changelo
 ## [Unreleased]
 ### Fixed
 
+- Agents and the assistant found nothing in the knowledge base for Hebrew questions the documents answered: the `knowledge.search` tool cut results below a similarity of 0.2, while Amazon Titan embeddings score relevant Hebrew passages lower (0.17 measured on the live demo). The cut is now 0.1.
+- The two delegation tools were shown in English in the Hebrew interface.
 - The tab rows of Deals, Settings and Automations, the search-and-pick lists and the action menus still showed the chosen or focused item as white on a near-white card; they now use the area's colour like the other controls.
 - Selected states were hard to see on the tinted cards: the chosen option of a segmented control, a tab row and a dropdown list is now filled with the area's colour (hover is the soft shade), secondary buttons, dropdown lists and segmented controls have a visible outline, and a switch that is off is darker.
 - Dark theme: the hint text and icon tiles of the dashboard's stat cards kept their light-theme colours and were hard to read.
@@ -14,6 +16,7 @@ All notable changes to this project are documented here. Format: Keep a Changelo
 
 ### Added
 
+- First-visit guide: the first time a person opens a screen, a short card says what the screen is for and gives three steps to start, for all 19 screens in English and Hebrew. "Got it" hides it for that screen, "Don't show guides" hides all, and the help button in the top bar shows it again. Remembered in the browser only.
 - Hover motion in the rail and the top bar: the icon slides forward and grows slightly, the link gets a halo in its area's colour, and the area's tile lifts. Off when the user prefers reduced motion.
 - Top bar on a dark gradient (the rail's colour through deep blue and violet to deep magenta), with a larger brand mark that animates gently (off when the user prefers reduced motion).
 - One background for the whole product: a fixed gradient of the five area colours, the same in every area. What changes with the area is the tint of the cards (stat cards keep their own colour). Supersedes the per-area page background.
