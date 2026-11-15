@@ -106,8 +106,6 @@ export const settings = {
   'settings.heldRightNow': 'בשימוש כרגע',
   'settings.hideInputSchema': 'הסתרת סכמת הקלט של {name}',
   'settings.higherPlans': 'תוכניות גבוהות יותר',
-  'settings.higherPlansWhatTheyAdd':
-    'תוכניות גבוהות יותר, מה הן מוסיפות לעומת התוכנית הנוכחית שלכם, ואיזה לחץ הן פותרות.',
   'settings.hoursAreIn': 'השעות הן לפי',
   'settings.howItIntroducesItselfTo': 'איך הוא מציג את עצמו ללקוחות.',
   'settings.howThisOrganizationPresentsItself': 'איך הארגון הזה מציג את עצמו ואיך העוזר שלו מתנהג.',
@@ -225,7 +223,6 @@ export const settings = {
   'settings.platformDefault': 'ברירת המחדל של הפלטפורמה',
   'settings.preferences': 'העדפות',
   'settings.preferencesSaved': 'ההעדפות נשמרו',
-  'settings.pricingNotConfigured': 'המחירים לא הוגדרו',
   'settings.primaryColour': 'צבע ראשי',
   'settings.production': 'ייצור',
   'settings.professional': 'מקצועי',
@@ -352,4 +349,11 @@ export const settings = {
   'settings.yourProfile': 'הפרופיל שלכם',
   'settings.yourRoleCanViewThese': 'התפקיד שלכם מאפשר לראות את ההגדרות האלה אך לא לשנות אותן.',
   'settings.yourSubscriptionCouldnTBe': 'לא ניתן היה לטעון את המנוי שלכם',
+  'settings.contactSalesAbout': 'פנייה למכירות לגבי תוכנית {name}',
+  'settings.plansAreChangedThroughSales':
+    'שינוי תוכנית נעשה דרך צוות המכירות. תשלום מקוון עדיין לא זמין, ולכן אי אפשר לרכוש או לחייב מהדף הזה.',
+  'settings.costCannotBeMeasuredYet':
+    'עלות ה-AI עדיין לא נמדדת כי מחירי המודלים לא הוגדרו, ולכן חל רק תקציב הטוקנים.',
+  'settings.pricingNotConfigured': 'מחיר לפי פנייה',
+  'settings.higherPlansWhatTheyAdd': 'מה כוללת כל תוכנית גבוהה יותר, ואילו מגבלות היא משחררת.',
 } as const;

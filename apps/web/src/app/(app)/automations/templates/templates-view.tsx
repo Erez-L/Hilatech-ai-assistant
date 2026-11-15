@@ -36,6 +36,7 @@ import {
   triggerSummary,
 } from '@/lib/automation';
 import { useT } from '@/i18n/provider';
+import { requirementLabel, templateText } from '@/i18n/catalog';
 import { msg, type Msg } from '@/i18n/msg';
 
 const CATEGORY_LABELS: Record<WorkflowTemplate['category'], Msg> = {
@@ -84,10 +85,10 @@ export function TemplatesView() {
                 <Card className="h-full">
                   <CardContent className="flex h-full flex-col gap-3 py-4">
                     <div className="flex items-start justify-between gap-2">
-                      <h2 className="text-base font-semibold">{tpl.name}</h2>
+                      <h2 className="text-base font-semibold">{templateText(t, tpl).name}</h2>
                       <Badge variant="outline">{t(CATEGORY_LABELS[tpl.category])}</Badge>
                     </div>
-                    <p className="text-sm text-fg-muted">{tpl.description}</p>
+                    <p className="text-sm text-fg-muted">{templateText(t, tpl).description}</p>
                     <div className="flex flex-wrap gap-1.5 text-xs">
                       <Badge variant="neutral">{triggerSummary(tpl.trigger, t)}</Badge>
                       <Badge variant="neutral">
@@ -96,7 +97,7 @@ export function TemplatesView() {
                       </Badge>
                       {tpl.requires.map((r) => (
                         <Badge key={r} variant="warning">
-                          {t('automations.needs', { r })}
+                          {t('automations.needs', { r: requirementLabel(t, r) })}
                         </Badge>
                       ))}
                     </div>
@@ -105,7 +106,9 @@ export function TemplatesView() {
                         <Button
                           variant="secondary"
                           size="sm"
-                          aria-label={t('automations.useTemplate2', { name: tpl.name })}
+                          aria-label={t('automations.useTemplate2', {
+                            name: templateText(t, tpl).name,
+                          })}
                           onClick={() => setSelected(tpl)}
                         >
                           {t('automations.useTemplate')}
@@ -137,7 +140,7 @@ export function UseTemplateDialog({
   const router = useRouter();
   const create = useCreateWorkflow();
   const placeholders = React.useMemo(() => findPlaceholders(template.steps, t), [template, t]);
-  const [name, setName] = React.useState(template.name);
+  const [name, setName] = React.useState(() => templateText(t, template).name);
   const [values, setValues] = React.useState<Record<string, string>>({});
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [formError, setFormError] = React.useState<string | null>(null);
@@ -158,7 +161,7 @@ export function UseTemplateDialog({
     try {
       const created = await create.mutateAsync({
         name: name.trim(),
-        description: template.description,
+        description: templateText(t, template).description,
         isEnabled: false,
         trigger: template.trigger,
         steps: applyPlaceholders(template.steps, values),
@@ -180,8 +183,10 @@ export function UseTemplateDialog({
       <DialogContent size="lg">
         <form onSubmit={submit} noValidate className="flex min-h-0 flex-col">
           <DialogHeader>
-            <DialogTitle>{t('automations.useTemplate3', { name: template.name })}</DialogTitle>
-            <DialogDescription>{template.description}</DialogDescription>
+            <DialogTitle>
+              {t('automations.useTemplate3', { name: templateText(t, template).name })}
+            </DialogTitle>
+            <DialogDescription>{templateText(t, template).description}</DialogDescription>
           </DialogHeader>
           <DialogBody className="flex flex-col gap-4 pb-2">
             {formError ? <Alert tone="danger">{formError}</Alert> : null}

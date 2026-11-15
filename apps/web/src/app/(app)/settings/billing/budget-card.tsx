@@ -145,7 +145,10 @@ function BudgetMeter({
           ) : (
             <>
               {format(used)}
-              <span className="text-fg-subtle"> / {format(budget)}</span>
+              <span className="text-fg-subtle">
+                {' '}
+                {t('common.outOf')} {format(budget)}
+              </span>
             </>
           )}
         </span>
@@ -269,11 +272,11 @@ function BudgetForm({ status }: { status: BudgetStatus }) {
       {costNeedsPricing ? (
         <p className="text-xs text-fg-muted" data-testid="cost-budget-requires-pricing">
           {t('settings.costBudgetRequiresPricingConfiguration')}{' '}
-          {status.cost.note ?? t('settings.noModelPricingIsConfigured')}
+          {t('settings.costCannotBeMeasuredYet')}
         </p>
       ) : status.cost.note ? (
         <p className="text-xs text-fg-muted" data-testid="cost-budget-note">
-          {status.cost.note}
+          {t('settings.costCannotBeMeasuredYet')}
         </p>
       ) : null}
 

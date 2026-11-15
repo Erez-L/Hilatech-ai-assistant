@@ -10,6 +10,7 @@ import { auth } from './auth';
 import { automation } from './automation';
 import { automations } from './automations';
 import { billing } from './billing';
+import { catalog } from './catalog';
 import { common } from './common';
 import { companies } from './companies';
 import { contacts } from './contacts';
@@ -81,6 +82,7 @@ export const he: Record<MessageKey, Message> = {
   ...status,
   ...team,
   ...toolCategory,
+  ...catalog,
   ...ui,
   ...usage,
   ...validation,

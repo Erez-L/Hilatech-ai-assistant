@@ -72,4 +72,8 @@ export const integrations = {
   'integrations.webhookPathPrefix': 'תחילית נתיב webhook',
   'integrations.whereYourN8nInstanceIs':
     'הכתובת שבה מופע n8n שלכם נגיש, למשל https://n8n.example.com',
+  'integrations.availableNow': 'זמין עכשיו',
+  'integrations.comingLater': 'עדיין לא זמין',
+  'integrations.comingLaterHint': 'החיבורים האלה מתוכננים. כרגע שום דבר לא נשלח ולא מסונכרן דרכם.',
+  'integrations.notAvailableYet': 'בהמשך',
 } as const;

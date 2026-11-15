@@ -19,6 +19,7 @@ import { QueryState } from '@/components/common/query-state';
 import { RiskBadge } from '@/components/ai/badges';
 import { enumLabel } from '@/i18n/enums';
 import { useT } from '@/i18n/provider';
+import { toolText } from '@/i18n/catalog';
 
 export function ToolsCard() {
   const t = useT();
@@ -82,11 +83,13 @@ function ToolRow({ tool }: { tool: ToolDefinition }) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="flex flex-wrap items-center gap-2 text-sm font-medium">
-            {tool.name}
-            <span className="font-mono text-xs font-normal text-fg-subtle">{tool.key}</span>
+            {toolText(t, tool).name}
+            <bdi dir="ltr" className="font-mono text-xs font-normal text-fg-subtle">
+              {tool.key}
+            </bdi>
             <RiskBadge risk={tool.riskLevel} />
           </span>
-          <span className="text-xs text-fg-muted">{tool.description}</span>
+          <span className="text-xs text-fg-muted">{toolText(t, tool).description}</span>
           <span className="text-2xs text-fg-subtle">
             {t('settings.requires')}{' '}
             {tool.requiredPermission ? (
@@ -100,7 +103,7 @@ function ToolRow({ tool }: { tool: ToolDefinition }) {
           type="button"
           aria-expanded={open}
           aria-label={t(open ? 'settings.hideInputSchema' : 'settings.showInputSchema', {
-            name: tool.name,
+            name: toolText(t, tool).name,
           })}
           onClick={() => setOpen((v) => !v)}
           className="flex shrink-0 items-center gap-1 rounded-xs text-xs text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"

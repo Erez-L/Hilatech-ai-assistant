@@ -54,6 +54,10 @@ describe('en/he dictionary parity', () => {
   // Brand names, header names and shell snippets are intentionally identical in both languages.
   const SAME_OK = new Set([
     'app.productName',
+    // Product names of integrations are the same in every language.
+    'catalog.integration.rest.name',
+    'catalog.integration.n8n.name',
+    'catalog.integration.whatsapp.name',
     'audit.userAgent',
     'automation.curlXPostHContent',
     'integrations.bearerToken',

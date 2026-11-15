@@ -171,36 +171,22 @@ describe('BillingView', () => {
     expect(within(list).getByTestId('entitlement-seats')).not.toHaveTextContent('Warning');
   });
 
-  it('lists upgrade options with deltas, what they resolve, and the honest 501 outcome', async () => {
-    const { calls } = mockApi(
-      routes({
-        'POST /billing/checkout': () =>
-          json(
-            {
-              error: {
-                code: 'PAYMENT_NOT_CONFIGURED',
-                message: 'No payment provider is configured.',
-              },
-            },
-            501,
-          ),
-      }),
-    );
+  it('lists higher plans with their total limits and a contact-sales action instead of a purchase', async () => {
+    const { calls } = mockApi(routes());
     renderWithProviders(<BillingView />);
     const card = await screen.findByTestId('upgrade-starter');
-    expect(card).toHaveTextContent('+3 seats');
-    expect(card).toHaveTextContent('+400K ai tokens / month');
+    // Totals of the plan, not differences from the current one.
+    expect(card).toHaveTextContent('Seats');
+    expect(card).not.toHaveTextContent('+3');
     expect(card).toHaveTextContent('Resolves: documents');
-    expect(card).toHaveTextContent('Pricing not configured');
-    expect(
-      screen.getByText('No payment provider is configured, so plans cannot be purchased yet.'),
-    ).toBeInTheDocument();
+    expect(card).toHaveTextContent('Price on request');
+    expect(screen.getByText(/Plans are changed through our sales team/)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Upgrade to Starter' }));
-    const note = await screen.findByTestId('payment-not-configured');
-    expect(note).toHaveTextContent('Payment is not configured');
-    expect(note).toHaveTextContent('plan has not changed');
-    expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ plan: 'starter' });
+    // Nothing on the page starts a checkout while no payment provider exists.
+    expect(screen.queryByRole('button', { name: 'Upgrade to Starter' })).toBeNull();
+    const link = screen.getByRole('link', { name: 'Contact sales about the Starter plan' });
+    expect(link).toHaveAttribute('href', expect.stringContaining('mailto:sales@hilatech.dev'));
+    expect(calls.some((c) => c.method === 'POST' && c.path === '/billing/checkout')).toBe(false);
   });
 
   it('saves the budget with null for empty fields and shows cost as requiring pricing', async () => {
@@ -295,7 +281,7 @@ describe('BillingView', () => {
     expect(await screen.findByText('Read only')).toBeInTheDocument();
     expect(screen.getByLabelText('Monthly token budget')).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Save budget' })).toBeDisabled();
-    expect(await screen.findByRole('button', { name: 'Upgrade to Starter' })).toBeDisabled();
+    expect(await screen.findByTestId('upgrade-starter')).toBeInTheDocument();
     expect(screen.getByText('Alerts are restricted')).toBeInTheDocument();
     expect(calls.some((c) => c.path === '/billing/alerts')).toBe(false);
   });

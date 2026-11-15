@@ -37,6 +37,7 @@ import {
 } from '@/lib/integrations';
 import { useT, useFormat } from '@/i18n/provider';
 import { tm } from '@/i18n/msg';
+import { integrationText } from '@/i18n/catalog';
 
 type ConnectTarget = { kind: 'rest' | 'n8n'; integration?: Integration };
 
@@ -75,31 +76,108 @@ export function IntegrationsView() {
           empty={<EmptyState icon={<Plug />} title={t('integrations.noIntegrationsAvailable')} />}
         >
           {(entries) => (
-            <ul aria-label={t('integrations.integrations')} className="grid gap-4 lg:grid-cols-2">
-              {entries.map((entry) => {
-                const summary = status.data?.find((s) => s.kind === entry.kind);
-                const connections = (integrations.data ?? []).filter((i) => i.kind === entry.kind);
+            <div className="flex flex-col gap-8">
+              {(() => {
+                const available = entries.filter((e) => isConnectable(e.kind, e.liveSupport));
+                const planned = entries.filter((e) => !isConnectable(e.kind, e.liveSupport));
                 return (
-                  <li key={entry.kind}>
-                    <IntegrationCard
-                      entry={entry}
-                      connected={summary?.connected ?? 0}
-                      connections={connections}
-                      loadingConnections={integrations.isPending}
-                      connectionsError={
-                        integrations.isError ? getErrorMessage(integrations.error) : null
-                      }
-                      canManage={canManage}
-                      onConnect={() => setDialog({ kind: entry.kind as 'rest' | 'n8n' })}
-                      onEdit={(integration) =>
-                        setDialog({ kind: integration.kind as 'rest' | 'n8n', integration })
-                      }
-                      onDisconnect={setDisconnecting}
-                    />
-                  </li>
+                  <>
+                    {available.length > 0 ? (
+                      <section
+                        aria-labelledby="integrations-available"
+                        className="flex flex-col gap-3"
+                      >
+                        <h2
+                          id="integrations-available"
+                          className="text-sm font-semibold text-fg-muted"
+                        >
+                          {t('integrations.availableNow')}
+                        </h2>
+                        <ul
+                          aria-label={t('integrations.integrations')}
+                          className="grid gap-4 lg:grid-cols-2"
+                        >
+                          {available.map((entry) => {
+                            const summary = status.data?.find((s) => s.kind === entry.kind);
+                            const connections = (integrations.data ?? []).filter(
+                              (i) => i.kind === entry.kind,
+                            );
+                            return (
+                              <li key={entry.kind}>
+                                <IntegrationCard
+                                  entry={entry}
+                                  connected={summary?.connected ?? 0}
+                                  connections={connections}
+                                  loadingConnections={integrations.isPending}
+                                  connectionsError={
+                                    integrations.isError
+                                      ? getErrorMessage(integrations.error)
+                                      : null
+                                  }
+                                  canManage={canManage}
+                                  onConnect={() =>
+                                    setDialog({ kind: entry.kind as 'rest' | 'n8n' })
+                                  }
+                                  onEdit={(integration) =>
+                                    setDialog({
+                                      kind: integration.kind as 'rest' | 'n8n',
+                                      integration,
+                                    })
+                                  }
+                                  onDisconnect={setDisconnecting}
+                                />
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </section>
+                    ) : null}
+                    {planned.length > 0 ? (
+                      <section
+                        aria-labelledby="integrations-planned"
+                        className="flex flex-col gap-3"
+                      >
+                        <div className="flex flex-col gap-1">
+                          <h2
+                            id="integrations-planned"
+                            className="text-sm font-semibold text-fg-muted"
+                          >
+                            {t('integrations.comingLater')}
+                          </h2>
+                          <p className="text-sm text-fg-muted">
+                            {t('integrations.comingLaterHint')}
+                          </p>
+                        </div>
+                        <ul
+                          aria-label={t('integrations.comingLater')}
+                          className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+                        >
+                          {planned.map((entry) => (
+                            <li key={entry.kind}>
+                              <Card className="h-full border-dashed bg-surface-muted/40 shadow-none">
+                                <CardContent className="flex h-full flex-col gap-2 py-4">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <h3 className="text-base font-semibold">
+                                      {integrationText(t, entry).name}
+                                    </h3>
+                                    <Badge variant="neutral" className="shrink-0">
+                                      {t('integrations.notAvailableYet')}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-fg-muted">
+                                    {integrationText(t, entry).description}
+                                  </p>
+                                </CardContent>
+                              </Card>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    ) : null}
+                  </>
                 );
-              })}
-            </ul>
+              })()}
+            </div>
           )}
         </QueryState>
 
@@ -166,8 +244,8 @@ function IntegrationCard({
       <CardContent className="flex h-full flex-col gap-4 py-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-base font-semibold">{entry.name}</h2>
-            <p className="mt-1 text-sm text-fg-muted">{entry.description}</p>
+            <h3 className="text-base font-semibold">{integrationText(t, entry).name}</h3>
+            <p className="mt-1 text-sm text-fg-muted">{integrationText(t, entry).description}</p>
           </div>
           {connectable ? (
             <Badge variant={connected > 0 ? 'success' : 'neutral'} dot className="shrink-0">

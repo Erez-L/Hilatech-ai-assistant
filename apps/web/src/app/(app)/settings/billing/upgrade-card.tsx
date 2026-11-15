@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ArrowUpRight, CreditCard } from 'lucide-react';
+import { ArrowUpRight, CreditCard, Mail } from 'lucide-react';
 import { ErrorCode, Permission, type UpgradeOption } from '@hilatech/contracts';
 import {
   Alert,
@@ -19,7 +19,7 @@ import { getErrorMessage, isApiError } from '@/lib/api';
 import { useCheckout, useUpgradeOptions } from '@/hooks/billing';
 import { useCan } from '@/hooks/use-can';
 import { QueryState } from '@/components/common/query-state';
-import { describeLimitDelta } from '@/lib/billing';
+import { PLAN_LIMIT_ROWS, formatLimit } from '@/lib/billing';
 import { humanizeValue } from '@/i18n/enums';
 import { msg, tm, type Msg } from '@/i18n/msg';
 import { useT, useFormat } from '@/i18n/provider';
@@ -93,7 +93,7 @@ export function UpgradeCard() {
           {(data) => (
             <>
               <Alert tone="neutral" title={t('settings.paymentsAreNotSwitchedOn')}>
-                {data.payment.message}
+                {t('settings.plansAreChangedThroughSales')}
               </Alert>
               {data.pressure.length > 0 ? (
                 <div className="flex flex-col gap-2">
@@ -123,9 +123,6 @@ export function UpgradeCard() {
                   aria-label={t('settings.higherPlans')}
                 >
                   {data.options.map((option) => {
-                    const deltas = Object.entries(option.limitDeltas)
-                      .map(([k, v]) => describeLimitDelta(k, v, t, fmt))
-                      .filter((x): x is string => !!x);
                     return (
                       <li
                         key={option.plan.key}
@@ -138,14 +135,22 @@ export function UpgradeCard() {
                             {t('settings.pricingNotConfigured')}
                           </span>
                         </div>
-                        <ul className="flex flex-col gap-1 text-sm text-fg-muted">
-                          {deltas.length === 0 ? <li>{t('settings.sameLimitsAsToday')}</li> : null}
-                          {deltas.map((d) => (
-                            <li key={d} className="tabular">
-                              {d}
-                            </li>
+                        {/* What the plan includes in total — clearer than a difference such as "+924 MB". */}
+                        <dl className="flex flex-col gap-1 text-sm">
+                          {PLAN_LIMIT_ROWS.map((row) => (
+                            <div
+                              key={row.key}
+                              className="flex items-baseline justify-between gap-3"
+                            >
+                              <dt className="text-fg-muted">{tm(t, row.label)}</dt>
+                              <dd className="font-medium tabular">
+                                <bdi dir="ltr">
+                                  {formatLimit(row, option.plan.limits[row.key], fmt)}
+                                </bdi>
+                              </dd>
+                            </div>
                           ))}
-                        </ul>
+                        </dl>
                         {option.resolves.length > 0 ? (
                           <p className="text-xs text-success-soft-fg">
                             {t('settings.resolves')}{' '}
@@ -154,19 +159,42 @@ export function UpgradeCard() {
                               .join(', ')}
                           </p>
                         ) : null}
-                        <Button
-                          className="mt-auto"
-                          variant={option.resolves.length > 0 ? 'primary' : 'secondary'}
-                          leadingIcon={<CreditCard aria-hidden />}
-                          trailingIcon={<ArrowUpRight aria-hidden />}
-                          loading={pending === option.plan.key}
-                          disabled={!canManage || pending !== null}
-                          title={canManage ? undefined : t('settings.requiresTheBillingPermission')}
-                          aria-label={t('settings.upgradeTo', { name: option.plan.name })}
-                          onClick={() => void upgrade(option)}
-                        >
-                          {t('settings.upgrade')}
-                        </Button>
+                        {data.payment.configured ? (
+                          <Button
+                            className="mt-auto"
+                            variant={option.resolves.length > 0 ? 'primary' : 'secondary'}
+                            leadingIcon={<CreditCard aria-hidden />}
+                            trailingIcon={<ArrowUpRight aria-hidden />}
+                            loading={pending === option.plan.key}
+                            disabled={!canManage || pending !== null}
+                            title={
+                              canManage ? undefined : t('settings.requiresTheBillingPermission')
+                            }
+                            aria-label={t('settings.upgradeTo', { name: option.plan.name })}
+                            onClick={() => void upgrade(option)}
+                          >
+                            {t('settings.upgrade')}
+                          </Button>
+                        ) : (
+                          // No payment provider: a plan cannot be bought here, so the action is to talk to sales.
+                          <Button
+                            asChild
+                            className="mt-auto"
+                            variant={option.resolves.length > 0 ? 'primary' : 'secondary'}
+                            leadingIcon={<Mail aria-hidden />}
+                          >
+                            <a
+                              href={`mailto:sales@hilatech.dev?subject=${encodeURIComponent(
+                                `HilaTech AI Assistant: ${option.plan.name} plan`,
+                              )}`}
+                              aria-label={t('settings.contactSalesAbout', {
+                                name: option.plan.name,
+                              })}
+                            >
+                              {t('settings.contactSales')}
+                            </a>
+                          </Button>
+                        )}
                       </li>
                     );
                   })}

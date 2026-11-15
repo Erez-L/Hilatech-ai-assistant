@@ -155,4 +155,5 @@ export const common = {
   'common.you': '(אני)',
   'common.youDonTHaveAccess': 'אין לכם גישה לדף הזה',
   'common.youDonTHaveAccess2': 'אין לכם גישה לזה',
+  'common.outOf': 'מתוך',
 } as const;

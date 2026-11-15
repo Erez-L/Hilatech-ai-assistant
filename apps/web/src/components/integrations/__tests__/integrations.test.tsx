@@ -54,8 +54,10 @@ describe('IntegrationsView', () => {
       await screen.findByRole('button', { name: 'Connect REST / Webhook' }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Connect Email/ })).toBeNull();
-    expect(screen.getByText('Requires a provider')).toBeInTheDocument();
-    expect(screen.getByText('Not configured')).toBeInTheDocument();
+    // Planned integrations sit in their own section, with no connect action and no implementation wording.
+    expect(screen.getByRole('heading', { name: 'Not available yet' })).toBeInTheDocument();
+    expect(screen.getAllByText('Coming later').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/simulated|this release/i)).toBeNull();
     // Credentials: names only, never values.
     expect(await screen.findByText(/Credentials stored: Access token/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Test connection Billing API' })).toBeInTheDocument();

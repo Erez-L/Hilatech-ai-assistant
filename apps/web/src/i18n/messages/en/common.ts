@@ -156,4 +156,5 @@ export const common = {
   'common.you': '(you)',
   'common.youDonTHaveAccess': 'You don’t have access to this page',
   'common.youDonTHaveAccess2': 'You don’t have access to this',
+  'common.outOf': 'of',
 } as const;

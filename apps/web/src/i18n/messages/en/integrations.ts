@@ -76,4 +76,9 @@ export const integrations = {
   'integrations.webhookPathPrefix': 'Webhook path prefix',
   'integrations.whereYourN8nInstanceIs':
     'Where your n8n instance is reachable, e.g. https://n8n.example.com',
+  'integrations.availableNow': 'Available now',
+  'integrations.comingLater': 'Not available yet',
+  'integrations.comingLaterHint':
+    'These connections are planned. Nothing is sent or synced through them today.',
+  'integrations.notAvailableYet': 'Coming later',
 } as const;

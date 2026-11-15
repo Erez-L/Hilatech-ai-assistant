@@ -7,6 +7,7 @@ import { Checkbox } from '@hilatech/ui';
 import { RiskBadge } from './badges';
 import { enumLabel } from '@/i18n/enums';
 import { useT } from '@/i18n/provider';
+import { toolText } from '@/i18n/catalog';
 
 export interface ToolsPickerProps {
   tools: readonly ToolDefinition[];
@@ -64,11 +65,13 @@ export function ToolsPicker({
                     htmlFor={id}
                     className="flex flex-wrap items-center gap-2 text-sm font-medium"
                   >
-                    {tool.name}
-                    <span className="font-mono text-xs font-normal text-fg-subtle">{tool.key}</span>
+                    {toolText(t, tool).name}
+                    <bdi dir="ltr" className="font-mono text-xs font-normal text-fg-subtle">
+                      {tool.key}
+                    </bdi>
                     <RiskBadge risk={tool.riskLevel} />
                   </label>
-                  <p className="text-xs text-fg-muted">{tool.description}</p>
+                  <p className="text-xs text-fg-muted">{toolText(t, tool).description}</p>
                   {tool.riskLevel === 'dangerous' ? (
                     <p className="flex items-center gap-1 text-xs text-danger">
                       <TriangleAlert className="size-3.5" aria-hidden />

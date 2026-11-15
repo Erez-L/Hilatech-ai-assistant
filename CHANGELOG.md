@@ -11,6 +11,10 @@ All notable changes to this project are documented here. Format: Keep a Changelo
 
 ### Added
 
+- Plain-language screens: agent tools and workflow templates are shown with translated names and descriptions (the API describes them in English); a template's requirements read "an agent" / "an owner" instead of field names.
+- Integrations are split into "Available now" and "Not available yet"; the implementation notes ("configuration only in this release", "nothing is simulated") are gone.
+- Billing: usage reads "1 of 25"; higher plans show what they include in total instead of differences; while no payment provider exists the action on a plan is "Contact sales" rather than an Upgrade button that could only fail; the environment-variable name is no longer shown in the cost note.
+- Contacts and companies lists use `FilterBar`.
 - UX foundations (styling only): measured colour contrast instead of judging by eye - `node scripts/check-contrast.mjs` checks 106 text/background pairs of the design tokens in the light and dark themes and now passes. Fixed on the way: helper text (`fg-subtle`) in the light theme, the outline of form controls (new `border-control` token, at least 3:1), and the label of the danger button in the dark theme (new `danger-fg` token). Helper text is 13px (was 12px) and the smallest label 12px (was 11px).
 - `FilterBar` and `FormSection` in the design system. The leads list uses `FilterBar`: on a phone only the search and a "Filters (n)" button stay above the list.
 - Social sign-in and sign-up: "Continue with Google / Microsoft / Facebook / GitHub" on the login and register pages. A provider is offered only when its `OAUTH_<PROVIDER>_CLIENT_ID` and `_CLIENT_SECRET` are set. An address the provider verified (Google, GitHub) signs in without a second verification and may be linked to an existing account; Microsoft and Facebook addresses are treated as unverified, so they never link to an existing account and a new account still has to confirm its email. Tested with stubbed provider responses only - no provider has been called live yet.

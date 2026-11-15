@@ -107,8 +107,6 @@ export const settings = {
   'settings.heldRightNow': 'Held right now',
   'settings.hideInputSchema': 'Hide input schema for {name}',
   'settings.higherPlans': 'Higher plans',
-  'settings.higherPlansWhatTheyAdd':
-    'Higher plans, what they add compared with your current plan, and which pressure they resolve.',
   'settings.hoursAreIn': 'Hours are in',
   'settings.howItIntroducesItselfTo': 'How it introduces itself to customers.',
   'settings.howThisOrganizationPresentsItself':
@@ -235,7 +233,6 @@ export const settings = {
   'settings.platformDefault': 'Platform default',
   'settings.preferences': 'Preferences',
   'settings.preferencesSaved': 'Preferences saved',
-  'settings.pricingNotConfigured': 'Pricing not configured',
   'settings.primaryColour': 'Primary colour',
   'settings.production': 'Production',
   'settings.professional': 'Professional',
@@ -371,4 +368,12 @@ export const settings = {
   'settings.yourProfile': 'Your profile',
   'settings.yourRoleCanViewThese': 'Your role can view these settings but not change them.',
   'settings.yourSubscriptionCouldnTBe': 'Your subscription couldn’t be loaded',
+  'settings.contactSalesAbout': 'Contact sales about the {name} plan',
+  'settings.plansAreChangedThroughSales':
+    'Plans are changed through our sales team. Online payment is not available yet, so nothing can be bought or charged from this page.',
+  'settings.costCannotBeMeasuredYet':
+    'AI cost is not measured yet because model prices have not been set, so only the token budget applies.',
+  'settings.pricingNotConfigured': 'Price on request',
+  'settings.higherPlansWhatTheyAdd':
+    'What each higher plan includes, and which limits it would relieve.',
 } as const;

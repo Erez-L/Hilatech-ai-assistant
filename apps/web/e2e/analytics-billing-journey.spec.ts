@@ -6,7 +6,7 @@ import { expect, test } from '@playwright/test';
  * the nav entry is live, every tab (Business, Sales, Agent performance, Automation, Usage) renders,
  * granularity changes, the usage CSV downloads → Settings → Billing: plan + entitlements, upgrade
  * options, a tiny token budget with hard stop → the assistant refuses with a budget message that
- * links to billing → Upgrade answers "payment is not configured" (501, nothing is charged).
+ * links to billing → higher plans offer "Contact sales" (no purchase without a payment provider).
  *
  * The API must run with AI_ALLOW_MOCK_PROVIDER=true. If the web app is a production build, build it
  * with NEXT_PUBLIC_ENABLE_MOCK_AI=true. Enabled only when E2E_BASE_URL is set.
@@ -116,7 +116,7 @@ test.describe('analytics & billing journey', () => {
     await expect(entitlements.getByTestId('entitlement-ai_tokens')).toContainText('AI tokens');
     await expect(entitlements.getByRole('meter', { name: 'Team seats usage' })).toBeVisible();
     await expect(page.getByRole('list', { name: 'Higher plans' })).toBeVisible();
-    await expect(page.getByTestId('upgrade-starter')).toContainText('Pricing not configured');
+    await expect(page.getByTestId('upgrade-starter')).toContainText('Price on request');
 
     // --- Budget: a tiny token budget with the hard stop on --------------------------------------
     await page.getByLabel('Monthly token budget').fill('1');
@@ -148,10 +148,10 @@ test.describe('analytics & billing journey', () => {
     await budgetAlert.getByRole('link', { name: 'Review budget in Billing' }).click();
     await expect(page).toHaveURL(/\/settings\/billing$/);
 
-    // --- Upgrade: checkout answers "payment is not configured" ---------------------------------
-    await page.getByRole('button', { name: 'Upgrade to Starter' }).click();
-    const notConfigured = page.getByTestId('payment-not-configured');
-    await expect(notConfigured).toContainText('Payment is not configured');
-    await expect(notConfigured).toContainText('plan has not changed');
+    // --- Upgrade: no purchase without a payment provider — the action is to contact sales --------
+    await expect(page.getByRole('button', { name: 'Upgrade to Starter' })).toHaveCount(0);
+    await expect(
+      page.getByRole('link', { name: 'Contact sales about the Starter plan' }),
+    ).toHaveAttribute('href', /^mailto:sales@hilatech\.dev/);
   });
 });

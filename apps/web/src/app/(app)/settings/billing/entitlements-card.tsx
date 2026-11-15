@@ -95,7 +95,13 @@ export function EntitlementRow({ entitlement: e }: { entitlement: EntitlementUsa
           <bdi dir="ltr">{fmt(e.used)}</bdi>
           <span className="text-fg-subtle">
             {' '}
-            / {e.limit == null ? t('common.noLimit') : <bdi dir="ltr">{fmt(e.limit)}</bdi>}
+            {e.limit == null ? (
+              `· ${t('common.noLimit')}`
+            ) : (
+              <>
+                {t('common.outOf')} <bdi dir="ltr">{fmt(e.limit)}</bdi>
+              </>
+            )}
           </span>
           {e.percent != null ? (
             <span className="ms-2 text-xs text-fg-subtle">
