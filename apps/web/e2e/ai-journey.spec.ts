@@ -10,6 +10,8 @@ import { expect, test } from '@playwright/test';
  * NEXT_PUBLIC_ENABLE_MOCK_AI=true so the provider select offers "Mock". Enabled only when
  * E2E_BASE_URL is set.
  */
+import { openScreen } from './nav';
+
 const BASE_URL = process.env.E2E_BASE_URL;
 const UUID = '[0-9a-f-]{36}';
 
@@ -36,8 +38,8 @@ test.describe('ai journey', () => {
     await expect(page).toHaveURL(/\/dashboard/);
 
     // --- Settings → AI: add the mock provider -------------------------------------------------
-    await page.getByRole('link', { name: /^Settings/ }).click();
-    await page.getByRole('link', { name: 'AI', exact: true }).click();
+    await openScreen(page, 'Settings');
+    await page.getByRole('main').getByRole('link', { name: 'AI', exact: true }).click();
     await expect(page).toHaveURL(/\/settings\/ai$/);
     await expect(page.getByText('No AI provider yet')).toBeVisible();
     await page.getByRole('button', { name: 'Add provider' }).first().click();
@@ -52,7 +54,7 @@ test.describe('ai journey', () => {
     await expect(providerRow.getByText('Default', { exact: true })).toBeVisible();
 
     // --- Assistant ----------------------------------------------------------------------------
-    await page.getByRole('link', { name: /^Assistant/ }).click();
+    await openScreen(page, 'Assistant');
     await expect(page).toHaveURL(/\/assistant/);
     await page.getByRole('button', { name: 'New thread' }).first().click();
     await expect(page).toHaveURL(new RegExp(`t=${UUID}`));
@@ -64,7 +66,7 @@ test.describe('ai journey', () => {
     });
 
     // --- Agents: create with the time.now tool -------------------------------------------------
-    await page.getByRole('link', { name: /^Agents/ }).click();
+    await openScreen(page, 'Agents');
     await expect(page).toHaveURL(/\/agents$/);
     await page.getByRole('link', { name: 'New agent' }).first().click();
     await expect(page).toHaveURL(/\/agents\/new$/);

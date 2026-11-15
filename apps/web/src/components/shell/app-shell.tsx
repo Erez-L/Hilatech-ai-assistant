@@ -2,24 +2,36 @@
 
 import * as React from 'react';
 import { usePathname } from 'next/navigation';
-import { Menu } from 'lucide-react';
-import { IconButton, PageIconProvider, Sheet, SheetContent, Spinner, TopBar } from '@hilatech/ui';
+import Link from 'next/link';
+import { Sparkles } from 'lucide-react';
+import { Permission } from '@hilatech/contracts';
+import { PageIconProvider, Spinner, TopBar, Wordmark } from '@hilatech/ui';
 import { useSession } from '@/stores/session';
-import { AppSidebar } from './app-sidebar';
+import { AreaRail, AreaTabs } from './area-nav';
+import { OrgSwitcher } from './org-switcher';
 import { NotificationsMenu } from './notifications-menu';
 import { ThemeToggle } from './theme-toggle';
 import { UserMenu } from './user-menu';
-import { navItemFor, pageTitleFor } from './nav';
+import { areaFor, navItemFor } from './nav';
 import { useT } from '@/i18n/provider';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const t = useT();
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = React.useState(false);
   const sessionLoaded = useSession((s) => s.sessionLoaded);
-  const title = pageTitleFor(pathname, t);
-  const area = navItemFor(pathname);
-  const AreaIcon = area?.icon;
+  const canAskAssistant = useSession((s) => s.permissions.includes(Permission.AI_ASSISTANT_USE));
+  const tone = areaFor(pathname)?.tone;
+  const AreaIcon = navItemFor(pathname)?.icon;
+
+  // Dialogs, menus and toasts render at the end of <body>, outside the page: the area's colour is set there
+  // too, so a popup in Sales looks like Sales.
+  React.useEffect(() => {
+    if (!tone) return;
+    document.body.dataset.tone = tone;
+    return () => {
+      delete document.body.dataset.tone;
+    };
+  }, [tone]);
 
   return (
     <div className="flex min-h-dvh bg-bg">
@@ -29,35 +41,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         {t('shell.skipToContent')}
       </a>
-      {/* Desktop sidebar */}
+      {/* Areas: a rail on wide screens, a bar at the bottom on narrow ones. */}
       <div className="sticky top-0 hidden h-dvh shrink-0 lg:block">
-        <AppSidebar />
+        <AreaRail placement="side" />
       </div>
+      <AreaRail placement="bottom" />
 
-      {/* Mobile drawer */}
-      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent
-          side="start"
-          title={t('shell.navigation')}
-          closeOutside
-          className="w-64 lg:hidden"
-        >
-          <AppSidebar onNavigate={() => setMobileOpen(false)} className="h-dvh" />
-        </SheetContent>
-      </Sheet>
-
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div data-tone={tone} className="area-wash flex min-w-0 flex-1 flex-col">
         <TopBar
           start={
             <>
-              <IconButton
-                label={t('shell.openNavigation')}
-                className="lg:hidden"
-                onClick={() => setMobileOpen(true)}
+              <Link
+                href="/dashboard"
+                aria-label={t('app.productNameShort')}
+                className="flex h-9 items-center rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
-                <Menu aria-hidden />
-              </IconButton>
-              <span className="truncate text-sm font-medium text-fg-muted">{title}</span>
+                <Wordmark compact />
+              </Link>
+              <OrgSwitcher className="w-auto max-w-[11rem] sm:max-w-[14rem]" />
             </>
           }
           end={
@@ -68,16 +69,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <UserMenu />
             </>
           }
-        />
+        >
+          {canAskAssistant ? (
+            // The assistant is one click away from every screen; it opens the assistant, it does not act here.
+            <Link
+              href="/assistant"
+              data-tone="pink"
+              className="hidden h-10 min-w-0 max-w-md flex-1 items-center gap-2 rounded-md border-2 border-tone bg-surface px-3 text-sm text-fg-muted transition-colors hover:bg-tone-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:flex"
+            >
+              <Sparkles className="size-4 shrink-0 text-tone-fg" aria-hidden />
+              <span className="truncate">{t('shell.askAssistant')}</span>
+            </Link>
+          ) : null}
+        </TopBar>
         <main
           id="main"
           tabIndex={-1}
-          data-tone={area?.tone}
-          className="relative flex-1 px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8"
+          className="relative flex-1 px-4 pt-5 pb-24 outline-none sm:px-6 lg:px-8 lg:pt-6 lg:pb-8"
         >
           <div className="mx-auto w-full max-w-6xl">
             {sessionLoaded ? (
-              <PageIconProvider icon={AreaIcon ? <AreaIcon /> : null}>{children}</PageIconProvider>
+              <>
+                <AreaTabs />
+                <PageIconProvider icon={AreaIcon ? <AreaIcon /> : null}>
+                  {children}
+                </PageIconProvider>
+              </>
             ) : (
               <div className="flex min-h-[40vh] items-center justify-center" role="status">
                 <Spinner label={t('shell.switchingOrganization')} />

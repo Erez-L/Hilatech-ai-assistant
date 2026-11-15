@@ -5,6 +5,8 @@ import { expect, test } from '@playwright/test';
  * case → run → the workers execute both cases → results page shows 1 of 2 passed.
  * Requires the full stack including the workers. Enabled only when E2E_BASE_URL is set.
  */
+import { openScreen } from './nav';
+
 const BASE_URL = process.env.E2E_BASE_URL;
 
 test.describe('evaluations journey', () => {
@@ -44,7 +46,7 @@ test.describe('evaluations journey', () => {
     await expect(page.getByText(/created/i).first()).toBeVisible();
 
     // Dataset.
-    await page.getByRole('link', { name: /^Evaluations/ }).click();
+    await openScreen(page, 'Evaluations');
     await expect(page).toHaveURL(/\/evaluations$/);
     await expect(page.getByText('No evaluation datasets yet')).toBeVisible();
     await page.getByRole('button', { name: 'New dataset' }).first().click();

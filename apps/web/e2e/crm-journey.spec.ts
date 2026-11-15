@@ -7,6 +7,8 @@ import { expect, test, type Page } from '@playwright/test';
  *
  * Requires the full stack (web + api + postgres + redis). Enabled only when E2E_BASE_URL is set.
  */
+import { openScreen } from './nav';
+
 const BASE_URL = process.env.E2E_BASE_URL;
 const UUID = '[0-9a-f-]{36}';
 
@@ -39,7 +41,7 @@ test.describe('crm journey', () => {
     await expect(page.getByText('Open leads').first()).toBeVisible();
 
     // --- Contact ------------------------------------------------------------------------------
-    await page.getByRole('link', { name: /^Contacts/ }).click();
+    await openScreen(page, 'Contacts');
     await expect(page).toHaveURL(/\/contacts$/);
     await page.getByRole('button', { name: 'New contact' }).first().click();
     let dialog = page.getByRole('dialog');
@@ -53,7 +55,7 @@ test.describe('crm journey', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Dana Cohen');
 
     // --- Lead ---------------------------------------------------------------------------------
-    await page.getByRole('link', { name: /^Leads/ }).click();
+    await openScreen(page, 'Leads');
     await expect(page).toHaveURL(/\/leads$/);
     await page.getByRole('button', { name: 'New lead' }).first().click();
     dialog = page.getByRole('dialog');
@@ -127,7 +129,7 @@ test.describe('crm journey', () => {
     await page.keyboard.press('Escape');
 
     // --- Dashboard reflects the new data --------------------------------------------------------
-    await page.getByRole('link', { name: /^Dashboard/ }).click();
+    await openScreen(page, 'Dashboard');
     await expect(page).toHaveURL(/\/dashboard/);
     const recentLead = page.locator('a[href^="/leads/"]').filter({ hasText: leadTitle });
     await expect(recentLead).toBeVisible();

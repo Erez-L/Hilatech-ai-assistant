@@ -11,6 +11,8 @@ import { expect, test } from '@playwright/test';
  * The API must run with AI_ALLOW_MOCK_PROVIDER=true. If the web app is a production build, build it
  * with NEXT_PUBLIC_ENABLE_MOCK_AI=true. Enabled only when E2E_BASE_URL is set.
  */
+import { openScreen } from './nav';
+
 const BASE_URL = process.env.E2E_BASE_URL;
 const UUID = '[0-9a-f-]{36}';
 
@@ -49,7 +51,7 @@ test.describe('analytics & billing journey', () => {
     await provider.getByRole('button', { name: 'Add provider' }).click();
     await expect(page.getByText('Provider “Mock” added')).toBeVisible();
 
-    await page.getByRole('link', { name: /^Assistant/ }).click();
+    await openScreen(page, 'Assistant');
     await page.getByRole('button', { name: 'New thread' }).first().click();
     await expect(page).toHaveURL(new RegExp(`t=${UUID}`));
     const box = page.getByRole('textbox', { name: 'Message the assistant' });
@@ -59,10 +61,7 @@ test.describe('analytics & billing journey', () => {
     await expect(log.getByText('mock: hello')).toBeVisible({ timeout: 30_000 });
 
     // --- Analytics: the nav entry is live and every tab renders --------------------------------
-    const nav = page.getByRole('link', { name: /^Analytics/ });
-    await expect(nav).toBeVisible();
-    await expect(nav).not.toContainText('Soon');
-    await nav.click();
+    await openScreen(page, 'Reports');
     await expect(page).toHaveURL(/\/analytics$/);
     await expect(page.getByRole('heading', { name: 'Analytics', level: 1 })).toBeVisible();
 
@@ -137,7 +136,7 @@ test.describe('analytics & billing journey', () => {
     );
 
     // --- The assistant now refuses with a clear message that links back to billing -------------
-    await page.getByRole('link', { name: /^Assistant/ }).click();
+    await openScreen(page, 'Assistant');
     await page.getByRole('button', { name: 'New thread' }).first().click();
     await expect(page).toHaveURL(new RegExp(`t=${UUID}`));
     const box2 = page.getByRole('textbox', { name: 'Message the assistant' });

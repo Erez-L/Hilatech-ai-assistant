@@ -406,17 +406,45 @@
   --tone-fg: #3b4658;
   --tone-bright: #a9b6cc;
 }
+/* The :nth-child selector matches the specificity of the light rules that cycle tones on stat cards. */
 .dark,
 .dark [data-tone],
-.dark .stat-card {
+.dark .stat-card,
+.dark .stat-card:not([data-tone]):nth-child(n) {
   --tone-soft: color-mix(in srgb, var(--tone-bright) 18%, transparent);
   --tone-fg: var(--tone-bright);
   --tone-on: #0f1729;
 }
-.dark :is([data-tone], .stat-card, body) {
+.dark :is([data-tone], .stat-card, body),
+.dark .stat-card:not([data-tone]):nth-child(n) {
   --tone: var(--tone-bright);
 }
 
+/* Inside an area the accent IS the area's colour: primary buttons, links, focus rings, selected states, and
+   the dialogs and toasts that render at the end of <body>. One primary colour per area, same shapes everywhere. */
+body[data-tone],
+.area-wash[data-tone] {
+  --accent: var(--tone);
+  --accent-hover: color-mix(in srgb, var(--tone) 84%, #000000);
+  --accent-fg: var(--tone-on);
+  --accent-soft: var(--tone-soft);
+  --accent-soft-fg: var(--tone-fg);
+  --ring: var(--tone);
+}
+.dark body[data-tone],
+.dark .area-wash[data-tone] {
+  --accent-hover: color-mix(in srgb, var(--tone) 84%, #ffffff);
+}
+/* Page background of an area: almost white, with a hint of the area's colour at the top corner. */
+.area-wash {
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--tone) 9%, var(--bg)) 0%,
+    color-mix(in srgb, var(--tone) 3%, var(--bg)) 38%,
+    var(--bg) 70%
+  );
+  background-attachment: fixed;
+}
 /* The navigation rail is always dark; inside it the neutral tokens are remapped so existing
    components (wordmark, organization switcher) render correctly without their own dark variant. */
 .sidebar-scope {

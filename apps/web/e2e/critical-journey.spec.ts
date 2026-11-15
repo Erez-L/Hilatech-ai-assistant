@@ -4,6 +4,8 @@ import { expect, test, type Page } from '@playwright/test';
  * Critical journey: register → onboarding (create organization) → dashboard → invite a teammate.
  * Requires the full stack (web + api + postgres + redis). Enabled only when E2E_BASE_URL is set.
  */
+import { openScreen } from './nav';
+
 const BASE_URL = process.env.E2E_BASE_URL;
 
 test.describe('critical journey', () => {
@@ -39,7 +41,7 @@ test.describe('critical journey', () => {
     await expect(page.getByText('Team members')).toBeVisible();
 
     // Invite a teammate from the team page.
-    await page.getByRole('link', { name: /^Team/ }).click();
+    await openScreen(page, 'Team');
     await expect(page).toHaveURL(/\/team/);
     await page.getByRole('button', { name: 'Invite a teammate' }).first().click();
     const dialog = page.getByRole('dialog');

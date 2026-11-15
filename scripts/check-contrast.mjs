@@ -95,13 +95,13 @@ for (const [theme, t] of [
     const bright = hex(tone['tone-bright']);
     if (theme === 'light') {
       check(theme, `tone ${name}: tone-fg on tone-soft`, hex(tone['tone-fg']), hex(tone['tone-soft']), 4.5);
-      check(theme, `tone ${name}: white on tone (icon tile)`, [255, 255, 255], hex(tone.tone), 3);
+      check(theme, `tone ${name}: white on tone (area button, icon tile)`, [255, 255, 255], hex(tone.tone), 4.5);
       check(theme, `tone ${name}: tone-fg on surface`, hex(tone['tone-fg']), c('surface'), 4.5);
     } else {
       // Dark: tone-fg = tone-bright, tone-soft = 18% of it over the surface, tone-on = #0f1729 on the bright tile.
       const soft = mix(bright, c('surface'), 0.18);
       check(theme, `tone ${name}: tone-fg on tone-soft`, bright, soft, 4.5);
-      check(theme, `tone ${name}: tone-on on tone (icon tile)`, [15, 23, 41], bright, 3);
+      check(theme, `tone ${name}: tone-on on tone (area button, icon tile)`, [15, 23, 41], bright, 4.5);
       check(theme, `tone ${name}: tone-fg on surface`, bright, c('surface'), 4.5);
     }
   }

@@ -11,6 +11,8 @@ import { expect, test } from '@playwright/test';
  * is a production build, build it with NEXT_PUBLIC_ENABLE_MOCK_AI=true. Enabled only when
  * E2E_BASE_URL is set.
  */
+import { openScreen } from './nav';
+
 const BASE_URL = process.env.E2E_BASE_URL;
 const UUID = '[0-9a-f-]{36}';
 
@@ -40,9 +42,10 @@ test.describe('knowledge & automation journey', () => {
     await page.getByRole('button', { name: 'Create organization' }).click();
     await expect(page).toHaveURL(/\/dashboard/);
 
-    // The navigation no longer marks these areas as "Soon".
-    for (const name of ['Knowledge', 'Automations', 'Integrations']) {
-      await expect(page.getByRole('link', { name: new RegExp(`^${name}$`) })).toBeVisible();
+    // Knowledge lives in the AI area; automations and integrations in Operations.
+    const areas = page.getByRole('navigation', { name: 'Areas' });
+    for (const name of ['AI', 'Operations']) {
+      await expect(areas.getByRole('link', { name, exact: true })).toBeVisible();
     }
 
     // --- Settings → AI: enable the mock provider ----------------------------------------------
@@ -57,7 +60,7 @@ test.describe('knowledge & automation journey', () => {
     await expect(page.getByText('Provider “Mock” added')).toBeVisible();
 
     // --- Knowledge: create a base --------------------------------------------------------------
-    await page.getByRole('link', { name: /^Knowledge/ }).click();
+    await openScreen(page, 'Knowledge');
     await expect(page).toHaveURL(/\/knowledge$/);
     await page.getByRole('button', { name: 'New knowledge base' }).first().click();
     const baseDialog = page.getByRole('dialog');
@@ -90,7 +93,7 @@ test.describe('knowledge & automation journey', () => {
     await expect(results).toContainText(/Score 0\.\d+|Score 1\.000/);
 
     // --- Automations: workflow from a template -------------------------------------------------
-    await page.getByRole('link', { name: /^Automations/ }).click();
+    await openScreen(page, 'Automations');
     // Let the first navigation settle before starting the next one (a click during a pending route
     // transition can be overridden by it).
     await expect(page).toHaveURL(/\/automations$/, { timeout: 30_000 });

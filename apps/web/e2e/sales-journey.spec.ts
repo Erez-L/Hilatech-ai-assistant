@@ -9,15 +9,13 @@ import { he } from '../src/i18n/messages/he';
  *
  * Requires the full stack (web + api + postgres + redis). Enabled only when E2E_BASE_URL is set.
  */
+import { openScreen } from './nav';
+
 const BASE_URL = process.env.E2E_BASE_URL;
 const UUID = '[0-9a-f-]{36}';
 
 type Key = keyof typeof en;
 const H = (k: Key) => String(he[k]);
-
-async function openNav(page: Page, name: string | RegExp) {
-  await page.getByRole('navigation').getByRole('link', { name }).first().click();
-}
 
 test.describe('sales journey', () => {
   test.skip(!BASE_URL, 'Set E2E_BASE_URL to run end-to-end tests against a running stack');
@@ -59,7 +57,7 @@ test.describe('sales journey', () => {
   });
 
   test('tasks: create, see it, complete it', async () => {
-    await openNav(page, /^Tasks/);
+    await openScreen(page, 'Tasks');
     await expect(page).toHaveURL(/\/tasks$/);
     await expect(page.getByRole('heading', { name: 'Tasks', level: 1 })).toBeVisible();
     await expect(page.getByText('No tasks yet')).toBeVisible();
@@ -90,7 +88,7 @@ test.describe('sales journey', () => {
   });
 
   test('deals: create, move with the "Move to…" menu, totals per column', async () => {
-    await openNav(page, /^Deals/);
+    await openScreen(page, 'Deals');
     await expect(page).toHaveURL(/\/deals$/);
     await expect(page.getByRole('heading', { name: 'Deals', level: 1 })).toBeVisible();
 
@@ -164,7 +162,7 @@ test.describe('sales journey', () => {
 
   test('companies: create and link a contact', async () => {
     // A contact to link.
-    await openNav(page, /^Contacts/);
+    await openScreen(page, 'Contacts');
     await page.getByRole('button', { name: 'New contact' }).first().click();
     let dialog = page.getByRole('dialog');
     await dialog.getByLabel('First name').fill('Noa');
@@ -173,7 +171,7 @@ test.describe('sales journey', () => {
     await dialog.getByRole('button', { name: 'Create contact' }).click();
     await expect(page).toHaveURL(new RegExp(`/contacts/${UUID}$`));
 
-    await openNav(page, /^Companies/);
+    await openScreen(page, 'Companies');
     await expect(page).toHaveURL(/\/companies$/);
     await page.getByRole('button', { name: 'New company' }).first().click();
     dialog = page.getByRole('dialog');
@@ -198,7 +196,7 @@ test.describe('sales journey', () => {
   });
 
   test('import a CSV with Hebrew content: dry run → execute → result', async () => {
-    await openNav(page, /^Imports/);
+    await openScreen(page, 'Imports');
     await expect(page).toHaveURL(/\/imports$/);
     await expect(page.getByText('No imports yet')).toBeVisible();
     await page.getByRole('button', { name: 'New import' }).first().click();
@@ -247,7 +245,7 @@ test.describe('sales journey', () => {
 
     // History shows the finished import, and the contact exists with its Hebrew name.
     await expect(page.getByRole('row', { name: /contacts-he\.csv/ })).toContainText('Completed');
-    await openNav(page, /^Contacts/);
+    await openScreen(page, 'Contacts');
     await page.locator('#contacts-search').fill(hebrewLast);
     await expect(
       page.getByRole('link', { name: `${hebrewFirst} ${hebrewLast}`, exact: true }),

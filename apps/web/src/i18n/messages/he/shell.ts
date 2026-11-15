@@ -43,4 +43,10 @@ export const shell = {
   'shell.imports': 'ייבואים',
   'shell.tasks': 'משימות',
   'shell.evaluations': 'הערכות',
+  'shell.today': 'היום',
+  'shell.sales': 'מכירות',
+  'shell.reports': 'דוחות',
+  'shell.areas': 'אזורי המערכת',
+  'shell.areaScreens': 'המסכים באזור {name}',
+  'shell.askAssistant': 'מה תרצו לעשות? שאלו את העוזר',
 } as const;

@@ -43,4 +43,10 @@ export const shell = {
   'shell.imports': 'Imports',
   'shell.tasks': 'Tasks',
   'shell.evaluations': 'Evaluations',
+  'shell.today': 'Today',
+  'shell.sales': 'Sales',
+  'shell.reports': 'Reports',
+  'shell.areas': 'Areas',
+  'shell.areaScreens': '{name} screens',
+  'shell.askAssistant': 'What would you like to do? Ask the assistant',
 } as const;

@@ -5,12 +5,16 @@ All notable changes to this project are documented here. Format: Keep a Changelo
 ## [Unreleased]
 ### Fixed
 
+- Dark theme: the hint text and icon tiles of the dashboard's stat cards kept their light-theme colours and were hard to read.
 - Assistant chat: message bubbles follow the direction of their own text (an English reply inside the Hebrew layout no longer has its punctuation flipped), and the message box no longer shows a second focus ring inside its frame.
 - Bedrock replies no longer show the model's inline `<thinking>` text (Amazon Nova writes its reasoning into the answer); it is removed in the provider, for streamed and non-streamed replies.
 - The assistant page treated an Amazon Bedrock provider as "AI not configured" because it has no API key; found on the first live deployment.
 
 ### Added
 
+- Navigation by areas (version 2 of the interface). The dark sidebar is replaced by six areas - Today, Customers, Sales, AI, Operations, Organization - shown as a light rail on wide screens and as a bar at the bottom of the screen on phones. The screens of the current area are tabs above the page, and every screen belongs to exactly one area (tasks and reports are in Today; billing, AI settings and the profile stay tabs of Settings and are no longer listed twice). No route changed.
+- Each area has one colour that is also its accent: the primary button, links, focus rings, selected states, and the dialogs and toasts opened from that area. The page background is almost white with a hint of the area's colour.
+- The assistant is one click away from every screen through the bar at the top (it opens the assistant; it does not act from the bar).
 - Plain-language screens: agent tools and workflow templates are shown with translated names and descriptions (the API describes them in English); a template's requirements read "an agent" / "an owner" instead of field names.
 - Integrations are split into "Available now" and "Not available yet"; the implementation notes ("configuration only in this release", "nothing is simulated") are gone.
 - Billing: usage reads "1 of 25"; higher plans show what they include in total instead of differences; while no payment provider exists the action on a plan is "Contact sales" rather than an Upgrade button that could only fail; the environment-variable name is no longer shown in the cost note.

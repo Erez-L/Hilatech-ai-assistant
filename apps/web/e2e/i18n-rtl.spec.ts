@@ -67,14 +67,14 @@ test.describe('hebrew / rtl journey', () => {
       ),
     );
     // No English product copy leaked into the shell.
-    await expect(page.getByRole('link', { name: H('shell.team') }).first()).toBeVisible();
+    const organization = page
+      .getByRole('navigation', { name: H('shell.areas') })
+      .getByRole('link', { name: H('common.organization') });
+    await expect(organization).toBeVisible();
     await expect(page.getByRole('navigation').getByText('Conversations')).toHaveCount(0);
 
-    // Key pages render Hebrew headings and stay RTL.
-    await page
-      .getByRole('link', { name: H('shell.team') })
-      .first()
-      .click();
+    // Key pages render Hebrew headings and stay RTL. The organization area opens on the team screen.
+    await organization.click();
     await expect(page).toHaveURL(/\/team/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(H('shell.team'));
     await expect(page.getByText(H('team.members')).first()).toBeVisible();
